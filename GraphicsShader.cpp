@@ -6,7 +6,6 @@
  */
 //#include "StdAfx.h"
 #include "GraphicsShader.h"
-#include "glUtil.h"
 #include "../Log.h"
 #include <string>
 #include <fstream>

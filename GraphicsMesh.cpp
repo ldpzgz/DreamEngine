@@ -30,12 +30,16 @@ void checkglerror()
 
 }
 GraphicsMesh::GraphicsMesh(int meshType):
-		mPosVbo(0),
-		mTexVbo(0),
-		mIndexVbo(0),
-		mIndexByteSize(0),
-		mMeshType(meshType)
-
+	mPosVbo(0),
+	mTexVbo(0),
+	mNorVbo(0),
+	mIndexVbo(0),
+	mIndexByteSize(0),
+	mMeshType(meshType),
+	mposLocation(-1),
+	mtexLocation(-1),
+	mnorLocation(-1),
+	mVAO(-1)
 {
 	// TODO Auto-generated constructor stub
 
@@ -46,7 +50,11 @@ GraphicsMesh::GraphicsMesh() :
 	mTexVbo(0),
 	mIndexVbo(0),
 	mIndexByteSize(0),
-	mMeshType(MESH_DIY)
+	mMeshType(MESH_DIY),
+	mposLocation(-1),
+	mtexLocation(-1),
+	mnorLocation(-1),
+	mVAO(-1)
 {
 
 }
@@ -97,18 +105,15 @@ void GraphicsMesh::loadMesh()
 			delete[] tex;
 		}
 	}
-	
 }
 
 bool GraphicsMesh::loadMesh(GLfloat* pos,int posByteSize,GLushort* index,int indexByteSize,
 	GLfloat* tex,int texByteSize,GLfloat* nor,int norByteSize,int drawType)
 {
-	glGenVertexArrays(1, &mVAO);
-	glBindVertexArray(mVAO);
-
 	if(pos!=0)
 	{
 		setPosData(pos,posByteSize, drawType);
+		checkglerror();
 		mCounts = (posByteSize / (sizeof(float) * 3));
 	}
 	if(tex!=0)
@@ -124,10 +129,9 @@ bool GraphicsMesh::loadMesh(GLfloat* pos,int posByteSize,GLushort* index,int ind
 	if(index!=0)
 	{
 		setIndexData(index,indexByteSize, drawType);
+		checkglerror();
 	}
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	glBindVertexArray(0);
 	return true;
 }
 
@@ -158,35 +162,53 @@ bool GraphicsMesh::updataIndex(float* pIndex, int byteOffset, int size)
 
 void GraphicsMesh::drawLineStrip(int posloc)
 {
-	if(posloc>=0)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
-		glVertexAttribPointer(posloc, 3,GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(posloc);
+	if (createVaoIfNeed(posloc)) {
+		glBindVertexArray(mVAO);
+		if (mposLocation >= 0) {
+			glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
+			glEnableVertexAttribArray(posloc);
+			glVertexAttribPointer(posloc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		}
+		else {
+
+		}
+		glBindVertexArray(0);
 	}
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,mIndexVbo);
+	
+	glBindVertexArray(mVAO);
 	glDrawArrays(GL_LINE_STRIP, 0, mCounts);
+	glBindVertexArray(0);
 	//glDrawElements(GL_LINE_LOOP, mNumOfIndex, GL_UNSIGNED_SHORT, (const void*)0);
 }
 
 void GraphicsMesh::drawTrangleFan(int posloc, int texloc)
 {
 	//glFrontFace(GL_CW);
-	if(posloc>=0)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
-		glVertexAttribPointer(posloc, 3,GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(posloc);
+	if (createVaoIfNeed(posloc)){
+		glBindVertexArray(mVAO);
+		if (posloc >= 0)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
+			glEnableVertexAttribArray(posloc);
+			glVertexAttribPointer(posloc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		}
+		if (texloc >= 0)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
+			//indicate a vertexAttrib space 2*float,in mTexVbo
+			glEnableVertexAttribArray(texloc);
+			glVertexAttribPointer(texloc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+		}
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
+
+		glBindVertexArray(0);
 	}
-	if (texloc >= 0)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
-		//indicate a vertexAttrib space 2*float,in mTexVbo
-		glVertexAttribPointer(texloc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(texloc);
-	}
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,mIndexVbo);
+
+	glBindVertexArray(mVAO);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, mCounts);
+	glBindVertexArray(0);
 	//glFrontFace(GL_CCW);
 	//glDrawElements(GL_TRIANGLE_FAN, mNumOfIndex, GL_UNSIGNED_SHORT, (const void*)0);
 }
@@ -194,47 +216,46 @@ void GraphicsMesh::drawTrangleFan(int posloc, int texloc)
 
 void GraphicsMesh::drawTriangles(int posloc,int texloc,int norloc)
 {
+	if (createVaoIfNeed(posloc)) {
+		glBindVertexArray(mVAO);
+		if (posloc >= 0)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
+			glEnableVertexAttribArray(posloc);
+			//indicate a vertexAttrib space 3*float,in mPosVbo
+			glVertexAttribPointer(posloc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+			checkglerror();
+		}
 
-	if(posloc>=0)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
-		//indicate a vertexAttrib space 3*float,in mPosVbo
-		glVertexAttribPointer(posloc, 3,GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(posloc);
+		if (texloc >= 0)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
+			glEnableVertexAttribArray(texloc);
+			//indicate a vertexAttrib space 2*float,in mTexVbo
+			glVertexAttribPointer(texloc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+		}
+		if (norloc >= 0)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
+			glEnableVertexAttribArray(norloc);
+			glVertexAttribPointer(norloc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+		}
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);//glDrawElements会用到这个
+		glBindVertexArray(0);
 	}
-
+	
+	glBindVertexArray(mVAO);
+	glDrawElements(GL_TRIANGLES, mIndexByteSize/sizeof(GLushort), GL_UNSIGNED_SHORT, (const void*)0);
 	checkglerror();
-	if(texloc>=0)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
-		//indicate a vertexAttrib space 2*float,in mTexVbo
-		glVertexAttribPointer(texloc,2,GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(texloc);
-	}
-	checkglerror();
-	if(norloc>=0)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
-		glVertexAttribPointer(norloc, 3,GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(norloc);
-	}
-	checkglerror();
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,mIndexVbo);
-
-	//第一个参数指定绘制类型，
-	//第二个参数：是index数组里面的元素的个数，不是字节数，如果index是unsigned short类型 totalbyte/sizeof(unsigned short);
-	//第三个参数，单个index的数据类型，
-	//第四个参数，是一个指针，从index数组开头偏移多少，index数组是使用glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, index, drawType);
-	//这个函数上传到显卡的数据。
-	//
-	glDrawElements(GL_TRIANGLES, mIndexByteSize/sizeof(GL_UNSIGNED_SHORT), GL_UNSIGNED_SHORT, (const void*)0);
-	checkglerror();
+	glBindVertexArray(0);
 }
 
 int GraphicsMesh::getMaxNumVertexAttr()
 {
-	GLint maxVertexAttribs; // n will be >= 8
+	GLint maxVertexAttribs; // es2.0 n will be >= 8,es3.0 >=16
 	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVertexAttribs);
 	return maxVertexAttribs;
 }
@@ -306,4 +327,25 @@ void GraphicsMesh::unLoadMesh()
 	{
 		glDeleteBuffers(1, &mIndexVbo);
 	}
+	if (mVAO >= 0) {
+		glDeleteVertexArrays(1, &mVAO);
+	}
+}
+
+bool GraphicsMesh::createVaoIfNeed(int posloc, int texloc, int norloc) {
+	if (mposLocation != posloc || mtexLocation != texloc || mnorLocation != norloc) {
+		if (mVAO >= 0) {
+			//location有变化，先删除原来的vao
+			glDeleteVertexArrays(1, &mVAO);
+		}
+
+		mposLocation = posloc;
+		mtexLocation = texloc;
+		mnorLocation = norloc;
+
+		//使用vao把设置顶点属性的流程打包。
+		glGenVertexArrays(1, &mVAO);
+		return true;
+	}
+	return false;
 }
