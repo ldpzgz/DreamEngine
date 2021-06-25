@@ -36,10 +36,11 @@ GraphicsMesh::GraphicsMesh(int meshType):
 	mIndexVbo(0),
 	mIndexByteSize(0),
 	mMeshType(meshType),
-	mposLocation(-1),
-	mtexLocation(-1),
-	mnorLocation(-1),
-	mVAO(-1)
+	mposLocation(0),
+	mtexLocation(0),
+	mnorLocation(0),
+	mVAO(0),
+	mLineWidth(1.0f)
 {
 	// TODO Auto-generated constructor stub
 
@@ -51,10 +52,11 @@ GraphicsMesh::GraphicsMesh() :
 	mIndexVbo(0),
 	mIndexByteSize(0),
 	mMeshType(MESH_DIY),
-	mposLocation(-1),
-	mtexLocation(-1),
-	mnorLocation(-1),
-	mVAO(-1)
+	mposLocation(0),
+	mtexLocation(0),
+	mnorLocation(0),
+	mVAO(0),
+	mLineWidth(1.0f)
 {
 
 }
@@ -177,6 +179,7 @@ void GraphicsMesh::drawLineStrip(int posloc)
 	}
 	
 	glBindVertexArray(mVAO);
+	glLineWidth(mLineWidth);
 	glDrawArrays(GL_LINE_STRIP, 0, mCounts);
 	glBindVertexArray(0);
 	//glDrawElements(GL_LINE_LOOP, mNumOfIndex, GL_UNSIGNED_SHORT, (const void*)0);
@@ -253,11 +256,24 @@ void GraphicsMesh::drawTriangles(int posloc,int texloc,int norloc)
 	glBindVertexArray(0);
 }
 
-int GraphicsMesh::getMaxNumVertexAttr()
+void GraphicsMesh::getMaxNumVertexAttr()
 {
 	GLint maxVertexAttribs; // es2.0 n will be >= 8,es3.0 >=16
 	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVertexAttribs);
-	return maxVertexAttribs;
+	LOGD("gl global Param: GL_MAX_VERTEX_ATTRIBS %d", maxVertexAttribs);
+}
+
+void GraphicsMesh::getLineWidthRange() {
+	GLfloat lineWidthRange[2];
+	glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, lineWidthRange);
+	LOGD("gl global Param: GL_ALIASED_LINE_WIDTH_RANGE %f,%f", lineWidthRange[0], lineWidthRange[1]);
+}
+
+//获取点精灵，半径大小，点精灵（GL_POINTS primitive）其实是个和屏幕对齐的小正方形。
+void GraphicsMesh::getPointSizeRange() {
+	GLfloat pointSizeRange[2];
+	glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, pointSizeRange);
+	LOGD("gl global Param: GL_ALIASED_POINT_SIZE_RANGE %f,%f", pointSizeRange[0], pointSizeRange[1]);
 }
 
 void GraphicsMesh::draw(int posloc, int texloc, int norloc)
@@ -327,14 +343,14 @@ void GraphicsMesh::unLoadMesh()
 	{
 		glDeleteBuffers(1, &mIndexVbo);
 	}
-	if (mVAO >= 0) {
+	if (mVAO != 0) {
 		glDeleteVertexArrays(1, &mVAO);
 	}
 }
 
 bool GraphicsMesh::createVaoIfNeed(int posloc, int texloc, int norloc) {
 	if (mposLocation != posloc || mtexLocation != texloc || mnorLocation != norloc) {
-		if (mVAO >= 0) {
+		if (mVAO != 0) {
 			//location有变化，先删除原来的vao
 			glDeleteVertexArrays(1, &mVAO);
 		}
@@ -348,4 +364,8 @@ bool GraphicsMesh::createVaoIfNeed(int posloc, int texloc, int norloc) {
 		return true;
 	}
 	return false;
+}
+
+void GraphicsMesh::setLineWidth(GLfloat width) {
+	mLineWidth = width;
 }

@@ -46,7 +46,12 @@ public:
 
 	void unLoadMesh();
 
-	static int getMaxNumVertexAttr();
+	void setLineWidth(GLfloat);
+	GLfloat getLineWidth() {
+		return mLineWidth;
+	}
+	static void getMaxNumVertexAttr();
+	static void getLineWidthRange(GLfloat* pRange);
 private:
 	//4个vbo对象
 	GLuint mPosVbo;//这个是vbo
@@ -54,7 +59,7 @@ private:
 	GLuint mTexVbo; //这个是vbo
 	GLuint mIndexVbo; //这个别人叫ebo
 	GLuint mVAO;//这个是vao，顶点数组对象，opengles3.0才支撑，是一个集合。把设定顶点属性的过程打包到一起，简化绘制流程。
-
+	GLfloat mLineWidth;
 	int mposLocation;//顶点的位置属性在shader中的location
 	int mtexLocation;//顶点的纹理坐标属性在shader中的location
 	int mnorLocation;//顶点的法向量属性在shader中的location
