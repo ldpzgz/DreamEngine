@@ -1,5 +1,5 @@
 ﻿/*
- * GraphicsShader.h
+ * Shader.h
  *
  *  Created on: 2015-9-19
  *      Author: ldp
@@ -16,7 +16,7 @@
 
 /*
  这个类的用法是：
- 	 GraphicsShader gs;
+ 	 Shader gs;
  	 if(gs.initShader())
  	 	 ;
 
@@ -25,10 +25,10 @@
  	 gs.setVertexPointer(pointer,num);
 	 gs.startRender();
  */
-class GraphicsShader {
+class Shader {
 public:
-	GraphicsShader();
-	virtual ~GraphicsShader();
+	Shader();
+	virtual ~Shader();
 
 	bool initShader(const char* vs,const char* ps);
 

@@ -1,5 +1,5 @@
 ﻿/*
- * GraphicsMesh.h
+ * Mesh.h
  *
  *  Created on: 2015-9-19
  *      Author: ldp
@@ -20,12 +20,12 @@ enum
 	MESH_DIY
 };
 
-class GraphicsMesh
+class Mesh
 {
 public:
-	explicit GraphicsMesh(int meshType );
-	GraphicsMesh();
-	virtual ~GraphicsMesh();
+	explicit Mesh(int meshType );
+	Mesh();
+	virtual ~Mesh();
 
 	//MESH_Rectangle,MESH_Circle,调用这个函数初始化
 	void loadMesh();
@@ -51,7 +51,8 @@ public:
 		return mLineWidth;
 	}
 	static void getMaxNumVertexAttr();
-	static void getLineWidthRange(GLfloat* pRange);
+	static void getLineWidthRange();
+	static void getPointSizeRange();
 private:
 	//4个vbo对象
 	GLuint mPosVbo;//这个是vbo

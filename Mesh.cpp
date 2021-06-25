@@ -1,12 +1,12 @@
 ﻿/*
- * GraphicsMesh.cpp
+ * Mesh.cpp
  *
  *  Created on: 2015-9-19
  *      Author: Administrator
  */
 //#include "StdAfx.h"
-#include "GraphicsMesh.h"
-#include "../Log.h"
+#include "Mesh.h"
+#include "Log.h"
 #include <cmath>
 //extern void checkglerror();
 void checkglerror()
@@ -29,12 +29,15 @@ void checkglerror()
 	}
 
 }
-GraphicsMesh::GraphicsMesh(int meshType):
+Mesh::Mesh(int meshType):
 	mPosVbo(0),
 	mTexVbo(0),
 	mNorVbo(0),
 	mIndexVbo(0),
 	mIndexByteSize(0),
+	mPosByteSize(0),
+	mNorByteSize(0),
+	mTexByteSize(0),
 	mMeshType(meshType),
 	mposLocation(0),
 	mtexLocation(0),
@@ -46,11 +49,14 @@ GraphicsMesh::GraphicsMesh(int meshType):
 
 }
 
-GraphicsMesh::GraphicsMesh() :
+Mesh::Mesh() :
 	mPosVbo(0),
 	mTexVbo(0),
 	mIndexVbo(0),
 	mIndexByteSize(0),
+	mPosByteSize(0),
+	mNorByteSize(0),
+	mTexByteSize(0),
 	mMeshType(MESH_DIY),
 	mposLocation(0),
 	mtexLocation(0),
@@ -61,13 +67,13 @@ GraphicsMesh::GraphicsMesh() :
 
 }
 
-GraphicsMesh::~GraphicsMesh()
+Mesh::~Mesh()
 {
 	// TODO Auto-generated destructor stub
 	unLoadMesh();
 }
 
-void GraphicsMesh::loadMesh()
+void Mesh::loadMesh()
 {
 	if (mMeshType == MESH_Rectangle)
 	{
@@ -109,7 +115,7 @@ void GraphicsMesh::loadMesh()
 	}
 }
 
-bool GraphicsMesh::loadMesh(GLfloat* pos,int posByteSize,GLushort* index,int indexByteSize,
+bool Mesh::loadMesh(GLfloat* pos,int posByteSize,GLushort* index,int indexByteSize,
 	GLfloat* tex,int texByteSize,GLfloat* nor,int norByteSize,int drawType)
 {
 	if(pos!=0)
@@ -138,7 +144,7 @@ bool GraphicsMesh::loadMesh(GLfloat* pos,int posByteSize,GLushort* index,int ind
 }
 
 //更新pos vbo
-bool GraphicsMesh::updataPos(float* pos, int byteOffset, int size)
+bool Mesh::updataPos(float* pos, int byteOffset, int size)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
 	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, pos);
@@ -146,7 +152,7 @@ bool GraphicsMesh::updataPos(float* pos, int byteOffset, int size)
 	return true;
 }
 //更新纹理坐标vbo
-bool GraphicsMesh::updataTexcoord(float* tex, int byteOffset, int size)
+bool Mesh::updataTexcoord(float* tex, int byteOffset, int size)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
 	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, tex);
@@ -154,7 +160,7 @@ bool GraphicsMesh::updataTexcoord(float* tex, int byteOffset, int size)
 	return true;
 }
 //更新索引vbo
-bool GraphicsMesh::updataIndex(float* pIndex, int byteOffset, int size)
+bool Mesh::updataIndex(float* pIndex, int byteOffset, int size)
 {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, byteOffset, size, pIndex);
@@ -162,7 +168,7 @@ bool GraphicsMesh::updataIndex(float* pIndex, int byteOffset, int size)
 	return true;
 }
 
-void GraphicsMesh::drawLineStrip(int posloc)
+void Mesh::drawLineStrip(int posloc)
 {
 	if (createVaoIfNeed(posloc)) {
 		glBindVertexArray(mVAO);
@@ -185,7 +191,7 @@ void GraphicsMesh::drawLineStrip(int posloc)
 	//glDrawElements(GL_LINE_LOOP, mNumOfIndex, GL_UNSIGNED_SHORT, (const void*)0);
 }
 
-void GraphicsMesh::drawTrangleFan(int posloc, int texloc)
+void Mesh::drawTrangleFan(int posloc, int texloc)
 {
 	//glFrontFace(GL_CW);
 	if (createVaoIfNeed(posloc)){
@@ -217,7 +223,7 @@ void GraphicsMesh::drawTrangleFan(int posloc, int texloc)
 }
 
 
-void GraphicsMesh::drawTriangles(int posloc,int texloc,int norloc)
+void Mesh::drawTriangles(int posloc,int texloc,int norloc)
 {
 	if (createVaoIfNeed(posloc)) {
 		glBindVertexArray(mVAO);
@@ -252,31 +258,30 @@ void GraphicsMesh::drawTriangles(int posloc,int texloc,int norloc)
 	
 	glBindVertexArray(mVAO);
 	glDrawElements(GL_TRIANGLES, mIndexByteSize/sizeof(GLushort), GL_UNSIGNED_SHORT, (const void*)0);
-	checkglerror();
 	glBindVertexArray(0);
 }
 
-void GraphicsMesh::getMaxNumVertexAttr()
+void Mesh::getMaxNumVertexAttr()
 {
 	GLint maxVertexAttribs; // es2.0 n will be >= 8,es3.0 >=16
 	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVertexAttribs);
 	LOGD("gl global Param: GL_MAX_VERTEX_ATTRIBS %d", maxVertexAttribs);
 }
 
-void GraphicsMesh::getLineWidthRange() {
+void Mesh::getLineWidthRange() {
 	GLfloat lineWidthRange[2];
 	glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, lineWidthRange);
 	LOGD("gl global Param: GL_ALIASED_LINE_WIDTH_RANGE %f,%f", lineWidthRange[0], lineWidthRange[1]);
 }
 
 //获取点精灵，半径大小，点精灵（GL_POINTS primitive）其实是个和屏幕对齐的小正方形。
-void GraphicsMesh::getPointSizeRange() {
+void Mesh::getPointSizeRange() {
 	GLfloat pointSizeRange[2];
 	glGetFloatv(GL_ALIASED_POINT_SIZE_RANGE, pointSizeRange);
 	LOGD("gl global Param: GL_ALIASED_POINT_SIZE_RANGE %f,%f", pointSizeRange[0], pointSizeRange[1]);
 }
 
-void GraphicsMesh::draw(int posloc, int texloc, int norloc)
+void Mesh::draw(int posloc, int texloc, int norloc)
 {
 	if (mMeshType == MESH_Rectangle || mMeshType == MESH_DIY)
 	{
@@ -293,30 +298,33 @@ void GraphicsMesh::draw(int posloc, int texloc, int norloc)
 }
 
 
-bool GraphicsMesh::setPosData(GLfloat* pos, int size, unsigned int drawType)
+bool Mesh::setPosData(GLfloat* pos, int size, unsigned int drawType)
 {
 	glGenBuffers(1, &mPosVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
 	glBufferData(GL_ARRAY_BUFFER, size, pos, drawType);
+	mPosByteSize = size;
 	return true;
 }
-bool GraphicsMesh::setTexcoordData(GLfloat* tex, int size, unsigned int drawType)
+bool Mesh::setTexcoordData(GLfloat* tex, int size, unsigned int drawType)
 {
 	glGenBuffers(1, &mTexVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
 	glBufferData(GL_ARRAY_BUFFER, size, tex, drawType);
+	mTexByteSize = size;
 	return true;
 }
 
-bool GraphicsMesh::setNormalData(GLfloat* nor, int size, unsigned int drawType)
+bool Mesh::setNormalData(GLfloat* nor, int size, unsigned int drawType)
 {
 	glGenBuffers(1, &mNorVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
 	glBufferData(GL_ARRAY_BUFFER, size, nor, drawType);
+	mNorByteSize = size;
 	return true;
 }
 
-bool GraphicsMesh::setIndexData(GLushort* index, int size, unsigned int drawType)
+bool Mesh::setIndexData(GLushort* index, int size, unsigned int drawType)
 {
 	glGenBuffers(1, &mIndexVbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
@@ -325,34 +333,44 @@ bool GraphicsMesh::setIndexData(GLushort* index, int size, unsigned int drawType
 	return true;
 }
 
-void GraphicsMesh::unLoadMesh()
+void Mesh::unLoadMesh()
 {
 	if (mPosVbo != 0)
 	{
 		glDeleteBuffers(1, &mPosVbo);
+		mPosVbo = 0;
+		mPosByteSize = 0;
 	}
 	if (mNorVbo != 0)
 	{
 		glDeleteBuffers(1, &mNorVbo);
+		mNorVbo = 0;
+		mNorByteSize = 0;
 	}
 	if (mTexVbo != 0)
 	{
 		glDeleteBuffers(1, &mTexVbo);
+		mTexVbo = 0;
+		mTexByteSize = 0;
 	}
 	if (mIndexVbo != 0)
 	{
 		glDeleteBuffers(1, &mIndexVbo);
+		mIndexVbo = 0;
+		mIndexByteSize = 0;
 	}
 	if (mVAO != 0) {
 		glDeleteVertexArrays(1, &mVAO);
+		mVAO = 0;
 	}
 }
 
-bool GraphicsMesh::createVaoIfNeed(int posloc, int texloc, int norloc) {
+bool Mesh::createVaoIfNeed(int posloc, int texloc, int norloc) {
 	if (mposLocation != posloc || mtexLocation != texloc || mnorLocation != norloc) {
 		if (mVAO != 0) {
 			//location有变化，先删除原来的vao
 			glDeleteVertexArrays(1, &mVAO);
+			mVAO = 0;
 		}
 
 		mposLocation = posloc;
@@ -366,6 +384,6 @@ bool GraphicsMesh::createVaoIfNeed(int posloc, int texloc, int norloc) {
 	return false;
 }
 
-void GraphicsMesh::setLineWidth(GLfloat width) {
+void Mesh::setLineWidth(GLfloat width) {
 	mLineWidth = width;
 }

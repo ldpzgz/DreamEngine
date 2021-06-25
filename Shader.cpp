@@ -1,27 +1,27 @@
 ﻿/*
- * GraphicsShader.cpp
+ * Shader.cpp
  *
  *  Created on: 2015-9-19
  *      Author: Administrator
  */
 //#include "StdAfx.h"
-#include "GraphicsShader.h"
+#include "Shader.h"
 #include "../Log.h"
 #include <string>
 #include <fstream>
 extern void checkglerror();
-GraphicsShader::GraphicsShader():mVs(0),mFs(0),mProgram(0) {
+Shader::Shader():mVs(0),mFs(0),mProgram(0) {
 	// TODO Auto-generated constructor stub
 
 }
 
-GraphicsShader::~GraphicsShader()
+Shader::~Shader()
 {
 	// TODO Auto-generated destructor stub
 	deleteShader();
 }
 
-bool GraphicsShader::initShaderFromFile(const char* vsFile,const char* psFile)
+bool Shader::initShaderFromFile(const char* vsFile,const char* psFile)
 {
 	bool ret = false;
 	std::ifstream vsStream(vsFile);
@@ -43,7 +43,7 @@ bool GraphicsShader::initShaderFromFile(const char* vsFile,const char* psFile)
 	return ret;
 }
 
-bool GraphicsShader::initShader(const char* vs,const char* ps) {
+bool Shader::initShader(const char* vs,const char* ps) {
 	GLint linked;
 	
 	mVs = loadShader(GL_VERTEX_SHADER, vs);
@@ -132,13 +132,21 @@ bool GraphicsShader::initShader(const char* vs,const char* ps) {
 	}
 	else
 	{
-		LOGD("GraphicsShader::initShader loadShader Failed!!\n");
+		LOGD("Shader::initShader loadShader Failed!!\n");
+		if (mVs != 0) {
+			glDeleteShader(mVs);
+			mVs = 0;
+		}
+		if (mFs != 0) {
+			glDeleteShader(mFs);
+			mFs = 0;
+		}
 		return false;
 	}
 	return true;
 }
 
-GLuint GraphicsShader::loadShader(GLenum type, const char *shaderSrc)
+GLuint Shader::loadShader(GLenum type, const char *shaderSrc)
 {
 	GLuint shader;
 	GLint compiled;
@@ -180,13 +188,13 @@ GLuint GraphicsShader::loadShader(GLenum type, const char *shaderSrc)
 }
 
 
-void GraphicsShader::useMe()
+void Shader::enable()
 {
 	glUseProgram ( mProgram );
 }
 
 //结果小于0表示错误
-int GraphicsShader::getAttributeLoc(const char* attrName)
+int Shader::getAttributeLoc(const char* attrName)
 {
 	if(attrName!=0)
 	{
@@ -199,7 +207,7 @@ int GraphicsShader::getAttributeLoc(const char* attrName)
 	return -1;
 }
 //结果小于0表示错误
-int GraphicsShader::getUniformLoc(const char* uniformName)
+int Shader::getUniformLoc(const char* uniformName)
 {
 	return glGetUniformLocation(mProgram, uniformName);
 	/*if(uniformName!=0)
@@ -213,36 +221,36 @@ int GraphicsShader::getUniformLoc(const char* uniformName)
 	return -1;
 }
 
-void GraphicsShader::setUniform1i(const char* uniformName,int value)
+void Shader::setUniform1i(const char* uniformName,int value)
 {
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform1i(loc,value);
 
 	checkglerror();
 }
-void GraphicsShader::setUniform1f(const char* uniformName,float x)
+void Shader::setUniform1f(const char* uniformName,float x)
 {
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform1f(loc,x);
 	checkglerror();
 }
-void GraphicsShader::setUniform2f(const char* uniformName,float x,float y)
+void Shader::setUniform2f(const char* uniformName,float x,float y)
 {
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform2f(loc,x,y);
 }
-void GraphicsShader::setUniform3f(const char* uniformName,float x,float y,float z)
+void Shader::setUniform3f(const char* uniformName,float x,float y,float z)
 {
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform3f(loc,x,y,z);
 }
-void GraphicsShader::setUniform4f(const char* uniformName,float x,float y,float z,float w)
+void Shader::setUniform4f(const char* uniformName,float x,float y,float z,float w)
 {
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform4f(loc,x,y,z,w);
 }
 
-void GraphicsShader::deleteShader()
+void Shader::deleteShader()
 {
 	if(mProgram>0)
 	{

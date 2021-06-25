@@ -114,3 +114,69 @@ gles3.0的坐标原点是屏幕的左下角，但是绘制点精灵的时候，�
    glPolygonOffset(GLfloat *factor*, GLfloat *units*)
 
    depth offset = *m \* factor* + r * units
+
+# 顶点Shader：
+
+顶点shader可以使用Samplers
+
+1. 顶点shader内置变量：
+
+   gl_VertexID，输入变量，顶点的索引，整数，高精度
+
+   gl_InstanceID，输入变量，
+
+   gl_Position，输出变量，以clip coordinates输出
+
+   gl_PointSize，输出变量，highp float以像素为单位，指定点精灵的size，clamped to the aliased point size range
+
+   gl_FrontFacing，bool类型，
+
+   gl_DepthRange，
+
+   ```
+   struct gl_DepthRangeParameters
+   
+   {
+   
+    highp float near; // near Z
+   
+    highp float far; // far Z
+   
+    highp float diff; // far – near
+   
+   }
+   
+   uniform gl_DepthRangeParameters gl_DepthRange;
+   ```
+
+2. 顶点shader内置常量：
+
+   gl_MaxVertexAttribs，最少16
+
+   gl_MaxVertexUniformVectors，最少256个vec4，shader里面uniform，与常量的总数
+
+   gl_MaxVertexOutputVectors，最少16
+
+   gl_MaxVertexTextureImageUnits ，最少16
+
+   gl_MaxCombinedTextureImageUnits，（vs+fs最大能用的纹理个数）最少32
+
+   ```c++
+   glGetIntegerv ( GL_MAX_VERTEX_ATTRIBS, &maxVertexAttribs );
+   
+   glGetIntegerv ( GL_MAX_VERTEX_UNIFORM_VECTORS,&maxVertexUniforms );
+   
+   glGetIntegerv ( GL_MAX_VARYING_VECTORS,&maxVaryings );
+   
+   glGetIntegerv ( GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS,&maxVertexTextureUnits );
+   
+   glGetIntegerv ( GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,&maxCombinedTextureUnits );
+   ```
+
+   程序里面出现的1.0，2.0，3等立即数，最好用const int a这种形式声明，然后int(a)来引用，应为有gl_MaxVertexUniformVectors这个限制。
+
+3. 输入、输出、精度指示符：in highp，out lowp，mediump
+
+   precision highp float;
+
+   precision mediump int; 这个用于指定默认的精度，如果没有precision，默认都是highp
