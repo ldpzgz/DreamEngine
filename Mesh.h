@@ -25,7 +25,10 @@ class Mesh
 public:
 	explicit Mesh(int meshType );
 	Mesh();
-	virtual ~Mesh();
+	Mesh(Mesh&&);
+	Mesh(const Mesh&) = delete; //防止拷贝
+	Mesh & operator = (const Mesh&) = delete; //防止赋值
+	~Mesh();
 
 	//MESH_Rectangle,MESH_Circle,调用这个函数初始化
 	void loadMesh();
@@ -50,24 +53,38 @@ public:
 	GLfloat getLineWidth() {
 		return mLineWidth;
 	}
+
+	void setId(unsigned int id) {
+		mId = id;
+	}
+	unsigned int getId() {
+		return mId;
+	}
 	static void getMaxNumVertexAttr();
 	static void getLineWidthRange();
 	static void getPointSizeRange();
 private:
 	//4个vbo对象
 	GLuint mPosVbo;//这个是vbo
-	GLuint mNorVbo;//这个是vbo
 	GLuint mTexVbo; //这个是vbo
+	GLuint mNorVbo;//这个是vbo
 	GLuint mIndexVbo; //这个别人叫ebo
 	GLuint mVAO;//这个是vao，顶点数组对象，opengles3.0才支撑，是一个集合。把设定顶点属性的过程打包到一起，简化绘制流程。
 	GLfloat mLineWidth;
-	int mposLocation;//顶点的位置属性在shader中的location
-	int mtexLocation;//顶点的纹理坐标属性在shader中的location
-	int mnorLocation;//顶点的法向量属性在shader中的location
 
-	int mIndexByteSize;
+	int mposLocation;//顶点的位置属性在shader中的location
+	int mnorLocation;//顶点的法向量属性在shader中的location
+	int mtexLocation;//顶点的纹理坐标属性在shader中的location
+	
+	unsigned int mPosByteSize;
+	unsigned int mTexByteSize;
+	unsigned int mNorByteSize;
+	unsigned int mIndexByteSize;
 	int mMeshType;
 	int mCounts;//for line_strip,triangle_fan,the count of points;
+	unsigned int mId;
+
+	void reset();
 
 	//这四个函数都是创建vbo，ebo，并冲内存上传数据到vbo的显存
 	bool setPosData(GLfloat* pos,int size,unsigned int drawType = GL_STATIC_DRAW);

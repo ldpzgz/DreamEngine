@@ -6,7 +6,7 @@
  */
 //#include "StdAfx.h"
 #include "Shader.h"
-#include "../Log.h"
+#include "Log.h"
 #include <string>
 #include <fstream>
 extern void checkglerror();

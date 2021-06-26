@@ -43,7 +43,9 @@ Mesh::Mesh(int meshType):
 	mtexLocation(0),
 	mnorLocation(0),
 	mVAO(0),
-	mLineWidth(1.0f)
+	mLineWidth(1.0f),
+	mCounts(0),
+	mId(0)
 {
 	// TODO Auto-generated constructor stub
 
@@ -52,6 +54,7 @@ Mesh::Mesh(int meshType):
 Mesh::Mesh() :
 	mPosVbo(0),
 	mTexVbo(0),
+	mNorVbo(0),
 	mIndexVbo(0),
 	mIndexByteSize(0),
 	mPosByteSize(0),
@@ -62,9 +65,49 @@ Mesh::Mesh() :
 	mtexLocation(0),
 	mnorLocation(0),
 	mVAO(0),
-	mLineWidth(1.0f)
+	mLineWidth(1.0f),
+	mCounts(0),
+	mId(0)
 {
 
+}
+
+void Mesh::reset() {
+	mPosVbo = 0;
+	mTexVbo = 0;
+	mNorVbo = 0;
+	mIndexVbo = 0;
+	mposLocation = 0;
+	mtexLocation = 0;
+	mnorLocation = 0;
+	mVAO = 0;
+	mLineWidth = 1.0f;
+	mPosByteSize = 0;
+	mNorByteSize = 0;
+	mTexByteSize = 0;
+	mIndexByteSize = 0;
+	mMeshType = MESH_DIY;
+	mCounts = 0;
+}
+
+Mesh::Mesh(Mesh&& temp):
+	mPosVbo(temp.mPosVbo),
+	mTexVbo(temp.mTexVbo),
+	mNorVbo(temp.mNorVbo),
+	mIndexVbo(temp.mIndexVbo),
+	mIndexByteSize(temp.mIndexByteSize),
+	mPosByteSize(temp.mPosByteSize),
+	mNorByteSize(temp.mNorByteSize),
+	mTexByteSize(temp.mTexByteSize),
+	mMeshType(temp.mMeshType),
+	mposLocation(temp.mposLocation),
+	mtexLocation(temp.mtexLocation),
+	mnorLocation(temp.mnorLocation),
+	mVAO(temp.mVAO),
+	mLineWidth(temp.mLineWidth),
+	mCounts(temp.mCounts)
+{
+	temp.reset();
 }
 
 Mesh::~Mesh()

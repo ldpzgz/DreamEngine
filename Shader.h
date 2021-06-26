@@ -45,7 +45,7 @@ public:
 	void setUniform2f(const char* uniformName,float x,float y);
 	void setUniform3f(const char* uniformName,float x,float y,float z);
 	void setUniform4f(const char* uniformName,float x,float y,float z,float w);
-	void useMe();
+	void enable();
 
 protected:
 	GLuint mVs;
