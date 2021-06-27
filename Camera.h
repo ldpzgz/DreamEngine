@@ -13,7 +13,7 @@ public:
 	void renderScene();
 private:
 	glm::mat4 mProj;
-	shared_ptr<Scene> mpScene;
+	weak_ptr<Scene> mpScene;
 };
 
 

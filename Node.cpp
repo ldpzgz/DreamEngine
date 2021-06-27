@@ -23,7 +23,7 @@ bool Node::hasParent() {
 	return !mpParent.expired();
 }
 
-void Node::setParent(shared_ptr<Node>& parent) {
+void Node::setParent(shared_ptr<Node> parent) {
 	mpParent = parent;
 }
 
@@ -38,7 +38,8 @@ bool Node::addChild(shared_ptr<Node>& child) {
 	}
 	unsigned int id = mCurChileId++;
 	child->setId(id);
-	child->setParent(shared_from_this());
+	auto thisptr = shared_from_this();
+	child->setParent(thisptr);
 	return mChildren.insert(make_pair(id, child)).second;
 }
 

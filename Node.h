@@ -7,7 +7,7 @@
 #include <glm/mat4x4.hpp>
 #include "Mesh.h"
 using namespace std;
-class Node : enable_shared_from_this<Node> {
+class Node : public enable_shared_from_this<Node> {
 public:
 	Node();
 	virtual ~Node();
@@ -19,6 +19,7 @@ public:
 	shared_ptr<Node> getParent() {
 		return mpParent.lock();
 	}
+
 	bool addChild(shared_ptr<Node>&);
 	bool removeChild(unsigned int childId);
 	bool addMesh(shared_ptr<Mesh>&);
@@ -32,6 +33,10 @@ public:
 	glm::mat4& getMatrix() {
 		return mMat;
 	}
+
+	shared_ptr<Node> getPtr() {
+		return shared_from_this();
+	}
 private:
 	unsigned int mId;
 	atomic_uint mCurChileId;
@@ -41,7 +46,7 @@ private:
 	unordered_map<unsigned int, shared_ptr<Node>> mChildren;
 	unordered_map<unsigned int, shared_ptr<Mesh>> mMeshes;
 
-	void setParent(shared_ptr<Node>&);
+	void setParent(shared_ptr<Node>);
 	void setId(unsigned int id) {
 		mId = id;
 	}

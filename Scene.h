@@ -5,7 +5,7 @@
 #include <vector>
 using namespace std;
 class Camera;
-class Scene : enable_shared_from_this<Scene> {
+class Scene : public enable_shared_from_this<Scene> {
 public:
 	Scene();
 	~Scene();

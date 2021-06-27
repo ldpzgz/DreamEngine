@@ -28,7 +28,7 @@ public:
 	Mesh(Mesh&&);
 	Mesh(const Mesh&) = delete; //防止拷贝
 	Mesh & operator = (const Mesh&) = delete; //防止赋值
-	~Mesh();
+	virtual ~Mesh();
 
 	//MESH_Rectangle,MESH_Circle,调用这个函数初始化
 	void loadMesh();

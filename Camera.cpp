@@ -17,7 +17,8 @@ void Camera::perspective(float fovy, float aspect, float n, float f) {
 }
 
 void Camera::renderScene() {
-	if (mpScene) {
+	auto scene = mpScene.lock();
+	if (scene) {
 
 	}
 }
