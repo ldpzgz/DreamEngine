@@ -10,7 +10,7 @@
 #include <GLES3/gl3.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-//#include "Drawable.h"
+#include "material.h"
 enum
 {
 	MESH_Rectangle,
@@ -47,6 +47,8 @@ public:
 
 	void draw(int posloc = -1, int texloc = -1, int norloc = -1);
 
+	void render();
+
 	void unLoadMesh();
 
 	void setLineWidth(GLfloat);
@@ -59,6 +61,9 @@ public:
 	}
 	unsigned int getId() {
 		return mId;
+	}
+	void setMaterial(std::shared_ptr<Material>& p) {
+		mpMaterial = p;
 	}
 	static void getMaxNumVertexAttr();
 	static void getLineWidthRange();
@@ -83,7 +88,7 @@ private:
 	int mMeshType;
 	int mCounts;//for line_strip,triangle_fan,the count of points;
 	unsigned int mId;
-
+	std::shared_ptr<Material> mpMaterial;
 	void reset();
 
 	//这四个函数都是创建vbo，ebo，并冲内存上传数据到vbo的显存

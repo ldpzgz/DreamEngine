@@ -11,14 +11,13 @@ const set<string> gTexObjValueKey = { "tex0","tex1", "tex2" };
 std::unordered_map<std::string, std::shared_ptr<Material>> Material::gMaterials;
 std::unordered_map<std::string, std::shared_ptr<Texture>> Material::gTextures;
 std::unordered_map<std::string, std::shared_ptr<Shader>> Material::gShaders;
-std::unordered_map<std::string, std::string> Material::mContents;
 
 Material::Material()
 {
 
 }
 Material::~Material() {
-
+	mContents.clear();
 }
 
 string getFileName(const string& path,const string& suffix) {
@@ -45,7 +44,19 @@ string Material::getItemName(const string& key) {
 	return temp;
 }
 
+void Material::enable() {
+	if (mShader) {
+		mShader->enable();
+	}
+}
+void Material::getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc) {
+	if (mShader) {
+		mShader->getLocation(posLoc, texcoordLoc, colorLoc, normalLoc);
+	}
+}
+
 bool Material::parseMaterialFile(const string& path) {
+	bool bParseSuccess = false;
 	ifstream matFile(path);
 	string material((std::istreambuf_iterator<char>(matFile)), std::istreambuf_iterator<char>());
 	string filename = getFileName(path, ".material");
@@ -71,20 +82,28 @@ bool Material::parseMaterialFile(const string& path) {
 
 	for (const auto& kv : mContents) {
 		const auto& key = kv.first;
-		if (key.find("program") != string::npos) {
-			auto programName = getItemName(key);
-			if (!programName.empty()) {
-				parseProgram(programName, kv.second);
-			}
-		}
-		else if (key.find("texture") != string::npos) {
+		if (key.find("texture") != string::npos) {
 			auto textureName = getItemName(key);
 			if (!textureName.empty()) {
-				parseTexture(textureName, kv.second);
+				bParseSuccess = parseTexture(textureName, kv.second);
+			}
+		}
+		else if (key.find("program") != string::npos) {
+			auto programName = getItemName(key);
+			if (!programName.empty()) {
+				bParseSuccess = parseProgram(programName, kv.second);
 			}
 		}
 	}
-	return true;
+	if (bParseSuccess) {
+		if (gMaterials.try_emplace(filename, shared_from_this()).second) {
+			LOGD("success to parse material %s",filename.c_str());
+		}
+		else {
+			LOGD("failed to parse material %s", filename.c_str());
+		}
+	}
+	return bParseSuccess;
 }
 
 /*
@@ -179,8 +198,8 @@ bool Material::parseItem(const string& value, Umapss& umap) {
 			auto tempValue = value.substr(pos[1]+1, pos[2]-pos[1]-1);
 			auto valueStartPos = tempValue.find_first_not_of(" \r\n\t", 0);
 			if (valueStartPos != string::npos) {
-				auto valueEndPos = tempValue.find_last_not_of(" \r\n\t", valueStartPos);
-				auto realValue = tempValue.substr(valueStartPos, valueEndPos);
+				auto valueEndPos = tempValue.find_last_not_of(" \r\n\t");//becarful ,see http://www.cplusplus.com/reference/string/string/find_last_not_of/
+				auto realValue = tempValue.substr(valueStartPos, valueEndPos-valueStartPos+1);
 				umap.try_emplace(std::move(realKey), std::move(realValue));
 			}
 			else {
@@ -347,16 +366,28 @@ bool Material::parseProgram(const string& programName,const string& program) {
 	bool bsuccess = false;
 	do {
 		if (ptrVs != mContents.cend() && ptrFs != mContents.cend()) {
-			auto sd = std::make_shared<Shader>();
-			if (sd->initShader(ptrVs->second, ptrFs->second)) {
+			mShader = std::make_shared<Shader>();
+			if (mShader->initShader(ptrVs->second, ptrFs->second)) {
 				LOGD("initShader %s success", programName.c_str());
-				auto insertRes = gShaders.try_emplace(programName, sd);
+				auto insertRes = gShaders.try_emplace(programName, mShader);
 				if (insertRes.second) {
 					bsuccess = true;
-					sd->setLocation(posLoc, texcoordLoc, colorLoc, normalLoc);
+					mShader->setLocation(posLoc, texcoordLoc, colorLoc, normalLoc);
 					if (!umapSampler.empty()) {
-						std::for_each(umapSampler.begin(), umap.end(), [&sd](const Umapss::const_reference item) {
-							sd->setTextureForSampler(item.first, item.second);
+						std::for_each(umapSampler.begin(), umap.end(), [this](const Umapss::const_reference item) {
+							const auto pTex = gTextures.find(item.second);
+							if (pTex != gTextures.cend()) {
+								int loc = mShader->getUniformLoc(item.first.c_str());
+								if (loc != -1) {
+									mShader->setTextureForSampler(loc, pTex->second);
+								}
+								else {
+									LOGE("can't to find sampler2d %s in program %s", item.first);
+								}
+							}
+							else {
+								LOGE("can't to find texture %s",item.second.c_str());
+							}
 						});
 					}
 				}
@@ -366,11 +397,12 @@ bool Material::parseProgram(const string& programName,const string& program) {
 			}
 			else {
 				LOGE("initShader %s failed", programName.c_str());
+				mShader.reset();
 			}
 			break;
 		}
 		else {
-			LOGE("can't find program's vsshader or fs shader %s", programName.c_str());
+			LOGE("can't find program's vs shader or fs shader %s", programName.c_str());
 		}
 	} while (false);
 	

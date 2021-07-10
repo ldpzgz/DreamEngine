@@ -14,6 +14,8 @@ public:
 	~Material();
 
 	bool parseMaterialFile(const string&);
+	void enable();
+	void getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc);
 
 	static Texture* getTexture(const std::string&);
 	static Material* getMaterial(const std::string&);
@@ -29,10 +31,12 @@ private:
 	using Umapss = std::unordered_map<std::string, std::string>;
 	bool parseItem(const string& value, Umapss& umap);
 
+	std::unordered_map<std::string, std::string> mContents;
+	std::shared_ptr<Shader> mShader;
+
 	static std::unordered_map<std::string, std::shared_ptr<Material>> gMaterials;
 	static std::unordered_map<std::string, std::shared_ptr<Texture>> gTextures;
 	static std::unordered_map<std::string, std::shared_ptr<Shader>> gShaders;
-	static std::unordered_map<std::string, std::string> mContents;
 };
 
 #endif

@@ -135,7 +135,7 @@ void Texture::active(GLint textPoint)
 {
 	glActiveTexture(textPoint);
 	glBindTexture(GL_TEXTURE_2D, mTextureId);
-	checkglerror();
+	//checkglerror();
 }
 
 void Texture::update(int xoffset,int yoffset,int width,int height,void* data,

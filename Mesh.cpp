@@ -340,6 +340,21 @@ void Mesh::draw(int posloc, int texloc, int norloc)
 	}
 }
 
+void Mesh::render() {
+	if (mpMaterial) {
+		mpMaterial->enable();
+		int posloc = -1;
+		int texloc = -1;
+		int norloc = -1;
+		int colorloc = -1;
+		mpMaterial->getVertexAtributeLoc(posloc, texloc, colorloc, norloc);
+		draw(posloc, texloc, norloc);
+	}
+	else {
+		LOGE("mesh has no material,can't render");
+	}
+}
+
 
 bool Mesh::setPosData(GLfloat* pos, int size, unsigned int drawType)
 {

@@ -203,6 +203,11 @@ GLuint Shader::loadShader(GLenum type, const char *shaderSrc)
 void Shader::enable()
 {
 	glUseProgram ( mProgram );
+	int texNum = 0;
+	for (auto it = mSamplerToTex.begin(); it != mSamplerToTex.end(); it++) {
+		it->second->active(GL_TEXTURE0 + texNum);
+		glUniform1i(it->first, texNum);
+	}
 }
 
 //结果小于0表示错误
@@ -229,7 +234,7 @@ void Shader::setUniform1i(const char* uniformName,int value)
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform1i(loc,value);
 
-	checkglerror();
+	//checkglerror();
 }
 void Shader::setUniform1f(const char* uniformName,float x)
 {

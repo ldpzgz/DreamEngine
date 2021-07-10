@@ -15,6 +15,7 @@
 #include <string>
 #include "Texture.h"
 #include <unordered_map>
+#include <memory>
 #include "Log.h"
 
 /*
@@ -44,6 +45,13 @@ public:
 		mTexcoordLoc = tex;
 		mColorLoc = color;
 		mNormalLoc = nor;
+	}
+
+	void getLocation(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc) {
+		posLoc = mPosLoc;
+		texcoordLoc = mTexcoordLoc;
+		colorLoc = mColorLoc;
+		normalLoc = mNormalLoc;
 	}
 
 	int getPosLoc() {
@@ -76,9 +84,9 @@ public:
 	//结果小于0表示错误
 	int getUniformLoc(const char* uniformName);
 
-	void setTextureForSampler(const std::string& samplerName, const std::string& textureName) {
-		if (!mSamplerToTex.try_emplace(std::move(samplerName), std::move(textureName)).second) {
-			LOGD("setTextureForSampler emplace %s failed",samplerName.c_str());
+	void setTextureForSampler(int samplerLoc, std::shared_ptr<Texture>& pTexture) {
+		if (!mSamplerToTex.try_emplace(samplerLoc, pTexture).second) {
+			LOGD("setTextureForSampler emplace failed");
 		}
 	}
 
@@ -102,7 +110,7 @@ protected:
 private:
 	std::map<std::string,int> mAttributeLocMap;
 	std::map<std::string,int> mUniformLocMap;
-	std::unordered_map<std::string, std::string> mSamplerToTex;//Sampler in shader to Texture;
+	std::unordered_map<int, std::shared_ptr<Texture>> mSamplerToTex;//Sampler in shader to Texture;
 protected:
 	//GL_VERTEX_SHADER,GL_FRAGMENT_SHADER
 	GLuint loadShader ( GLenum type, const char *shaderSrc );

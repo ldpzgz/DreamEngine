@@ -17,7 +17,7 @@ fs:1{
 }
 
 texture:test0{
-	path=./opengles3/images/.jpg
+	path=./opengles3/images/buti.jpg
 }
 
 texture:test1{
