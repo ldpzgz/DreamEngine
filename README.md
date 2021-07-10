@@ -61,45 +61,45 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void * indice
 
 # 点精灵GL_POINTS
 
-点精灵（GL_POINTS primitive）其实是个和屏幕对齐的小正方形
+​	点精灵（GL_POINTS primitive）其实是个和屏幕对齐的小正方形
 
-绘制点精灵的时候，gl_PointSize是顶点shader里面一个内置的变量，顶点shader里面也要 output gl_PointSize，不然会有绘制错误。
+​	绘制点精灵的时候，gl_PointSize是顶点shader里面一个内置的变量，顶点shader里面也要 output gl_PointSize，不然会有绘制错误。
 
-gles3.0的坐标原点是屏幕的左下角，但是绘制点精灵的时候，坐标原点是左上角。
+​	gles3.0的坐标原点是屏幕的左下角，但是绘制点精灵的时候，坐标原点是左上角。
 
 
 
-在绘制点精灵的时候，vec2 gl_PointCoord是片段shader的内置变量，范围为【0，1】
+​	在绘制点精灵的时候，vec2 gl_PointCoord是片段shader的内置变量，范围为【0，1】
 
 # 顶点shader到片段shader之间的操作：
 
 <img src="\doc\顶点shader到片段shader渲染流程.png"/>
 
-#### clip操作：
+#### 	clip操作：
 
-​	把各种图元，与视锥的上下左右前后六个面做裁剪，剪掉不在视锥里面的部分。
+​		把各种图元，与视锥的上下左右前后六个面做裁剪，剪掉不在视锥里面的部分。
 
-#### 透视除操作：
+#### 	透视除操作：
 
-​	就是x/=w, y/=w, z/=w，这样x,y,z的范围都在[-1，1]之间了，就是normalized坐标了
+​		就是x/=w, y/=w, z/=w，这样x,y,z的范围都在[-1，1]之间了，就是normalized坐标了
 
-#### 窗口坐标：
+#### 	窗口坐标：
 
-1. normalized后的xy被转换为真实的屏幕坐标，normalized后的z值根据glDepthRangef指定的值来转换为相应的窗口坐标。最后这个Z值是不是就是深度缓存里面的值？归一化坐标转换为窗口坐标，与这个函数有关：**glViewport**(GLint *x,* GLint *y,* GLsizei *w,* GLsizei *h*)，
+​		1. normalized后的xy被转换为真实的屏幕坐标，normalized后的z值根据glDepthRangef指定的值来转换为相应的窗口坐标。最后这个Z值是不是就是深度缓存里面的值？归一化坐标转换为窗口坐标，与这个函数有关：**glViewport**(GLint *x,* GLint *y,* GLsizei *w,* GLsizei *h*)，
 
 ![](\doc\窗口坐标变换.png)
 
-2. 公式里面 Ox = *x* + *w*/2 and Oy = *y* + *h*/2。n，f的值由void **glDepthRangef**(GLclampf *n,* GLclampf *f*)，这个函数来指定的。
+​		2. 公式里面 Ox = *x* + *w*/2 and Oy = *y* + *h*/2。n，f的值由void **glDepthRangef**(GLclampf *n,* GLclampf *f*)，这个函数来指定的。
 
-#### 正反面剔除：
+#### 	正反面剔除：
 
-​	void **glFrontFace**(GLenum *dir*)；GL_CW or GL_CCW，default value is GL_CCW（逆时针）
+​		void **glFrontFace**(GLenum *dir*)；GL_CW or GL_CCW，default value is GL_CCW（逆时针）
 
-​	void **glCullFace**(GLenum *mode*)
+​		void **glCullFace**(GLenum *mode*)
 
-​	void **glEnable**(GLenum *cap*)
+​		void **glEnable**(GLenum *cap*)
 
-​	void **glDisable**(GLenum *cap*)   GL_CULL_FACE
+​		void **glDisable**(GLenum *cap*)   GL_CULL_FACE
 
 #### 最后一步Rasterization：
 
@@ -180,3 +180,40 @@ gles3.0的坐标原点是屏幕的左下角，但是绘制点精灵的时候，�
    precision highp float;
 
    precision mediump int; 这个用于指定默认的精度，如果没有precision，默认都是highp
+
+# 纹理
+
+| `void **glTexImage2D**(` | GLenum target,        |
+| ------------------------ | --------------------- |
+|                          | GLint level,          |
+|                          | GLint internalFormat, |
+|                          | GLsizei width,        |
+|                          | GLsizei height,       |
+|                          | GLint border,         |
+|                          | GLenum format,        |
+|                          | GLenum type,          |
+|                          | const void * data`)`; |
+
+| **Unsized Internal Format** | **Format**           | **Type**                                                     | **RGBA and Luminance Values** | **Internal Components** |
+| --------------------------- | -------------------- | ------------------------------------------------------------ | ----------------------------- | ----------------------- |
+| `GL_RGB`                    | `GL_RGB`             | `GL_UNSIGNED_BYTE`, `GL_UNSIGNED_SHORT_5_6_5`                | Red, Green, Blue              | R, G, B                 |
+| `GL_RGBA`                   | `GL_RGBA`            | `GL_UNSIGNED_BYTE`, `GL_UNSIGNED_SHORT_4_4_4_4`, `GL_UNSIGNED_SHORT_5_5_5_1` | Red, Green, Blue, Alpha       | R, G, B, A              |
+| `GL_LUMINANCE_ALPHA`        | `GL_LUMINANCE_ALPHA` | `GL_UNSIGNED_BYTE`                                           | Luminance, Alpha              | L, A                    |
+| `GL_LUMINANCE`              | `GL_LUMINANCE`       | `GL_UNSIGNED_BYTE`                                           | Luminance                     | L                       |
+| `GL_ALPHA`                  | `GL_ALPHA`           | `GL_UNSIGNED_BYTE`                                           | Alpha                         | A                       |
+
+纹理是如何被绘制出来的：
+
+​	//绘制物体之前	
+
+​	// Bind the texture
+   glActiveTexture ( GL_TEXTURE0 );
+   glBindTexture ( GL_TEXTURE_2D, userData->textureId );
+
+   // Set the sampler texture unit to 0
+   glUniform1i ( userData->samplerLoc, 0 );
+
+
+
+​	// Get the sampler location
+   userData->samplerLoc = glGetUniformLocation ( userData->programObject, "s_texture" );//uniform sampler2D s_texture;

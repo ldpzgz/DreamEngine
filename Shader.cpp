@@ -10,7 +10,15 @@
 #include <string>
 #include <fstream>
 extern void checkglerror();
-Shader::Shader():mVs(0),mFs(0),mProgram(0) {
+Shader::Shader():
+	mVs(0),
+	mFs(0),
+	mProgram(0),
+	mPosLoc(-1),
+	mTexcoordLoc(-1),
+	mColorLoc(-1),
+	mNormalLoc(-1)
+{
 	// TODO Auto-generated constructor stub
 
 }
@@ -41,6 +49,10 @@ bool Shader::initShaderFromFile(const char* vsFile,const char* psFile)
 	}
 	
 	return ret;
+}
+
+bool Shader::initShader(const std::string& vs, const std::string& ps) {
+	return initShader(vs.c_str(), ps.c_str());
 }
 
 bool Shader::initShader(const char* vs,const char* ps) {
@@ -210,15 +222,6 @@ int Shader::getAttributeLoc(const char* attrName)
 int Shader::getUniformLoc(const char* uniformName)
 {
 	return glGetUniformLocation(mProgram, uniformName);
-	/*if(uniformName!=0)
-	{
-		std::map<std::string,int>::iterator it = mUniformLocMap.find(uniformName);
-		if(it!=mUniformLocMap.end())
-		{
-			return it->second;
-		}
-	}*/
-	return -1;
 }
 
 void Shader::setUniform1i(const char* uniformName,int value)

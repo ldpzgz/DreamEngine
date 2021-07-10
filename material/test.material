@@ -1,0 +1,49 @@
+vs:1{
+	#version 300 es
+	layout(location = 0) in vec4 vPosition;  
+	void main(){                       
+		gl_Position = vPosition;
+	}
+}
+
+fs:1{
+	#version 300 es
+    precision mediump float;
+    out vec4 fragColor;
+    void main()
+    {                                          
+       fragColor = vec4 ( 1.0, 0.0, 0.0, 1.0 );
+    }
+}
+
+texture:test0{
+	path=./opengles3/images/.jpg
+}
+
+texture:test1{
+	width=640
+	height=480
+	depth=3
+}
+
+texture:test2{
+	width=640
+	height=480
+	depth=3
+}
+
+program:basic{
+	vs=1
+	fs=1
+	posLoc=0
+	texcoordLoc=-1
+	normalLoc=-1
+	colorLoc=-1
+	sampler2D{
+		s_texture=test0 
+		s_texture1=test1
+	}
+}
+
+
+
