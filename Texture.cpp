@@ -91,10 +91,6 @@ bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum
 		GL_CLAMP_TO_EDGE);
 	// Loads image data into OpenGL.
 	int internalformat = mFormat;//only 1,2,3,4
-	/*if (internalformat == GL_BGR)
-	{
-		internalformat = GL_RGB;
-	}*/
 	//这个函数后面三个参数指定了纹理数据在内存中的组织方式。
 	//internalformat是指opengl在显存中创建的这张纹理，是什么格式的，这个格式必须与内存中的format匹配，
 	// 与mForamt，type是一对参数

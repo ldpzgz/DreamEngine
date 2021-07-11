@@ -210,7 +210,9 @@ bool Material::parseItem(const string& value, Umapss& umap) {
 			if (valueStartPos != string::npos) {
 				auto valueEndPos = tempValue.find_last_not_of("\x20\r\n\t");//becarful ,see http://www.cplusplus.com/reference/string/string/find_last_not_of/
 				auto realValue = tempValue.substr(valueStartPos, valueEndPos-valueStartPos+1);
-				umap.try_emplace(std::move(realKey), std::move(realValue));
+				if (!umap.try_emplace(std::move(realKey), std::move(realValue)).second) {
+					LOGE("failed to insert material key %s into unordermap", realKey.c_str());
+				}
 			}
 			else {
 				return false;
@@ -379,8 +381,8 @@ bool Material::parseProgram(const string& programName,const string& program) {
 			mShader = std::make_shared<Shader>();
 			if (mShader->initShader(ptrVs->second, ptrFs->second)) {
 				LOGD("initShader %s success", programName.c_str());
-				auto insertRes = gShaders.try_emplace(programName, mShader);
-				if (insertRes.second) {
+				
+				if (gShaders.try_emplace(programName, mShader).second) {
 					bsuccess = true;
 					mShader->setLocation(posLoc, texcoordLoc, colorLoc, normalLoc);
 					if (!umapSampler.empty()) {
