@@ -68,10 +68,15 @@ bool Material::parseMaterialFile(const string& path) {
 	std::string::size_type keyValuePos[3];
 	while (findkeyValue(material, "{","}",startPos, keyValuePos)) {
 		//analsys£¬store key-value to mContents;
-		auto temppos = material.find_first_of(" \r\n\t{", keyValuePos[0]);
+		auto temppos = material.find_first_of("\x20\r\n\t{", keyValuePos[0]);
 		if (temppos != string::npos) {
 			string key = material.substr(keyValuePos[0], temppos - keyValuePos[0]);
 			string value = material.substr(keyValuePos[1] + 1, keyValuePos[2] - keyValuePos[1] - 1);
+			
+			auto tempPos = value.find_first_not_of("\x20\r\n\t");
+			if (tempPos != string::npos && tempPos>0) {
+				value = value.substr(tempPos);
+			}
 			if (!mContents.try_emplace(key, value).second) {
 				LOGE("%s:%s:%s error to emplace key %s", __FILE__,__func__, __LINE__,key);
 			}
@@ -120,7 +125,7 @@ bool Material::findkeyValue(const string& str, const string& mid,const string& e
 	int countOfEnd = 0;
 	std::string::size_type nextPos = startPos;
 	pos[0] = pos[1] = pos[2] = -1;
-	pos[0] = str.find_first_not_of(mid+end+" \r\n\t", nextPos);
+	pos[0] = str.find_first_not_of(mid+end+"\x20\r\n\t", nextPos);
 	if (pos[0] == string::npos) {
 		return false;
 	}
@@ -145,6 +150,11 @@ bool Material::findkeyValue(const string& str, const string& mid,const string& e
 			nextPos = tempPos+1;
 		}
 		else {
+			if (pos[1] > 0 && pos[1] < str.size() - 1)
+			{
+				++countOfEnd;
+				pos[2] = str.size();
+			}
 			break;
 		}
 
@@ -155,7 +165,7 @@ bool Material::findkeyValue(const string& str, const string& mid,const string& e
 	}
 	else {
 		if (countOfStart > 0 || countOfEnd > 0) {
-			//LOGE("error to parse material file");
+			LOGE("findkeyValue error to parse material file");
 		}
 		return false;
 	}
@@ -191,14 +201,14 @@ bool Material::parseItem(const string& value, Umapss& umap) {
 	std::string::size_type pos[3]{ 0,0,0 };
 	std::string::size_type startPos = 0;
 	do {
-		if (findkeyValue(value, "=", "\r\n", startPos, pos) || findkeyValue(value, "{", "}", startPos, pos)) {
+		if (findkeyValue(value, "=", "\x20\r\n\t", startPos, pos) || findkeyValue(value, "{", "}", startPos, pos)) {
 			auto temp = value.substr(pos[0], pos[1] - pos[0]);
-			auto keyendpos = value.find_first_of(' ', 0);
-			auto realKey = temp.substr(0, keyendpos);
+			auto keyendpos = temp.find_last_not_of('\x20');
+			auto realKey = temp.substr(0, keyendpos+1);
 			auto tempValue = value.substr(pos[1]+1, pos[2]-pos[1]-1);
-			auto valueStartPos = tempValue.find_first_not_of(" \r\n\t", 0);
+			auto valueStartPos = tempValue.find_first_not_of("\x20\r\n\t", 0);
 			if (valueStartPos != string::npos) {
-				auto valueEndPos = tempValue.find_last_not_of(" \r\n\t");//becarful ,see http://www.cplusplus.com/reference/string/string/find_last_not_of/
+				auto valueEndPos = tempValue.find_last_not_of("\x20\r\n\t");//becarful ,see http://www.cplusplus.com/reference/string/string/find_last_not_of/
 				auto realValue = tempValue.substr(valueStartPos, valueEndPos-valueStartPos+1);
 				umap.try_emplace(std::move(realKey), std::move(realValue));
 			}
@@ -374,7 +384,7 @@ bool Material::parseProgram(const string& programName,const string& program) {
 					bsuccess = true;
 					mShader->setLocation(posLoc, texcoordLoc, colorLoc, normalLoc);
 					if (!umapSampler.empty()) {
-						std::for_each(umapSampler.begin(), umap.end(), [this](const Umapss::const_reference item) {
+						std::for_each(umapSampler.cbegin(), umapSampler.cend(), [this,&programName](const Umapss::const_reference item) {
 							const auto pTex = gTextures.find(item.second);
 							if (pTex != gTextures.cend()) {
 								int loc = mShader->getUniformLoc(item.first.c_str());
@@ -382,7 +392,7 @@ bool Material::parseProgram(const string& programName,const string& program) {
 									mShader->setTextureForSampler(loc, pTex->second);
 								}
 								else {
-									LOGE("can't to find sampler2d %s in program %s", item.first);
+									LOGE("can't to find sampler2d %s in program %s", item.first.c_str(), programName.c_str());
 								}
 							}
 							else {
