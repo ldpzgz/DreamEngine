@@ -11,6 +11,10 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include "material.h"
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#include <glm/glm.hpp> // vec3, vec4, ivec4, mat4
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/type_ptr.hpp> // value_ptr
 enum
 {
 	MESH_Rectangle,
@@ -47,7 +51,7 @@ public:
 
 	void draw(int posloc = -1, int texloc = -1, int norloc = -1);
 
-	void render();
+	void render(const glm::mat4& projviewMat);
 
 	void unLoadMesh();
 

@@ -44,6 +44,12 @@ string Material::getItemName(const string& key) {
 	return temp;
 }
 
+void Material::updateMvpMatrix(const float* pdata) {
+	if (mShader && pdata!=nullptr) {
+		mShader->setMvpMatrix(pdata);
+	}
+}
+
 void Material::enable() {
 	if (mShader) {
 		mShader->enable();
@@ -290,6 +296,7 @@ bool Material::parseProgram(const string& programName,const string& program) {
 	int texcoordLoc = -1;
 	int normalLoc = -1;
 	int colorLoc = -1;
+	std::string mvpMatrixName;
 	Umapss umapSampler;
 			
 	if (parseItem(program, umap)) {
@@ -351,6 +358,11 @@ bool Material::parseProgram(const string& programName,const string& program) {
 
 		}
 
+		const auto pMvp = umap.find("mvpMatrix");
+		if (pMvp != umap.cend()) {
+			mvpMatrixName = pMvp->second;
+		}
+
 		const auto pSampler = umap.find("sampler2D");
 		
 		if (pSampler != umap.cend()) {
@@ -378,15 +390,18 @@ bool Material::parseProgram(const string& programName,const string& program) {
 	bool bsuccess = false;
 	do {
 		if (ptrVs != mContents.cend() && ptrFs != mContents.cend()) {
-			mShader = std::make_shared<Shader>();
+			mShader = std::make_shared<Shader>(programName);
 			if (mShader->initShader(ptrVs->second, ptrFs->second)) {
 				LOGD("initShader %s success", programName.c_str());
 				
 				if (gShaders.try_emplace(programName, mShader).second) {
 					bsuccess = true;
 					mShader->setLocation(posLoc, texcoordLoc, colorLoc, normalLoc);
+					if (!mvpMatrixName.empty()) {
+						mShader->getMvpMatrixLoc(mvpMatrixName);
+					}
 					if (!umapSampler.empty()) {
-						std::for_each(umapSampler.cbegin(), umapSampler.cend(), [this,&programName](const Umapss::const_reference item) {
+						std::for_each(umapSampler.cbegin(), umapSampler.cend(), [this,&programName](const Umapss::value_type& item) {
 							const auto pTex = gTextures.find(item.second);
 							if (pTex != gTextures.cend()) {
 								int loc = mShader->getUniformLoc(item.first.c_str());

@@ -9,6 +9,10 @@
 using namespace std;
 class Node : public enable_shared_from_this<Node> {
 public:
+	using WeakNode = weak_ptr<Node>;
+	using MapINode = unordered_map<unsigned int, shared_ptr<Node>>;
+	using MapIMesh = unordered_map<unsigned int, shared_ptr<Mesh>>;
+
 	Node();
 	virtual ~Node();
 	/*Node(Node&);
@@ -16,8 +20,10 @@ public:
 	Node(Node&& temp);一定要修改temp，否则移动构造函数没有意义*/
 	shared_ptr<Node> newAChild();
 	bool hasParent();
-	shared_ptr<Node> getParent() {
-		return mpParent.lock();
+
+	
+	WeakNode& getParent() {
+		return mpParent;
 	}
 
 	bool addChild(shared_ptr<Node>&);
@@ -34,19 +40,30 @@ public:
 		return mMat;
 	}
 
-	shared_ptr<Node> getPtr() {
-		return shared_from_this();
+	void getWorldMatrix(glm::mat4&);
+
+	MapIMesh& getMeshes() {
+		return mMeshes;
 	}
+
+	MapINode& getChildren() {
+		return mChildren;
+	}
+
+	virtual void translate(float x,float y,float z);
+
+	virtual void lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up);
+protected:
+	glm::mat4 mMat;
 private:
 	unsigned int mId;
 	atomic_uint mCurChileId;
 	atomic_uint mCurMeshId;
-	glm::mat4 mMat;
 	weak_ptr<Node> mpParent;	//使用weak_ptr防止父子node循环引用导致内存泄漏
 	unordered_map<unsigned int, shared_ptr<Node>> mChildren;
 	unordered_map<unsigned int, shared_ptr<Mesh>> mMeshes;
 
-	void setParent(shared_ptr<Node>);
+	void setParent(shared_ptr<Node>&);
 	void setId(unsigned int id) {
 		mId = id;
 	}

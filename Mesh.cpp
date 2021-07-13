@@ -120,10 +120,10 @@ void Mesh::loadMesh()
 {
 	if (mMeshType == MESH_Rectangle)
 	{
-		GLfloat pos[] = { -1.0f,1.0f,0.0f,
-			-1.0f,-1.0f,0.0f,
-			1.0f,-1.0f,0.0f,
-			1.0f,1.0f,0.0f };
+		GLfloat pos[] = { -10.0f,10.0f,-10.0f,
+			-10.0f,-10.0f,-10.0f,
+			10.0f,-10.0f,-10.0f,
+			10.0f,10.0f,-10.0f };
 		GLushort indexes[] = { 0,1,2,0,2,3 };
 		GLfloat tex[] = { 0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,1.0f,1.0f };
 		loadMesh(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
@@ -340,8 +340,10 @@ void Mesh::draw(int posloc, int texloc, int norloc)
 	}
 }
 
-void Mesh::render() {
+void Mesh::render(const glm::mat4& mvpMat) {
 	if (mpMaterial) {
+		//update mvpMatrix;
+		mpMaterial->updateMvpMatrix(glm::value_ptr(mvpMat));
 		mpMaterial->enable();
 		int posloc = -1;
 		int texloc = -1;

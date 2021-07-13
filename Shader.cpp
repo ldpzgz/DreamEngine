@@ -10,14 +10,16 @@
 #include <string>
 #include <fstream>
 extern void checkglerror();
-Shader::Shader():
+Shader::Shader(const std::string& name) :
 	mVs(0),
 	mFs(0),
 	mProgram(0),
 	mPosLoc(-1),
 	mTexcoordLoc(-1),
 	mColorLoc(-1),
-	mNormalLoc(-1)
+	mNormalLoc(-1),
+	mMvpMatrixLoc(-1),
+	mName(name)
 {
 	// TODO Auto-generated constructor stub
 
@@ -208,6 +210,10 @@ void Shader::enable()
 		it->second->active(GL_TEXTURE0 + texNum);
 		glUniform1i(it->first, texNum);
 	}
+
+	if (mMvpMatrixLoc >= 0 && mMvpMatrix) {
+		glUniformMatrix4fv(mMvpMatrixLoc, 1, GL_FALSE, mMvpMatrix->data());
+	}
 }
 
 //结果小于0表示错误
@@ -256,6 +262,29 @@ void Shader::setUniform4f(const char* uniformName,float x,float y,float z,float 
 {
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform4f(loc,x,y,z,w);
+}
+
+void Shader::setMvpMatrix(const float* pMatrix) {
+	if (mMvpMatrixLoc >= 0 && pMatrix != nullptr) {
+		if (!mMvpMatrix) {
+			mMvpMatrix = std::make_unique<std::array<float,16>>();
+			int i = 0;
+			std::for_each(mMvpMatrix->begin(), mMvpMatrix->end(), [pMatrix,&i](float& p) {
+				p = pMatrix[i];
+				++i;
+			});
+		}
+	}
+	else {
+		LOGD("the mMvpMatrixLoc of shader %s has not been got",mName.c_str());
+	}
+}
+
+void Shader::getMvpMatrixLoc(const std::string& mvpMatrixNameInShader) {
+	mMvpMatrixLoc = glGetUniformLocation(mProgram, mvpMatrixNameInShader.c_str());
+	if (mMvpMatrixLoc < 0) {
+		LOGD("the shader %s  has no %s uniform member", mName.c_str(), mvpMatrixNameInShader.c_str());
+	}
 }
 
 void Shader::deleteShader()

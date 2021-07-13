@@ -16,7 +16,10 @@
 #include "Texture.h"
 #include <unordered_map>
 #include <memory>
+#include <string>
+#include <array>
 #include "Log.h"
+
 
 /*
  这个类的用法是：
@@ -31,7 +34,7 @@
  */
 class Shader {
 public:
-	Shader();
+	explicit Shader(const std::string& name);
 	virtual ~Shader();
 
 	bool initShader(const std::string& vs, const std::string& ps);
@@ -95,10 +98,12 @@ public:
 	void setUniform2f(const char* uniformName,float x,float y);
 	void setUniform3f(const char* uniformName,float x,float y,float z);
 	void setUniform4f(const char* uniformName,float x,float y,float z,float w);
+	void setMvpMatrix(const float*);
 
 	void enable();
 
-protected:
+	void getMvpMatrixLoc(const std::string& mvpMatrixNameInShader);
+private:
 	GLuint mVs;
 	GLuint mFs;
 	GLuint mProgram;
@@ -106,8 +111,10 @@ protected:
 	int mTexcoordLoc;
 	int mColorLoc;
 	int mNormalLoc;
+	int mMvpMatrixLoc;
+	std::string mName;
+	std::unique_ptr<std::array<float,16>> mMvpMatrix;
 	//int mSamplerCount;
-private:
 	std::map<std::string,int> mAttributeLocMap;
 	std::map<std::string,int> mUniformLocMap;
 	std::unordered_map<int, std::shared_ptr<Texture>> mSamplerToTex;//Sampler in shader to Texture;

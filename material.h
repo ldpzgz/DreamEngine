@@ -15,6 +15,7 @@ public:
 
 	bool parseMaterialFile(const string&);
 	void enable();
+	void updateMvpMatrix(const float* pdata);
 	void getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc);
 
 	static Texture* getTexture(const std::string&);

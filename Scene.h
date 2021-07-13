@@ -9,7 +9,9 @@ class Scene : public enable_shared_from_this<Scene> {
 public:
 	Scene();
 	~Scene();
-	shared_ptr<Node>& getRoot();
+	shared_ptr<Node>& getRoot() noexcept{
+		return mpRootNode;
+	}
 
 	shared_ptr<Camera> createACamera();
 private:
