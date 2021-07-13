@@ -4,6 +4,7 @@ Node::Node():
 	mCurChileId(0),
 	mCurMeshId(0),
 	mMat(1.0f),
+	mParentWorldMat(1.0f),
 	mId(0)
 {
 
@@ -58,26 +59,32 @@ bool Node::addMesh(shared_ptr<Mesh>& temp) {
 	return mMeshes.try_emplace(mCurMeshId++,temp).second;
 }
 
-void Node::setMatrix(glm::mat4& matrix) {
-	mMat = matrix;
-}
-
-void Node::getWorldMatrix(glm::mat4& worldMat) {
-	glm::mat4 parentWorldMat(1.0f);
-	auto parent = mpParent.lock();
-	if (parent) {
-		parent->getWorldMatrix(parentWorldMat);
-		worldMat = parentWorldMat * mMat;
-	}
-	else {
-		worldMat = mMat;
+void Node::updateChildWorldMatrix() const noexcept {
+	if (!mChildren.empty()) {
+		auto myWorldMat = mParentWorldMat* mMat;
+		std::for_each(mChildren.begin(), mChildren.end(), [&myWorldMat](const MapINode::value_type child) {
+			child.second->setParentWorldMatrix(myWorldMat);
+			child.second->updateChildWorldMatrix();
+		});
 	}
 }
 
 void Node::translate(float x, float y, float z) {
 	mMat = glm::translate(mMat, glm::vec3(x, y, z));
+	updateChildWorldMatrix();
 }
 
 void Node::lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up) {
 	mMat = glm::lookAt(eyepos, center, up);
+	updateChildWorldMatrix();
+}
+
+void Node::rotate(float angle, const glm::vec3& vec) {
+	mMat = glm::rotate(mMat, angle, vec);
+	updateChildWorldMatrix();
+}
+
+void Node::scale(const glm::vec3& scaleVec) {
+	mMat = glm::scale(mMat, scaleVec);
+	updateChildWorldMatrix();
 }

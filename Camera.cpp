@@ -50,8 +50,7 @@ void Camera::renderNode(const shared_ptr<Node>& node) const
 {
 	if (node) {
 		const auto& pMeshes = node->getMeshes();
-		glm::mat4 worldMatrix(1.0f);
-		node->getWorldMatrix(worldMatrix);
+		glm::mat4 worldMatrix = node->getWorldMatrix();
 		
 		for_each(pMeshes.cbegin(), pMeshes.cend(), [this,&worldMatrix](const MapIMesh::value_type& pMesh) {
 			if (pMesh.second) {

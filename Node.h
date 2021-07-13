@@ -34,13 +34,18 @@ public:
 		return mId;
 	}
 
-	void setMatrix(glm::mat4& matrix);
+	void setMatrix(const glm::mat4& matrix) noexcept{
+		mMat = matrix;
+		updateChildWorldMatrix();
+	}
 
 	glm::mat4& getMatrix() {
 		return mMat;
 	}
 
-	void getWorldMatrix(glm::mat4&);
+	glm::mat4 getWorldMatrix() {
+		return mParentWorldMat*mMat;
+	}
 
 	MapIMesh& getMeshes() {
 		return mMeshes;
@@ -51,10 +56,13 @@ public:
 	}
 
 	virtual void translate(float x,float y,float z);
-
+	virtual void rotate(float angle,const glm::vec3& vec);
+	virtual void scale(const glm::vec3& scaleVec);
 	virtual void lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up);
+
 protected:
 	glm::mat4 mMat;
+	glm::mat4 mParentWorldMat;
 private:
 	unsigned int mId;
 	atomic_uint mCurChileId;
@@ -67,5 +75,10 @@ private:
 	void setId(unsigned int id) {
 		mId = id;
 	}
+
+	void setParentWorldMatrix(const glm::mat4& matrix) noexcept {
+		mParentWorldMat = matrix;
+	}
+	void updateChildWorldMatrix() const noexcept;
 };
 #endif
