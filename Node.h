@@ -55,6 +55,8 @@ public:
 		return mChildren;
 	}
 
+
+
 	virtual void translate(float x,float y,float z);
 	virtual void rotate(float angle,const glm::vec3& vec);
 	virtual void scale(const glm::vec3& scaleVec);

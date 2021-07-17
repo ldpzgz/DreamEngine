@@ -267,7 +267,8 @@ void Shader::setUniform4f(const char* uniformName,float x,float y,float z,float 
 void Shader::setMvpMatrix(const float* pMatrix) {
 	if (mMvpMatrixLoc >= 0 && pMatrix != nullptr) {
 		if (!mMvpMatrix) {
-			mMvpMatrix = std::make_unique<std::array<float,16>>();
+			mMvpMatrix = std::make_unique<std::array<float, 16>>();
+		}else{
 			int i = 0;
 			std::for_each(mMvpMatrix->begin(), mMvpMatrix->end(), [pMatrix,&i](float& p) {
 				p = pMatrix[i];

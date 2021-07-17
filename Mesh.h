@@ -15,9 +15,12 @@
 #include <glm/glm.hpp> // vec3, vec4, ivec4, mat4
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp> // value_ptr
-enum
+enum class MeshType
 {
+	MESH_Triangle,
 	MESH_Rectangle,
+	MESH_Cuboid,
+	MESH_Triangular_Pyramid,
 	MESH_Circle,
 	MESH_Lines,
 	MESH_Line_strip,
@@ -27,7 +30,7 @@ enum
 class Mesh
 {
 public:
-	explicit Mesh(int meshType );
+	explicit Mesh(MeshType meshType );
 	Mesh();
 	Mesh(Mesh&&);
 	Mesh(const Mesh&) = delete; //防止拷贝
@@ -89,7 +92,7 @@ private:
 	unsigned int mTexByteSize;
 	unsigned int mNorByteSize;
 	unsigned int mIndexByteSize;
-	int mMeshType;
+	MeshType mMeshType;
 	int mCounts;//for line_strip,triangle_fan,the count of points;
 	unsigned int mId;
 	std::shared_ptr<Material> mpMaterial;

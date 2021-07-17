@@ -1,31 +1,31 @@
 ﻿/*
- * GraphicsFbo.cpp
+ * Fbo.cpp
  *
  *  Created on: 2015-9-29
  *      Author: ldp
  */
 
 //#include "StdAfx.h"
-#include "GraphicsFbo.h"
+#include "Fbo.h"
 #include "Log.h"
 
 
-GraphicsFbo::GraphicsFbo():mFboId(0),
+Fbo::Fbo():
+	mFboId(0),
 	mWidth(0),
 	mHeight(0),
 	mbIsAttach(false)
 {
 	// TODO Auto-generated constructor stub
-	mClearColor[0] = mClearColor[1] = mClearColor[2] = mClearColor[3] = 0.0f;
 }
 
-GraphicsFbo::~GraphicsFbo()
+Fbo::~Fbo()
 {
 	// TODO Auto-generated destructor stub
 	deleteFbo();
 }
 
-void GraphicsFbo::enable()
+void Fbo::enable()
 {
 	if(mFboId==0)
 	{
@@ -33,12 +33,12 @@ void GraphicsFbo::enable()
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER,mFboId);
 }
-bool GraphicsFbo::attachColorTexture(GraphicsTexture* texture,GLint level)
+bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture,GLint level)
 {
 	bool ret = false;
-	if (texture == 0)
+	if (!texture)
 	{
-		LOGD("GraphicsFbo::attachColorTexture texture == 0");
+		LOGD("Fbo::attachColorTexture texture == nullptr");
 		return false;
 	}
 
@@ -99,11 +99,11 @@ bool GraphicsFbo::attachColorTexture(GraphicsTexture* texture,GLint level)
 	disable();
 	return ret;
 }
-bool GraphicsFbo::attachDepthTexture(GraphicsTexture* texture,GLint level)
+bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level)
 {
-	if (texture == 0)
+	if (!texture)
 	{
-		LOGD("GraphicsFbo::attachDepthTexture texture == 0");
+		LOGD("Fbo::attachDepthTexture texture == 0");
 		return false;
 	}
 	glFramebufferTexture2D(
@@ -140,12 +140,12 @@ bool GraphicsFbo::attachDepthTexture(GraphicsTexture* texture,GLint level)
 	}
 	return false;
 }
-void GraphicsFbo::disable()
+void Fbo::disable()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void GraphicsFbo::deleteFbo()
+void Fbo::deleteFbo()
 {
 	if(mFboId!=0)
 	{
@@ -154,19 +154,19 @@ void GraphicsFbo::deleteFbo()
 	}
 }
 
-void GraphicsFbo::startRender()
+void Fbo::startRender()
 {
 	enable();
 	glViewport(0, 0, mWidth, mHeight);
 	glClearColor(mClearColor[0], mClearColor[1], mClearColor[2], mClearColor[3]);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
-void GraphicsFbo::endRender()
+void Fbo::endRender()
 {
 	disable();
 }
 
-void GraphicsFbo::setClearColor(float r, float g, float b, float a)
+void Fbo::setClearColor(float r, float g, float b, float a)
 {
 	mClearColor[0] = r;
 	mClearColor[1] = g;

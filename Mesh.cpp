@@ -29,7 +29,7 @@ void checkglerror()
 	}
 
 }
-Mesh::Mesh(int meshType):
+Mesh::Mesh(MeshType meshType):
 	mPosVbo(0),
 	mTexVbo(0),
 	mNorVbo(0),
@@ -60,7 +60,7 @@ Mesh::Mesh() :
 	mPosByteSize(0),
 	mNorByteSize(0),
 	mTexByteSize(0),
-	mMeshType(MESH_DIY),
+	mMeshType(MeshType::MESH_DIY),
 	mposLocation(0),
 	mtexLocation(0),
 	mnorLocation(0),
@@ -86,7 +86,7 @@ void Mesh::reset() {
 	mNorByteSize = 0;
 	mTexByteSize = 0;
 	mIndexByteSize = 0;
-	mMeshType = MESH_DIY;
+	mMeshType = MeshType::MESH_DIY;
 	mCounts = 0;
 }
 
@@ -118,17 +118,78 @@ Mesh::~Mesh()
 
 void Mesh::loadMesh()
 {
-	if (mMeshType == MESH_Rectangle)
+	if (mMeshType == MeshType::MESH_Rectangle)
 	{
-		GLfloat pos[] = { -10.0f,10.0f,-10.0f,
-			-10.0f,-10.0f,-10.0f,
-			10.0f,-10.0f,-10.0f,
-			10.0f,10.0f,-10.0f };
+		GLfloat pos[] = { -1.0f,1.0f,0.0f,
+			-1.0f,-1.0f,0.0f,
+			1.0f,-1.0f,0.0f,
+			1.0f,1.0f,0.0f };
 		GLushort indexes[] = { 0,1,2,0,2,3 };
 		GLfloat tex[] = { 0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,1.0f,1.0f };
 		loadMesh(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
 	}
-	else if (mMeshType == MESH_Circle)
+	else if (mMeshType == MeshType::MESH_Triangle) {
+		GLfloat pos[] = { 0.0f,1.0f,0.0f,
+			-1.0f,-1.0f,0.0f,
+			1.0f,-1.0f,0.0f};
+		GLushort indexes[] = { 0,1,2 };
+		GLfloat tex[] = { 0.5f,1.0f,0.0f,0.0f,1.0f,0.0f };
+		loadMesh(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
+	}
+	else if (mMeshType == MeshType::MESH_Cuboid) {
+		GLfloat pos[] = { 
+			-1.0f,-1.0f,1.0f,
+			1.0f,-1.0f,1.0f,
+			1.0f,1.0f,1.0f,
+			-1.0f,1.0f,1.0f,
+
+			-1.0f,1.0f,1.0f,
+			1.0f,1.0f,1.0f,
+			1.0f,1.0f,-1.0f,
+			-1.0f,1.0f,-1.0f,
+
+			-1.0f,1.0f,1.0f,
+			-1.0f,1.0f,-1.0f,
+			-1.0f,-1.0f,-1.0f,
+			-1.0f,-1.0f,1.0f,
+
+			1.0f,-1.0f,1.0f,
+			1.0f,-1.0f,-1.0f,
+			1.0f,1.0f,-1.0f,
+			1.0f,1.0f,1.0f,
+
+			-1.0f,-1.0f,-1.0f,
+			1.0f,-1.0f,-1.0f,
+			1.0f,-1.0f,1.0f,
+			-1.0f,-1.0f,1.0f,
+
+			1.0f,-1.0f,-1.0f,
+			-1.0f,-1.0f,-1.0f,
+			-1.0f,1.0f,-1.0f,
+			1.0f,1.0f,-1.0f
+		};
+		GLushort indexes[] = { 
+			0,1,2,0,2,3,
+			4,5,6,4,6,7, 
+			8,9,10,8,10,11,
+			12,13,14,12,14,15,
+			16,17,18,16,18,19,
+			20,21,22,20,22,23
+		};
+		GLfloat tex[] = { 
+			0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,0.0f,1.0f,
+			0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,0.0f,1.0f,
+			0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,0.0f,1.0f,
+			0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,0.0f,1.0f,
+			0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,0.0f,1.0f,
+			0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,0.0f,1.0f
+		};
+		loadMesh(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
+	}
+	else if (mMeshType == MeshType::MESH_Triangular_Pyramid) {
+
+	}
+	else if (mMeshType == MeshType::MESH_Circle)
 	{
 		mCounts = 1026;
 		GLfloat* pos = new GLfloat[mCounts *3];
@@ -217,7 +278,7 @@ void Mesh::drawLineStrip(int posloc)
 		glBindVertexArray(mVAO);
 		if (mposLocation >= 0) {
 			glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
+			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
 			glEnableVertexAttribArray(posloc);
 			glVertexAttribPointer(posloc, 3, GL_FLOAT, GL_FALSE, 0, 0);
 		}
@@ -326,15 +387,17 @@ void Mesh::getPointSizeRange() {
 
 void Mesh::draw(int posloc, int texloc, int norloc)
 {
-	if (mMeshType == MESH_Rectangle || mMeshType == MESH_DIY)
+	if (mMeshType == MeshType::MESH_Rectangle 
+		|| mMeshType == MeshType::MESH_DIY
+		|| mMeshType == MeshType::MESH_Cuboid)
 	{
 		drawTriangles(posloc, texloc, norloc);
 	}
-	else if (mMeshType == MESH_Circle)
+	else if (mMeshType == MeshType::MESH_Circle)
 	{
 		drawTrangleFan(posloc, texloc);
 	}
-	else if (mMeshType == MESH_Line_strip)
+	else if (mMeshType == MeshType::MESH_Line_strip)
 	{
 		drawLineStrip(posloc);
 	}
