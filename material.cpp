@@ -2,7 +2,7 @@
 #include <fstream>
 #include <set>
 #include "Log.h"
-#include "TextureUtils.h"
+#include "Utils.h"
 
 const set<string> gStringValueKey = {"vs","fs","program" };
 const set<string> gIntValueKey = { "sampler0","sampler1","sampler2","posLoc","texcoordLoc","norLoc","colorLoc" };

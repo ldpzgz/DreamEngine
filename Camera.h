@@ -11,6 +11,8 @@ public:
 	//参数分别是张开角，宽高比，近平面，远平面
 	void perspective(float fovy, float aspect, float n, float f);
 
+	void ortho(float left, float right, float bottom, float top, float zNear, float zFar);
+
 	void renderScene();
 
 	void renderNode(const shared_ptr<Node>& node) const;

@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include "Shader.h"
 #include "Texture.h"
-#include "TextureUtils.h"
 using namespace std;
 class Material : public enable_shared_from_this<Material> {
 public:

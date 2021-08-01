@@ -11,7 +11,6 @@
 
 
 Fbo::Fbo():
-	mFboId(0),
 	mWidth(0),
 	mHeight(0),
 	mbIsAttach(false)
@@ -31,9 +30,10 @@ void Fbo::enable()
 	{
 		glGenFramebuffers(1,&mFboId);
 	}
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &mPreFrameBuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER,mFboId);
 }
-bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture,GLint level)
+bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attachment_n, GLint level)
 {
 	bool ret = false;
 	if (!texture)
@@ -48,7 +48,7 @@ bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture,GLint level
 	{
 		glFramebufferTexture2D(
 			GL_FRAMEBUFFER,
-			GL_COLOR_ATTACHMENT0,
+			GL_COLOR_ATTACHMENT0 + attachment_n,
 			GL_TEXTURE_2D,
 			0,
 			level);
@@ -59,7 +59,7 @@ bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture,GLint level
 	mHeight = texture->getHeight();
 	glFramebufferTexture2D(
 			GL_FRAMEBUFFER,
-			GL_COLOR_ATTACHMENT0,
+			GL_COLOR_ATTACHMENT0 + attachment_n,
 			GL_TEXTURE_2D,
 			texture->getId(),
 			level);

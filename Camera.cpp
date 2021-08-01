@@ -38,6 +38,11 @@ void Camera::perspective(float fovy, float asp, float n, float f) {
 	mProjViewMatrix = mProjMatrix*mMat;
 }
 
+void Camera::ortho(float left, float right, float bottom, float top, float zNear, float zFar) {
+	mProjMatrix = glm::ortho(left,right,bottom,top,zNear,zFar);
+	mProjViewMatrix = mProjMatrix*mMat;
+}
+
 void Camera::renderScene() {
 	auto scene = mpScene.lock();
 	if (scene) {

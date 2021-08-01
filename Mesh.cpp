@@ -29,6 +29,7 @@ void checkglerror()
 	}
 
 }
+
 Mesh::Mesh(MeshType meshType):
 	mPosVbo(0),
 	mTexVbo(0),
@@ -116,6 +117,55 @@ Mesh::~Mesh()
 	unLoadMesh();
 }
 
+//void Mesh::loadUBS(const std::vector<float>& points) {
+//	if (mMeshType == MeshType::MESH_Uniform_B_Curves) {
+//		int index = 1;
+//		auto size = points.size();
+//		auto endIndex = size / 3;
+//		std::vector<float> pos;
+//
+//		glm::mat4x4 Mh(
+//			1.0f, -3.0f, 3.0f, -1.0f,
+//			4.0f, 0.0f, -6.0f, 3.0f,
+//			1.0f, 3.0f, 3.0f, -3.0f,
+//			0.0f, 0.0f, 0.0f, 1.0f
+//		);
+//		Mh *= (1.0f/6.0f);
+//		
+//
+//		while (index <= endIndex - 3) {
+//
+//			glm::mat3x4 G(
+//				points[3 * (index - 1)], points[3 * index], points[3 * (index + 1)], points[3 * (index + 2)],
+//				points[3 * (index - 1) + 1], points[3 * index + 1], points[3 * (index + 1) + 1], points[3 * (index + 2) + 1],
+//				points[3 * (index - 1) + 2], points[3 * index + 2], points[3 * (index + 1) + 2], points[3 * (index + 2) + 2]
+//			);
+//
+//			for (int i = 0; i < 50; ++i) {
+//				glm::vec4 t;
+//				t.x = 1.0f;
+//				t.y = i*0.02f;
+//				t.z = t.y*t.y;
+//				t.w = t.z*t.y;
+//
+//				auto v = t*Mh*G;
+//				pos.emplace_back(v.x);
+//				pos.emplace_back(v.y);
+//				pos.emplace_back(v.z);
+//			}
+//			++index;
+//		}
+//		//for (auto xyz : points) {
+//		//	pos.emplace_back(xyz);
+//		//}
+//		bool b = createBufferObject(pos.data(), sizeof(float)*pos.size(), nullptr, 0);
+//		if (!b)
+//		{
+//			LOGD("error to loadCRSplines\n");
+//		}
+//	}
+//}
+
 void Mesh::loadMesh()
 {
 	if (mMeshType == MeshType::MESH_Rectangle)
@@ -124,17 +174,17 @@ void Mesh::loadMesh()
 			-1.0f,-1.0f,0.0f,
 			1.0f,-1.0f,0.0f,
 			1.0f,1.0f,0.0f };
-		GLushort indexes[] = { 0,1,2,0,2,3 };
+		GLuint indexes[] = { 0,1,2,0,2,3 };
 		GLfloat tex[] = { 0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,1.0f,1.0f };
-		loadMesh(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
+		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
 	}
 	else if (mMeshType == MeshType::MESH_Triangle) {
 		GLfloat pos[] = { 0.0f,1.0f,0.0f,
 			-1.0f,-1.0f,0.0f,
 			1.0f,-1.0f,0.0f};
-		GLushort indexes[] = { 0,1,2 };
+		GLuint indexes[] = { 0,1,2 };
 		GLfloat tex[] = { 0.5f,1.0f,0.0f,0.0f,1.0f,0.0f };
-		loadMesh(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
+		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
 	}
 	else if (mMeshType == MeshType::MESH_Cuboid) {
 		GLfloat pos[] = { 
@@ -168,7 +218,7 @@ void Mesh::loadMesh()
 			-1.0f,1.0f,-1.0f,
 			1.0f,1.0f,-1.0f
 		};
-		GLushort indexes[] = { 
+		GLuint indexes[] = {
 			0,1,2,0,2,3,
 			4,5,6,4,6,7, 
 			8,9,10,8,10,11,
@@ -184,7 +234,7 @@ void Mesh::loadMesh()
 			0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,0.0f,1.0f,
 			0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,0.0f,1.0f
 		};
-		loadMesh(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
+		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
 	}
 	else if (mMeshType == MeshType::MESH_Triangular_Pyramid) {
 
@@ -208,7 +258,7 @@ void Mesh::loadMesh()
 				tex[i * 2] = pos[i * 3] * 0.5f + 0.5f;
 				tex[i * 2+1] = pos[i * 3 + 1] * 0.5f + 0.5f;
 			}
-			bool b = loadMesh(pos, mCounts * 3*sizeof(GLfloat), 0, 0, tex, mCounts * 2*sizeof(GLfloat),0,0);
+			bool b = createBufferObject(pos, mCounts * 3*sizeof(GLfloat), 0, 0, tex, mCounts * 2*sizeof(GLfloat),0,0);
 			if (!b)
 			{
 				LOGD("error to load circle mesh data\n");
@@ -219,7 +269,7 @@ void Mesh::loadMesh()
 	}
 }
 
-bool Mesh::loadMesh(GLfloat* pos,int posByteSize,GLushort* index,int indexByteSize,
+bool Mesh::createBufferObject(GLfloat* pos,int posByteSize, GLuint* index,int indexByteSize,
 	GLfloat* tex,int texByteSize,GLfloat* nor,int norByteSize,int drawType)
 {
 	if(pos!=0)
@@ -292,7 +342,7 @@ void Mesh::drawLineStrip(int posloc)
 	glLineWidth(mLineWidth);
 	glDrawArrays(GL_LINE_STRIP, 0, mCounts);
 	glBindVertexArray(0);
-	//glDrawElements(GL_LINE_LOOP, mNumOfIndex, GL_UNSIGNED_SHORT, (const void*)0);
+	//glDrawElements(GL_LINE_LOOP, mNumOfIndex, GL_UNSIGNED_INT, (const void*)0);
 }
 
 void Mesh::drawTrangleFan(int posloc, int texloc)
@@ -361,7 +411,7 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc)
 	}
 	
 	glBindVertexArray(mVAO);
-	glDrawElements(GL_TRIANGLES, mIndexByteSize/sizeof(GLushort), GL_UNSIGNED_SHORT, (const void*)0);
+	glDrawElements(GL_TRIANGLES, mIndexByteSize/sizeof(GLuint), GL_UNSIGNED_INT, (const void*)0);
 	glBindVertexArray(0);
 }
 
@@ -423,6 +473,9 @@ void Mesh::render(const glm::mat4& mvpMat) {
 
 bool Mesh::setPosData(GLfloat* pos, int size, unsigned int drawType)
 {
+	if (mPosVbo > 0) {
+		glDeleteBuffers(1, &mPosVbo);
+	}
 	glGenBuffers(1, &mPosVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
 	glBufferData(GL_ARRAY_BUFFER, size, pos, drawType);
@@ -447,7 +500,7 @@ bool Mesh::setNormalData(GLfloat* nor, int size, unsigned int drawType)
 	return true;
 }
 
-bool Mesh::setIndexData(GLushort* index, int size, unsigned int drawType)
+bool Mesh::setIndexData(GLuint* index, int size, unsigned int drawType)
 {
 	glGenBuffers(1, &mIndexVbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);

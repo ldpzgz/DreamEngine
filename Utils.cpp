@@ -1,4 +1,4 @@
-#include "TextureUtils.h"
+#include "Utils.h"
 #include "Texture.h"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/imgproc/types_c.h"
@@ -35,4 +35,16 @@ std::shared_ptr<Texture> loadImageFromFile(const std::string& path) {
 		retTex->load(width, height, pdata, internalFormat);
 	}
 	return retTex;
+}
+
+std::string nowTime()
+{
+	std::stringstream ss;
+	auto now = chrono::system_clock::now();
+	auto nowTime = chrono::system_clock::to_time_t(now);
+	ss <<std::put_time(std::localtime(&nowTime), "%Y-%m-%d %X");
+	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch());
+	auto milliSeconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
+	ss << "." << std::setfill('0') << std::setw(3) << (milliSeconds- seconds).count();
+	return ss.str();
 }

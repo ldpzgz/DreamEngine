@@ -1,0 +1,29 @@
+vs:lv{
+	#version 300 es
+    layout(location = 0) in vec4 a_position;
+	uniform mat4 mvp_matrix;
+    void main()
+    {
+       gl_Position = mvp_matrix * a_position;
+    }
+}
+
+fs:1v{
+	#version 300 es
+	precision mediump float;
+	layout(location = 0) out vec4 outColor;
+	void main()
+	{
+	  outColor = vec4( 1.0f,0.0f,1.0f,1.0f );
+	}
+}
+
+program:line{
+	vs=lv
+	fs=1v
+	posLoc=0
+	mvpMatrix=mvp_matrix
+}
+
+
+
