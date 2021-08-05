@@ -156,10 +156,11 @@ Pbo::~Pbo() {
 		mWritThread->join();
 	}
 }
-TimeCounter<std::chrono::microseconds> tempTimeCounter;
+
+//TimeCounter<std::chrono::microseconds> tempTimeCounter;
 void Pbo::pullColorBufferToMemory(int x,int y,int width,int height) {
 	//auto curTime = time_point_cast<milliseconds>(steady_clock::now());
-	if ( mTimeCounter.elpase(1000.0f / mFrameRate).first) {
+	if ( mTimeCounter.elapse(1000.0f / mFrameRate).first) {
 		std::cout << "Pbo::pullColorBufferToMemory " << nowTime()<<std::endl;
 		if (mWriteIndex < 0) {
 			mWriteIndex = 0;
@@ -168,9 +169,9 @@ void Pbo::pullColorBufferToMemory(int x,int y,int width,int height) {
 		glReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE,nullptr);
 		if (mReadIndex >= 0) {
 			glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo[mReadIndex]); //指定pbo
-			tempTimeCounter.reset();
+			//tempTimeCounter.reset();
 			void*   data = glMapBufferRange(GL_PIXEL_PACK_BUFFER,0, mWidth*mHeight*mBytesPerPixel,GL_MAP_READ_BIT); //做一个map映射把PBO的数据和内存的data指针进行关联
-			std::cout << "glMapBufferRange cost time " << tempTimeCounter.elapseFromeReset() << " micro" << std::endl;
+			//std::cout << "glMapBufferRange cost time " << tempTimeCounter.elapseFromeReset() << " micro" << std::endl;
 			if (data) {
 				//save(WIDTH, HEIGHT, (char*)data, WIDTH * HEIGHT * 4);
 				auto pPic = std::make_shared<cv::Mat>();
@@ -212,9 +213,10 @@ void Pbo::pullColorBufferToMemory(int x,int y,int width,int height) {
 			mWriteIndex = 1;
 		}
 
+		/*
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 		tempTimeCounter.reset();
 		glReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, (void*)mpData->data());
-		std::cout << "glReadPixels cost time " << tempTimeCounter.elapseFromeReset() << " micro" << std::endl;
+		std::cout << "glReadPixels cost time " << tempTimeCounter.elapseFromeReset() << " micro" << std::endl;*/
 	}
 }

@@ -84,3 +84,8 @@ void Camera::translate(float x, float y, float z) {
 	Node::translate(x, y, z);
 	mProjViewMatrix = mProjMatrix * mMat;
 }
+
+void Camera::rotate(float angle, const glm::vec3& vec) {
+	Node::rotate(angle, vec);
+	mProjViewMatrix = mProjMatrix * mMat;
+}

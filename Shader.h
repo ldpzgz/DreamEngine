@@ -103,6 +103,10 @@ public:
 	void enable();
 
 	void getMvpMatrixLoc(const std::string& mvpMatrixNameInShader);
+
+	std::unordered_map<int, std::shared_ptr<Texture>>& getTexture() {
+		return mSamplerToTex;
+	}
 private:
 	GLuint mVs;
 	GLuint mFs;

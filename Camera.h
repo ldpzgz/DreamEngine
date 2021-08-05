@@ -21,6 +21,8 @@ public:
 
 	void translate(float x, float y, float z) override;
 
+	void rotate(float angle, const glm::vec3& vec) override;
+
 	void lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up) override;
 private:
 	float aspect;//фад╩©М╦ъ╠х

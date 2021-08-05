@@ -71,7 +71,7 @@ int32_t Texture::getWidth() {
 //	return STATUS_OK;
 //}
 
-bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum type,bool autoMipmap)
+bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum type, int aligment,bool autoMipmap)
 {
 	mFormat = format;
 	mWidth = width;
@@ -90,7 +90,13 @@ bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
 		GL_CLAMP_TO_EDGE);
 	// Loads image data into OpenGL.
+	
 	int internalformat = mFormat;//only 1,2,3,4
+
+	//int align = 0;
+	//glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);//默认是4，the alignment requirements for the start of each pixel row in memory
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, aligment);
 	//这个函数后面三个参数指定了纹理数据在内存中的组织方式。
 	//internalformat是指opengl在显存中创建的这张纹理，是什么格式的，这个格式必须与内存中的format匹配，
 	// 与mForamt，type是一对参数
@@ -135,11 +141,12 @@ void Texture::active(GLint textPoint)
 }
 
 void Texture::update(int xoffset,int yoffset,int width,int height,void* data,
-	int level)
+	int aligment,int mipmapLevel)
 {
 	//active(activeIndex);
 	glBindTexture(GL_TEXTURE_2D, mTextureId);
-	glTexSubImage2D(GL_TEXTURE_2D,level,xoffset,yoffset,width,height,mFormat,GL_UNSIGNED_BYTE,data);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, aligment);
+	glTexSubImage2D(GL_TEXTURE_2D, mipmapLevel,xoffset,yoffset,width,height,mFormat,GL_UNSIGNED_BYTE,data);
 	checkglerror();
 }
 

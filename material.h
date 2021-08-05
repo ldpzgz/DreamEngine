@@ -17,9 +17,11 @@ public:
 	void updateMvpMatrix(const float* pdata);
 	void getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc);
 
-	static Texture* getTexture(const std::string&);
-	static Material* getMaterial(const std::string&);
-	static Shader* getShader(const std::string&);
+	static shared_ptr<Texture> getTexture(const std::string&);
+	static shared_ptr<Material> getMaterial(const std::string&);
+	static shared_ptr<Shader> getShader(const std::string&);
+
+	static std::shared_ptr<Texture> createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint format = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, bool autoMipmap = false);
 private:
 	//find key value from startPos at str,
 	//if success set the start position of the key,the pos of '{', the pos of '}' into pos seprately and return true,

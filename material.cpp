@@ -179,28 +179,44 @@ bool Material::findkeyValue(const string& str, const string& mid,const string& e
 
 
 
-Texture* Material::getTexture(const std::string& name) {
-	Texture* temp = nullptr;
+shared_ptr<Texture> Material::getTexture(const std::string& name) {
+	shared_ptr<Texture> temp;
 	auto it = gTextures.find(name);
 	if (it != gTextures.end())
-		temp = it->second.get();
+		temp = it->second;
 	return temp;
 }
 
-Material* Material::getMaterial(const std::string& name) {
-	Material* temp = nullptr;
+shared_ptr<Material> Material::getMaterial(const std::string& name) {
+	shared_ptr<Material> temp;
 	auto it = gMaterials.find(name);
 	if (it != gMaterials.end())
-		temp = it->second.get();
+		temp = it->second;
 	return temp;
 }
 
-Shader* Material::getShader(const std::string& name) {
-	Shader* temp = nullptr;
+shared_ptr<Shader> Material::getShader(const std::string& name) {
+	shared_ptr<Shader> temp;
 	auto it = gShaders.find(name);
 	if (it != gShaders.end())
-		temp = it->second.get();
+		temp = it->second;
 	return temp;
+}
+
+std::shared_ptr<Texture> Material::createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint format, GLenum type, bool autoMipmap) {
+	auto pTex = make_shared<Texture>();
+	if (!pTex->load(width, height, pdata, format, type, autoMipmap)) {
+		LOGE("ERROR to create a texture");
+		pTex.reset();
+	}
+	else {
+		auto it = gTextures.try_emplace(name, pTex);
+		if (!it.second) {
+			LOGE("ERROR to add texture %s to gTexture", name.c_str());
+			pTex.reset();
+		}
+	}
+	return pTex;
 }
 
 bool Material::parseItem(const string& value, Umapss& umap) {

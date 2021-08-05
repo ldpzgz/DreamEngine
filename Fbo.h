@@ -2,17 +2,17 @@
  * GraphicsFbo.h
  *
  *  Created on: 2015-9-29
- *      Author: Administrator
+ *      Author: liudongping
  */
 
-#ifndef GRAPHICSFBO_H_
-#define GRAPHICSFBO_H_
+#ifndef _FBO_H_
+#define _FBO_H_
 #include<memory>
 #include "Texture.h"
 /*fbo主要用于渲染到纹理，这样子是比较高效的。
 	一个fbo有三个attachment：n个color attachment，一个depth attachment，一个stencil attachment。
 	color Attachment 能attach rbo，纹理，纹理数组中的一个，立方体纹理中的一个面，3D纹理中的一个切片
-	depth attachment 能attach rbo，纹理，纹理数组中的一个。
+	depth attachment 能attach rbo，纹理，纹理数组中的某一个纹理。
 	stencil 只能attach rbo
 
 	如果渲染的结果不是用于纹理，就是rbo，使用rbo的好处：
@@ -32,6 +32,16 @@
 	glReadBuffer ( GL_COLOR_ATTACHMENT0 );
 	glBlitFramebuffer ( 0, 0,esContext->width, esContext->height,
 		0, 0,esContext->width/2, esContext->height/2,GL_COLOR_BUFFER_BIT, GL_LINEAR );
+
+	glBindFramebuffer(target,fbo);
+		target:GL_FRAMEBUFFER,GL_DRAW_FRAMEBUFFER or GL_READ_FRAMEBUFFER,
+			GL_FRAMEBUFFER就相当于（GL_DRAW_FRAMEBUFFER | GL_READ_FRAMEBUFFER）
+	glReadBuffer(GLenum src)
+		Specifies a color buffer. Accepted values are GL_BACK, GL_NONE, and GL_COLOR_ATTACHMENTi.
+		指定readbuffer的fbo里面的哪个buffer为read
+	glDrawBuffer(GLsizei n,const GLenum *bufs)
+		defines an array of buffers into which outputs from the fragment shader data will be written
+		指定drawbuffer的fbo里面的哪个buffer为write
 */
 class Fbo
 {

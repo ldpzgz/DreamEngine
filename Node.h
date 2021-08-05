@@ -61,7 +61,6 @@ public:
 	virtual void rotate(float angle,const glm::vec3& vec);
 	virtual void scale(const glm::vec3& scaleVec);
 	virtual void lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up);
-
 protected:
 	glm::mat4 mMat;
 	glm::mat4 mParentWorldMat;

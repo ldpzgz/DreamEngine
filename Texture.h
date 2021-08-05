@@ -22,7 +22,7 @@ public:
 
 	//format:GL_RGB,GL_RGBA,GL_DEPTH_COMPONENT
 	//type:GL_UNSIGNED_BYTE,GL_UNSIGNED_SHORT,GL_UNSIGNED_SHORT_5_6_5
-	bool load(int width,int height,unsigned char* pdata,GLint format=GL_RGB,GLenum type=GL_UNSIGNED_BYTE,bool autoMipmap=false);
+	bool load(int width,int height,unsigned char* pdata,GLint format=GL_RGB,GLenum type=GL_UNSIGNED_BYTE, int aligment = 4,bool autoMipmap=false);
 	void unload();
 
 	////参数为是否自动为这个纹理生存mipmap
@@ -33,7 +33,7 @@ public:
 
 
 	void update(int xoffset,int yoffset,int width,int height,void* data,
-		int level=0);
+		int aligment = 1,int mimmapLevel = 0);
 
 
 	//支持的最大的纹理单元

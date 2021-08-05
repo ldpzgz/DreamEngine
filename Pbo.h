@@ -13,6 +13,26 @@
 //再使用glMapBufferRange，把pbo显存映射到内存，这个过程在我的笔记本上大概就100微秒
 //而如果直接使用glReadPixel将color buffer中的数据读取到内存，耗时大概是2000多微秒
 
+/*
+glReadBuffer:
+	void glReadBuffer(	GLenum src); Accepted values are GL_BACK, GL_NONE, and GL_COLOR_ATTACHMENTi
+
+	这个函数的作用是为这四个函数指定source：glReadPixels, , glCopyTexImage2D, glCopyTexSubImage2D, and glCopyTexSubImage3D
+		
+glReadPixel:如果当前绑定了pbo，则将指定的source（默认是缺省的back color buffer) 通过dma赋值到pbo
+
+高效复制纹理数据到内存的思路：
+1、	new 一个fbo，绑定 目标纹理，作为渲染目标
+2、	调用glReadBuffer指定source为GL_COLOR_ATTACHMENTi
+3、	new 一个pbo，并绑定
+4、	调用glReadPixel将纹理读取到pbo，
+5、	调用glMapBufferRange,指定target为GL_PIXEL_PACK_BUFFER，将当前绑定的pbo映射到内存。
+*/
+
+/*
+下面这个pbo，实现了将缺省的colorbuffer 以每秒25帧的速度录制到一个视频里面
+开了两个pbo，快速的将color buffer复制到pbo，然后将pbo map到内存，复制数据 丢给录制线程。
+*/
 class Pbo {
 public:
 	Pbo(const std::string& pathToSave, int width, int height);
