@@ -178,6 +178,15 @@ void Mesh::loadMesh()
 		GLfloat tex[] = { 0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,1.0f,1.0f };
 		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
 	}
+	else if (mMeshType == MeshType::MESH_FONTS) {
+		GLfloat pos[] = { 0.0f,1.0f,0.0f,
+			0.0f,0.0f,0.0f,
+			1.0f,0.0f,0.0f,
+			1.0f,1.0f,0.0f };
+		GLuint indexes[] = { 0,1,2,0,2,3 };
+		//GLfloat tex[] = { 0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,1.0f,1.0f };
+		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes));
+	}
 	else if (mMeshType == MeshType::MESH_Triangle) {
 		GLfloat pos[] = { 0.0f,1.0f,0.0f,
 			-1.0f,-1.0f,0.0f,
@@ -457,6 +466,24 @@ void Mesh::render(const glm::mat4& mvpMat) {
 	if (mpMaterial) {
 		//update mvpMatrix;
 		mpMaterial->updateMvpMatrix(glm::value_ptr(mvpMat));
+		mpMaterial->enable();
+		int posloc = -1;
+		int texloc = -1;
+		int norloc = -1;
+		int colorloc = -1;
+		mpMaterial->getVertexAtributeLoc(posloc, texloc, colorloc, norloc);
+		draw(posloc, texloc, norloc);
+	}
+	else {
+		LOGE("mesh has no material,can't render");
+	}
+}
+
+void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& texMat) {
+	if (mpMaterial) {
+		//update mvpMatrix;
+		mpMaterial->updateMvpMatrix(glm::value_ptr(mvpMat));
+		mpMaterial->updateTextureMatrix(glm::value_ptr(texMat));
 		mpMaterial->enable();
 		int posloc = -1;
 		int texloc = -1;

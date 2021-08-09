@@ -2,7 +2,7 @@
 #define _CAMERA_H_
 #include "Node.h"
 class Scene;
-class Camera : virtual public Node
+class Camera : virtual public Node<glm::mat4>
 {
 public:
 	explicit Camera(const shared_ptr<Scene>& ps);
@@ -15,15 +15,15 @@ public:
 
 	void renderScene();
 
-	void renderNode(const shared_ptr<Node>& node) const;
+	void renderNode(const shared_ptr<Node<glm::mat4>>& node) const;
 	//设置宽高比，这个与窗口显示区域不符合的话，画面会变形
 	void setAspect(float asp);
 
-	void translate(float x, float y, float z) override;
+	void translate(float x, float y, float z);
 
-	void rotate(float angle, const glm::vec3& vec) override;
+	void rotate(float angle, const glm::vec3& vec);
 
-	void lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up) override;
+	void lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up);
 private:
 	float aspect;//屏幕宽高比
 	float fov;

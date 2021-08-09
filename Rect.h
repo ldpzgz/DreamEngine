@@ -37,20 +37,20 @@ public:
 
 class Color {
 public:
-	Color(unsigned char r1, unsigned char g1, unsigned char b1, unsigned char a1) :r(r1), g(g1), b(b1), a(a1) {
+	Color(float r1, float g1, float b1, float a1) :r(r1), g(g1), b(b1), a(a1) {
 
 	}
 
-	Color(unsigned char r1, unsigned char g1, unsigned char b1) :r(r1), g(g1), b(b1) {
+	Color(float r1, float g1, float b1) :r(r1), g(g1), b(b1) {
 
 	}
 
 	Color() = default;
 
-	unsigned char r{ 0 };
-	unsigned char g{ 0 };
-	unsigned char b{ 0 };
-	unsigned char a{ 0 };
+	float r{ 0.0f };
+	float g{ 0.0f };
+	float b{ 0.0f };
+	float a{ 0.0f };
 };
 
 #endif

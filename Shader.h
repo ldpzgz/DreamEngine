@@ -18,7 +18,9 @@
 #include <memory>
 #include <string>
 #include <array>
+#include <vector>
 #include "Log.h"
+#include "Rect.h"
 
 
 /*
@@ -99,10 +101,15 @@ public:
 	void setUniform3f(const char* uniformName,float x,float y,float z);
 	void setUniform4f(const char* uniformName,float x,float y,float z,float w);
 	void setMvpMatrix(const float*);
+	void setTextureMatrix(const float*);
+	void setUniformColor(float r, float g, float b, float a);
+	void setUniformColor(Color color);
 
 	void enable();
 
 	void getMvpMatrixLoc(const std::string& mvpMatrixNameInShader);
+	void getTextureMatrixLoc(const std::string& textureMatrixNameInShader);
+	void getUniformColorLoc(const std::string& uniformColorNameInShader);
 
 	std::unordered_map<int, std::shared_ptr<Texture>>& getTexture() {
 		return mSamplerToTex;
@@ -116,12 +123,16 @@ private:
 	int mColorLoc;
 	int mNormalLoc;
 	int mMvpMatrixLoc;
+	int mTextureMatrixLoc;
+	int mUniformColorLoc; //在fs里面可以有个uniform vec4 color，用于设置输出固定颜色
 	std::string mName;
-	std::unique_ptr<std::array<float,16>> mMvpMatrix;
+	std::unique_ptr<std::vector<float>> mMvpMatrix;
+	std::unique_ptr<std::vector<float>> mTextureMatrix;
 	//int mSamplerCount;
 	std::map<std::string,int> mAttributeLocMap;
 	std::map<std::string,int> mUniformLocMap;
 	std::unordered_map<int, std::shared_ptr<Texture>> mSamplerToTex;//Sampler in shader to Texture;
+	Color mUniformColor;
 protected:
 	//GL_VERTEX_SHADER,GL_FRAGMENT_SHADER
 	GLuint loadShader ( GLenum type, const char *shaderSrc );

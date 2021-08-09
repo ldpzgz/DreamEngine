@@ -16,7 +16,8 @@
 #include <glm/mat4x4.hpp>
 #include <glm/mat4x3.hpp>
 #include <glm/gtc/type_ptr.hpp> // value_ptr
-enum class MeshType
+#include "Attachable.h"
+enum class MeshType //枚举类型定义加了class就是强类型枚举，不能隐式转换为其他类型，
 {
 	MESH_Triangle,
 	MESH_Rectangle,
@@ -38,11 +39,13 @@ enum class MeshType
 		//顶点越多，阶数越高
 	MESH_Uniform_B_Curves,
 		//通过n个控制点，绘制n-3条曲线，曲线不经过任何控制点，只逼近但是曲线之间是C2连续的
-	MESH_NURBS
+	MESH_NURBS,
 		//这个在设计软件中最通用
+
+	MESH_FONTS //渲染文字的时候用的，一个文字
 };
 
-class Mesh
+class Mesh : public Attachable
 {
 public:
 	explicit Mesh(MeshType meshType );
@@ -75,6 +78,8 @@ public:
 	bool updataIndex(float* pIndex, int byteOffset, int size);
 
 	void render(const glm::mat4& projviewMat);
+
+	void render(const glm::mat4& mvpMat, const glm::mat4& texMat);
 
 	void unLoadMesh();
 

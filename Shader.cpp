@@ -19,6 +19,7 @@ Shader::Shader(const std::string& name) :
 	mColorLoc(-1),
 	mNormalLoc(-1),
 	mMvpMatrixLoc(-1),
+	mTextureMatrixLoc(-1),
 	mName(name)
 {
 	// TODO Auto-generated constructor stub
@@ -214,6 +215,14 @@ void Shader::enable()
 	if (mMvpMatrixLoc >= 0 && mMvpMatrix) {
 		glUniformMatrix4fv(mMvpMatrixLoc, 1, GL_FALSE, mMvpMatrix->data());
 	}
+
+	if (mTextureMatrixLoc >= 0 && mTextureMatrix) {
+		glUniformMatrix3fv(mTextureMatrixLoc, 1, GL_FALSE, mTextureMatrix->data());
+	}
+
+	if (mUniformColorLoc >= 0) {
+		glUniform4f(mUniformColorLoc, mUniformColor.r, mUniformColor.g, mUniformColor.b, mUniformColor.a);
+	}
 }
 
 //结果小于0表示错误
@@ -267,13 +276,11 @@ void Shader::setUniform4f(const char* uniformName,float x,float y,float z,float 
 void Shader::setMvpMatrix(const float* pMatrix) {
 	if (mMvpMatrixLoc >= 0 && pMatrix != nullptr) {
 		if (!mMvpMatrix) {
-			mMvpMatrix = std::make_unique<std::array<float, 16>>();
+			mMvpMatrix = std::make_unique<std::vector<float>>(16);
 		}else{
-			int i = 0;
-			std::for_each(mMvpMatrix->begin(), mMvpMatrix->end(), [pMatrix,&i](float& p) {
-				p = pMatrix[i];
-				++i;
-			});
+			for (int i = 0; i < 16; ++i) {
+				(*mMvpMatrix)[i] = pMatrix[i];
+			}
 		}
 	}
 	else {
@@ -281,10 +288,50 @@ void Shader::setMvpMatrix(const float* pMatrix) {
 	}
 }
 
+void Shader::setTextureMatrix(const float* pMatrix) {
+	if (mTextureMatrixLoc >= 0 && pMatrix != nullptr) {
+		if (!mTextureMatrix) {
+			mTextureMatrix = std::make_unique<std::vector<float>>(9);
+		}
+		else {
+			for (int i = 0; i < 9; ++i) {
+				(*mTextureMatrix)[i] = pMatrix[i];
+			}
+		}
+	}
+}
+
+void Shader::setUniformColor(float r, float g, float b, float a)
+{
+	mUniformColor.r = r;
+	mUniformColor.g = g;
+	mUniformColor.b = b;
+	mUniformColor.a = a;
+}
+
+void Shader::setUniformColor(Color color) {
+	mUniformColor = color;
+}
+
+
 void Shader::getMvpMatrixLoc(const std::string& mvpMatrixNameInShader) {
 	mMvpMatrixLoc = glGetUniformLocation(mProgram, mvpMatrixNameInShader.c_str());
 	if (mMvpMatrixLoc < 0) {
-		LOGD("the shader %s  has no %s uniform member", mName.c_str(), mvpMatrixNameInShader.c_str());
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), mvpMatrixNameInShader.c_str());
+	}
+}
+
+void Shader::getTextureMatrixLoc(const std::string& textureMatrixNameInShader) {
+	mTextureMatrixLoc = glGetUniformLocation(mProgram, textureMatrixNameInShader.c_str());
+	if (mTextureMatrixLoc < 0) {
+		LOGE("the shader %s  has no %s textureMatrix", mName.c_str(), textureMatrixNameInShader.c_str());
+	}
+}
+
+void Shader::getUniformColorLoc(const std::string& uniformColorNameInShader) {
+	mUniformColorLoc = glGetUniformLocation(mProgram, uniformColorNameInShader.c_str());
+	if (mUniformColorLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), uniformColorNameInShader.c_str());
 	}
 }
 

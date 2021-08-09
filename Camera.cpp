@@ -2,7 +2,7 @@
 #include "Scene.h"
 #include <glm/gtc/matrix_transform.hpp>
 Camera::Camera(const shared_ptr<Scene>& ps):
-	Node(),
+	Node<glm::mat4>(),
 	mpScene(ps),
 	mProjMatrix(1.0f),
 	aspect(4.0f / 3.0f),
@@ -14,7 +14,7 @@ Camera::Camera(const shared_ptr<Scene>& ps):
 }
 
 Camera::Camera(const shared_ptr<Scene>& ps, float asp) :
-	Node(),
+	Node<glm::mat4>(),
 	mpScene(ps),
 	mProjMatrix(1.0f),
 	aspect(asp),
@@ -51,15 +51,15 @@ void Camera::renderScene() {
 	}
 }
 
-void Camera::renderNode(const shared_ptr<Node>& node) const
+void Camera::renderNode(const shared_ptr<Node<glm::mat4>>& node) const
 {
 	if (node) {
-		const auto& pMeshes = node->getMeshes();
+		const auto& pMeshes = node->getAttachments();
 		glm::mat4 worldMatrix = node->getWorldMatrix();
 		
-		for_each(pMeshes.cbegin(), pMeshes.cend(), [this,&worldMatrix](const MapIMesh::value_type& pMesh) {
+		for_each(pMeshes.cbegin(), pMeshes.cend(), [this,&worldMatrix](const MapIAttachable::value_type& pMesh) {
 			if (pMesh.second) {
-				pMesh.second->render(mProjViewMatrix * worldMatrix);//
+				std::dynamic_pointer_cast<Mesh>(pMesh.second)->render(mProjViewMatrix * worldMatrix);//
 			}
 		});
 
@@ -76,16 +76,16 @@ void Camera::setAspect(float asp) {
 }
 
 void Camera::lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up) {
-	Node::lookAt(eyepos, center, up);
+	Node<glm::mat4>::lookAt(eyepos, center, up);
 	mProjViewMatrix = mProjMatrix * mMat;
 }
 
 void Camera::translate(float x, float y, float z) {
-	Node::translate(x, y, z);
+	Node<glm::mat4>::translate(x, y, z);
 	mProjViewMatrix = mProjMatrix * mMat;
 }
 
 void Camera::rotate(float angle, const glm::vec3& vec) {
-	Node::rotate(angle, vec);
+	Node<glm::mat4>::rotate(angle, vec);
 	mProjViewMatrix = mProjMatrix * mMat;
 }

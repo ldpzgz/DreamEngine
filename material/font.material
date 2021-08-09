@@ -1,0 +1,48 @@
+vs:fontVs{
+	#version 300 es
+    layout(location = 0) in vec4 a_position;
+	layout(location = 1) in vec2 a_tex;
+	uniform mat4 mvp_matrix;
+	uniform mat3 texture_matrix;
+	out vec2 v_texCoord;
+    void main()
+    {
+       gl_Position = mvp_matrix * a_position;
+	   vec4 temp = texture_matrix*vec4(a_tex,0.0f，1.0f);
+	   v_texCoord =  temp.xy;
+    }
+}
+
+fs:fontFs{
+	#version 300 es
+	precision mediump float;
+	uniform vec4 color;
+	uniform sampler2D s_texture;
+	in vec2 v_texCoord;
+	layout(location = 0) out vec4 outColor;
+	void main()
+	{
+	  vec4 fl = texture( s_texture, v_texCoord );
+	  outColor = vec4(fl.r*color.r,fl.g*color.g,fl.b*color.b,fl.a*color.a);
+	}
+}
+
+texture:fontsTexture{
+	width=2048
+	height=2048
+	depth=1
+}
+
+program:fontsBasic{
+	vs=fontVs
+	fs=fontFs
+	posLoc=0
+	mvpMatrix=mvp_matrix
+	textureMatrix=texture_matrix 
+	uniformColor=color
+	sampler2D{
+		s_texture=fontsTexture
+	}
+}
+
+charSize{32}

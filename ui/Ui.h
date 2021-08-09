@@ -32,10 +32,20 @@ char32_t C = U'\U00004f60';// C++规定 \U后面跟8个16进制数，这个数是一个unicode编
 //准备把ui的逻辑和绘制分开
 #include <string>
 #include "../Rect.h"
-
-class View {
+#include "../Attachable.h"
+class View : public Attachable{
 public:
 	virtual void draw() = 0;
+};
+
+enum TextAlignment : unsigned char { //这里不适合使用强类型枚举
+	AlignLeft = 0x01,
+	AlignRight = 0x02,
+	AlignTop = 0x04,
+	AlignBottom = 0x08,
+	AlignHCenter = 0x10,
+	AlignVCenter = 0x20,
+	AlignCenter = 0x40
 };
 
 class TextView : public View {
@@ -53,7 +63,7 @@ public:
 	}
 
 	TextView(const std::string& str, const Rect<int>& r,const Color& c) :
-		text(str), rect(r),color(c)
+		text(str), rect(r), textColor(c)
 	{
 
 	}
@@ -86,26 +96,81 @@ public:
 	}
 
 	void setTextColor(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
-		color.r = r; color.g = g; color.b = b; color.a = a;
+		textColor.r = r; textColor.g = g; textColor.b = b; textColor.a = a;
 	}
 
 	void setTextColor(unsigned char r, unsigned char g, unsigned char b) {
-		color.r = r; color.g = g; color.b = b;
+		textColor.r = r; textColor.g = g; textColor.b = b;
 	}
 
 	void setTextColor(const Color& c) {
-		color = c;
+		textColor = c;
 	}
 
 	Color& getTextColor() {
-		return color;
+		return textColor;
+	}
+
+	const std::string& getText() {
+		return text;
+	}
+
+	void setText(const std::string& str) {
+		text = str;
+	}
+
+	void setCharSize(int size) {
+		charSize = size;
+	}
+
+	int getCharSize() {
+		return charSize;
+	}
+
+	void setMaxLines(int lines) {
+		maxLine = lines;
+	}
+
+	int getMaxLines() {
+		return maxLine;
+	}
+
+	void setCharSpacingInc(int inc) {
+		if(inc>0)
+			mCharSpacingInc = inc;
+	}
+
+	int getCharSpacingInc() {
+		return mCharSpacingInc;
+	}
+
+	void setLineSpacingInc(int inc) {
+		if (inc>0)
+			mLineSpacingInc = inc;
+	}
+
+	int getLineSpacingInc() {
+		return mLineSpacingInc;
+	}
+
+	void setAligment(unsigned int al) {
+		mAligment = al;
+	}
+
+	unsigned int getAligment() {
+		return mAligment;
 	}
 
 	void draw() override;
 private:
 	std::string text;
 	Rect<int> rect;
-	Color color;
+	Color textColor;
+	int charSize;//文字大小，以像素为单位
+	int maxLine{ 1 };
+	int mLineSpacingInc{0}; //行间距增量
+	int mCharSpacingInc{ 0 };//字符间距增量
+	unsigned int mAligment{ TextAlignment::AlignCenter}; //文本对齐方式
 };
 
 class Button : public View{

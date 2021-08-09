@@ -9,13 +9,13 @@ class Scene : public enable_shared_from_this<Scene> {
 public:
 	Scene();
 	~Scene();
-	shared_ptr<Node>& getRoot() noexcept{
+	shared_ptr<Node<glm::mat4>>& getRoot() noexcept{
 		return mpRootNode;
 	}
 
 	shared_ptr<Camera> createACamera();
 private:
-	shared_ptr<Node> mpRootNode;
+	shared_ptr<Node<glm::mat4>> mpRootNode;
 	vector<shared_ptr<Camera>> mCameras;
 };
 

@@ -15,7 +15,12 @@ public:
 	bool parseMaterialFile(const string&);
 	void enable();
 	void updateMvpMatrix(const float* pdata);
+	void updateTextureMatrix(const float* pdata);
+	void updateUniformColor(const Color& color);
+	void updateUniformColor(float r,float g,float b,float a);
 	void getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc);
+
+	int getKeyAsInt(const string& key);
 
 	static shared_ptr<Texture> getTexture(const std::string&);
 	static shared_ptr<Material> getMaterial(const std::string&);
@@ -33,7 +38,7 @@ private:
 	using Umapss = std::unordered_map<std::string, std::string>;
 	bool parseItem(const string& value, Umapss& umap);
 
-	std::unordered_map<std::string, std::string> mContents;
+	std::unordered_map<std::string, std::string> mContents;//保存的是材质文件里面形如key{value}的key-value对
 	std::shared_ptr<Shader> mShader;
 
 	static std::unordered_map<std::string, std::shared_ptr<Material>> gMaterials;

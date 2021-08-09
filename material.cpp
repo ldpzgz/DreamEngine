@@ -50,6 +50,24 @@ void Material::updateMvpMatrix(const float* pdata) {
 	}
 }
 
+void Material::updateTextureMatrix(const float* pdata) {
+	if (mShader && pdata != nullptr) {
+		mShader->setTextureMatrix(pdata);
+	}
+}
+
+void Material::updateUniformColor(const Color& color) {
+	if (mShader) {
+		mShader->setUniformColor(color);
+	}
+}
+
+void Material::updateUniformColor(float r, float g, float b, float a) {
+	if (mShader) {
+		mShader->setUniformColor(r,g,b,a);
+	}
+}
+
 void Material::enable() {
 	if (mShader) {
 		mShader->enable();
@@ -118,13 +136,14 @@ bool Material::parseMaterialFile(const string& path) {
 }
 
 /*
-str where to find key-value;
-mid the str between key and value;
-end the end of value;
+在字符串str里面冲startPos开始，查找第一个形如：key{value}
+str		where to find key-value;
+mid		the str between key and value;
+end		the end of value;
 startPos from which pos to start serach in str;
-pos is int[3]，pos[0],the start pos of he key,
-pos[1] the pos of mid
-pos[2] the pos of end
+pos		is int[3]，pos[0],the start pos of the key,
+pos[1]	the pos of mid
+pos[2]	the pos of end
 */
 bool Material::findkeyValue(const string& str, const string& mid,const string& end, std::string::size_type startPos, std::string::size_type* pos) {
 	int countOfStart = 0;
@@ -274,11 +293,13 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 					height = std::stoi(pHeight->second);
 					depth = std::stoi(pDepth->second);
 					int internalFormat = GL_RGB;
-					if (depth != 3 && depth != 1) {
-						LOGE("not support texture %s depth %d", textureName.c_str(),depth);
-						return false;
+					if (depth = 4) {
+						internalFormat = GL_RGBA;
 					}else if (depth == 1) {
 						internalFormat = GL_LUMINANCE;
+					}else {
+						LOGE("not support texture %s depth %d", textureName.c_str(), depth);
+						return false;
 					}
 
 					auto pTex = std::make_shared<Texture>();
@@ -313,6 +334,8 @@ bool Material::parseProgram(const string& programName,const string& program) {
 	int normalLoc = -1;
 	int colorLoc = -1;
 	std::string mvpMatrixName;
+	std::string textureMatrixName;
+	std::string uniformColor;
 	Umapss umapSampler;
 			
 	if (parseItem(program, umap)) {
@@ -379,6 +402,16 @@ bool Material::parseProgram(const string& programName,const string& program) {
 			mvpMatrixName = pMvp->second;
 		}
 
+		const auto pTextureMatrix = umap.find("textureMatrix");
+		if (pTextureMatrix != umap.cend()) {
+			textureMatrixName = pTextureMatrix->second;
+		}
+
+		const auto pUColor = umap.find("uniformColor");
+		if (pUColor != umap.cend()) {
+			uniformColor = pUColor->second;
+		}
+
 		const auto pSampler = umap.find("sampler2D");
 		
 		if (pSampler != umap.cend()) {
@@ -416,13 +449,19 @@ bool Material::parseProgram(const string& programName,const string& program) {
 					if (!mvpMatrixName.empty()) {
 						mShader->getMvpMatrixLoc(mvpMatrixName);
 					}
+					if (!textureMatrixName.empty()) {
+						mShader->getTextureMatrixLoc(textureMatrixName);
+					}
+					if (!uniformColor.empty()) {
+						mShader->getUniformColorLoc(uniformColor);
+					}
 					if (!umapSampler.empty()) {
 						std::for_each(umapSampler.cbegin(), umapSampler.cend(), [this,&programName](const Umapss::value_type& item) {
 							const auto pTex = gTextures.find(item.second);
 							if (pTex != gTextures.cend()) {
-								int loc = mShader->getUniformLoc(item.first.c_str());
+								int loc = mShader->getUniformLoc(item.first.c_str()); //拿到shader里面sampler的loc--
 								if (loc != -1) {
-									mShader->setTextureForSampler(loc, pTex->second);
+									mShader->setTextureForSampler(loc, pTex->second); //将sampler的loc--对于一个texture
 								}
 								else {
 									LOGE("can't to find sampler2d %s in program %s", item.first.c_str(), programName.c_str());
@@ -450,4 +489,19 @@ bool Material::parseProgram(const string& programName,const string& program) {
 	} while (false);
 	
 	return bsuccess;
+}
+
+int Material::getKeyAsInt(const string& key) {
+	auto it = mContents.find(key);
+	int ret = -1;
+	if (it != mContents.end()) {
+		try {
+			ret = std::stoi(it->second);
+		}
+		catch (exception e) {
+			LOGE("parseProgram error to stoi posLoc");
+			ret = -1;
+		}
+	}
+	return ret;
 }
