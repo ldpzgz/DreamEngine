@@ -10,7 +10,7 @@ MeshBezier::~MeshBezier() {
 
 }
 
-void MeshBezier::draw(int posloc, int texloc, int norloc) {
+void MeshBezier::draw(int posloc, int texloc, int norloc, int colorloc) {
 	drawLineStrip(posloc);
 }
 
@@ -21,7 +21,7 @@ void MeshBezier::loadMesh(const std::vector<float>& points) {
 	std::vector<float> tk;
 	std::vector < float> t_1k;
 	std::vector<float> nk;
-	auto ni = std::tgammaf(n + 1);//计算N的阶乘
+	auto ni = std::tgammaf(n + 1);//注意这个计算的是n的阶乘
 								  //计数多项式系数中的有阶乘运算的部分
 	for (int k = 0; k <= n; ++k) {
 		if (k <= n / 2) {

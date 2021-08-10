@@ -42,7 +42,8 @@ enum class MeshType //枚举类型定义加了class就是强类型枚举，不�
 	MESH_NURBS,
 		//这个在设计软件中最通用
 
-	MESH_FONTS //渲染文字的时候用的，一个文字
+	MESH_FONTS, //渲染文字的时候用的，一个文字
+	MESH_Rect,//渲染具有Rect的背景的view用的
 };
 
 class Mesh : public Attachable
@@ -77,6 +78,12 @@ public:
     //更新索引vbo
 	bool updataIndex(float* pIndex, int byteOffset, int size);
 
+	//更新color vbo
+	bool updateColor(float* color, int byteOffset, int size);
+
+	//更新法向量 vbo
+	bool updateNormal(float* normal, int byteOffset, int size);
+
 	void render(const glm::mat4& projviewMat);
 
 	void render(const glm::mat4& mvpMat, const glm::mat4& texMat);
@@ -104,25 +111,28 @@ protected:
 	//根据指定的顶点坐标数据，纹理坐标数据，法向量坐标数据，顶点索引数据，以及他们的大小（字节为单位）
 	//创建对应的vbo，类型为静态GL_STATIC_DRAW
 	bool createBufferObject(GLfloat* pos, int posByteSize, GLuint* index, int indexByteSize,
-		GLfloat* tex = 0, int texByteSize = 0, GLfloat* nor = 0, int norByteSize = 0, int drawType = GL_STATIC_DRAW);
+		GLfloat* tex = 0, int texByteSize = 0, GLfloat* nor = 0, int norByteSize = 0, GLfloat* color = 0, int colorByteSize = 0, int drawType = GL_STATIC_DRAW);
 
 	//当做三角形绘制GL_TRIANGLES
-	void drawTriangles(int posloc = -1, int texloc = -1, int norloc = -1);
+	void drawTriangles(int posloc = -1, int texloc = -1, int norloc = -1,int colorloc = -1);
 
 	//当做直线绘制GL_LINE_LOOP
 	void drawLineStrip(int posloc);
 
 	//当做三角形扇绘制GL_TRIANGLE_FAN
-	void drawTrangleFan(int posloc, int texloc = -1);
+	void drawTrangleFan(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1);
 
-	virtual void draw(int posloc = -1, int texloc = -1, int norloc = -1);
+	virtual void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1);
 private:
+	void reset();
+
 	//4个vbo对象
 	GLuint mPosVbo;//这个是vbo
 	GLuint mTexVbo; //这个是vbo
 	GLuint mNorVbo;//这个是vbo
+	GLuint mColorVbo;//这个是vbo
 	GLuint mIndexVbo; //这个别人叫ebo
-	GLuint mVAO;//这个是vao，顶点数组对象，opengles3.0才支撑，是一个集合。把设定顶点属性的过程打包到一起，简化绘制流程。
+	GLuint mVAO;//这个是vao，顶点数组对象，opengles3.0才支持，是一个集合。把设定顶点属性的过程打包到一起，简化绘制流程。
 	GLfloat mLineWidth;
 
 	int mposLocation;//顶点的位置属性在shader中的location
@@ -132,17 +142,18 @@ private:
 	unsigned int mPosByteSize;
 	unsigned int mTexByteSize;
 	unsigned int mNorByteSize;
+	unsigned int mColorByteSize;
 	unsigned int mIndexByteSize;
 	MeshType mMeshType;
 	int mCounts;//for line_strip,triangle_fan,the count of points;
 	unsigned int mId;
 	std::shared_ptr<Material> mpMaterial;
-	void reset();
 
-	//这四个函数都是创建vbo，ebo，并冲内存上传数据到vbo的显存
+	//这四个函数都是创建vbo，ebo，并从内存上传数据到vbo的显存
 	bool setPosData(GLfloat* pos,int size,unsigned int drawType = GL_STATIC_DRAW);
 	bool setTexcoordData(GLfloat* tex,int size, unsigned int drawType = GL_STATIC_DRAW);
 	bool setNormalData(GLfloat* nor,int size, unsigned int drawType = GL_STATIC_DRAW);
+	bool setColorData(GLfloat* nor, int size, unsigned int drawType = GL_STATIC_DRAW);
 	bool setIndexData(GLuint* index,int indexByteSize, unsigned int drawType = GL_STATIC_DRAW);
 	//如果函数内部创建了vao就返回true
 	bool createVaoIfNeed(int posloc=-1, int texloc=-1, int norloc=-1);

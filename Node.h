@@ -176,10 +176,14 @@ private:
 	void updateChildWorldMatrix() const noexcept {
 		if (!mChildren.empty()) {
 			auto myWorldMat = mParentWorldMat* mMat;
-			std::for_each(mChildren.begin(), mChildren.end(), [&myWorldMat](const MapINode::value_type child) {
+			for (auto& child : mChildren) {
 				child.second->setParentWorldMatrix(myWorldMat);
 				child.second->updateChildWorldMatrix();
-			});
+			}
+			/*std::for_each(mChildren.begin(), mChildren.end(), [&myWorldMat](const MapINode::value_type child) {
+				child.second->setParentWorldMatrix(myWorldMat);
+				child.second->updateChildWorldMatrix();
+			});*/
 		}
 	}
 };

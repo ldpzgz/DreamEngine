@@ -33,9 +33,46 @@ char32_t C = U'\U00004f60';// C++规定 \U后面跟8个16进制数，这个数是一个unicode编
 #include <string>
 #include "../Rect.h"
 #include "../Attachable.h"
+#include <functional>
+#include <list>
+#include <memory>
 class View : public Attachable{
 public:
 	virtual void draw() = 0;
+	virtual void mouseMove(int x,int y) {};
+
+	virtual void mouseLButtonDown(int x, int y) {};
+
+	virtual void mouseLButtonUp(int x, int y) {};
+
+	virtual void onClicked(View* pView) {
+		if (mClickedListener) {
+			mClickedListener(pView);
+		}
+	}
+
+	void setOnClickListener(std::function<void(View*)> func) {
+		mClickedListener = func;
+	}
+
+	std::function<void(View*)> mClickedListener;
+	//与parent的相对位置信息
+	unsigned int mLayoutWidth;
+	unsigned int mLayoutHeight;
+	unsigned int mLayoutMarginTop;
+	unsigned int mLayoutMarginBottom;
+	unsigned int mLayoutMarginLeft;
+	unsigned int mLayoutMarginRight;
+	unsigned int mLayoutGravite;
+};
+
+enum MouseState : unsigned char {
+	MouseNone = 0x00,
+	MouseOver = 0x01,
+	MouseLButtonDown = 0x02,
+	MouseLButtonUp = 0x04,
+	MouseRButtonDown = 0x08,
+	MouseRButtonUp = 0x10,
 };
 
 enum TextAlignment : unsigned char { //这里不适合使用强类型枚举
@@ -46,6 +83,13 @@ enum TextAlignment : unsigned char { //这里不适合使用强类型枚举
 	AlignHCenter = 0x10,
 	AlignVCenter = 0x20,
 	AlignCenter = 0x40
+};
+
+enum LayoutParam{
+	Horizontal,
+	Vertical,
+	WrampContent, 
+	MarchParent,
 };
 
 class TextView : public View {
@@ -164,38 +208,96 @@ public:
 	void draw() override;
 private:
 	std::string text;
-	Rect<int> rect;
-	Color textColor;
-	int charSize;//文字大小，以像素为单位
+	Rect<int> rect{0,0,0,0};
+	Color textColor{0.0f,0.0f,0.0f,1.0f};
+	int charSize{ 32 };//文字大小，以像素为单位
 	int maxLine{ 1 };
 	int mLineSpacingInc{0}; //行间距增量
 	int mCharSpacingInc{ 0 };//字符间距增量
 	unsigned int mAligment{ TextAlignment::AlignCenter}; //文本对齐方式
 };
 
+class UiRender;
 class Button : public View{
 public:
+	friend UiRender;
 	Button(const std::string& str, int x, int y, int w, int h):
-		text(str), rect(x, y, w, h)
+		mTv(str,x,y,w,h), mRect(x, y, w, h)
 	{
 
 	}
 	Button(int x, int y, int w, int h) :
-		rect(x, y, w, h)
+		mTv(x,y,w,h),
+		mRect(x, y, w, h)
 	{
 
 	}
 
 	explicit Button(const Rect<int>& r) :
-		rect(r)
+		mTv(r),
+		mRect(r)
 	{
 
 	}
 
+	void setText(const std::string& t) {
+		mTv.setText(t);
+	}
+
+	Rect<int>& getRect() {
+		return mRect;
+	}
+
+	/*
+	设置button的背景颜色
+	*/
+	void setBackgroundColor(const Color& color) {
+		for (auto& mc : mColor) {
+			mc = color;
+		}
+	}
+	/*
+	设置button的背景颜色，从左到右渐变
+	*/
+	void setBackgroundColor(const Color& colorLeft, const Color& colorRight) {
+		mColor[0] = colorLeft;
+		mColor[1] = colorLeft;
+		mColor[2] = colorRight;
+		mColor[3] = colorRight;
+	}
+
+	void setTextColor(const Color& c) {
+		mTv.setTextColor(c);
+	}
+
 	void draw() override;
 private:
-	std::string text;
-	Rect<int> rect;
+	TextView mTv;
+	Rect<int> mRect{0,0,0,0};
+	Color mColor[4]{ {1.0f,1.0f,1.0f,1.0f},{ 1.0f,1.0f,1.0f,1.0f },{ 1.0f,1.0f,1.0f,1.0f },{ 1.0f,1.0f,1.0f,1.0f } };
+	unsigned int mMouseState{ MouseState::MouseNone};
+};
+
+class LinearLayout :public View {
+public:
+	friend UiRender;
+	LinearLayout(unsigned int layoutParam) {
+		mLayoutParam = layoutParam;
+	}
+
+	void setLayoutParam(unsigned int layoutParam) {
+		mLayoutParam = layoutParam;
+	}
+
+	Rect<int>& getRect() {
+		return mRect;
+	}
+
+	void draw() override;
+private:
+	unsigned int mLayoutParam{ LayoutParam::Horizontal };
+	Rect<int> mRect{ 0,0,0,0 };
+	std::list<std::shared_ptr<View>> mChildren;
 };
 
 

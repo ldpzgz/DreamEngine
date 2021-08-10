@@ -94,6 +94,7 @@ private:
 
 class TextView;
 class Button;
+class LinearLayout;
 /*
 规定UI的坐标系，原点在左上角，Y轴向下。
 */
@@ -103,7 +104,18 @@ public:
 		return gInstance;
 	}
 
-	void initUiRender(const string& savedPath, const string& ttfPath, const string& materialPath);
+	/*
+	功能：		初始化textview
+	savedPath	保存已经渲染好的字体信息的文件
+	ttfPath		使用那个字体文件来渲染字体
+	materialPath 渲染文字使用的material
+	*/
+	bool initTextView(const string& savedPath, const string& ttfPath, const string& materialPath);
+	/*
+	功能：			初始化button
+	buttonMaterial	渲染button使用的material
+	*/
+	bool initButton(const string& buttonMaterial);
 
 	void updateWindowSize(float w, float h) {
 		mWindowWidth = w;
@@ -116,20 +128,44 @@ public:
 
 	void drawTextView(TextView* tv);
 	void drawButton(Button* tv);
+	void drawLinearLayout(LinearLayout* pll);
 private:
-	shared_ptr<FontInfo> pFontInfo;
 	static unique_ptr<UiRender> gInstance;
+
+	shared_ptr<FontInfo> pFontInfo;
+	shared_ptr<Mesh> mpRectMesh;//用于承载Button的背景
+
 	float mWindowWidth;
 	float mWindowHeight;
 	glm::mat4 mProjMatrix;
 };
 
-class UiNode : public Node<glm::mat3> {
+/*
+这个类有一颗ui树，ui树上每个node可以挂一个view，
+遍历这棵树，调用每个view的render函数，绘制出ui。
+负责传递输入事件给每一个view
+*/
+class UiManager {
 public:
-	//从一个xml文件里面加载ui，
-	static shared_ptr<UiNode> loadFromFile(const string& filepath);
-	UiNode();
-	~UiNode();
+	//从一个xml文件里面加载一棵ui树，准备模仿Android的ui系统
+	static shared_ptr<Node<glm::mat3>> loadFromFile(const string& filepath);
+
+	void setUiRootNode(const shared_ptr<Node<glm::mat3>> pRoot) {
+		mpRootNode = pRoot;
+	}
+
+	UiManager();
+
+	~UiManager();
+
+	void rendUI();
+private:
+	void renderNode(shared_ptr<Node<glm::mat3>>& pNode);
+
+	std::shared_ptr<Node<glm::mat3>> mpRootNode;
+	float mWindowWidth;
+	float mWindowHeight;
+	glm::mat4 mProjMatrix;
 };
 
 #endif

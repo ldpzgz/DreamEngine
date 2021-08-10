@@ -8,3 +8,7 @@ void TextView::draw() {
 void Button::draw() {
 	UiRender::getInstance()->drawButton(this);
 }
+
+void LinearLayout::draw() {
+	UiRender::getInstance()->drawLinearLayout(this);
+}

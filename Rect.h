@@ -10,6 +10,10 @@ public:
 
 	}
 
+	Rect() = default;
+
+	Rect(const Rect& c) = default;
+
 	/*Rect(const Rect& r):
 		x(r.x), y(r.y), width(r.width), height(r.height)
 	{
@@ -46,6 +50,8 @@ public:
 	}
 
 	Color() = default;
+
+	Color(const Color& c) = default;
 
 	float r{ 0.0f };
 	float g{ 0.0f };

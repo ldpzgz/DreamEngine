@@ -57,16 +57,22 @@ void Camera::renderNode(const shared_ptr<Node<glm::mat4>>& node) const
 		const auto& pMeshes = node->getAttachments();
 		glm::mat4 worldMatrix = node->getWorldMatrix();
 		
-		for_each(pMeshes.cbegin(), pMeshes.cend(), [this,&worldMatrix](const MapIAttachable::value_type& pMesh) {
-			if (pMesh.second) {
-				std::dynamic_pointer_cast<Mesh>(pMesh.second)->render(mProjViewMatrix * worldMatrix);//
-			}
-		});
+		for (const auto& pMesh : pMeshes) {
+			std::dynamic_pointer_cast<Mesh>(pMesh.second)->render(mProjViewMatrix * worldMatrix);
+		}
+		//for_each(pMeshes.cbegin(), pMeshes.cend(), [this,&worldMatrix](const MapIAttachable::value_type& pMesh) {
+		//	if (pMesh.second) {
+		//		std::dynamic_pointer_cast<Mesh>(pMesh.second)->render(mProjViewMatrix * worldMatrix);//
+		//	}
+		//});
 
 		const auto& pChildNodes = node->getChildren();
-		for_each(pChildNodes.cbegin(), pChildNodes.cend(), [this](const MapINode::value_type& pNode) {
+		for (const auto& pNode : pChildNodes) {
 			renderNode(pNode.second);
-		});
+		}
+		/*for_each(pChildNodes.cbegin(), pChildNodes.cend(), [this](const MapINode::value_type& pNode) {
+			renderNode(pNode.second);
+		});*/
 	}
 }
 

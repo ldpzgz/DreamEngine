@@ -407,11 +407,14 @@ bool Material::parseProgram(const string& programName,const string& program) {
 			textureMatrixName = pTextureMatrix->second;
 		}
 
+		//由于在fs里面经常需要设置一个颜色值，所以把这个抽出来，下面的代码会拿到这个uniform的loc，
+		//外部程序调用了material的updateUniformColor，设置了颜色值，每次enable的时候都会把这个颜色值设置上去。
 		const auto pUColor = umap.find("uniformColor");
 		if (pUColor != umap.cend()) {
 			uniformColor = pUColor->second;
 		}
 
+		//为shader里面的sampler指定Texture（通过texture的名字）
 		const auto pSampler = umap.find("sampler2D");
 		
 		if (pSampler != umap.cend()) {
@@ -461,7 +464,7 @@ bool Material::parseProgram(const string& programName,const string& program) {
 							if (pTex != gTextures.cend()) {
 								int loc = mShader->getUniformLoc(item.first.c_str()); //拿到shader里面sampler的loc--
 								if (loc != -1) {
-									mShader->setTextureForSampler(loc, pTex->second); //将sampler的loc--对于一个texture
+									mShader->setTextureForSampler(loc, pTex->second); //将sampler的loc--对应一个texture
 								}
 								else {
 									LOGE("can't to find sampler2d %s in program %s", item.first.c_str(), programName.c_str());

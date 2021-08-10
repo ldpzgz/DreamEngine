@@ -14,10 +14,14 @@ public:
 
 	bool parseMaterialFile(const string&);
 	void enable();
+
+	//下面这几个函数设置或者更新material里面program定义的变量
 	void updateMvpMatrix(const float* pdata);
 	void updateTextureMatrix(const float* pdata);
 	void updateUniformColor(const Color& color);
 	void updateUniformColor(float r,float g,float b,float a);
+	//-------------------------------------------------------------
+
 	void getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc);
 
 	int getKeyAsInt(const string& key);

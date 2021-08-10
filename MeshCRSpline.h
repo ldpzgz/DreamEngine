@@ -14,7 +14,7 @@ public:
 	
 	void loadMesh(const std::vector<float>& p) override;
 protected:
-	void draw(int posloc = -1, int texloc = -1, int norloc = -1) override;
+	void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1) override;
 };
 
 #endif

@@ -14,7 +14,7 @@ public:
 	//生成n段hermiter曲线，4个点生成一段曲线。
 	void loadMesh(const std::vector<float>& p) override;
 protected:
-	void draw(int posloc = -1, int texloc = -1, int norloc = -1) override;
+	void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1) override;
 };
 
 #endif

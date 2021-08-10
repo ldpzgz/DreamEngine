@@ -10,7 +10,7 @@ MeshHermiter::~MeshHermiter() {
 
 }
 
-void MeshHermiter::draw(int posloc, int texloc, int norloc) {
+void MeshHermiter::draw(int posloc, int texloc, int norloc, int colorloc) {
 	drawLineStrip(posloc);
 }
 

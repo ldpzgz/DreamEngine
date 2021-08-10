@@ -122,6 +122,7 @@ private:
 	int mTexcoordLoc;
 	int mColorLoc;
 	int mNormalLoc;
+
 	int mMvpMatrixLoc;
 	int mTextureMatrixLoc;
 	int mUniformColorLoc; //在fs里面可以有个uniform vec4 color，用于设置输出固定颜色

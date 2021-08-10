@@ -34,11 +34,13 @@ Mesh::Mesh(MeshType meshType):
 	mPosVbo(0),
 	mTexVbo(0),
 	mNorVbo(0),
+	mColorVbo(0),
 	mIndexVbo(0),
 	mIndexByteSize(0),
 	mPosByteSize(0),
 	mNorByteSize(0),
 	mTexByteSize(0),
+	mColorByteSize(0),
 	mMeshType(meshType),
 	mposLocation(0),
 	mtexLocation(0),
@@ -56,11 +58,13 @@ Mesh::Mesh() :
 	mPosVbo(0),
 	mTexVbo(0),
 	mNorVbo(0),
+	mColorVbo(0),
 	mIndexVbo(0),
 	mIndexByteSize(0),
 	mPosByteSize(0),
 	mNorByteSize(0),
 	mTexByteSize(0),
+	mColorByteSize(0),
 	mMeshType(MeshType::MESH_DIY),
 	mposLocation(0),
 	mtexLocation(0),
@@ -77,6 +81,7 @@ void Mesh::reset() {
 	mPosVbo = 0;
 	mTexVbo = 0;
 	mNorVbo = 0;
+	mColorVbo = 0;
 	mIndexVbo = 0;
 	mposLocation = 0;
 	mtexLocation = 0;
@@ -85,20 +90,23 @@ void Mesh::reset() {
 	mLineWidth = 1.0f;
 	mPosByteSize = 0;
 	mNorByteSize = 0;
+	mColorByteSize = 0;
 	mTexByteSize = 0;
 	mIndexByteSize = 0;
 	mMeshType = MeshType::MESH_DIY;
 	mCounts = 0;
 }
 
-Mesh::Mesh(Mesh&& temp):
+Mesh::Mesh(Mesh&& temp) :
 	mPosVbo(temp.mPosVbo),
 	mTexVbo(temp.mTexVbo),
 	mNorVbo(temp.mNorVbo),
+	mColorVbo(temp.mColorVbo),
 	mIndexVbo(temp.mIndexVbo),
 	mIndexByteSize(temp.mIndexByteSize),
 	mPosByteSize(temp.mPosByteSize),
 	mNorByteSize(temp.mNorByteSize),
+	mColorByteSize(temp.mColorByteSize),
 	mTexByteSize(temp.mTexByteSize),
 	mMeshType(temp.mMeshType),
 	mposLocation(temp.mposLocation),
@@ -186,6 +194,21 @@ void Mesh::loadMesh()
 		GLuint indexes[] = { 0,1,2,0,2,3 };
 		//GLfloat tex[] = { 0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,1.0f,1.0f };
 		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes));
+	}
+	else if (mMeshType == MeshType::MESH_Rect) {
+		GLfloat pos[] = { 0.0f,1.0f,0.0f,
+			0.0f,0.0f,0.0f,
+			1.0f,0.0f,0.0f,
+			1.0f,1.0f,0.0f };
+		GLfloat color[] = {
+			1.0f,1.0f,1.0f,1.0f,
+			1.0f,1.0f,1.0f,1.0f,
+			1.0f,1.0f,1.0f,1.0f,
+			1.0f,1.0f,1.0f,1.0f
+		};
+		GLuint indexes[] = { 0,1,2,0,2,3 };
+		//GLfloat tex[] = { 0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,1.0f,1.0f };
+		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes),nullptr,0,nullptr,0,color,sizeof(color),GL_DYNAMIC_DRAW);
 	}
 	else if (mMeshType == MeshType::MESH_Triangle) {
 		GLfloat pos[] = { 0.0f,1.0f,0.0f,
@@ -279,21 +302,24 @@ void Mesh::loadMesh()
 }
 
 bool Mesh::createBufferObject(GLfloat* pos,int posByteSize, GLuint* index,int indexByteSize,
-	GLfloat* tex,int texByteSize,GLfloat* nor,int norByteSize,int drawType)
+	GLfloat* tex,int texByteSize,GLfloat* nor,int norByteSize, GLfloat* color, int colorByteSize,int drawType)
 {
-	if(pos!=0)
+	if(pos != nullptr)
 	{
 		setPosData(pos,posByteSize, drawType);
 		checkglerror();
 		mCounts = (posByteSize / (sizeof(float) * 3));
 	}
-	if(tex!=0)
+	if(tex != nullptr)
 	{
 		setTexcoordData(tex,texByteSize, drawType);
 	}
-	if(nor!=0)
+	if(nor != nullptr)
 	{
 		setNormalData(nor,norByteSize, drawType);
+	}
+	if (color != nullptr) {
+		setColorData(color, colorByteSize, drawType);
 	}
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -311,6 +337,20 @@ bool Mesh::updataPos(float* pos, int byteOffset, int size)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
 	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, pos);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	return true;
+}
+
+bool Mesh::updateColor(float* color, int byteOffset, int size) {
+	glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
+	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, color);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	return true;
+}
+
+bool Mesh::updateNormal(float* normal, int byteOffset, int size) {
+	glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
+	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, normal);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	return true;
 }
@@ -354,7 +394,7 @@ void Mesh::drawLineStrip(int posloc)
 	//glDrawElements(GL_LINE_LOOP, mNumOfIndex, GL_UNSIGNED_INT, (const void*)0);
 }
 
-void Mesh::drawTrangleFan(int posloc, int texloc)
+void Mesh::drawTrangleFan(int posloc, int texloc,int norloc,int colorloc)
 {
 	//glFrontFace(GL_CW);
 	if (createVaoIfNeed(posloc)){
@@ -373,7 +413,22 @@ void Mesh::drawTrangleFan(int posloc, int texloc)
 			glVertexAttribPointer(texloc, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
 		}
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
+
+		if (norloc >= 0)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
+			glEnableVertexAttribArray(norloc);
+			glVertexAttribPointer(norloc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+		}
+
+		if (colorloc >= 0) {
+			glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
+			glEnableVertexAttribArray(colorloc);
+			glVertexAttribPointer(colorloc, 4, GL_FLOAT, GL_FALSE, 0, 0);
+		}
+		//这个好像不用绑定了？
+		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
 
 		glBindVertexArray(0);
 	}
@@ -386,7 +441,7 @@ void Mesh::drawTrangleFan(int posloc, int texloc)
 }
 
 
-void Mesh::drawTriangles(int posloc,int texloc,int norloc)
+void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc)
 {
 	if (createVaoIfNeed(posloc)) {
 		glBindVertexArray(mVAO);
@@ -413,6 +468,12 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc)
 			glEnableVertexAttribArray(norloc);
 			glVertexAttribPointer(norloc, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
+		}
+
+		if (colorloc >= 0) {
+			glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
+			glEnableVertexAttribArray(colorloc);
+			glVertexAttribPointer(colorloc, 4, GL_FLOAT, GL_FALSE, 0, 0);
 		}
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);//glDrawElements会用到这个
@@ -444,17 +505,17 @@ void Mesh::getPointSizeRange() {
 	LOGD("gl global Param: GL_ALIASED_POINT_SIZE_RANGE %f,%f", pointSizeRange[0], pointSizeRange[1]);
 }
 
-void Mesh::draw(int posloc, int texloc, int norloc)
+void Mesh::draw(int posloc, int texloc, int norloc, int colorloc)
 {
 	if (mMeshType == MeshType::MESH_Rectangle 
 		|| mMeshType == MeshType::MESH_DIY
 		|| mMeshType == MeshType::MESH_Cuboid)
 	{
-		drawTriangles(posloc, texloc, norloc);
+		drawTriangles(posloc, texloc, norloc,colorloc);
 	}
 	else if (mMeshType == MeshType::MESH_Circle)
 	{
-		drawTrangleFan(posloc, texloc);
+		drawTrangleFan(posloc, texloc, norloc, colorloc);
 	}
 	else if (mMeshType == MeshType::MESH_Line_strip)
 	{
@@ -527,6 +588,15 @@ bool Mesh::setNormalData(GLfloat* nor, int size, unsigned int drawType)
 	return true;
 }
 
+bool Mesh::setColorData(GLfloat* nor, int size, unsigned int drawType)
+{
+	glGenBuffers(1, &mColorVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
+	glBufferData(GL_ARRAY_BUFFER, size, nor, drawType);
+	mColorByteSize = size;
+	return true;
+}
+
 bool Mesh::setIndexData(GLuint* index, int size, unsigned int drawType)
 {
 	glGenBuffers(1, &mIndexVbo);
@@ -555,6 +625,11 @@ void Mesh::unLoadMesh()
 		glDeleteBuffers(1, &mTexVbo);
 		mTexVbo = 0;
 		mTexByteSize = 0;
+	}
+	if (mColorVbo != 0) {
+		glDeleteBuffers(1, &mColorVbo);
+		mColorVbo = 0;
+		mColorByteSize = 0;
 	}
 	if (mIndexVbo != 0)
 	{

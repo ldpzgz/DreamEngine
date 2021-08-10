@@ -249,8 +249,27 @@ const CharInTexture& FontInfo::getCharInTexture(UnicodeType code) {
 
 unique_ptr<UiRender> UiRender::gInstance = make_unique<UiRender>();
 
-void UiRender::initUiRender(const string& savedPath, const string& ttfPath, const string& materialPath) {
+bool UiRender::initTextView(const string& savedPath, const string& ttfPath, const string& materialPath) {
 	pFontInfo = FontInfo::loadFromFile(savedPath, ttfPath, materialPath);
+	if (pFontInfo) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+bool UiRender::initButton(const string& buttonMaterial) {
+	mpRectMesh = make_shared<Mesh>(MeshType::MESH_Rect);
+	auto pMaterial = make_shared<Material>();
+	if (!pMaterial->parseMaterialFile(buttonMaterial)) {
+		LOGE("error to parse button material");
+		return false;
+	}
+	else {
+		mpRectMesh->setMaterial(pMaterial);
+		return true;
+	}
 }
 
 void UiRender::drawTextView(TextView* tv) {
@@ -368,19 +387,49 @@ void UiRender::drawTextView(TextView* tv) {
 }
 
 void UiRender::drawButton(Button* bt){
+	//先绘制背景，再绘制文字
+	//先算出button的model矩阵
+	auto& rect = bt->getRect();
+	glm::mat4 model(1.0f);
+	glm::scale(model, glm::vec3(rect.width, rect.height, 1.0f));
+	glm::translate(model, glm::vec3(rect.x,mWindowHeight-rect.y,0.0f));
+	if (mpRectMesh) {
+		mpRectMesh->render(mProjMatrix*model);
+		drawTextView(&bt->mTv);
+	}
+	
+}
+
+void UiRender::drawLinearLayout(LinearLayout* pll) {
 
 }
 
-shared_ptr<UiNode> UiNode::loadFromFile(const string& filepath) {
-	shared_ptr<UiNode> pUiNode;
-	return pUiNode;
+shared_ptr<Node<glm::mat3>> UiManager::loadFromFile(const string& filepath) {
+	shared_ptr<Node<glm::mat3>> pRootNode;
+	return pRootNode;
 }
 
-UiNode::UiNode():
-	Node()
-{
+UiManager::UiManager() {
 
 }
-UiNode::~UiNode() {
 
+UiManager::~UiManager() {
+
+}
+
+void UiManager::rendUI() {
+	renderNode(mpRootNode);
+}
+
+void UiManager::renderNode(shared_ptr<Node<glm::mat3>>& pNode) {
+	if (pNode) {
+		auto& pViewMap = pNode->getAttachments();
+		for (auto& pViewPair : pViewMap) {
+			dynamic_pointer_cast<View>(pViewPair.second)->draw();
+		}
+		auto& pChildNodesMap = pNode->getChildren();
+		for (auto& pChildPair : pChildNodesMap) {
+			renderNode(pChildPair.second);
+		}
+	}
 }
