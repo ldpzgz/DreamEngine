@@ -36,35 +36,9 @@ char32_t C = U'\U00004f60';// C++规定 \U后面跟8个16进制数，这个数是一个unicode编
 #include <functional>
 #include <list>
 #include <memory>
-class View : public Attachable{
-public:
-	virtual void draw() = 0;
-	virtual void mouseMove(int x,int y) {};
-
-	virtual void mouseLButtonDown(int x, int y) {};
-
-	virtual void mouseLButtonUp(int x, int y) {};
-
-	virtual void onClicked(View* pView) {
-		if (mClickedListener) {
-			mClickedListener(pView);
-		}
-	}
-
-	void setOnClickListener(std::function<void(View*)> func) {
-		mClickedListener = func;
-	}
-
-	std::function<void(View*)> mClickedListener;
-	//与parent的相对位置信息
-	unsigned int mLayoutWidth;
-	unsigned int mLayoutHeight;
-	unsigned int mLayoutMarginTop;
-	unsigned int mLayoutMarginBottom;
-	unsigned int mLayoutMarginLeft;
-	unsigned int mLayoutMarginRight;
-	unsigned int mLayoutGravite;
-};
+#include <unordered_map>
+#include <string>
+using namespace std;
 
 enum MouseState : unsigned char {
 	MouseNone = 0x00,
@@ -85,90 +59,240 @@ enum TextAlignment : unsigned char { //这里不适合使用强类型枚举
 	AlignCenter = 0x40
 };
 
-enum LayoutParam{
+enum LayoutParam {
+	WrapContent = -2,
+	MatchParent = -1,
 	Horizontal,
 	Vertical,
-	WrampContent, 
-	MarchParent,
+	LeftTop,
+	Center,
+	HCenter,
+	VCenter,
+};
+
+class View : public Attachable{
+public:
+	explicit View(shared_ptr<View> parent):mpParent(parent) {
+	}
+
+	virtual ~View() {};
+
+	View(shared_ptr<View> parent,int x, int y, int w, int h) :
+		mpParent(parent),
+		mRect(x, y, w, h)
+	{
+
+	}
+
+	View(int x, int y, int w, int h) :
+		mRect(x,y,w,h)
+	{
+
+	}
+
+	View(shared_ptr<View> parent, const Rect<int>& r) :
+		mpParent(parent),
+		mRect(r)
+	{
+
+	}
+
+	View(const Rect<int>& r) :
+		mRect(r)
+	{
+
+	}
+
+	View() = default;
+
+	virtual void draw() = 0;
+
+	weak_ptr<View> getParent() {
+		return mpParent;
+	}
+
+	void setParent(const shared_ptr<View>& parent) {
+		mpParent = parent;
+	}
+
+	list<shared_ptr<View>>& getChildren() {
+		return mChildren;
+	}
+
+	void addChild(const shared_ptr<View>& pChild) {
+		mChildren.emplace_back(pChild);
+	}
+
+	//virtual bool isMouseInside(int x, int y) { return false; }
+
+	virtual bool mouseMove(int x, int y) { return false; };
+
+	virtual bool mouseLButtonDown(int x, int y) { return false; };
+
+	virtual bool mouseLButtonUp(int x, int y) { return false; };
+
+	virtual void onClicked(View* pView) {
+		if (mClickedListener) {
+			mClickedListener(pView);
+		}
+	}
+
+	void setOnClickListener(std::function<void(View*)> func) {
+		mClickedListener = func;
+	}
+
+	std::string getId() {
+		return mId;
+	}
+
+	void setId(const std::string& id) {
+		mId = id;
+	}
+
+	void setRect(int x, int y, int w, int h) {
+		mRect.x = x;
+		mRect.y = y;
+		mRect.width = w;
+		mRect.height = h;
+	}
+
+	void setRect(const Rect<int>& r) {
+		mRect = r;
+	}
+
+	Rect<int>& getRect() {
+		return mRect;
+	}
+
+	virtual bool calcRect(const Rect<int>& parentRect);
+	/*
+	layout_width 为matchparent,或者固定尺寸的时候的时候调用这个函数计算宽度
+	*/
+	virtual void calcWidth(int width);
+	virtual void calcHeight(int height);
+	//宽高由父view来确定的时候，由父view来调用
+	virtual void setWidth(int width);
+	virtual void setHeight(int height);
+	virtual int getTotalWidthPercent() {
+		return 0;
+	}
+	virtual int getTotalHeightPercent() {
+		return 0;
+	}
+	virtual void calcChildPos() {
+		return;
+	}
+	void calcX(int x) {
+		mRect.x = x + mLayoutMarginLeft;
+	}
+	void calcY(int y) {
+		mRect.y = y + mLayoutMarginTop;
+	}
+	//x是矩形中心点的x
+	void setCenterX(int x) {
+		mRect.x = x - mRect.width/2;
+	}
+	//y是矩形中心点的y
+	void setCenterY(int y) {
+		mRect.y = y - mRect.height/2;
+	}
+	int advanceX() {
+		return mRect.width + mLayoutMarginLeft + mLayoutMarginRight;
+	}
+	int advanceY() {
+		return mRect.height + mLayoutMarginTop + mLayoutMarginBottom;
+	}
+
+	static shared_ptr<View> createView(const string& name, shared_ptr<View> parent);
+
+	std::string mId;
+	std::function<void(View*)> mClickedListener;
+	weak_ptr<void> mpUserData;
+	weak_ptr<View> mpParent;
+	
+	//与parent的相对位置信息
+	int mLayoutWidth{ 0 };		//match_parent,具体的宽度，以像素为单位
+	int mLayoutHeight{ 0 };		//match_parent,具体的宽度，以像素为单位
+	int mLayoutMarginTop{ 0 };
+	int mLayoutMarginBottom{ 0 };
+	int mLayoutMarginLeft{ 0 };
+	int mLayoutMarginRight{ 0 };
+	int mWidthPercent{ 0 };		//宽度百分比
+	int mHeightPercent{ 0 };	//高度百分比
+	int mGravity{ 0 };			//控制view内部的元素或者子view如何居中对齐，水平居中，垂直居中，居中
+
+	Rect<int> mRect{ 0,0,0,0 };
+
+	std::list<std::shared_ptr<View>> mChildren;
+
+	static void layoutWidthHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutWidthPercentHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutHeightHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutHeightPercentHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutMarginTopHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutMarginBottomHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutMarginLeftHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutMarginRightHandler(const shared_ptr<View>&, const std::string&);
+	static void gravityHandler(const shared_ptr<View>&, const std::string&);
+
+	static unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> gAttributeHandler;
 };
 
 class TextView : public View {
 public:
-	TextView(const std::string& str, int x, int y, int w, int h) :
-		text(str), rect(x, y, w, h)
+	using View::View;//继承基类的构造函数
+	TextView(shared_ptr<View> parent,const std::string& str, int x, int y, int w, int h) :
+		View(parent,x,y,w,h),
+		mText(str)
 	{
 
 	}
 
-	TextView(const std::string& str, const Rect<int>& r) :
-		text(str), rect(r)
+	TextView(shared_ptr<View> parent, const std::string& str, const Rect<int>& r) :
+		View(parent,r),
+		mText(str)
 	{
 
 	}
 
-	TextView(const std::string& str, const Rect<int>& r,const Color& c) :
-		text(str), rect(r), textColor(c)
+	TextView(shared_ptr<View> parent,const std::string& str, const Rect<int>& r,const Color& c) :
+		View(parent,r), mText(str), mTextColor(c)
 	{
 
 	}
 
-	explicit TextView(const Rect<int>& r) :
-		rect(r)
-	{
-
-	}
-
-	TextView(int x, int y, int w, int h) :
-		rect(x, y, w, h)
-	{
-
-	}
-
-	void setRect(int x, int y, int w, int h) {
-		rect.x = x;
-		rect.y = y;
-		rect.width = w;
-		rect.height = h;
-	}
-
-	void setRect(const Rect<int>& r) {
-		rect = r;
-	}
-
-	Rect<int>& getRect() {
-		return rect;
-	}
+	TextView() = default;
 
 	void setTextColor(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
-		textColor.r = r; textColor.g = g; textColor.b = b; textColor.a = a;
+		mTextColor[0] = r; mTextColor[1] = g; mTextColor[2] = b; mTextColor[3] = a;
 	}
 
 	void setTextColor(unsigned char r, unsigned char g, unsigned char b) {
-		textColor.r = r; textColor.g = g; textColor.b = b;
+		mTextColor[0] = r; mTextColor[1] = g; mTextColor[2] = b;
 	}
 
 	void setTextColor(const Color& c) {
-		textColor = c;
+		mTextColor = c;
 	}
 
 	Color& getTextColor() {
-		return textColor;
+		return mTextColor;
 	}
 
 	const std::string& getText() {
-		return text;
+		return mText;
 	}
 
 	void setText(const std::string& str) {
-		text = str;
+		mText = str;
 	}
 
-	void setCharSize(int size) {
-		charSize = size;
+	void setTextSize(int size) {
+		mTextSize = size;
 	}
 
-	int getCharSize() {
-		return charSize;
+	int getTextSize() {
+		return mTextSize;
 	}
 
 	void setMaxLines(int lines) {
@@ -207,10 +331,9 @@ public:
 
 	void draw() override;
 private:
-	std::string text;
-	Rect<int> rect{0,0,0,0};
-	Color textColor{0.0f,0.0f,0.0f,1.0f};
-	int charSize{ 32 };//文字大小，以像素为单位
+	std::string mText;
+	Color mTextColor{0.0f,0.0f,0.0f,1.0f};
+	int mTextSize{ 32 };//文字大小，以像素为单位
 	int maxLine{ 1 };
 	int mLineSpacingInc{0}; //行间距增量
 	int mCharSpacingInc{ 0 };//字符间距增量
@@ -218,35 +341,10 @@ private:
 };
 
 class UiRender;
-class Button : public View{
+class Button : public TextView{
 public:
 	friend UiRender;
-	Button(const std::string& str, int x, int y, int w, int h):
-		mTv(str,x,y,w,h), mRect(x, y, w, h)
-	{
-
-	}
-	Button(int x, int y, int w, int h) :
-		mTv(x,y,w,h),
-		mRect(x, y, w, h)
-	{
-
-	}
-
-	explicit Button(const Rect<int>& r) :
-		mTv(r),
-		mRect(r)
-	{
-
-	}
-
-	void setText(const std::string& t) {
-		mTv.setText(t);
-	}
-
-	Rect<int>& getRect() {
-		return mRect;
-	}
+	using TextView::TextView;//继承基类的构造函数
 
 	/*
 	设置button的背景颜色
@@ -266,38 +364,52 @@ public:
 		mColor[3] = colorRight;
 	}
 
-	void setTextColor(const Color& c) {
-		mTv.setTextColor(c);
-	}
-
 	void draw() override;
+
+	bool mouseMove(int x, int y) override;
+
+	bool mouseLButtonDown(int x, int y) override;
+
+	bool mouseLButtonUp(int x, int y) override;
 private:
-	TextView mTv;
-	Rect<int> mRect{0,0,0,0};
 	Color mColor[4]{ {1.0f,1.0f,1.0f,1.0f},{ 1.0f,1.0f,1.0f,1.0f },{ 1.0f,1.0f,1.0f,1.0f },{ 1.0f,1.0f,1.0f,1.0f } };
 	unsigned int mMouseState{ MouseState::MouseNone};
+	bool mbLButtonDown{ false };
 };
 
 class LinearLayout :public View {
 public:
 	friend UiRender;
-	LinearLayout(unsigned int layoutParam) {
-		mLayoutParam = layoutParam;
+	using View::View;//继承基类的构造函数
+	LinearLayout(shared_ptr<View> parent, unsigned int layoutParam):
+		View(parent),
+		mLayoutParam(layoutParam)
+	{
+
+	}
+	explicit LinearLayout(unsigned int layoutParam):
+		mLayoutParam(layoutParam)
+	{
 	}
 
 	void setLayoutParam(unsigned int layoutParam) {
 		mLayoutParam = layoutParam;
 	}
 
-	Rect<int>& getRect() {
-		return mRect;
-	}
-
 	void draw() override;
+
+	int getTotalWidthPercent() override;
+
+	int getTotalHeightPercent() override;
+
+	void calcChildPos() override;
+
+	static void orientationHandler(const shared_ptr<View>&, const string&);
 private:
 	unsigned int mLayoutParam{ LayoutParam::Horizontal };
-	Rect<int> mRect{ 0,0,0,0 };
-	std::list<std::shared_ptr<View>> mChildren;
+	int mOrientation{ 0 };
+	int mTotalWidthPercent{ 0 };
+	int mTotalHeightPercent{ 0 };
 };
 
 

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+	id = "firstLayout"
+	width="match_parent"
+	height="match_parent"
+	gravity="center"
+	orientation="vertical">
+	
+	<TextView
+		id="tv"
+		width="wrap_content"
+		height="wrap_content"
+		marginLeft="10"
+		marginRight="10"
+		gravity="center"
+		textSize="32"
+		textColor="#ffffffff"
+		text="title">
+	</TextView>
+	<TextView
+		id="tv2"
+		width="wrap_content"
+		height="wrap_content"
+		marginLeft="10"
+		marginRight="10"
+		gravity="center"
+		textSize="32"
+		textColor="#ffffffff"
+		text="abcdefg">
+	</TextView>
+	
+</LinearLayout>

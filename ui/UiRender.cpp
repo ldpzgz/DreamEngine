@@ -7,13 +7,19 @@
 #include "../Fbo.h"
 #include "../Utils.h"
 #include "Ui.h"
+#include <rapidxml.hpp>
+#include <rapidxml_utils.hpp>  //rapidxml::file
+#include <rapidxml_print.hpp>  //rapidxml::print
 using namespace std;
 
 const string CharSizeKey("charSize");		//一个字占用的宽高
 static const std::string gFontTextureName("fontsTexture");
-static const string gfontfile("./material/simfang.ttf");
-static const string gmyfontfile("./material/myfont.data");
-
+static const string gFontFile("./opengles3/material/simfang.ttf");
+static const string gSavedFontFile("./opengles3/material/myfont.data");
+static const string gFontMaterialFile("./opengles3/material/font.material");
+static const string gButtonMaterialFile("./opengles3/material/button.material");
+static const string gResourceStringFile("./opengles3/material/strings.xml");
+static const string gResourceColorFile("./opengles3/material/colors.xml");
 FT_Library  FontInfo::glibrary;
 FT_Face     FontInfo::gface;      /* handle to face object */
 bool FontInfo::gIsFreetypeInit = false;
@@ -132,6 +138,7 @@ shared_ptr<FontInfo> FontInfo::loadFromFile(const string& savePath, const string
 		inFile.read(imageData.data(), imageSize);
 		//更新纹理，把已经渲染好的字符图像上传到纹理上去
 		fontInfo->pCharTexture->update(0, 0, fontInfo->textureHeight, fontInfo->curTextureHeight, imageData.data());
+		inFile.close();
 	}
 
 	return fontInfo;
@@ -168,6 +175,7 @@ void FontInfo::saveToFile() {
 			out.write((const char*)&info.first, sizeof(UnicodeType));
 			out<< info.second.x << info.second.y << info.second.left << info.second.top << info.second.width << info.second.width << info.second.advX << info.second.advX;
 		});
+		out.close();
 	}
 	
 }
@@ -275,7 +283,7 @@ bool UiRender::initButton(const string& buttonMaterial) {
 void UiRender::drawTextView(TextView* tv) {
 	if (tv != nullptr && pFontInfo) {
 		int originCharSize = pFontInfo->charSize;
-		int tvCharSize = tv->getCharSize();
+		int textSize = tv->getTextSize();//字的点阵大小，像素为单位
 		auto& tvRect = tv->getRect();
 		const auto& text = tv->getText();
 		auto slen = text.size();
@@ -286,7 +294,7 @@ void UiRender::drawTextView(TextView* tv) {
 		//currentPosY = mWindowHeight - currentPosY;//ui的坐标系跟OpenGL的坐标系不一样，需要转换一下
 		//计算出要渲染的文字的纹理信息与位置信息，从(0,0)这个位置开始排版文字，等会再根据textview的属性，translate一下。
 		float currentPosX = 0.0f; //下一个要渲染的文字的基线位置x
-		float currentPosY = -tvCharSize - tv->getLineSpacingInc();//下一个要渲染的文字的基线位置y
+		float currentPosY = -textSize - tv->getLineSpacingInc();//下一个要渲染的文字的基线位置y
 		float yAdvance = currentPosY;//考虑到textview设置的额外行间距，默认的行间距是freetype渲染文字时的CharSize
 		float xExtraAdvance = tv->getCharSpacingInc();//考虑到textview设置的额外字符间距
 		float maxWidth = tvRect.width;//textView的宽度，字符渲染不能超出这个宽度
@@ -395,18 +403,142 @@ void UiRender::drawButton(Button* bt){
 	glm::translate(model, glm::vec3(rect.x,mWindowHeight-rect.y,0.0f));
 	if (mpRectMesh) {
 		mpRectMesh->render(mProjMatrix*model);
-		drawTextView(&bt->mTv);
+		drawTextView(bt);
 	}
-	
 }
 
 void UiRender::drawLinearLayout(LinearLayout* pll) {
 
 }
 
-shared_ptr<Node<glm::mat3>> UiManager::loadFromFile(const string& filepath) {
-	shared_ptr<Node<glm::mat3>> pRootNode;
-	return pRootNode;
+
+unique_ptr<UiManager> UiManager::gInstance = make_unique<UiManager>();
+unordered_map<string, string> UiManager::gRStrings;
+unordered_map<string, Color> UiManager::gRColors;
+void UiManager::parseRColors(const string& path) {
+	rapidxml::file<> fdoc(path.c_str());
+	if (fdoc.size() > 0) {
+		rapidxml::xml_document<> doc;// character type defaults to char
+		doc.parse<0>(fdoc.data());// 0 means default parse flags
+		auto pResNode = doc.first_node("resources");
+		if (pResNode != nullptr) {
+			auto pColorNode = pResNode->first_node("color");
+			while (pColorNode != nullptr) {
+				auto attribute = pColorNode->first_attribute("name");
+				if (attribute != nullptr) {
+					string key = attribute->value();
+					string value = pColorNode->value();//value is like #ffffffaa
+					if (!key.empty() && !value.empty()) {
+						Color color;
+						int index = 0;
+						int relIndex = 1 + 2 * index;
+						bool hasError = false;
+						while (index < 4 && relIndex < value.size()) {
+							auto Rstr = value.substr(relIndex, 2);
+							try {
+								color[index] = std::stoi(Rstr, nullptr, 16);
+							}
+							catch (const logic_error& e) {
+								LOGE("parse color %s in colors.xml throw exception %s",key.c_str(),e.what());
+								hasError = true;
+								break;
+							}
+							++index;
+							relIndex = 1 + 2 * index;
+						}
+						if (!hasError) {
+							auto ret = gRColors.try_emplace(key, color);
+							if (!ret.second) {
+								LOGD("error to store color resource %s",key.c_str());
+							}
+						}
+					}
+				}
+				pColorNode = pColorNode->next_sibling();
+			}
+		}
+	}
+	else {
+		LOGE("error to parse resource string file %s",path);
+	}
+}
+void UiManager::parseRStrings(const string& path) {
+	rapidxml::file<> fdoc(path.c_str());
+	if (fdoc.size() > 0) {
+		rapidxml::xml_document<> doc;// character type defaults to char
+		doc.parse<0>(fdoc.data());// 0 means default parse flags
+		auto pResNode = doc.first_node("resources");
+		if (pResNode != nullptr) {
+			auto pStringNode = pResNode->first_node("string");
+			while (pStringNode != nullptr) {
+				auto attribute = pStringNode->first_attribute("name");
+				if (attribute != nullptr) {
+					string key = attribute->value();
+					string value = pStringNode->value();//value is like #ffffffaa
+					if (!key.empty() && !value.empty()) {
+						auto ret = gRStrings.try_emplace(key, value);
+						if (!ret.second) {
+							LOGE("error to store string resource %s",key.c_str());
+						}
+					}
+				}
+				pStringNode = pStringNode->next_sibling();
+			}
+		}
+	}
+}
+
+void parseView(const shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode, shared_ptr<UiTree>& mpTree) {
+	shared_ptr<View> pView;
+	while (pnode != nullptr) {
+		string viewName = pnode->name();
+		pView = View::createView(viewName, nullptr);
+		
+		if (pView) {
+			if (parent) {
+				pView->setParent(parent);
+				parent->addChild(pView);
+			}
+			auto attr = pnode->first_attribute();
+			while (attr != nullptr) {
+				string attrName = attr->name();
+				if (attrName == "id") {
+					//有id的控件，才保存起来，以便查找
+					mpTree->mViews.emplace(attr->value(), pView);
+				}
+				else {
+					auto it = View::gAttributeHandler.find(attrName);
+					if (it != View::gAttributeHandler.end()) {
+						it->second(pView, attr->value());
+					}
+				}
+				attr = attr->next_attribute();
+			}
+		}
+		auto child = pnode->first_node();
+		auto sibling = pnode->next_sibling();
+		if (child != nullptr) {
+			parseView(pView, child, mpTree);
+		}
+		if (sibling != nullptr) {
+			parseView(parent, sibling, mpTree);
+		}
+	}
+}
+
+//加载ui的布局文件
+shared_ptr<UiTree> UiManager::loadFromFile(const string& filepath) {
+	shared_ptr<UiTree> mpTree = make_shared<UiTree>();
+	//读取xml
+	rapidxml::file<> fdoc(filepath.c_str());
+	if (fdoc.size() > 0) {
+		rapidxml::xml_document<> doc;// character type defaults to char
+		doc.parse<0>(fdoc.data());// 0 means default parse flags
+
+		auto root = doc.first_node();
+		parseView(shared_ptr<View>(), root, mpTree);
+	}
+	return mpTree;
 }
 
 UiManager::UiManager() {
@@ -417,19 +549,134 @@ UiManager::~UiManager() {
 
 }
 
-void UiManager::rendUI() {
-	renderNode(mpRootNode);
+void UiManager::setUiTree(const shared_ptr<UiTree>& tree) {
+	mpUiTree = tree;
+	//计算出view的位置尺寸
+	calcViewsRect();
 }
 
-void UiManager::renderNode(shared_ptr<Node<glm::mat3>>& pNode) {
-	if (pNode) {
-		auto& pViewMap = pNode->getAttachments();
-		for (auto& pViewPair : pViewMap) {
-			dynamic_pointer_cast<View>(pViewPair.second)->draw();
+void UiManager::rendUI() {
+	if (mpUiTree) {
+		if (mpUiTree->mpRootView) {
+			mpUiTree->mpRootView->draw();
+			auto children = mpUiTree->mpRootView->getChildren();
+			for (auto& child : children) {
+				if (child) {
+					child->draw();
+				}
+			}
 		}
-		auto& pChildNodesMap = pNode->getChildren();
-		for (auto& pChildPair : pChildNodesMap) {
-			renderNode(pChildPair.second);
+	}
+}
+
+void UiManager::updateWidthHeight(float width, float height) {
+	mWindowWidth = width;
+	mWindowHeight = height;
+	mProjMatrix = glm::ortho(0.0f, width, 0.0f, height);
+}
+
+void UiManager::mouseMove(int x, int y) {
+	if (mpUiTree) {
+		if (mpUiTree->mpRootView) {
+			mpUiTree->mpRootView->mouseMove( x, y);
+			auto children = mpUiTree->mpRootView->getChildren();
+			for (auto& child : children) {
+				if (child) {
+					child->mouseMove( x, y);
+				}
+			}
+		}
+	}
+}
+
+void UiManager::mouseLButtonDown(int x, int y) {
+	if (mpUiTree) {
+		if (mpUiTree->mpRootView) {
+			mpUiTree->mpRootView->mouseLButtonDown( x, y);
+			auto children = mpUiTree->mpRootView->getChildren();
+			for (auto& child : children) {
+				if (child) {
+					child->mouseLButtonDown( x, y);
+				}
+			}
+		}
+	}
+}
+
+void UiManager::mouseLButtonUp(int x, int y) {
+	if (mpUiTree) {
+		if (mpUiTree->mpRootView) {
+			mpUiTree->mpRootView->mouseLButtonUp( x, y);
+			auto children = mpUiTree->mpRootView->getChildren();
+			for (auto& child : children) {
+				if (child) {
+					child->mouseLButtonUp( x, y);
+				}
+			}
+		}
+	}
+}
+
+bool UiManager::initUi(int w, int h) {
+	//初始化uirender
+	UiRender::getInstance()->initTextView(gSavedFontFile, gFontFile, gFontMaterialFile);
+	UiRender::getInstance()->initButton(gButtonMaterialFile);
+	//加载ui string和color配置
+	parseRStrings(gResourceStringFile);
+	parseRColors(gResourceColorFile);
+	updateWidthHeight(w, h);
+	return true;
+}
+
+void UiManager::calcViewsRect() {
+	if (mpUiTree && mpUiTree->mpRootView) {
+		//先计算出各个控件的宽高，再计算他们的位置
+		calcViewsWidthHeight(mWindowWidth, mWindowHeight, mpUiTree->mpRootView);
+		//rootView的xy默认都是0，0
+		calcViewsPos(mpUiTree->mpRootView);
+	}
+}
+
+void UiManager::calcViewsPos(shared_ptr<View> pView) {
+	pView->calcChildPos();
+	auto& children = pView->getChildren();
+	if (!children.empty()) {
+		for (auto& pChild : children) {
+			if (pChild) {
+				calcViewsPos(pChild);
+			}
+		}
+	}
+}
+
+void UiManager::calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView) {
+	//计算pView的宽度，以及pView的子view的宽度（如果子view是按百分比布局的)
+	if (pView) {
+		//如果pView不是按百分比布局的，否则父view已经帮它计算好了
+		if (pView->mWidthPercent == 0) {
+			pView->calcWidth(parentWidth);
+		}
+		if (pView->mHeightPercent == 0) {
+			pView->calcWidth(parentHeight);
+		}
+
+		int myWidth = pView->mRect.width;
+		int myHeight = pView->mRect.height;
+
+		//如果子view是按百分比布局的,帮它们算出宽度
+		auto totalWPercent = pView->getTotalWidthPercent();
+		auto totalHPercent = pView->getTotalHeightPercent();
+		
+		for (auto& pChild : pView->mChildren) {
+			if (totalWPercent > 0) {
+				int childWidth = (int)((float)myWidth*(float)pView->mWidthPercent / (float)totalWPercent);
+				pChild->setWidth(childWidth);
+			}
+			if (totalHPercent > 0) {
+				int childHeight = (int)((float)myHeight*(float)pView->mHeightPercent / (float)totalHPercent);
+				pChild->setHeight(childHeight);
+			}
+			calcViewsWidthHeight(myWidth, myHeight, pChild);
 		}
 	}
 }

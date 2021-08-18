@@ -221,7 +221,7 @@ void Shader::enable()
 	}
 
 	if (mUniformColorLoc >= 0) {
-		glUniform4f(mUniformColorLoc, mUniformColor.r, mUniformColor.g, mUniformColor.b, mUniformColor.a);
+		glUniform4f(mUniformColorLoc, mUniformColor[0], mUniformColor[1], mUniformColor[2], mUniformColor[3]);
 	}
 }
 
@@ -303,10 +303,10 @@ void Shader::setTextureMatrix(const float* pMatrix) {
 
 void Shader::setUniformColor(float r, float g, float b, float a)
 {
-	mUniformColor.r = r;
-	mUniformColor.g = g;
-	mUniformColor.b = b;
-	mUniformColor.a = a;
+	mUniformColor[0] = r;
+	mUniformColor[1] = g;
+	mUniformColor[2] = b;
+	mUniformColor[3] = a;
 }
 
 void Shader::setUniformColor(Color color) {

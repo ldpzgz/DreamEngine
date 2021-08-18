@@ -1,6 +1,6 @@
 #ifndef _RECT_H_
 #define _RECT_H_
-
+#include <array>
 template<typename T>
 class Rect {
 public:
@@ -36,27 +36,41 @@ public:
 		}
 	}
 public:
-	T x, y, width, height;
+	union {
+		T x, y, width, height;
+		std::array<T, 4> rect;
+	};
 };
 
 class Color {
 public:
-	Color(float r1, float g1, float b1, float a1) :r(r1), g(g1), b(b1), a(a1) {
-
+	Color(float r, float g, float b, float a) {
+		rgba[0] = r;
+		rgba[1] = g;
+		rgba[2] = b;
+		rgba[3] = a;
 	}
 
-	Color(float r1, float g1, float b1) :r(r1), g(g1), b(b1) {
-
+	Color(float r, float g, float b) {
+		rgba[0] = r;
+		rgba[1] = g;
+		rgba[2] = b;
 	}
 
 	Color() = default;
 
 	Color(const Color& c) = default;
 
-	float r{ 0.0f };
-	float g{ 0.0f };
-	float b{ 0.0f };
-	float a{ 0.0f };
+	float& operator[](int index) {
+		return rgba[index];
+	}
+	union {
+		float r;
+		float g;
+		float b;
+		float a;
+		std::array<float, 4> rgba;
+	};
 };
 
 #endif

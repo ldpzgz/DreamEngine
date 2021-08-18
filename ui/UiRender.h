@@ -7,16 +7,16 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <memory>
 #include "../material.h"
-#ifndef GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/mat4x4.hpp>
 #include <glm/mat3x3.hpp>
 // Include all GLM extensions
 #include <glm/ext.hpp> // perspective, translate, rotate
 #include <glm/gtx/matrix_transform_2d.hpp>
-#endif
+
 #include "../Utils.h"
 #include "../Mesh.h"
 #include "../Node.h"
@@ -92,6 +92,7 @@ private:
 	static void releaseFreetype();
 };
 
+class View;
 class TextView;
 class Button;
 class LinearLayout;
@@ -112,7 +113,7 @@ public:
 	*/
 	bool initTextView(const string& savedPath, const string& ttfPath, const string& materialPath);
 	/*
-	功能：			初始化button
+	功能：			初始化绘制button需要用到的一些资源
 	buttonMaterial	渲染button使用的material
 	*/
 	bool initButton(const string& buttonMaterial);
@@ -140,32 +141,70 @@ private:
 	glm::mat4 mProjMatrix;
 };
 
+class UiTree {
+public:
+	shared_ptr<View> mpRootView;
+	unordered_map<std::string, shared_ptr<View>> mViews;//存储拥有id的view
+};
+
 /*
-这个类有一颗ui树，ui树上每个node可以挂一个view，
+这个类有一颗ui树，ui树上每个node可以挂一堆view，
 遍历这棵树，调用每个view的render函数，绘制出ui。
 负责传递输入事件给每一个view
 */
 class UiManager {
 public:
-	//从一个xml文件里面加载一棵ui树，准备模仿Android的ui系统
-	static shared_ptr<Node<glm::mat3>> loadFromFile(const string& filepath);
-
-	void setUiRootNode(const shared_ptr<Node<glm::mat3>> pRoot) {
-		mpRootNode = pRoot;
+	static unique_ptr<UiManager>& getInstance() {
+		return gInstance;
 	}
+
+	//从一个xml文件里面加载一棵ui树，准备模仿Android的ui系统
+	shared_ptr<UiTree> loadFromFile(const string& filepath);
+
+	/*
+	功能：	初始化ui，初始化uirender，加载string.xml,color.xml等
+	w		窗口的宽度
+	h		窗口的高度
+	*/
+	bool initUi(int w,int h);
 
 	UiManager();
 
 	~UiManager();
 
-	void rendUI();
-private:
-	void renderNode(shared_ptr<Node<glm::mat3>>& pNode);
+	//设置ui树，计算ui树中每个控件的位置尺寸，设置进来的根节点会被渲染
+	void setUiTree(const shared_ptr<UiTree>& tree);
 
-	std::shared_ptr<Node<glm::mat3>> mpRootNode;
+	//当窗口变化的时候，需要调用这个函数更新一下
+	void updateWidthHeight(float width, float height);
+
+	//应该把ui绘制到一张纹理上，避免每次都去绘制所有ui，很多时候，ui是没有变化的，
+	//只更新有变化的ui
+	void rendUI();
+
+	//ui的输入事件驱动
+	void mouseMove(int x, int y);
+
+	void mouseLButtonDown(int x, int y);
+
+	void mouseLButtonUp(int x, int y);
+private:
+	/*
+	计算uitree上所有view的实际尺寸
+	*/
+	void calcViewsRect();
+	void calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView);
+	void calcViewsPos(shared_ptr<View> pView);
+	shared_ptr<UiTree> mpUiTree;
 	float mWindowWidth;
 	float mWindowHeight;
 	glm::mat4 mProjMatrix;
+
+	static unique_ptr<UiManager> gInstance;
+	static unordered_map<string, string> gRStrings;//保存从material/strings.xml里面解析出来的字符串
+	static unordered_map<string, Color> gRColors;//保存从material/colors.xml里面解析出来的颜色值
+	static void parseRStrings(const string& path);
+	static void parseRColors(const string& path);
 };
 
 #endif

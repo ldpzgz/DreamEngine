@@ -311,8 +311,8 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 						LOGE("error to create texture %s", textureName.c_str());
 					}
 				}
-				catch (exception e) {
-					LOGE("parseTexture error to stoi width height depth");
+				catch (const logic_error& e) {
+					LOGE("parseTexture throw exception %s from stoi() width height depth",e.what());
 					return false;
 				}
 			}
