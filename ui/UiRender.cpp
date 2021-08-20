@@ -6,7 +6,6 @@
 #include <cuchar>
 #include "../Fbo.h"
 #include "../Utils.h"
-#include "Ui.h"
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>  //rapidxml::file
 #include <rapidxml_print.hpp>  //rapidxml::print
@@ -408,7 +407,12 @@ void UiRender::drawButton(Button* bt){
 }
 
 void UiRender::drawLinearLayout(LinearLayout* pll) {
-
+	auto& children = pll->getChildren();
+	for (auto& pChild : children) {
+		if (pChild) {
+			pChild->draw();
+		}
+	}
 }
 
 
@@ -495,6 +499,7 @@ void parseView(const shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode, 
 		pView = View::createView(viewName, nullptr);
 		
 		if (pView) {
+			pView->setDirtyListener(mpTree);
 			if (parent) {
 				pView->setParent(parent);
 				parent->addChild(pView);
@@ -551,20 +556,94 @@ UiManager::~UiManager() {
 
 void UiManager::setUiTree(const shared_ptr<UiTree>& tree) {
 	mpUiTree = tree;
-	//计算出view的位置尺寸
-	calcViewsRect();
+	if (mpUiTree) {
+		//计算出view的位置尺寸
+		mpUiTree->calcViewsRect(mWindowWidth, mWindowHeight);
+		if (mpUiTree->mpRootView) {
+			mpUiTree->mpRootView->setDirty(true);
+		}
+	}
 }
 
-void UiManager::rendUI() {
-	if (mpUiTree) {
-		if (mpUiTree->mpRootView) {
-			mpUiTree->mpRootView->draw();
-			auto children = mpUiTree->mpRootView->getChildren();
-			for (auto& child : children) {
-				if (child) {
-					child->draw();
-				}
+void UiTree::rendUI() {
+	if (!mViewsToBeDrawing.empty()) {
+		//渲染到纹理
+		mFbo.startRender();
+		for (auto& pView : mViewsToBeDrawing) {
+			auto pV = pView.lock();
+			if (pV) {
+				pV->draw();
 			}
+		}
+		mFbo.endRender();
+		mViewsToBeDrawing.clear();
+	}
+}
+
+void UiTree::addDirtyView(const shared_ptr<View>& pView) {
+	mViewsToBeDrawing.emplace_back(pView);
+}
+void UiTree::updateWidthHeight(float width, float height) {
+	mFbo.detachColorTexture();
+	if (!mpTexture) {
+		mpTexture = make_shared<Texture>();
+	}
+	mpTexture->unload();
+	mpTexture->load(width, height, nullptr, GL_RGBA);
+	mFbo.attachColorTexture(mpTexture, 0);
+	//ui重绘
+	addDirtyView(mpRootView);
+}
+
+void UiTree::calcViewsRect(int windowWidth, int windowHeight) {
+	if (mpRootView) {
+		//先计算出各个控件的宽高，再计算他们的位置
+		calcViewsWidthHeight(windowWidth, windowHeight, mpRootView);
+		//rootView的xy默认都是0，0
+		calcViewsPos(mpRootView);
+	}
+}
+
+void UiTree::calcViewsPos(shared_ptr<View> pView) {
+	pView->calcChildPos();
+	auto& children = pView->getChildren();
+	if (!children.empty()) {
+		for (auto& pChild : children) {
+			if (pChild) {
+				calcViewsPos(pChild);
+			}
+		}
+	}
+}
+
+void UiTree::calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView) {
+	//计算pView的宽度，以及pView的子view的宽度（如果子view是按百分比布局的)
+	if (pView) {
+		//如果pView不是按百分比布局的，否则父view已经帮它计算好了
+		if (pView->mWidthPercent == 0) {
+			pView->calcWidth(parentWidth);
+		}
+		if (pView->mHeightPercent == 0) {
+			pView->calcWidth(parentHeight);
+		}
+
+		int myWidth = pView->mRect.width;
+		int myHeight = pView->mRect.height;
+
+		//如果子view是按百分比布局的,帮它们算出宽度
+		auto totalWPercent = pView->getTotalWidthPercent();
+		auto totalHPercent = pView->getTotalHeightPercent();
+
+		for (auto& pChild : pView->mChildren) {
+			if (totalWPercent > 0) {
+				int childWidth = (int)((float)myWidth*(float)pView->mWidthPercent / (float)totalWPercent);
+				pChild->setWidth(childWidth);
+			}
+			if (totalHPercent > 0) {
+				int childHeight = (int)((float)myHeight*(float)pView->mHeightPercent / (float)totalHPercent);
+				pChild->setHeight(childHeight);
+			}
+			calcViewsWidthHeight(myWidth, myHeight, pChild);
 		}
 	}
 }
@@ -573,6 +652,9 @@ void UiManager::updateWidthHeight(float width, float height) {
 	mWindowWidth = width;
 	mWindowHeight = height;
 	mProjMatrix = glm::ortho(0.0f, width, 0.0f, height);
+	if (mpUiTree) {
+		mpUiTree->updateWidthHeight(width, height);
+	}
 }
 
 void UiManager::mouseMove(int x, int y) {
@@ -626,57 +708,4 @@ bool UiManager::initUi(int w, int h) {
 	parseRColors(gResourceColorFile);
 	updateWidthHeight(w, h);
 	return true;
-}
-
-void UiManager::calcViewsRect() {
-	if (mpUiTree && mpUiTree->mpRootView) {
-		//先计算出各个控件的宽高，再计算他们的位置
-		calcViewsWidthHeight(mWindowWidth, mWindowHeight, mpUiTree->mpRootView);
-		//rootView的xy默认都是0，0
-		calcViewsPos(mpUiTree->mpRootView);
-	}
-}
-
-void UiManager::calcViewsPos(shared_ptr<View> pView) {
-	pView->calcChildPos();
-	auto& children = pView->getChildren();
-	if (!children.empty()) {
-		for (auto& pChild : children) {
-			if (pChild) {
-				calcViewsPos(pChild);
-			}
-		}
-	}
-}
-
-void UiManager::calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView) {
-	//计算pView的宽度，以及pView的子view的宽度（如果子view是按百分比布局的)
-	if (pView) {
-		//如果pView不是按百分比布局的，否则父view已经帮它计算好了
-		if (pView->mWidthPercent == 0) {
-			pView->calcWidth(parentWidth);
-		}
-		if (pView->mHeightPercent == 0) {
-			pView->calcWidth(parentHeight);
-		}
-
-		int myWidth = pView->mRect.width;
-		int myHeight = pView->mRect.height;
-
-		//如果子view是按百分比布局的,帮它们算出宽度
-		auto totalWPercent = pView->getTotalWidthPercent();
-		auto totalHPercent = pView->getTotalHeightPercent();
-		
-		for (auto& pChild : pView->mChildren) {
-			if (totalWPercent > 0) {
-				int childWidth = (int)((float)myWidth*(float)pView->mWidthPercent / (float)totalWPercent);
-				pChild->setWidth(childWidth);
-			}
-			if (totalHPercent > 0) {
-				int childHeight = (int)((float)myHeight*(float)pView->mHeightPercent / (float)totalHPercent);
-				pChild->setHeight(childHeight);
-			}
-			calcViewsWidthHeight(myWidth, myHeight, pChild);
-		}
-	}
 }

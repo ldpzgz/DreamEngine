@@ -49,6 +49,8 @@ public:
 	Fbo();
 	virtual ~Fbo();
 	
+	void detachColorTexture(int attachment_n=0, GLint level=0);
+	void detachDepthTexture(GLint level = 0);
 	bool attachColorTexture(const std::shared_ptr<Texture>& texture,int attachment_n, GLint level=0);
 	bool attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level=0);
 	

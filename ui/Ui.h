@@ -70,7 +70,14 @@ enum LayoutParam {
 	VCenter,
 };
 
-class View : public Attachable{
+class View;
+class DirtyListener {
+public:
+	virtual void addDirtyView(const shared_ptr<View>& pView) = 0;
+};
+
+//这个类及其子类都只能在堆中分配内存，用智能指针管理
+class View : public Attachable,public std::enable_shared_from_this<View>{
 public:
 	explicit View(shared_ptr<View> parent):mpParent(parent) {
 	}
@@ -105,7 +112,9 @@ public:
 
 	View() = default;
 
-	virtual void draw() = 0;
+	virtual void draw() {
+		setDirty(false);
+	}
 
 	weak_ptr<View> getParent() {
 		return mpParent;
@@ -203,6 +212,24 @@ public:
 		return mRect.height + mLayoutMarginTop + mLayoutMarginBottom;
 	}
 
+	void setDirtyListener(const shared_ptr<DirtyListener>& pDirtyListener) {
+		mpDirtyListener = pDirtyListener;
+	}
+
+	void setDirty(bool b) {
+		mbIsDirty = b;
+		if (mbIsDirty) {
+			auto pListener = mpDirtyListener.lock();
+			if (pListener) {
+				pListener->addDirtyView(shared_from_this());
+			}
+		}
+	}
+
+	bool getDirty() {
+		return mbIsDirty;
+	}
+
 	static shared_ptr<View> createView(const string& name, shared_ptr<View> parent);
 
 	std::string mId;
@@ -224,6 +251,8 @@ public:
 	Rect<int> mRect{ 0,0,0,0 };
 
 	std::list<std::shared_ptr<View>> mChildren;
+	weak_ptr<DirtyListener> mpDirtyListener;
+	bool mbIsDirty{ false };
 
 	static void layoutWidthHandler(const shared_ptr<View>&, const std::string&);
 	static void layoutWidthPercentHandler(const shared_ptr<View>&, const std::string&);
@@ -411,7 +440,4 @@ private:
 	int mTotalWidthPercent{ 0 };
 	int mTotalHeightPercent{ 0 };
 };
-
-
-
 #endif

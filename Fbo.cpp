@@ -33,6 +33,29 @@ void Fbo::enable()
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &mPreFrameBuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER,mFboId);
 }
+
+void Fbo::detachColorTexture(int attachment_n, GLint level) {
+	enable();
+	glFramebufferTexture2D(
+		GL_FRAMEBUFFER,
+		GL_COLOR_ATTACHMENT0 + attachment_n,
+		GL_TEXTURE_2D,
+		0,
+		level);
+	disable();
+}
+
+void Fbo::detachDepthTexture(GLint level) {
+	enable();
+	glFramebufferTexture2D(
+		GL_FRAMEBUFFER,
+		GL_DEPTH_ATTACHMENT,
+		GL_TEXTURE_2D,
+		0,
+		level);
+	disable();
+}
+
 bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attachment_n, GLint level)
 {
 	bool ret = false;
@@ -44,7 +67,7 @@ bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attach
 
 	enable();
 
-	if(mbIsAttach)
+	/*if(mbIsAttach)
 	{
 		glFramebufferTexture2D(
 			GL_FRAMEBUFFER,
@@ -53,7 +76,7 @@ bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attach
 			0,
 			level);
 		mbIsAttach = false;
-	}
+	}*/
 
 	mWidth = texture->getWidth();
 	mHeight = texture->getHeight();
@@ -71,7 +94,7 @@ bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attach
 		if (error == GL_FRAMEBUFFER_COMPLETE)
 		{
 			LOGD("fbo completed \n");
-			mbIsAttach = true;
+			//mbIsAttach = true;
 			ret = true;
 		}
 		else if (error == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)

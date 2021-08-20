@@ -3,10 +3,12 @@
 
 void TextView::draw() {
 	UiRender::getInstance()->drawTextView(this);
+	View::draw();
 }
 
 void Button::draw() {
 	UiRender::getInstance()->drawButton(this);
+	View::draw();
 }
 
 bool Button::mouseMove(int x, int y) {
@@ -169,6 +171,7 @@ void LinearLayout::calcChildPos() {
 
 void LinearLayout::draw() {
 	UiRender::getInstance()->drawLinearLayout(this);
+	View::draw();
 }
 
 void View::calcWidth(int width) {

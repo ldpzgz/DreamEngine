@@ -20,6 +20,10 @@
 #include "../Utils.h"
 #include "../Mesh.h"
 #include "../Node.h"
+#include "../Fbo.h"
+#include "../Texture.h"
+#include "Ui.h"
+
 using namespace std;
 using UnicodeType = char32_t;
 //void initUi();
@@ -92,10 +96,10 @@ private:
 	static void releaseFreetype();
 };
 
-class View;
-class TextView;
-class Button;
-class LinearLayout;
+//class View;
+//class TextView;
+//class Button;
+//class LinearLayout;
 /*
 规定UI的坐标系，原点在左上角，Y轴向下。
 */
@@ -141,10 +145,26 @@ private:
 	glm::mat4 mProjMatrix;
 };
 
-class UiTree {
+class UiTree : public DirtyListener {
 public:
+	//应该把ui绘制到一张纹理上，避免每次都去绘制所有ui，很多时候，ui是没有变化的，
+	//只更新有变化的ui
+	void rendUI();
+	void addDirtyView(const shared_ptr<View>& pView) override;
+	void updateWidthHeight(float width, float height);
+
+	/*
+	计算uitree上所有view的实际尺寸
+	*/
+	void calcViewsRect(int windowWidth, int windowHeight);
+	void calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView);
+	void calcViewsPos(shared_ptr<View> pView);
+
 	shared_ptr<View> mpRootView;
 	unordered_map<std::string, shared_ptr<View>> mViews;//存储拥有id的view
+	list<weak_ptr<View>> mViewsToBeDrawing;
+	Fbo mFbo;
+	shared_ptr<Texture> mpTexture;
 };
 
 /*
@@ -178,10 +198,6 @@ public:
 	//当窗口变化的时候，需要调用这个函数更新一下
 	void updateWidthHeight(float width, float height);
 
-	//应该把ui绘制到一张纹理上，避免每次都去绘制所有ui，很多时候，ui是没有变化的，
-	//只更新有变化的ui
-	void rendUI();
-
 	//ui的输入事件驱动
 	void mouseMove(int x, int y);
 
@@ -189,12 +205,6 @@ public:
 
 	void mouseLButtonUp(int x, int y);
 private:
-	/*
-	计算uitree上所有view的实际尺寸
-	*/
-	void calcViewsRect();
-	void calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView);
-	void calcViewsPos(shared_ptr<View> pView);
 	shared_ptr<UiTree> mpUiTree;
 	float mWindowWidth;
 	float mWindowHeight;
