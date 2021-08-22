@@ -11,15 +11,6 @@
 #include <fstream>
 extern void checkglerror();
 Shader::Shader(const std::string& name) :
-	mVs(0),
-	mFs(0),
-	mProgram(0),
-	mPosLoc(-1),
-	mTexcoordLoc(-1),
-	mColorLoc(-1),
-	mNormalLoc(-1),
-	mMvpMatrixLoc(-1),
-	mTextureMatrixLoc(-1),
 	mName(name)
 {
 	// TODO Auto-generated constructor stub
@@ -208,8 +199,10 @@ void Shader::enable()
 	glUseProgram ( mProgram );
 	int texNum = 0;
 	for (auto it = mSamplerToTex.begin(); it != mSamplerToTex.end(); it++) {
-		it->second->active(GL_TEXTURE0 + texNum);
-		glUniform1i(it->first, texNum);
+		if (it->second) {
+			it->second->active(GL_TEXTURE0 + texNum);
+			glUniform1i(it->first, texNum);
+		}
 	}
 
 	if (mMvpMatrixLoc >= 0 && mMvpMatrix) {
@@ -277,7 +270,8 @@ void Shader::setMvpMatrix(const float* pMatrix) {
 	if (mMvpMatrixLoc >= 0 && pMatrix != nullptr) {
 		if (!mMvpMatrix) {
 			mMvpMatrix = std::make_unique<std::vector<float>>(16);
-		}else{
+		}
+		if(mMvpMatrix){
 			for (int i = 0; i < 16; ++i) {
 				(*mMvpMatrix)[i] = pMatrix[i];
 			}
@@ -293,7 +287,7 @@ void Shader::setTextureMatrix(const float* pMatrix) {
 		if (!mTextureMatrix) {
 			mTextureMatrix = std::make_unique<std::vector<float>>(9);
 		}
-		else {
+		if(mTextureMatrix){
 			for (int i = 0; i < 9; ++i) {
 				(*mTextureMatrix)[i] = pMatrix[i];
 			}

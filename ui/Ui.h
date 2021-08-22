@@ -64,10 +64,16 @@ enum LayoutParam {
 	MatchParent = -1,
 	Horizontal,
 	Vertical,
+
 	LeftTop,
+	TopCenter,
+	RightTop,
+	LeftCenter,
 	Center,
-	HCenter,
-	VCenter,
+	RightCenter,
+	LeftBottom,
+	BottomCenter,
+	RightBottom,
 };
 
 class View;
@@ -173,6 +179,14 @@ public:
 		return mRect;
 	}
 
+	int getGravity() {
+		return mGravity;
+	}
+
+	void setGravity(int g) {
+		mGravity = g;
+	}
+
 	virtual bool calcRect(const Rect<int>& parentRect);
 	/*
 	layout_width 为matchparent,或者固定尺寸的时候的时候调用这个函数计算宽度
@@ -246,7 +260,7 @@ public:
 	int mLayoutMarginRight{ 0 };
 	int mWidthPercent{ 0 };		//宽度百分比
 	int mHeightPercent{ 0 };	//高度百分比
-	int mGravity{ 0 };			//控制view内部的元素或者子view如何居中对齐，水平居中，垂直居中，居中
+	int mGravity{ LayoutParam::Center };			//控制view内部的元素或者子view如何居中对齐，水平居中，垂直居中，居中
 
 	Rect<int> mRect{ 0,0,0,0 };
 
@@ -350,15 +364,19 @@ public:
 		return mLineSpacingInc;
 	}
 
-	void setAligment(unsigned int al) {
+	/*void setAligment(unsigned int al) {
 		mAligment = al;
 	}
 
 	unsigned int getAligment() {
 		return mAligment;
-	}
+	}*/
 
 	void draw() override;
+
+	static void textSizeHandler(const shared_ptr<View>&, const std::string&);
+	static void textColorHandler(const shared_ptr<View>&, const std::string&);
+	static void textHandler(const shared_ptr<View>&, const std::string&);
 private:
 	std::string mText;
 	Color mTextColor{0.0f,0.0f,0.0f,1.0f};
@@ -366,7 +384,7 @@ private:
 	int maxLine{ 1 };
 	int mLineSpacingInc{0}; //行间距增量
 	int mCharSpacingInc{ 0 };//字符间距增量
-	unsigned int mAligment{ TextAlignment::AlignCenter}; //文本对齐方式
+	//unsigned int mAligment{ TextAlignment::AlignCenter}; //文本对齐方式
 };
 
 class UiRender;

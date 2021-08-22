@@ -1,4 +1,4 @@
-#include "material.h"
+ï»¿#include "material.h"
 #include <fstream>
 #include <set>
 #include "Log.h"
@@ -18,6 +18,12 @@ Material::Material()
 }
 Material::~Material() {
 	mContents.clear();
+}
+
+shared_ptr<Material> Material::loadFromFile(const string& filename) {
+	auto pMaterial = make_shared<Material>();
+	pMaterial->parseMaterialFile(filename);
+	return pMaterial;
 }
 
 string getFileName(const string& path,const string& suffix) {
@@ -90,8 +96,9 @@ bool Material::parseMaterialFile(const string& path) {
 	}
 	std::string::size_type startPos = 0;
 	std::string::size_type keyValuePos[3];
+	std::string programKey;
 	while (findkeyValue(material, "{","}",startPos, keyValuePos)) {
-		//analsys£¬store key-value to mContents;
+		//analsysï¼Œstore key-value to mContents;
 		auto temppos = material.find_first_of("\x20\r\n\t{", keyValuePos[0]);
 		if (temppos != string::npos) {
 			string key = material.substr(keyValuePos[0], temppos - keyValuePos[0]);
@@ -104,26 +111,36 @@ bool Material::parseMaterialFile(const string& path) {
 			if (!mContents.try_emplace(key, value).second) {
 				LOGE("%s:%s:%s error to emplace key %s", __FILE__,__func__, __LINE__,key);
 			}
+			else if (key.find("texture") != string::npos) {
+				auto textureName = getItemName(key);
+				if (!textureName.empty()) {
+					bParseSuccess = parseTexture(textureName, value);
+				}
+			}
+			else if (key.find("program") != string::npos) {
+				programKey = key;
+			}
 		}
 
 		startPos = keyValuePos[2]+1;
 	}
 
-	for (const auto& kv : mContents) {
-		const auto& key = kv.first;
-		if (key.find("texture") != string::npos) {
-			auto textureName = getItemName(key);
-			if (!textureName.empty()) {
-				bParseSuccess = parseTexture(textureName, kv.second);
-			}
-		}
-		else if (key.find("program") != string::npos) {
-			auto programName = getItemName(key);
+	if (!programKey.empty()) {
+		auto it = mContents.find(programKey);
+		if (it != mContents.end()) {
+			auto programName = getItemName(programKey);
 			if (!programName.empty()) {
-				bParseSuccess = parseProgram(programName, kv.second);
+				bParseSuccess = parseProgram(programName, it->second);
+			}
+			else {
+				LOGE("program has no name in %s", path.c_str());
 			}
 		}
 	}
+	else {
+		LOGE("ERROR! %s material has no program", path.c_str());
+	}
+
 	if (bParseSuccess) {
 		if (gMaterials.try_emplace(filename, shared_from_this()).second) {
 			LOGD("success to parse material %s",filename.c_str());
@@ -136,12 +153,12 @@ bool Material::parseMaterialFile(const string& path) {
 }
 
 /*
-ÔÚ×Ö·û´®strÀïÃæ³åstartPos¿ªÊ¼£¬²éÕÒµÚÒ»¸öÐÎÈç£ºkey{value}
+åœ¨å­—ç¬¦ä¸²stré‡Œé¢å†²startPoså¼€å§‹ï¼ŒæŸ¥æ‰¾ç¬¬ä¸€ä¸ªå½¢å¦‚ï¼škey{value}
 str		where to find key-value;
 mid		the str between key and value;
 end		the end of value;
 startPos from which pos to start serach in str;
-pos		is int[3]£¬pos[0],the start pos of the key,
+pos		is int[3]ï¼Œpos[0],the start pos of the key,
 pos[1]	the pos of mid
 pos[2]	the pos of end
 */
@@ -168,7 +185,7 @@ bool Material::findkeyValue(const string& str, const string& mid,const string& e
 				pos[2] = tempPos;
 				++countOfEnd;
 				if (countOfEnd > countOfStart) {
-					//Óï·¨´íÎóÍË³ö
+					//è¯­æ³•é”™è¯¯é€€å‡º
 					break;
 				}
 			}
@@ -224,7 +241,7 @@ shared_ptr<Shader> Material::getShader(const std::string& name) {
 
 std::shared_ptr<Texture> Material::createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint format, GLenum type, bool autoMipmap) {
 	auto pTex = make_shared<Texture>();
-	if (!pTex->load(width, height, pdata, format, type, autoMipmap)) {
+	if (!pTex->load(width, height, pdata, format, type, 1,autoMipmap)) {
 		LOGE("ERROR to create a texture");
 		pTex.reset();
 	}
@@ -293,7 +310,7 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 					height = std::stoi(pHeight->second);
 					depth = std::stoi(pDepth->second);
 					int internalFormat = GL_RGB;
-					if (depth = 4) {
+					if (depth == 4) {
 						internalFormat = GL_RGBA;
 					}else if (depth == 1) {
 						internalFormat = GL_LUMINANCE;
@@ -407,14 +424,14 @@ bool Material::parseProgram(const string& programName,const string& program) {
 			textureMatrixName = pTextureMatrix->second;
 		}
 
-		//ÓÉÓÚÔÚfsÀïÃæ¾­³£ÐèÒªÉèÖÃÒ»¸öÑÕÉ«Öµ£¬ËùÒÔ°ÑÕâ¸ö³é³öÀ´£¬ÏÂÃæµÄ´úÂë»áÄÃµ½Õâ¸öuniformµÄloc£¬
-		//Íâ²¿³ÌÐòµ÷ÓÃÁËmaterialµÄupdateUniformColor£¬ÉèÖÃÁËÑÕÉ«Öµ£¬Ã¿´ÎenableµÄÊ±ºò¶¼»á°ÑÕâ¸öÑÕÉ«ÖµÉèÖÃÉÏÈ¥¡£
+		//ç”±äºŽåœ¨fsé‡Œé¢ç»å¸¸éœ€è¦è®¾ç½®ä¸€ä¸ªé¢œè‰²å€¼ï¼Œæ‰€ä»¥æŠŠè¿™ä¸ªæŠ½å‡ºæ¥ï¼Œä¸‹é¢çš„ä»£ç ä¼šæ‹¿åˆ°è¿™ä¸ªuniformçš„locï¼Œ
+		//å¤–éƒ¨ç¨‹åºè°ƒç”¨äº†materialçš„updateUniformColorï¼Œè®¾ç½®äº†é¢œè‰²å€¼ï¼Œæ¯æ¬¡enableçš„æ—¶å€™éƒ½ä¼šæŠŠè¿™ä¸ªé¢œè‰²å€¼è®¾ç½®ä¸ŠåŽ»ã€‚
 		const auto pUColor = umap.find("uniformColor");
 		if (pUColor != umap.cend()) {
 			uniformColor = pUColor->second;
 		}
 
-		//ÎªshaderÀïÃæµÄsamplerÖ¸¶¨Texture£¨Í¨¹ýtextureµÄÃû×Ö£©
+		//ä¸ºshaderé‡Œé¢çš„sampleræŒ‡å®šTextureï¼ˆé€šè¿‡textureçš„åå­—ï¼‰
 		const auto pSampler = umap.find("sampler2D");
 		
 		if (pSampler != umap.cend()) {
@@ -459,21 +476,21 @@ bool Material::parseProgram(const string& programName,const string& program) {
 						mShader->getUniformColorLoc(uniformColor);
 					}
 					if (!umapSampler.empty()) {
-						std::for_each(umapSampler.cbegin(), umapSampler.cend(), [this,&programName](const Umapss::value_type& item) {
+						for (auto& item : umapSampler) {
 							const auto pTex = gTextures.find(item.second);
-							if (pTex != gTextures.cend()) {
-								int loc = mShader->getUniformLoc(item.first.c_str()); //ÄÃµ½shaderÀïÃæsamplerµÄloc--
-								if (loc != -1) {
-									mShader->setTextureForSampler(loc, pTex->second); //½«samplerµÄloc--¶ÔÓ¦Ò»¸ötexture
+							int loc = mShader->getUniformLoc(item.first.c_str()); //
+							if (loc != -1) {
+								if (pTex != gTextures.end()) {
+									mShader->setTextureForSampler(loc, pTex->second); //
 								}
 								else {
-									LOGE("can't to find sampler2d %s in program %s", item.first.c_str(), programName.c_str());
+									mShader->setTextureForSampler(loc, shared_ptr<Texture>()); //
 								}
 							}
 							else {
-								LOGE("can't to find texture %s",item.second.c_str());
+								LOGD("can't to find texture %s", item.second.c_str());
 							}
-						});
+						}
 					}
 				}
 				else {
@@ -507,4 +524,16 @@ int Material::getKeyAsInt(const string& key) {
 		}
 	}
 	return ret;
+}
+
+void Material::setTextureForSampler(const string& samplerName, const shared_ptr<Texture>& pTex) {
+	if (mShader) {
+		int loc = mShader->getUniformLoc(samplerName.c_str());
+		if (loc != -1) {
+			mShader->setTextureForSampler(loc,pTex);
+		}
+		else {
+			LOGD("Material::setTextureForSampler no sampler %s",samplerName.c_str());
+		}
+	}
 }

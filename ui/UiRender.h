@@ -46,6 +46,11 @@ public:
 //一个字符的渲染信息
 class CharRenderInfo {
 public:
+	CharRenderInfo() :
+		matrix(1.0),
+		texMatrix(1.0) {
+
+	}
 	glm::mat4 matrix;//描述了字符的位置，缩放，旋转等信息，这个矩阵负责把一个0，1的矩形绘制到目的地。
 	glm::mat3 texMatrix;//这个矩阵负责把一个0，1的纹理坐标，变换到该字符所占用的纹理区域
 };
@@ -96,60 +101,11 @@ private:
 	static void releaseFreetype();
 };
 
-//class View;
-//class TextView;
-//class Button;
-//class LinearLayout;
-/*
-规定UI的坐标系，原点在左上角，Y轴向下。
-*/
-class UiRender {
-public:
-	static unique_ptr<UiRender>& getInstance() {
-		return gInstance;
-	}
-
-	/*
-	功能：		初始化textview
-	savedPath	保存已经渲染好的字体信息的文件
-	ttfPath		使用那个字体文件来渲染字体
-	materialPath 渲染文字使用的material
-	*/
-	bool initTextView(const string& savedPath, const string& ttfPath, const string& materialPath);
-	/*
-	功能：			初始化绘制button需要用到的一些资源
-	buttonMaterial	渲染button使用的material
-	*/
-	bool initButton(const string& buttonMaterial);
-
-	void updateWindowSize(float w, float h) {
-		mWindowWidth = w;
-		mWindowHeight = h;
-	}
-
-	void updateProjMatrix(const glm::mat4& mat) {
-		mProjMatrix = mat;
-	}
-
-	void drawTextView(TextView* tv);
-	void drawButton(Button* tv);
-	void drawLinearLayout(LinearLayout* pll);
-private:
-	static unique_ptr<UiRender> gInstance;
-
-	shared_ptr<FontInfo> pFontInfo;
-	shared_ptr<Mesh> mpRectMesh;//用于承载Button的背景
-
-	float mWindowWidth;
-	float mWindowHeight;
-	glm::mat4 mProjMatrix;
-};
-
 class UiTree : public DirtyListener {
 public:
-	//应该把ui绘制到一张纹理上，避免每次都去绘制所有ui，很多时候，ui是没有变化的，
+	//应该把uiTree绘制到一张纹理上，避免每次都去绘制所有ui，很多时候，ui是没有变化的，
 	//只更新有变化的ui
-	void rendUI();
+	void draw();
 	void addDirtyView(const shared_ptr<View>& pView) override;
 	void updateWidthHeight(float width, float height);
 
@@ -164,13 +120,89 @@ public:
 	unordered_map<std::string, shared_ptr<View>> mViews;//存储拥有id的view
 	list<weak_ptr<View>> mViewsToBeDrawing;
 	Fbo mFbo;
+	bool mbRedraw{ false };
+	/*
+	这棵uitree会被绘制到这个纹理上面
+	*/
 	shared_ptr<Texture> mpTexture;
+};
+
+//class View;
+//class TextView;
+//class Button;
+//class LinearLayout;
+/*
+规定UI的坐标系，原点在左上角，Y轴向下。
+*/
+class UiRender {
+public:
+	static unique_ptr<UiRender>& getInstance() {
+		return gInstance;
+	}
+
+	void initUiRender();
+
+	/*
+	功能：		初始化textview
+	savedPath	保存已经渲染好的字体信息的文件
+	ttfPath		使用那个字体文件来渲染字体
+	materialPath 渲染文字使用的material
+	*/
+	bool initTextView(const string& savedPath, const string& ttfPath, const string& materialPath);
+	/*
+	功能：			初始化绘制button需要用到的一些资源
+	buttonMaterial	渲染button使用的material
+	*/
+	bool initButton(const string& buttonMaterial);
+
+	//当窗口变化的时候，需要调用这个函数更新一下
+	void updateWidthHeight(float width, float height);
+
+	void drawTextView(TextView* tv);
+	void drawButton(Button* tv);
+	void drawLinearLayout(LinearLayout* pll);
+	void setTexture(const shared_ptr<Texture>& pTex) {
+		if (mpMaterial) {
+			mpMaterial->setTextureForSampler("s_texture", pTex);
+		}
+	}
+
+	//完成最后的ui绘制工作，先前已经将uitree绘制到纹理里面了
+	void drawUi();
+private:
+	static unique_ptr<UiRender> gInstance;
+
+	shared_ptr<FontInfo> pFontInfo;
+	shared_ptr<Mesh> mpRectMesh;//用于承载Button的背景
+	shared_ptr<Material> mpMaterial;//渲染最终的ui的材质
+	shared_ptr<Mesh> mpMesh;//渲染最终的ui的材质mesh
+
+	float mWindowWidth;
+	float mWindowHeight;
+	glm::mat4 mProjMatrix;
 };
 
 /*
 这个类有一颗ui树，ui树上每个node可以挂一堆view，
 遍历这棵树，调用每个view的render函数，绘制出ui。
 负责传递输入事件给每一个view
+用法：
+	//加载布局文件，初始化
+	UiManager::getInstance()->initUi(w,h);
+	auto ptree = UiManager::loadFromFile(layoutfile);
+	UiManager::getInstance()->setUiTree(ptree);
+	
+
+	//窗口宽高变化的时候调用
+	UiManager::getInstance()->updateWidthHeight(w,h);
+
+	//鼠标事件
+	UiManager::getInstance()->mouseMove(x,y);
+	UiManager::getInstance()->mouseLButtonDown(x,y);
+	UiManager::getInstance()->mouseLButtonUp(x,y);
+
+	//绘制ui
+	UiManager::getInstance()->draw();
 */
 class UiManager {
 public:
@@ -179,7 +211,7 @@ public:
 	}
 
 	//从一个xml文件里面加载一棵ui树，准备模仿Android的ui系统
-	shared_ptr<UiTree> loadFromFile(const string& filepath);
+	static shared_ptr<UiTree> loadFromFile(const string& filepath);
 
 	/*
 	功能：	初始化ui，初始化uirender，加载string.xml,color.xml等
@@ -187,6 +219,9 @@ public:
 	h		窗口的高度
 	*/
 	bool initUi(int w,int h);
+	//先将mpUiTree绘制到纹理里，只绘制需要更新的ui
+	//再输出到屏幕
+	void draw();
 
 	UiManager();
 

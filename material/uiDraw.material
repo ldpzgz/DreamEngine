@@ -1,4 +1,4 @@
-vs:1{
+vs:uiDrawVs{
 	#version 300 es
     layout(location = 0) in vec4 a_position;
     layout(location = 1) in vec2 a_texCoord;
@@ -11,7 +11,7 @@ vs:1{
     }
 }
 
-fs:1{
+fs:uiDrawFs{
 	#version 300 es
 	precision mediump float;
 	in vec2 v_texCoord;
@@ -23,26 +23,13 @@ fs:1{
 	}
 }
 
-texture:test0{
-	path=./opengles3/images/buti.jpg
-}
-
-texture:test1{
-	width=640
-	height=480
-	depth=3
-}
-
-program:lineBasic{
-	vs=1
-	fs=1
+program:uiDraw{
+	vs=uiDrawVs
+	fs=uiDrawFs
 	posLoc=0
 	texcoordLoc=1
 	mvpMatrix=mvp_matrix
 	sampler2D{
-		s_texture=test0
+		s_texture=none
 	}
 }
-
-
-

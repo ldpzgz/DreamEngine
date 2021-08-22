@@ -89,9 +89,14 @@ public:
 	//结果小于0表示错误
 	int getUniformLoc(const char* uniformName);
 
-	void setTextureForSampler(int samplerLoc, std::shared_ptr<Texture>& pTexture) {
-		if (!mSamplerToTex.try_emplace(samplerLoc, pTexture).second) {
-			LOGD("setTextureForSampler emplace failed");
+	void setTextureForSampler(int samplerLoc, const std::shared_ptr<Texture>& pTexture) {
+		auto it = mSamplerToTex.find(samplerLoc);
+		if (it != mSamplerToTex.end()) {
+			it->second = pTexture;
+		}else{
+			if (!mSamplerToTex.try_emplace(samplerLoc, pTexture).second) {
+				LOGD("setTextureForSampler emplace failed");
+			}
 		}
 	}
 
@@ -115,17 +120,17 @@ public:
 		return mSamplerToTex;
 	}
 private:
-	GLuint mVs;
-	GLuint mFs;
-	GLuint mProgram;
-	int mPosLoc;
-	int mTexcoordLoc;
-	int mColorLoc;
-	int mNormalLoc;
+	GLuint mVs{ 0 };
+	GLuint mFs{ 0 };
+	GLuint mProgram{ 0 };
+	int mPosLoc{ -1 };
+	int mTexcoordLoc{ -1 };
+	int mColorLoc{ -1 };
+	int mNormalLoc{ -1 };
 
-	int mMvpMatrixLoc;
-	int mTextureMatrixLoc;
-	int mUniformColorLoc; //在fs里面可以有个uniform vec4 color，用于设置输出固定颜色
+	int mMvpMatrixLoc{ -1 };
+	int mTextureMatrixLoc{ -1 };
+	int mUniformColorLoc{ -1 }; //在fs里面可以有个uniform vec4 color，用于设置输出固定颜色
 	std::string mName;
 	std::unique_ptr<std::vector<float>> mMvpMatrix;
 	std::unique_ptr<std::vector<float>> mTextureMatrix;
@@ -133,7 +138,7 @@ private:
 	std::map<std::string,int> mAttributeLocMap;
 	std::map<std::string,int> mUniformLocMap;
 	std::unordered_map<int, std::shared_ptr<Texture>> mSamplerToTex;//Sampler in shader to Texture;
-	Color mUniformColor;
+	Color mUniformColor{ 0.0f,0.0f,0.0f,0.0f };
 protected:
 	//GL_VERTEX_SHADER,GL_FRAGMENT_SHADER
 	GLuint loadShader ( GLenum type, const char *shaderSrc );

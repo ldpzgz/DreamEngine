@@ -57,17 +57,25 @@ public:
 
 	void startRender();
 	void endRender();
-
-	void setClearColor(float r, float g, float b, float a);
+	void setDepthTest(bool b) {
+		mbEnableDepthTest = b;
+	}
+	void setClearColor(bool b) {
+		mbClearColor = b;
+	}
+	void setClearColorValue(float r, float g, float b, float a);
 private:
 	void deleteFbo();
 	void enable();
 	void disable();
-	GLuint mFboId;
+	GLuint mFboId{ 0 };
 	GLint mPreFrameBuffer{ 0 };
-	int mWidth; //render to tex ,tex width
-	int mHeight;//render to tex ,tex height
-	bool mbIsAttach;
+	float mPreClearColor[4]{ 0.0f,0.0f,0.0f,0.0f };
+	GLboolean mPrebDepthTest{ false };
+	int mWidth{ 0 }; //render to tex ,tex width
+	int mHeight{ 0 };//render to tex ,tex height
+	bool mbEnableDepthTest{ false };
+	bool mbClearColor{ true };
 	float mClearColor[4]{0.0f,0.0f,0.0f,0.0f};
 };
 

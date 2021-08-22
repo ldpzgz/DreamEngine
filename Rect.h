@@ -1,6 +1,7 @@
 #ifndef _RECT_H_
 #define _RECT_H_
 #include <array>
+#include <string>
 template<typename T>
 class Rect {
 public:
@@ -37,7 +38,7 @@ public:
 	}
 public:
 	union {
-		T x, y, width, height;
+		struct{ T x, y, width, height; };
 		std::array<T, 4> rect;
 	};
 };
@@ -64,13 +65,33 @@ public:
 	float& operator[](int index) {
 		return rgba[index];
 	}
+
 	union {
-		float r;
-		float g;
-		float b;
-		float a;
+		struct { float r, g, b, a; };
 		std::array<float, 4> rgba;
 	};
+
+	static bool parseColor(const std::string& value,Color& color) {
+		if (value.empty() || value.size() > 9 || value[0]!='#') {
+			return false;
+		}
+		int index = 0;
+		int relIndex = 1 + 2 * index;
+		bool hasError = false;
+		while (index < 4 && relIndex < value.size()) {
+			auto Rstr = value.substr(relIndex, 2);
+			try {
+				color[index] = (float)std::stoi(Rstr, nullptr, 16)/255.0f;
+			}
+			catch (.../*const logic_error& e*/) {
+				hasError = true;
+				break;
+			}
+			++index;
+			relIndex = 1 + 2 * index;
+		}
+		return !hasError;
+	}
 };
 
 #endif

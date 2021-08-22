@@ -9,7 +9,7 @@ vs:fontVs{
     {
        gl_Position = mvp_matrix * a_position;
 	   vec3 temp = texture_matrix*vec3(a_tex,1.0f);
-	   v_texCoord =  temp.xy;
+	   v_texCoord =  temp.xy / temp.z;
     }
 }
 
@@ -28,8 +28,8 @@ fs:fontFs{
 }
 
 texture:fontsTexture{
-	width=2048
-	height=2048
+	width=1024
+	height=1024
 	depth=1
 }
 

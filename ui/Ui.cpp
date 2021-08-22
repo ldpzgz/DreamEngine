@@ -91,7 +91,7 @@ void LinearLayout::calcChildPos() {
 				}
 			}
 		}
-		else if (mGravity == LayoutParam::HCenter) {
+		else if (mGravity == LayoutParam::TopCenter) {
 			x = mRect.x + (mRect.width - totalWidth) / 2;
 			for (auto& pChild : mChildren) {
 				if (pChild) {
@@ -101,7 +101,7 @@ void LinearLayout::calcChildPos() {
 				}
 			}
 		}
-		else if (mGravity == LayoutParam::VCenter) {
+		else if (mGravity == LayoutParam::LeftCenter) {
 			y = mRect.y + mRect.height / 2;
 			for (auto& pChild : mChildren) {
 				if (pChild) {
@@ -134,7 +134,7 @@ void LinearLayout::calcChildPos() {
 				}
 			}
 		}
-		else if (mGravity == LayoutParam::HCenter) {
+		else if (mGravity == LayoutParam::TopCenter) {
 			x = mRect.x + mRect.width/ 2;
 			for (auto& pChild : mChildren) {
 				if (pChild) {
@@ -144,7 +144,7 @@ void LinearLayout::calcChildPos() {
 				}
 			}
 		}
-		else if (mGravity == LayoutParam::VCenter) {
+		else if (mGravity == LayoutParam::LeftCenter) {
 			y = mRect.y + (mRect.height-totalHeight) / 2;
 			for (auto& pChild : mChildren) {
 				if (pChild) {
@@ -252,10 +252,10 @@ bool View::calcRect(const Rect<int>& parentRect) {
 
 void View::layoutWidthHandler(const shared_ptr<View>& pv, const std::string& value) {
 	if (pv) {
-		if (value == "wrap_content") {
+		if (value == "wrapContent") {
 			pv->mLayoutWidth = LayoutParam::WrapContent;
 		}
-		else if (value == "match_parent") {
+		else if (value == "matchParent") {
 			pv->mLayoutWidth = LayoutParam::MatchParent;
 		}
 		else {
@@ -282,10 +282,10 @@ void View::layoutWidthPercentHandler(const shared_ptr<View>& pv, const std::stri
 
 void View::layoutHeightHandler(const shared_ptr<View>& pv, const std::string& value) {
 	if (pv) {
-		if (value == "wrap_content") {
+		if (value == "wrapContent") {
 			pv->mLayoutHeight = LayoutParam::WrapContent;
 		}
-		else if (value == "match_parent") {
+		else if (value == "matchParent") {
 			pv->mLayoutHeight = LayoutParam::MatchParent;
 		}
 		else {
@@ -355,11 +355,11 @@ void View::gravityHandler(const shared_ptr<View>& pv, const std::string& value) 
 		if (value == "center") {
 			pv->mGravity = LayoutParam::Center;
 		}
-		else if (value == "hCenter") {
-			pv->mGravity = LayoutParam::HCenter;
+		else if (value == "topCenter") {
+			pv->mGravity = LayoutParam::TopCenter;
 		}
-		else if (value == "vCenter") {
-			pv->mGravity = LayoutParam::VCenter;
+		else if (value == "leftCenter") {
+			pv->mGravity = LayoutParam::LeftCenter;
 		}
 	}
 }
@@ -379,6 +379,35 @@ void LinearLayout::orientationHandler(const shared_ptr<View>& pv, const string& 
 	}
 }
 
+void TextView::textSizeHandler(const shared_ptr<View>& pv, const string& value) {
+	auto ptv = dynamic_pointer_cast<TextView>(pv);
+	if (ptv) {
+		try {
+			auto size = stoi(value);
+			ptv->setTextSize(size);
+		}
+		catch (const logic_error& e) {
+			LOGE("error to parse textSize value %s", value.c_str());
+		}
+	}
+}
+
+void TextView::textColorHandler(const shared_ptr<View>& pv, const string& value) {
+	auto ptv = dynamic_pointer_cast<TextView>(pv);
+	if (ptv) {
+		if (!Color::parseColor(value, ptv->getTextColor())) {
+			LOGE("error to parse TextView prop textColor who's value is %s",value.c_str());
+		}
+	}
+}
+
+void TextView::textHandler(const shared_ptr<View>& pv, const string& value) {
+	auto ptv = dynamic_pointer_cast<TextView>(pv);
+	if (ptv) {
+		ptv->setText(value);
+	}
+}
+
 unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> View::gAttributeHandler{
 	{ "width",View::layoutWidthHandler },
 	{ "height",View::layoutHeightHandler },
@@ -389,6 +418,9 @@ unordered_map < string, std::function<void(const shared_ptr<View>&, const std::s
 	{ "marginLeft",View::layoutMarginLeftHandler },
 	{ "marginRight",View::layoutMarginRightHandler },
 	{ "gravity",View::gravityHandler },
+	{ "textSize",TextView::textSizeHandler },
+	{ "textColor",TextView::textColorHandler },
+	{ "text",TextView::textHandler },
 	{ "orientation",LinearLayout::orientationHandler },
 };
 

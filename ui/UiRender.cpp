@@ -12,7 +12,8 @@
 using namespace std;
 
 const string CharSizeKey("charSize");		//一个字占用的宽高
-static const std::string gFontTextureName("fontsTexture");
+static const string gUIRenderMaterialFile("./opengles3/material/uiDraw.material");
+static const string gFontTextureName("fontsTexture");
 static const string gFontFile("./opengles3/material/simfang.ttf");
 static const string gSavedFontFile("./opengles3/material/myfont.data");
 static const string gFontMaterialFile("./opengles3/material/font.material");
@@ -33,6 +34,10 @@ FontInfo::FontInfo(const shared_ptr<Texture>& pTex, const shared_ptr<Material>& 
 	charSize(charSize_)
 {
 	initFreetype(ttfPath);
+	if (pTex) {
+		textureWidth = pTex->getWidth();
+		textureHeight = pTex->getHeight();
+	}
 }
 
 FontInfo::~FontInfo()
@@ -91,7 +96,7 @@ shared_ptr<FontInfo> FontInfo::loadFromFile(const string& savePath, const string
 
 	auto pTex = Material::getTexture(gFontTextureName);
 	if (!pTex) {
-		LOGE("font text %s not found in material %s",gFontTextureName.c_str(), materialPath.c_str());
+		LOGE("font texture %s not found in material %s",gFontTextureName.c_str(), materialPath.c_str());
 		pMaterial.reset();
 		return shared_ptr<FontInfo>();
 	}
@@ -256,6 +261,23 @@ const CharInTexture& FontInfo::getCharInTexture(UnicodeType code) {
 
 unique_ptr<UiRender> UiRender::gInstance = make_unique<UiRender>();
 
+void UiRender::initUiRender() {
+	initTextView(gSavedFontFile, gFontFile, gFontMaterialFile);
+	initButton(gButtonMaterialFile);
+	mpMaterial = Material::loadFromFile(gUIRenderMaterialFile);
+	mpMesh = make_shared<Mesh>(MeshType::MESH_Rectangle);
+	if (mpMesh) {
+		mpMesh->loadMesh();
+		mpMesh->setMaterial(mpMaterial);
+	}
+}
+
+void UiRender::updateWidthHeight(float width, float height) {
+	mWindowWidth = width;
+	mWindowHeight = height;
+	mProjMatrix = glm::ortho(0.0f, width, 0.0f, height);
+}
+
 bool UiRender::initTextView(const string& savedPath, const string& ttfPath, const string& materialPath) {
 	pFontInfo = FontInfo::loadFromFile(savedPath, ttfPath, materialPath);
 	if (pFontInfo) {
@@ -332,14 +354,14 @@ void UiRender::drawTextView(TextView* tv) {
 
 				//可以计算纹理矩阵了，mesh中的纹理坐标是(0,0)到(1,1)
 				CharRenderInfo rInfo;
-				glm::scale(rInfo.texMatrix, glm::vec2((float)cinfo.width/ (float)fontTextureWidth,
+				rInfo.texMatrix = glm::scale(rInfo.texMatrix, glm::vec2((float)cinfo.width/ (float)fontTextureWidth,
 					(float)cinfo.height / (float)fontTextureHeight));
-				glm::translate(rInfo.texMatrix, glm::vec2((float)cinfo.x / (float)fontTextureWidth, 
+				rInfo.texMatrix = glm::translate(rInfo.texMatrix, glm::vec2((float)cinfo.x / (float)fontTextureWidth,
 					(float)cinfo.y / (float)fontTextureHeight));
 				//计算文字的model矩阵，渲染ui的时候使用的是正交投影，适配窗口的宽高
 				//注意，ui坐标系统原点在左上角，y轴向下，与传统保持一直，openglY轴向上的
-				glm::scale(rInfo.matrix, glm::vec3(cinfo.width, cinfo.height, 1.0f));
-				glm::translate(rInfo.matrix, glm::vec3(currentPosX+cinfo.left, currentPosY+cinfo.top-cinfo.height, 0.0f));
+				rInfo.matrix = glm::scale(rInfo.matrix, glm::vec3(cinfo.width, cinfo.height, 1.0f));
+				rInfo.matrix = glm::translate(rInfo.matrix, glm::vec3(currentPosX+cinfo.left, currentPosY+cinfo.top-cinfo.height, 0.0f));
 
 				currentPosX += (cinfo.advX + xExtraAdvance);//考虑到textview设置的额外字符间距
 				if (totalWidth < tvRect.width) {
@@ -355,9 +377,9 @@ void UiRender::drawTextView(TextView* tv) {
 		//经过上面的处理，文字已经排版好了，但是整个文本的左上角在坐标原点(0,0)
 		//需要根据textview的对齐属性（左对齐，右对齐，顶对齐，底对齐，水平居中，垂直居中）,结合textView的位置，确定平移向量，
 		
-		auto textAlignment = tv->getAligment();
+		auto textGrivate = tv->getGravity();
 		glm::vec3 moveVec(0.0f, 0.0f, 0.0f);
-		if (textAlignment & TextAlignment::AlignCenter) {
+		if (textGrivate & LayoutParam::Center) {
 			if (totalWidth > tvRect.width) {
 				moveVec.x = tvRect.x;
 			}
@@ -373,20 +395,25 @@ void UiRender::drawTextView(TextView* tv) {
 			}
 			
 		}
-		else if (textAlignment & TextAlignment::AlignHCenter) {
-
+		else if (textGrivate == LayoutParam::TopCenter) {
+			//todo
 		}
-		else if (textAlignment & TextAlignment::AlignVCenter) {
-
+		else if (textGrivate == LayoutParam::LeftCenter) {
+			//todo
 		}
 
 		//根据对齐属性，调整每一个的位置,并且渲染
 		glEnable(GL_SCISSOR_TEST);
 		glScissor(tvRect.x, mWindowHeight-tvRect.y, tvRect.width, tvRect.height);
 		for (auto it = charsRenderInfoArray.begin(); it != charsRenderInfoArray.end(); ++it) {
-			glm::translate(it->matrix, moveVec);
+			it->matrix = glm::translate(it->matrix, moveVec);
 			//绘制
-			pFontInfo->mpCharMesh->render(mProjMatrix * it->matrix, it->texMatrix);
+			if (pFontInfo->mpMaterial) {
+				pFontInfo->mpMaterial->updateUniformColor(tv->getTextColor());
+			}
+			if (pFontInfo->mpCharMesh) {
+				pFontInfo->mpCharMesh->render(mProjMatrix * it->matrix, it->texMatrix);
+			}
 		}
 		glDisable(GL_SCISSOR_TEST);
 		//处理完毕
@@ -398,8 +425,8 @@ void UiRender::drawButton(Button* bt){
 	//先算出button的model矩阵
 	auto& rect = bt->getRect();
 	glm::mat4 model(1.0f);
-	glm::scale(model, glm::vec3(rect.width, rect.height, 1.0f));
-	glm::translate(model, glm::vec3(rect.x,mWindowHeight-rect.y,0.0f));
+	model = glm::scale(model, glm::vec3(rect.width, rect.height, 1.0f));
+	model = glm::translate(model, glm::vec3(rect.x,mWindowHeight-rect.y,0.0f));
 	if (mpRectMesh) {
 		mpRectMesh->render(mProjMatrix*model);
 		drawTextView(bt);
@@ -415,6 +442,12 @@ void UiRender::drawLinearLayout(LinearLayout* pll) {
 	}
 }
 
+void UiRender::drawUi() {
+	if (mpMesh) {
+		//todo关闭深度测试，等等
+		mpMesh->render(mProjMatrix);
+	}
+}
 
 unique_ptr<UiManager> UiManager::gInstance = make_unique<UiManager>();
 unordered_map<string, string> UiManager::gRStrings;
@@ -434,27 +467,14 @@ void UiManager::parseRColors(const string& path) {
 					string value = pColorNode->value();//value is like #ffffffaa
 					if (!key.empty() && !value.empty()) {
 						Color color;
-						int index = 0;
-						int relIndex = 1 + 2 * index;
-						bool hasError = false;
-						while (index < 4 && relIndex < value.size()) {
-							auto Rstr = value.substr(relIndex, 2);
-							try {
-								color[index] = std::stoi(Rstr, nullptr, 16);
-							}
-							catch (const logic_error& e) {
-								LOGE("parse color %s in colors.xml throw exception %s",key.c_str(),e.what());
-								hasError = true;
-								break;
-							}
-							++index;
-							relIndex = 1 + 2 * index;
-						}
-						if (!hasError) {
+						if (Color::parseColor(value, color)) {
 							auto ret = gRColors.try_emplace(key, color);
 							if (!ret.second) {
-								LOGD("error to store color resource %s",key.c_str());
+								LOGD("there already has color who's name is %s in gRColors", key.c_str());
 							}
+						}
+						else {
+							LOGE("parse color %s in colors.xml", key.c_str());
 						}
 					}
 				}
@@ -467,10 +487,18 @@ void UiManager::parseRColors(const string& path) {
 	}
 }
 void UiManager::parseRStrings(const string& path) {
-	rapidxml::file<> fdoc(path.c_str());
-	if (fdoc.size() > 0) {
+	shared_ptr<rapidxml::file<>> pfdoc;
+	try {
+		pfdoc = make_shared<rapidxml::file<>>(path.c_str());
+	}
+	catch (std::exception e) {
+		LOGE("error to parseRStrings %s file,error %s", path.c_str(),e.what());
+		return;
+	}
+	
+	if (pfdoc && pfdoc->size() > 0) {
 		rapidxml::xml_document<> doc;// character type defaults to char
-		doc.parse<0>(fdoc.data());// 0 means default parse flags
+		doc.parse<0>(pfdoc->data());// 0 means default parse flags
 		auto pResNode = doc.first_node("resources");
 		if (pResNode != nullptr) {
 			auto pStringNode = pResNode->first_node("string");
@@ -494,7 +522,7 @@ void UiManager::parseRStrings(const string& path) {
 
 void parseView(const shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode, shared_ptr<UiTree>& mpTree) {
 	shared_ptr<View> pView;
-	while (pnode != nullptr) {
+	if (pnode != nullptr) {
 		string viewName = pnode->name();
 		pView = View::createView(viewName, nullptr);
 		
@@ -504,6 +532,10 @@ void parseView(const shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode, 
 				pView->setParent(parent);
 				parent->addChild(pView);
 			}
+			else{
+				mpTree->mpRootView = pView;
+			}
+
 			auto attr = pnode->first_attribute();
 			while (attr != nullptr) {
 				string attrName = attr->name();
@@ -515,6 +547,9 @@ void parseView(const shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode, 
 					auto it = View::gAttributeHandler.find(attrName);
 					if (it != View::gAttributeHandler.end()) {
 						it->second(pView, attr->value());
+					}
+					else {
+						LOGD("there are no %s attributeHandler,please supplement", attrName.c_str());
 					}
 				}
 				attr = attr->next_attribute();
@@ -558,16 +593,27 @@ void UiManager::setUiTree(const shared_ptr<UiTree>& tree) {
 	mpUiTree = tree;
 	if (mpUiTree) {
 		//计算出view的位置尺寸
+		mpUiTree->updateWidthHeight(mWindowWidth, mWindowHeight);
 		mpUiTree->calcViewsRect(mWindowWidth, mWindowHeight);
 		if (mpUiTree->mpRootView) {
 			mpUiTree->mpRootView->setDirty(true);
 		}
+		UiRender::getInstance()->setTexture(mpUiTree->mpTexture);
 	}
 }
 
-void UiTree::rendUI() {
+void UiTree::draw() {
 	if (!mViewsToBeDrawing.empty()) {
 		//渲染到纹理
+		mFbo.setDepthTest(false);
+		if (mbRedraw) {
+			mFbo.setClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
+			mFbo.setClearColor(true);
+			mbRedraw = false;
+		}
+		else {
+			mFbo.setClearColor(false);
+		}
 		mFbo.startRender();
 		for (auto& pView : mViewsToBeDrawing) {
 			auto pV = pView.lock();
@@ -592,6 +638,7 @@ void UiTree::updateWidthHeight(float width, float height) {
 	mpTexture->load(width, height, nullptr, GL_RGBA);
 	mFbo.attachColorTexture(mpTexture, 0);
 	//ui重绘
+	mbRedraw = true;
 	addDirtyView(mpRootView);
 }
 
@@ -624,7 +671,7 @@ void UiTree::calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<
 			pView->calcWidth(parentWidth);
 		}
 		if (pView->mHeightPercent == 0) {
-			pView->calcWidth(parentHeight);
+			pView->calcHeight(parentHeight);
 		}
 
 		int myWidth = pView->mRect.width;
@@ -651,7 +698,7 @@ void UiTree::calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<
 void UiManager::updateWidthHeight(float width, float height) {
 	mWindowWidth = width;
 	mWindowHeight = height;
-	mProjMatrix = glm::ortho(0.0f, width, 0.0f, height);
+	UiRender::getInstance()->updateWidthHeight(width, height);
 	if (mpUiTree) {
 		mpUiTree->updateWidthHeight(width, height);
 	}
@@ -701,11 +748,19 @@ void UiManager::mouseLButtonUp(int x, int y) {
 
 bool UiManager::initUi(int w, int h) {
 	//初始化uirender
-	UiRender::getInstance()->initTextView(gSavedFontFile, gFontFile, gFontMaterialFile);
-	UiRender::getInstance()->initButton(gButtonMaterialFile);
+	UiRender::getInstance()->initUiRender();
 	//加载ui string和color配置
 	parseRStrings(gResourceStringFile);
 	parseRColors(gResourceColorFile);
 	updateWidthHeight(w, h);
 	return true;
+}
+
+void UiManager::draw() {
+	if (mpUiTree) {
+		//这个是将uitree绘制到纹理
+		mpUiTree->draw();
+		//这个是把纹理显示出来
+		UiRender::getInstance()->drawUi();
+	}
 }

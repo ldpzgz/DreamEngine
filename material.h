@@ -1,4 +1,4 @@
-#ifndef _METERIAL_H_
+ï»¿#ifndef _METERIAL_H_
 #define _METERIAL_H_
 #include <iostream>
 #include <string>
@@ -11,11 +11,11 @@ class Material : public enable_shared_from_this<Material> {
 public:
 	Material();
 	~Material();
-
+	static shared_ptr<Material> loadFromFile(const string& filename);
 	bool parseMaterialFile(const string&);
 	void enable();
 
-	//ÏÂÃæÕâ¼¸¸öº¯ÊıÉèÖÃ»òÕß¸üĞÂmaterialÀïÃæprogram¶¨ÒåµÄ±äÁ¿
+	//ä¸‹é¢è¿™å‡ ä¸ªå‡½æ•°è®¾ç½®æˆ–è€…æ›´æ–°materialé‡Œé¢programå®šä¹‰çš„å˜é‡
 	void updateMvpMatrix(const float* pdata);
 	void updateTextureMatrix(const float* pdata);
 	void updateUniformColor(const Color& color);
@@ -24,7 +24,11 @@ public:
 
 	void getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc);
 
+	//å¦‚æœæè´¨æ–‡ä»¶é‡Œé¢æœ‰ä¸ªkeyå¯¹åº”çš„valueæ˜¯æ•´æ•°ï¼Œå¯ä»¥ç”¨è¿™ä¸ªå‡½æ•°è·å–åˆ°
 	int getKeyAsInt(const string& key);
+
+	//æ”¹å˜materialæ–‡ä»¶é‡Œfs shaderé‡Œé¢samplerå¯¹åº”çš„çº¹ç†
+	void setTextureForSampler(const string& samplerName, const shared_ptr<Texture>& pTex);
 
 	static shared_ptr<Texture> getTexture(const std::string&);
 	static shared_ptr<Material> getMaterial(const std::string&);
@@ -42,7 +46,7 @@ private:
 	using Umapss = std::unordered_map<std::string, std::string>;
 	bool parseItem(const string& value, Umapss& umap);
 
-	std::unordered_map<std::string, std::string> mContents;//±£´æµÄÊÇ²ÄÖÊÎÄ¼şÀïÃæĞÎÈçkey{value}µÄkey-value¶Ô
+	std::unordered_map<std::string, std::string> mContents;//ä¿å­˜çš„æ˜¯æè´¨æ–‡ä»¶é‡Œé¢å½¢å¦‚key{value}çš„key-valueå¯¹
 	std::shared_ptr<Shader> mShader;
 
 	static std::unordered_map<std::string, std::shared_ptr<Material>> gMaterials;

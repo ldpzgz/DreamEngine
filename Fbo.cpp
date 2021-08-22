@@ -12,8 +12,7 @@
 
 Fbo::Fbo():
 	mWidth(0),
-	mHeight(0),
-	mbIsAttach(false)
+	mHeight(0)
 {
 	// TODO Auto-generated constructor stub
 }
@@ -31,6 +30,8 @@ void Fbo::enable()
 		glGenFramebuffers(1,&mFboId);
 	}
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &mPreFrameBuffer);
+	glGetFloatv(GL_COLOR_CLEAR_VALUE, mPreClearColor);
+	glGetBooleanv(GL_DEPTH_TEST, &mPrebDepthTest);
 	glBindFramebuffer(GL_FRAMEBUFFER,mFboId);
 }
 
@@ -165,7 +166,14 @@ bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level
 }
 void Fbo::disable()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, mPreFrameBuffer);
+	glClearColor(mPreClearColor[0], mPreClearColor[1], mPreClearColor[2], mPreClearColor[3]);
+	if (mPrebDepthTest) {
+		glEnable(GL_DEPTH_TEST);
+	}
+	else {
+		glDisable(GL_DEPTH_TEST);
+	}
 }
 
 void Fbo::deleteFbo()
@@ -182,14 +190,22 @@ void Fbo::startRender()
 	enable();
 	glViewport(0, 0, mWidth, mHeight);
 	glClearColor(mClearColor[0], mClearColor[1], mClearColor[2], mClearColor[3]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	if (mbEnableDepthTest) {
+		glEnable(GL_DEPTH_TEST);
+	}
+	else {
+		glDisable(GL_DEPTH_TEST);
+	}
+	if (mbClearColor) {
+		glClear(GL_COLOR_BUFFER_BIT);//GL_DEPTH_BUFFER_BIT
+	}
 }
 void Fbo::endRender()
 {
 	disable();
 }
 
-void Fbo::setClearColor(float r, float g, float b, float a)
+void Fbo::setClearColorValue(float r, float g, float b, float a)
 {
 	mClearColor[0] = r;
 	mClearColor[1] = g;
