@@ -16,8 +16,9 @@ public:
 	void enable();
 
 	//下面这几个函数设置或者更新material里面program定义的变量
-	void updateMvpMatrix(const float* pdata);
-	void updateTextureMatrix(const float* pdata);
+	void updateMvpMatrix(const glm::mat4& pdata);
+	void updateTextureMatrix(const glm::mat4& pdata);
+	void setTextureMatrix();
 	void updateUniformColor(const Color& color);
 	void updateUniformColor(float r,float g,float b,float a);
 	//-------------------------------------------------------------
@@ -28,7 +29,11 @@ public:
 	int getKeyAsInt(const string& key);
 
 	//改变material文件里fs shader里面sampler对应的纹理
-	void setTextureForSampler(const string& samplerName, const shared_ptr<Texture>& pTex);
+	void changeTexture(const string& samplerName, const shared_ptr<Texture>& pTex);
+
+	std::shared_ptr<Shader>& getShader() {
+		return mShader;
+	}
 
 	static shared_ptr<Texture> getTexture(const std::string&);
 	static shared_ptr<Material> getMaterial(const std::string&);
@@ -48,7 +53,7 @@ private:
 
 	std::unordered_map<std::string, std::string> mContents;//保存的是材质文件里面形如key{value}的key-value对
 	std::shared_ptr<Shader> mShader;
-
+	std::shared_ptr<glm::mat4> mpTextureMatrix;
 	static std::unordered_map<std::string, std::shared_ptr<Material>> gMaterials;
 	static std::unordered_map<std::string, std::shared_ptr<Texture>> gTextures;
 	static std::unordered_map<std::string, std::shared_ptr<Shader>> gShaders;

@@ -77,31 +77,31 @@ void OutputDebugPrintf(const char* strOutputString, ...);
 	#endif
 
 	#if KPLAYERLOGLEVEL <= LOG_DEBUG
-#define LOGD( ... ) OutputDebugPrintf( __VA_ARGS__ );OutputDebugPrintf("\n");
+#define LOGD( ... ) printf( __VA_ARGS__ );printf("\n");
 	#else
 	#define LOGD( ... )
 	#endif
 
 	#if KPLAYERLOGLEVEL <= LOG_INFO
-#define LOGI( ... ) OutputDebugPrintf( __VA_ARGS__ );OutputDebugPrintf("\n");
+#define LOGI( ... ) printf( __VA_ARGS__ );printf("\n");
 	#else
 	#define LOGI( ... )
 	#endif
 
 	#if KPLAYERLOGLEVEL <= LOG_WARN
-#define LOGW( ... ) OutputDebugPrintf( __VA_ARGS__ );OutputDebugPrintf("\n");
+#define LOGW( ... ) printf( __VA_ARGS__ );printf("\n");
 	#else
 	#define LOGW( ... )
 	#endif
 
 	#if KPLAYERLOGLEVEL <= LOG_ERROR
-#define LOGE( ... ) OutputDebugPrintf( __VA_ARGS__ );OutputDebugPrintf("\n");
+#define LOGE( ... ) printf( __VA_ARGS__ );printf("\n");
 	#else
 	#define LOGE( ... )
 	#endif
 
 	#if KPLAYERLOGLEVEL <= LOG_FATAL
-#define LOGF( ... ) OutputDebugPrintf( __VA_ARGS__ );OutputDebugPrintf("\n");
+#define LOGF( ... ) printf( __VA_ARGS__ );printf("\n");
 	#else
 	#define LOGF( ... )
 	#endif

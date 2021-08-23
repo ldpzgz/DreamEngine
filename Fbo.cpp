@@ -192,6 +192,8 @@ void Fbo::startRender()
 	glClearColor(mClearColor[0], mClearColor[1], mClearColor[2], mClearColor[3]);
 	if (mbEnableDepthTest) {
 		glEnable(GL_DEPTH_TEST);
+		glClearDepthf(0.0f);
+		glClear(GL_DEPTH_BUFFER_BIT);
 	}
 	else {
 		glDisable(GL_DEPTH_TEST);

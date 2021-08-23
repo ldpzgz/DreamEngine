@@ -50,15 +50,27 @@ string Material::getItemName(const string& key) {
 	return temp;
 }
 
-void Material::updateMvpMatrix(const float* pdata) {
-	if (mShader && pdata!=nullptr) {
+void Material::updateMvpMatrix(const glm::mat4& pdata) {
+	if (mShader) {
 		mShader->setMvpMatrix(pdata);
 	}
 }
 
-void Material::updateTextureMatrix(const float* pdata) {
-	if (mShader && pdata != nullptr) {
+void Material::updateTextureMatrix(const glm::mat4& pdata) {
+	if (!mpTextureMatrix) {
+		mpTextureMatrix = make_shared<glm::mat4>(1.0f);
+	}
+	if (mpTextureMatrix) {
+		*mpTextureMatrix = pdata;
+	}
+	if (mShader) {
 		mShader->setTextureMatrix(pdata);
+	}
+}
+
+void Material::setTextureMatrix() {
+	if (mpTextureMatrix && mShader) {
+		mShader->setTextureMatrix(*mpTextureMatrix);
 	}
 }
 
@@ -314,7 +326,7 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 						internalFormat = GL_RGBA;
 					}else if (depth == 1) {
 						internalFormat = GL_LUMINANCE;
-					}else {
+					}else if (depth != 3) {
 						LOGE("not support texture %s depth %d", textureName.c_str(), depth);
 						return false;
 					}
@@ -526,14 +538,14 @@ int Material::getKeyAsInt(const string& key) {
 	return ret;
 }
 
-void Material::setTextureForSampler(const string& samplerName, const shared_ptr<Texture>& pTex) {
+void Material::changeTexture(const string& samplerName, const shared_ptr<Texture>& pTex) {
 	if (mShader) {
 		int loc = mShader->getUniformLoc(samplerName.c_str());
 		if (loc != -1) {
 			mShader->setTextureForSampler(loc,pTex);
 		}
 		else {
-			LOGD("Material::setTextureForSampler no sampler %s",samplerName.c_str());
+			LOGD("Material::changeTexture no sampler %s",samplerName.c_str());
 		}
 	}
 }

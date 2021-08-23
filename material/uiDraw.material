@@ -19,7 +19,8 @@ fs:uiDrawFs{
 	uniform sampler2D s_texture;
 	void main()
 	{
-	  outColor = texture( s_texture, v_texCoord );
+		//outColor = vec4(0.0f,1.0f,0.0f,1.0f);
+		outColor = texture( s_texture, v_texCoord );
 	}
 }
 

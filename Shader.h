@@ -22,6 +22,13 @@
 #include "Log.h"
 #include "Rect.h"
 
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#include <glm/mat4x4.hpp>
+#include <glm/mat3x3.hpp>
+ // Include all GLM extensions
+#include <glm/ext.hpp> // perspective, translate, rotate
+#include <glm/gtx/matrix_transform_2d.hpp>
+
 
 /*
  这个类的用法是：
@@ -95,7 +102,7 @@ public:
 			it->second = pTexture;
 		}else{
 			if (!mSamplerToTex.try_emplace(samplerLoc, pTexture).second) {
-				LOGD("setTextureForSampler emplace failed");
+				LOGD("changeTexture emplace failed");
 			}
 		}
 	}
@@ -105,8 +112,8 @@ public:
 	void setUniform2f(const char* uniformName,float x,float y);
 	void setUniform3f(const char* uniformName,float x,float y,float z);
 	void setUniform4f(const char* uniformName,float x,float y,float z,float w);
-	void setMvpMatrix(const float*);
-	void setTextureMatrix(const float*);
+	void setMvpMatrix(const glm::mat4&);
+	void setTextureMatrix(const glm::mat4&);
 	void setUniformColor(float r, float g, float b, float a);
 	void setUniformColor(Color color);
 
@@ -132,8 +139,8 @@ private:
 	int mTextureMatrixLoc{ -1 };
 	int mUniformColorLoc{ -1 }; //在fs里面可以有个uniform vec4 color，用于设置输出固定颜色
 	std::string mName;
-	std::unique_ptr<std::vector<float>> mMvpMatrix;
-	std::unique_ptr<std::vector<float>> mTextureMatrix;
+	glm::mat4 mMvpMatrix;
+	glm::mat4 mTextureMatrix;
 	//int mSamplerCount;
 	std::map<std::string,int> mAttributeLocMap;
 	std::map<std::string,int> mUniformLocMap;

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <set>
 #include <unordered_map>
 #include <memory>
 #include "../material.h"
@@ -52,7 +53,7 @@ public:
 
 	}
 	glm::mat4 matrix;//描述了字符的位置，缩放，旋转等信息，这个矩阵负责把一个0，1的矩形绘制到目的地。
-	glm::mat3 texMatrix;//这个矩阵负责把一个0，1的纹理坐标，变换到该字符所占用的纹理区域
+	glm::mat4 texMatrix;//这个矩阵负责把一个0，1的纹理坐标，变换到该字符所占用的纹理区域
 };
 
 /*
@@ -136,6 +137,14 @@ public:
 */
 class UiRender {
 public:
+	UiRender() :
+		mLastMeshModelMatrix(1.0f),
+		mWindowWidth(0.0f),
+		mWindowHeight(0.0f),
+		mProjMatrix(1.0f)
+	{
+
+	}
 	static unique_ptr<UiRender>& getInstance() {
 		return gInstance;
 	}
@@ -161,9 +170,11 @@ public:
 	void drawTextView(TextView* tv);
 	void drawButton(Button* tv);
 	void drawLinearLayout(LinearLayout* pll);
+
+	//指定最后要显示出来的纹理，当前uitree的纹理，每棵ui树都会渲染到它自己的纹理上面。
 	void setTexture(const shared_ptr<Texture>& pTex) {
-		if (mpMaterial) {
-			mpMaterial->setTextureForSampler("s_texture", pTex);
+		if (mpLastMaterial) {
+			mpLastMaterial->changeTexture("s_texture", pTex);
 		}
 	}
 
@@ -174,9 +185,9 @@ private:
 
 	shared_ptr<FontInfo> pFontInfo;
 	shared_ptr<Mesh> mpRectMesh;//用于承载Button的背景
-	shared_ptr<Material> mpMaterial;//渲染最终的ui的材质
-	shared_ptr<Mesh> mpMesh;//渲染最终的ui的材质mesh
-
+	shared_ptr<Material> mpLastMaterial;//渲染最终的ui的材质
+	shared_ptr<Mesh> mpLastMesh;//渲染最终的ui的材质mesh
+	glm::mat4 mLastMeshModelMatrix;
 	float mWindowWidth;
 	float mWindowHeight;
 	glm::mat4 mProjMatrix;

@@ -231,6 +231,9 @@ public:
 	}
 
 	void setDirty(bool b) {
+		if (mbIsDirty == b) {
+			return;
+		}
 		mbIsDirty = b;
 		if (mbIsDirty) {
 			auto pListener = mpDirtyListener.lock();

@@ -15,6 +15,6 @@
 		gravity="center"
 		textSize="32"
 		textColor="#ffffffff"
-		text="ABCDEFG">
+		text="ag我">
 	</TextView>
 </LinearLayout>

@@ -205,12 +205,12 @@ void Shader::enable()
 		}
 	}
 
-	if (mMvpMatrixLoc >= 0 && mMvpMatrix) {
-		glUniformMatrix4fv(mMvpMatrixLoc, 1, GL_FALSE, mMvpMatrix->data());
+	if (mMvpMatrixLoc >= 0) {
+		glUniformMatrix4fv(mMvpMatrixLoc, 1, GL_FALSE, glm::value_ptr(mMvpMatrix));
 	}
 
-	if (mTextureMatrixLoc >= 0 && mTextureMatrix) {
-		glUniformMatrix3fv(mTextureMatrixLoc, 1, GL_FALSE, mTextureMatrix->data());
+	if (mTextureMatrixLoc >= 0) {
+		glUniformMatrix4fv(mTextureMatrixLoc, 1, GL_FALSE, glm::value_ptr(mTextureMatrix));
 	}
 
 	if (mUniformColorLoc >= 0) {
@@ -266,32 +266,21 @@ void Shader::setUniform4f(const char* uniformName,float x,float y,float z,float 
 	glUniform4f(loc,x,y,z,w);
 }
 
-void Shader::setMvpMatrix(const float* pMatrix) {
-	if (mMvpMatrixLoc >= 0 && pMatrix != nullptr) {
-		if (!mMvpMatrix) {
-			mMvpMatrix = std::make_unique<std::vector<float>>(16);
-		}
-		if(mMvpMatrix){
-			for (int i = 0; i < 16; ++i) {
-				(*mMvpMatrix)[i] = pMatrix[i];
-			}
-		}
+void Shader::setMvpMatrix(const glm::mat4& pMatrix) {
+	if (mMvpMatrixLoc >= 0 ) {
+		mMvpMatrix = pMatrix;
 	}
 	else {
 		LOGD("the mMvpMatrixLoc of shader %s has not been got",mName.c_str());
 	}
 }
 
-void Shader::setTextureMatrix(const float* pMatrix) {
-	if (mTextureMatrixLoc >= 0 && pMatrix != nullptr) {
-		if (!mTextureMatrix) {
-			mTextureMatrix = std::make_unique<std::vector<float>>(9);
-		}
-		if(mTextureMatrix){
-			for (int i = 0; i < 9; ++i) {
-				(*mTextureMatrix)[i] = pMatrix[i];
-			}
-		}
+void Shader::setTextureMatrix(const glm::mat4& pMatrix) {
+	if (mTextureMatrixLoc >= 0) {
+		mTextureMatrix = pMatrix;
+	}
+	else {
+		LOGD("the mTextureMatrixLoc of shader %s has not been got", mName.c_str());
 	}
 }
 

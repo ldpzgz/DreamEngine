@@ -3,27 +3,28 @@ vs:fontVs{
     layout(location = 0) in vec4 a_position;
 	layout(location = 1) in vec2 a_tex;
 	uniform mat4 mvp_matrix;
-	uniform mat3 texture_matrix;
+	uniform mat4 texture_matrix;
 	out vec2 v_texCoord;
     void main()
     {
-       gl_Position = mvp_matrix * a_position;
-	   vec3 temp = texture_matrix*vec3(a_tex,1.0f);
-	   v_texCoord =  temp.xy / temp.z;
+	   gl_Position = mvp_matrix*a_position;
+       //gl_Position = vec4(a_position.xyz,1.0f);
+	   vec4 temp = texture_matrix*vec4(a_tex,0.0f,1.0f);
+	   v_texCoord = temp.xy;
     }
 }
 
 fs:fontFs{
 	#version 300 es
 	precision mediump float;
-	uniform vec4 color;
+	//uniform vec4 color;
 	uniform sampler2D s_texture;
 	in vec2 v_texCoord;
 	layout(location = 0) out vec4 outColor;
 	void main()
 	{
 	  vec4 fl = texture( s_texture, v_texCoord );
-	  outColor = vec4(fl.r*color.r,fl.g*color.g,fl.b*color.b,fl.a*color.a);
+	  outColor = fl;
 	}
 }
 
@@ -39,8 +40,7 @@ program:fontsBasic{
 	posLoc=0
 	texcoordLoc=1
 	mvpMatrix=mvp_matrix
-	textureMatrix=texture_matrix 
-	uniformColor=color
+	textureMatrix=texture_matrix
 	sampler2D{
 		s_texture=fontsTexture
 	}

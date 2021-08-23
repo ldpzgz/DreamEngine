@@ -112,8 +112,10 @@ shared_ptr<FontInfo> FontInfo::loadFromFile(const string& savePath, const string
 	shared_ptr<FontInfo> fontInfo = make_shared<FontInfo>(pTex, pMaterial,savePath, ttfPath, charSize);
 
 	fontInfo->mpCharMesh = make_shared<Mesh>(MeshType::MESH_FONTS);
-
-	fontInfo->mpCharMesh->setMaterial(pMaterial);
+	if (fontInfo->mpCharMesh) {
+		fontInfo->mpCharMesh->loadMesh();
+		fontInfo->mpCharMesh->setMaterial(pMaterial);
+	}
 
 	ifstream inFile(savePath, ios::in);
 	if (inFile.is_open()) {
@@ -207,11 +209,17 @@ const CharInTexture& FontInfo::getCharInTexture(UnicodeType code) {
 		}
 
 		FT_GlyphSlot slot = gface->glyph;
+		auto metrics = slot->metrics;
 		CharInTexture info;
-		//int bitmapWidth = slot->bitmap.width;
-		//int bitmapHeight = slot->bitmap.rows;
+		/*CharInTexture info2;
+		info2.advX = metrics.horiAdvance >> 6;
+		info2.advY = 0;
+		info2.left = metrics.horiBearingX >> 6;
+		info2.top = metrics.horiBearingY >> 6;
+		info2.width = metrics.width >> 6;
+		info2.height = metrics.height >> 6;*/
 		info.left = slot->bitmap_left;
-		info.top = charSize - slot->bitmap_top;//奇怪
+		info.top = slot->bitmap_top;
 		info.width = slot->bitmap.width;
 		info.height = slot->bitmap.rows;
 		info.advX = slot->advance.x >> 6;
@@ -264,18 +272,20 @@ unique_ptr<UiRender> UiRender::gInstance = make_unique<UiRender>();
 void UiRender::initUiRender() {
 	initTextView(gSavedFontFile, gFontFile, gFontMaterialFile);
 	initButton(gButtonMaterialFile);
-	mpMaterial = Material::loadFromFile(gUIRenderMaterialFile);
-	mpMesh = make_shared<Mesh>(MeshType::MESH_Rectangle);
-	if (mpMesh) {
-		mpMesh->loadMesh();
-		mpMesh->setMaterial(mpMaterial);
+	mpLastMaterial = Material::loadFromFile(gUIRenderMaterialFile);
+	mpLastMesh = make_shared<Mesh>(MeshType::MESH_FONTS);
+	if (mpLastMesh) {
+		mpLastMesh->loadMesh();
+		mpLastMesh->setMaterial(mpLastMaterial);
 	}
 }
 
 void UiRender::updateWidthHeight(float width, float height) {
 	mWindowWidth = width;
 	mWindowHeight = height;
-	mProjMatrix = glm::ortho(0.0f, width, 0.0f, height);
+	mProjMatrix = glm::ortho(0.0f, width, 0.0f, height,200.0f,-200.0f);
+	mLastMeshModelMatrix = glm::identity<glm::mat4>();
+	mLastMeshModelMatrix = glm::scale(mLastMeshModelMatrix, glm::vec3(width, height, 1.0f));
 }
 
 bool UiRender::initTextView(const string& savedPath, const string& ttfPath, const string& materialPath) {
@@ -327,6 +337,7 @@ void UiRender::drawTextView(TextView* tv) {
 		int currentLines = 1;			//
 		int totalWidth = 0;				//字符串占用的宽度
 		int totalHeight = currentPosY; //字符串占用的高度
+		int maxYAdv = 0;//统计基线之下还有多少像素
 		std::vector<CharRenderInfo> charsRenderInfoArray;
 		for(size_t i = 0; i<slen;){
 			UnicodeType code;
@@ -345,23 +356,30 @@ void UiRender::drawTextView(TextView* tv) {
 					else {
 						//要换行了,增加一行
 						currentPosX = 0;
-						currentPosY += yAdvance;
+						currentPosY += (yAdvance - maxYAdv);
+						maxYAdv = 0;
 						++currentLines;
 						totalWidth = tvRect.width;
 						totalHeight = currentPosY;
 					}
 				}
 
+				auto maxYAdvTemp = cinfo.height - cinfo.top;
+				if (maxYAdvTemp > maxYAdv) {
+					maxYAdv = maxYAdvTemp;
+				}
 				//可以计算纹理矩阵了，mesh中的纹理坐标是(0,0)到(1,1)
 				CharRenderInfo rInfo;
-				rInfo.texMatrix = glm::scale(rInfo.texMatrix, glm::vec2((float)cinfo.width/ (float)fontTextureWidth,
-					(float)cinfo.height / (float)fontTextureHeight));
-				rInfo.texMatrix = glm::translate(rInfo.texMatrix, glm::vec2((float)cinfo.x / (float)fontTextureWidth,
-					(float)cinfo.y / (float)fontTextureHeight));
+				
+				rInfo.texMatrix = glm::translate(rInfo.texMatrix, glm::vec3((float)cinfo.x / (float)fontTextureWidth,
+					(float)cinfo.y / (float)fontTextureHeight,0.0f));
+				rInfo.texMatrix = glm::scale(rInfo.texMatrix, glm::vec3((float)cinfo.width / (float)fontTextureWidth,
+					(float)cinfo.height / (float)fontTextureHeight,1.0f));
+
 				//计算文字的model矩阵，渲染ui的时候使用的是正交投影，适配窗口的宽高
 				//注意，ui坐标系统原点在左上角，y轴向下，与传统保持一直，openglY轴向上的
-				rInfo.matrix = glm::scale(rInfo.matrix, glm::vec3(cinfo.width, cinfo.height, 1.0f));
 				rInfo.matrix = glm::translate(rInfo.matrix, glm::vec3(currentPosX+cinfo.left, currentPosY+cinfo.top-cinfo.height, 0.0f));
+				rInfo.matrix = glm::scale(rInfo.matrix, glm::vec3(cinfo.width, cinfo.height, 1.0f));
 
 				currentPosX += (cinfo.advX + xExtraAdvance);//考虑到textview设置的额外字符间距
 				if (totalWidth < tvRect.width) {
@@ -403,19 +421,22 @@ void UiRender::drawTextView(TextView* tv) {
 		}
 
 		//根据对齐属性，调整每一个的位置,并且渲染
-		glEnable(GL_SCISSOR_TEST);
-		glScissor(tvRect.x, mWindowHeight-tvRect.y, tvRect.width, tvRect.height);
+		//glEnable(GL_SCISSOR_TEST);
+		//glScissor(tvRect.x, mWindowHeight-tvRect.y, tvRect.width, tvRect.height);
+		float trx = 0.0f;
 		for (auto it = charsRenderInfoArray.begin(); it != charsRenderInfoArray.end(); ++it) {
-			it->matrix = glm::translate(it->matrix, moveVec);
+			glm::mat4 moveToScreenMatrix(1.0f);
+			moveToScreenMatrix = glm::translate(moveToScreenMatrix, moveVec);
+			//it->matrix = glm::translate(it->matrix, moveVec);
 			//绘制
 			if (pFontInfo->mpMaterial) {
 				pFontInfo->mpMaterial->updateUniformColor(tv->getTextColor());
 			}
 			if (pFontInfo->mpCharMesh) {
-				pFontInfo->mpCharMesh->render(mProjMatrix * it->matrix, it->texMatrix);
+				pFontInfo->mpCharMesh->render(mProjMatrix*moveToScreenMatrix*it->matrix, it->texMatrix);
 			}
 		}
-		glDisable(GL_SCISSOR_TEST);
+		//glDisable(GL_SCISSOR_TEST);
 		//处理完毕
 	}
 }
@@ -443,9 +464,11 @@ void UiRender::drawLinearLayout(LinearLayout* pll) {
 }
 
 void UiRender::drawUi() {
-	if (mpMesh) {
+	if (mpLastMesh) {
 		//todo关闭深度测试，等等
-		mpMesh->render(mProjMatrix);
+		glDisable(GL_DEPTH_TEST);
+		mpLastMesh->render(mProjMatrix*mLastMeshModelMatrix);
+		glEnable(GL_DEPTH_TEST);
 	}
 }
 
@@ -595,9 +618,9 @@ void UiManager::setUiTree(const shared_ptr<UiTree>& tree) {
 		//计算出view的位置尺寸
 		mpUiTree->updateWidthHeight(mWindowWidth, mWindowHeight);
 		mpUiTree->calcViewsRect(mWindowWidth, mWindowHeight);
-		if (mpUiTree->mpRootView) {
+		/*if (mpUiTree->mpRootView) {
 			mpUiTree->mpRootView->setDirty(true);
-		}
+		}*/
 		UiRender::getInstance()->setTexture(mpUiTree->mpTexture);
 	}
 }
@@ -639,7 +662,9 @@ void UiTree::updateWidthHeight(float width, float height) {
 	mFbo.attachColorTexture(mpTexture, 0);
 	//ui重绘
 	mbRedraw = true;
-	addDirtyView(mpRootView);
+	if (mpRootView) {
+		mpRootView->setDirty(true);
+	}
 }
 
 void UiTree::calcViewsRect(int windowWidth, int windowHeight) {

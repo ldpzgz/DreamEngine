@@ -192,8 +192,8 @@ void Mesh::loadMesh()
 			1.0f,0.0f,0.0f,
 			1.0f,1.0f,0.0f };
 		GLuint indexes[] = { 0,1,2,0,2,3 };
-		//GLfloat tex[] = { 0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,1.0f,1.0f };
-		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes));
+		GLfloat tex[] = { 0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,1.0f,1.0f };
+		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
 	}
 	else if (mMeshType == MeshType::MESH_Rect) {
 		GLfloat pos[] = { 0.0f,1.0f,0.0f,
@@ -509,7 +509,8 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc)
 {
 	if (mMeshType == MeshType::MESH_Rectangle 
 		|| mMeshType == MeshType::MESH_DIY
-		|| mMeshType == MeshType::MESH_Cuboid)
+		|| mMeshType == MeshType::MESH_Cuboid
+		|| mMeshType == MeshType::MESH_FONTS)
 	{
 		drawTriangles(posloc, texloc, norloc,colorloc);
 	}
@@ -526,7 +527,8 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc)
 void Mesh::render(const glm::mat4& mvpMat) {
 	if (mpMaterial) {
 		//update mvpMatrix;
-		mpMaterial->updateMvpMatrix(glm::value_ptr(mvpMat));
+		mpMaterial->updateMvpMatrix(mvpMat);
+		mpMaterial->setTextureMatrix();
 		mpMaterial->enable();
 		int posloc = -1;
 		int texloc = -1;
@@ -543,8 +545,8 @@ void Mesh::render(const glm::mat4& mvpMat) {
 void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& texMat) {
 	if (mpMaterial) {
 		//update mvpMatrix;
-		mpMaterial->updateMvpMatrix(glm::value_ptr(mvpMat));
-		mpMaterial->updateTextureMatrix(glm::value_ptr(texMat));
+		mpMaterial->updateMvpMatrix(mvpMat);
+		mpMaterial->updateTextureMatrix(texMat);
 		mpMaterial->enable();
 		int posloc = -1;
 		int texloc = -1;
