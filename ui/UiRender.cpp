@@ -338,6 +338,7 @@ void UiRender::drawTextView(TextView* tv) {
 		int totalWidth = 0;				//字符串占用的宽度
 		int totalHeight = currentPosY; //字符串占用的高度
 		int maxYAdv = 0;//统计基线之下还有多少像素
+		float scaleFactor = (float)textSize / (float)pFontInfo->charSize;
 		std::vector<CharRenderInfo> charsRenderInfoArray;
 		for(size_t i = 0; i<slen;){
 			UnicodeType code;
@@ -346,7 +347,7 @@ void UiRender::drawTextView(TextView* tv) {
 			i += len;
 			try {
 				const auto& cinfo = pFontInfo->getCharInTexture(code);
-				if (currentPosX + cinfo.width>maxWidth) {//当前要渲染的文字会超出textview的边界
+				if (currentPosX + scaleFactor*cinfo.width>maxWidth) {//当前要渲染的文字会超出textview的边界
 					if (currentLines >= tvMaxLines) {
 						if (currentPosX >= maxWidth) {
 							//渲染完毕
@@ -364,7 +365,7 @@ void UiRender::drawTextView(TextView* tv) {
 					}
 				}
 
-				auto maxYAdvTemp = cinfo.height - cinfo.top;
+				auto maxYAdvTemp = scaleFactor*(cinfo.height - cinfo.top);
 				if (maxYAdvTemp > maxYAdv) {
 					maxYAdv = maxYAdvTemp;
 				}
@@ -378,10 +379,10 @@ void UiRender::drawTextView(TextView* tv) {
 
 				//计算文字的model矩阵，渲染ui的时候使用的是正交投影，适配窗口的宽高
 				//注意，ui坐标系统原点在左上角，y轴向下，与传统保持一直，openglY轴向上的
-				rInfo.matrix = glm::translate(rInfo.matrix, glm::vec3(currentPosX+cinfo.left, currentPosY+cinfo.top-cinfo.height, 0.0f));
-				rInfo.matrix = glm::scale(rInfo.matrix, glm::vec3(cinfo.width, cinfo.height, 1.0f));
+				rInfo.matrix = glm::translate(rInfo.matrix, glm::vec3(currentPosX+ scaleFactor*cinfo.left, currentPosY+ scaleFactor*(cinfo.top-cinfo.height), 0.0f));
+				rInfo.matrix = glm::scale(rInfo.matrix, glm::vec3(scaleFactor*cinfo.width, scaleFactor*cinfo.height, 1.0f));
 
-				currentPosX += (cinfo.advX + xExtraAdvance);//考虑到textview设置的额外字符间距
+				currentPosX += (scaleFactor*cinfo.advX + xExtraAdvance);//考虑到textview设置的额外字符间距
 				if (totalWidth < tvRect.width) {
 					totalWidth = currentPosX;
 				}
@@ -467,8 +468,12 @@ void UiRender::drawUi() {
 	if (mpLastMesh) {
 		//todo关闭深度测试，等等
 		glDisable(GL_DEPTH_TEST);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendEquation(GL_FUNC_ADD);
 		mpLastMesh->render(mProjMatrix*mLastMeshModelMatrix);
 		glEnable(GL_DEPTH_TEST);
+		glDisable(GL_BLEND);
 	}
 }
 
@@ -630,7 +635,7 @@ void UiTree::draw() {
 		//渲染到纹理
 		mFbo.setDepthTest(false);
 		if (mbRedraw) {
-			mFbo.setClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
+			mFbo.setClearColorValue(0.0f, 0.0f, 0.0f, 0.0f);
 			mFbo.setClearColor(true);
 			mbRedraw = false;
 		}

@@ -1,4 +1,4 @@
-#ifndef _NODE_H_
+ï»¿#ifndef _NODE_H_
 #define _NODE_H_
 #include <unordered_map>
 #include <memory>
@@ -12,6 +12,18 @@
 #include "Mesh.h"
 #include <type_traits>
 using namespace std;
+
+/*
+glmè¿™ä¸ªåº“çš„çŸ©é˜µè¿ç®—é¡ºåºï¼š
+glm::mat4 model(1.0f);
+model = glm::translate(model,glm::vec3(10,10,0));
+model = glm::scale(model,glm::vec3(2.0f,2.0f,0.0f);
+glm::vec4 temp(1.0f,1.0f,0.0f,1.0f);
+auto result = model*temp;
+
+result æ˜¯å…ˆåœ¨åŸç‚¹ç¼©æ”¾ï¼Œç„¶åå†å¹³ç§»ï¼Œglmè¿™ä¸ªåº“çŸ©é˜µè¿ç®—ä¸ä¹‹å‰è®¤è¯†çš„è¿ç®—é¡ºåºç›¸åã€‚
+*/
+
 template<typename T>
 class Node : public enable_shared_from_this<Node<T>> {
 public:
@@ -34,7 +46,7 @@ public:
 	}
 	/*Node(Node&);
 	Node(const Node&);
-	Node(Node&& temp);Ò»¶¨ÒªĞŞ¸Ätemp£¬·ñÔòÒÆ¶¯¹¹Ôìº¯ÊıÃ»ÓĞÒâÒå*/
+	Node(Node&& temp);ä¸€å®šè¦ä¿®æ”¹tempï¼Œå¦åˆ™ç§»åŠ¨æ„é€ å‡½æ•°æ²¡æœ‰æ„ä¹‰*/
 	shared_ptr<Node<T>> newAChild() {
 		auto child = make_shared<Node<T>>();
 		unsigned int id = mCurChileId++;
@@ -110,13 +122,13 @@ public:
 	}
 
 
-	//Ğéº¯Êı£¬Ä£°åÔÚÊµÀı»¯µÄÊ±ºò£¬Ã»ÓĞµ÷ÓÃ¹ıÒ²»áÉú³ÉÕâ¸öĞéº¯Êı
+	//è™šå‡½æ•°ï¼Œæ¨¡æ¿åœ¨å®ä¾‹åŒ–çš„æ—¶å€™ï¼Œæ²¡æœ‰è°ƒç”¨è¿‡ä¹Ÿä¼šç”Ÿæˆè¿™ä¸ªè™šå‡½æ•°
 	void translate(float x,float y,float z) {
 		mMat = glm::translate(mMat, glm::vec3(x, y, z));
 		updateChildWorldMatrix();
 	}
 
-	//Ö»ÓĞNode<glm::mat3>²ÅÄÜµ÷ÓÃ
+	//åªæœ‰Node<glm::mat3>æ‰èƒ½è°ƒç”¨
 	void translate(float x, float y) {
 		mMat = glm::translate(mMat, glm::vec2(x, y));
 		updateChildWorldMatrix();
@@ -127,7 +139,7 @@ public:
 		updateChildWorldMatrix();
 	}
 
-	//Ö»ÓĞNode<glm::mat3>²ÅÄÜµ÷ÓÃ
+	//åªæœ‰Node<glm::mat3>æ‰èƒ½è°ƒç”¨
 	void rotate(float angle, const glm::vec2& vec) {
 		mMat = glm::rotate(mMat, angle, vec);
 		updateChildWorldMatrix();
@@ -138,7 +150,7 @@ public:
 		updateChildWorldMatrix();
 	}
 
-	//Ö»ÓĞNode<glm::mat3>²ÅÄÜµ÷ÓÃ
+	//åªæœ‰Node<glm::mat3>æ‰èƒ½è°ƒç”¨
 	void scale(const glm::vec2& scaleVec) {
 		mMat = glm::scale(mMat, scaleVec);
 		updateChildWorldMatrix();
@@ -156,7 +168,7 @@ private:
 	unsigned int mId;
 	atomic_uint mCurChileId;
 	atomic_uint mCurMeshId;
-	weak_ptr<Node<T>> mpParent;	//Ê¹ÓÃweak_ptr·ÀÖ¹¸¸×ÓnodeÑ­»·ÒıÓÃµ¼ÖÂÄÚ´æĞ¹Â©
+	weak_ptr<Node<T>> mpParent;	//ä½¿ç”¨weak_ptré˜²æ­¢çˆ¶å­nodeå¾ªç¯å¼•ç”¨å¯¼è‡´å†…å­˜æ³„æ¼
 	unordered_map<unsigned int, shared_ptr<Node<T>>> mChildren;
 	unordered_map<unsigned int, shared_ptr<Attachable>> mAttachments;
 
