@@ -2,15 +2,6 @@
 #define _UI_RENDER_H_
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include <stdio.h>
-#include <locale.h>
-#include <iostream>
-#include <string>
-#include <map>
-#include <set>
-#include <unordered_map>
-#include <memory>
-#include "../material.h"
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/mat4x4.hpp>
 #include <glm/mat3x3.hpp>
@@ -23,7 +14,10 @@
 #include "../Node.h"
 #include "../Fbo.h"
 #include "../Texture.h"
-#include "Ui.h"
+#include "View.h"
+#include "TextView.h"
+#include "Button.h"
+#include "LinearLayout.h"
 
 using namespace std;
 using UnicodeType = char32_t;
@@ -102,32 +96,6 @@ private:
 	static void releaseFreetype();
 };
 
-class UiTree : public DirtyListener {
-public:
-	//应该把uiTree绘制到一张纹理上，避免每次都去绘制所有ui，很多时候，ui是没有变化的，
-	//只更新有变化的ui
-	void draw();
-	void addDirtyView(const shared_ptr<View>& pView) override;
-	void updateWidthHeight(float width, float height);
-
-	/*
-	计算uitree上所有view的实际尺寸
-	*/
-	void calcViewsRect(int windowWidth, int windowHeight);
-	void calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView);
-	void calcViewsPos(shared_ptr<View> pView);
-
-	shared_ptr<View> mpRootView;
-	unordered_map<std::string, shared_ptr<View>> mViews;//存储拥有id的view
-	list<weak_ptr<View>> mViewsToBeDrawing;
-	Fbo mFbo;
-	bool mbRedraw{ false };
-	/*
-	这棵uitree会被绘制到这个纹理上面
-	*/
-	shared_ptr<Texture> mpTexture;
-};
-
 //class View;
 //class TextView;
 //class Button;
@@ -192,75 +160,4 @@ private:
 	float mWindowHeight;
 	glm::mat4 mProjMatrix;
 };
-
-/*
-这个类有一颗ui树，ui树上每个node可以挂一堆view，
-遍历这棵树，调用每个view的render函数，绘制出ui。
-负责传递输入事件给每一个view
-用法：
-	//加载布局文件，初始化
-	UiManager::getInstance()->initUi(w,h);
-	auto ptree = UiManager::loadFromFile(layoutfile);
-	UiManager::getInstance()->setUiTree(ptree);
-	
-
-	//窗口宽高变化的时候调用
-	UiManager::getInstance()->updateWidthHeight(w,h);
-
-	//鼠标事件
-	UiManager::getInstance()->mouseMove(x,y);
-	UiManager::getInstance()->mouseLButtonDown(x,y);
-	UiManager::getInstance()->mouseLButtonUp(x,y);
-
-	//绘制ui
-	UiManager::getInstance()->draw();
-*/
-class UiManager {
-public:
-	static unique_ptr<UiManager>& getInstance() {
-		return gInstance;
-	}
-
-	//从一个xml文件里面加载一棵ui树，准备模仿Android的ui系统
-	static shared_ptr<UiTree> loadFromFile(const string& filepath);
-
-	/*
-	功能：	初始化ui，初始化uirender，加载string.xml,color.xml等
-	w		窗口的宽度
-	h		窗口的高度
-	*/
-	bool initUi(int w,int h);
-	//先将mpUiTree绘制到纹理里，只绘制需要更新的ui
-	//再输出到屏幕
-	void draw();
-
-	UiManager();
-
-	~UiManager();
-
-	//设置ui树，计算ui树中每个控件的位置尺寸，设置进来的根节点会被渲染
-	void setUiTree(const shared_ptr<UiTree>& tree);
-
-	//当窗口变化的时候，需要调用这个函数更新一下
-	void updateWidthHeight(float width, float height);
-
-	//ui的输入事件驱动
-	void mouseMove(int x, int y);
-
-	void mouseLButtonDown(int x, int y);
-
-	void mouseLButtonUp(int x, int y);
-private:
-	shared_ptr<UiTree> mpUiTree;
-	float mWindowWidth;
-	float mWindowHeight;
-	glm::mat4 mProjMatrix;
-
-	static unique_ptr<UiManager> gInstance;
-	static unordered_map<string, string> gRStrings;//保存从material/strings.xml里面解析出来的字符串
-	static unordered_map<string, Color> gRColors;//保存从material/colors.xml里面解析出来的颜色值
-	static void parseRStrings(const string& path);
-	static void parseRColors(const string& path);
-};
-
 #endif
