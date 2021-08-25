@@ -1,4 +1,4 @@
-#ifndef _BUTTON_H_
+ï»¿#ifndef _BUTTON_H_
 #define _BUTTON_H_
 #include "TextView.h"
 
@@ -6,24 +6,11 @@ class UiRender;
 class Button : public TextView{
 public:
 	friend UiRender;
-	using TextView::TextView;//¼Ì³Ð»ùÀàµÄ¹¹Ôìº¯Êý
-
-	/*
-	ÉèÖÃbuttonµÄ±³¾°ÑÕÉ«
-	*/
-	void setBackgroundColor(const Color& color) {
-		for (auto& mc : mColor) {
-			mc = color;
-		}
-	}
-	/*
-	ÉèÖÃbuttonµÄ±³¾°ÑÕÉ«£¬´Ó×óµ½ÓÒ½¥±ä
-	*/
-	void setBackgroundColor(const Color& colorLeft, const Color& colorRight) {
-		mColor[0] = colorLeft;
-		mColor[1] = colorLeft;
-		mColor[2] = colorRight;
-		mColor[3] = colorRight;
+	explicit Button(shared_ptr<View> parent) :
+		TextView(parent) {
+		//buttoné»˜è®¤æ˜¯ç™½åº•é»‘å­—
+		setBackgroundColor(Color(1.0f,1.0f,1.0f,1.0f));
+		setTextColor(Color(0.0f, 0.0f, 0.0f, 1.0f));
 	}
 
 	void draw() override;
@@ -33,10 +20,12 @@ public:
 	bool mouseLButtonDown(int x, int y) override;
 
 	bool mouseLButtonUp(int x, int y) override;
+
+	void setBackgroundColor(const Color& c) override;
 private:
-	Color mColor[4]{ {1.0f,1.0f,1.0f,1.0f},{ 1.0f,1.0f,1.0f,1.0f },{ 1.0f,1.0f,1.0f,1.0f },{ 1.0f,1.0f,1.0f,1.0f } };
 	unsigned int mMouseState{ MouseState::MouseNone};
 	bool mbLButtonDown{ false };
+	Color mOriginBkColor;
 };
 
 #endif

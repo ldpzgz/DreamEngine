@@ -2,6 +2,7 @@
 #define _UI_RENDER_H_
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_GLYPH_H
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/mat4x4.hpp>
 #include <glm/mat3x3.hpp>
@@ -130,13 +131,13 @@ public:
 	功能：			初始化绘制button需要用到的一些资源
 	buttonMaterial	渲染button使用的material
 	*/
-	bool initButton(const string& buttonMaterial);
+	bool initBackgroundResource(const string& buttonMaterial);
 
 	//当窗口变化的时候，需要调用这个函数更新一下
 	void updateWidthHeight(float width, float height);
 
 	void drawTextView(TextView* tv);
-	void drawButton(Button* tv);
+	void drawBackground(View* tv);
 	void drawLinearLayout(LinearLayout* pll);
 
 	//指定最后要显示出来的纹理，当前uitree的纹理，每棵ui树都会渲染到它自己的纹理上面。
@@ -151,8 +152,8 @@ public:
 private:
 	static unique_ptr<UiRender> gInstance;
 
-	shared_ptr<FontInfo> pFontInfo;
-	shared_ptr<Mesh> mpRectMesh;//用于承载Button的背景
+	shared_ptr<FontInfo> mpFontInfo;
+	shared_ptr<Mesh> mpBackgroundMesh;//用于承载Button的背景
 	shared_ptr<Material> mpLastMaterial;//渲染最终的ui的材质
 	shared_ptr<Mesh> mpLastMesh;//渲染最终的ui的材质mesh
 	glm::mat4 mLastMeshModelMatrix;

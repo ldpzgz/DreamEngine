@@ -98,19 +98,19 @@ void parseView(const shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode, 
 			auto attr = pnode->first_attribute();
 			while (attr != nullptr) {
 				string attrName = attr->name();
-				if (attrName == "id") {
-					//有id的控件，才保存起来，以便查找
-					mpTree->mViews.emplace(attr->value(), pView);
+				
+				auto it = View::gAttributeHandler.find(attrName);
+				if (it != View::gAttributeHandler.end()) {
+					it->second(pView, attr->value());
+					if (attrName == "id") {
+						//有id的控件，才保存起来，以便查找
+						mpTree->mViews.emplace(attr->value(), pView);
+					}
 				}
 				else {
-					auto it = View::gAttributeHandler.find(attrName);
-					if (it != View::gAttributeHandler.end()) {
-						it->second(pView, attr->value());
-					}
-					else {
-						LOGD("there are no %s attributeHandler,please supplement", attrName.c_str());
-					}
+					LOGD("there are no %s attributeHandler,please supplement", attrName.c_str());
 				}
+				
 				attr = attr->next_attribute();
 			}
 		}

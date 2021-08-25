@@ -10,7 +10,7 @@ static const string gFontTextureName("fontsTexture");
 static const string gFontFile("./opengles3/material/simfang.ttf");
 static const string gSavedFontFile("./opengles3/material/myfont.data");
 static const string gFontMaterialFile("./opengles3/material/font.material");
-static const string gButtonMaterialFile("./opengles3/material/button.material");
+static const string gBackgroundMaterialFile("./opengles3/material/background.material");
 FT_Library  FontInfo::glibrary;
 FT_Face     FontInfo::gface;      /* handle to face object */
 bool FontInfo::gIsFreetypeInit = false;
@@ -166,13 +166,12 @@ void FontInfo::saveToFile() {
 		ofstream out(savePath, ios::out | ios::binary);
 		size_t countOfChar = fontsMap.size();
 		out << countOfChar << textureWidth << textureHeight << curTextureWidth << curTextureHeight;
-		for_each(fontsMap.cbegin(), fontsMap.cend(), [&out](const FontsMapValueType& info) {
+		for (const auto& info : fontsMap) {
 			out.write((const char*)&info.first, sizeof(UnicodeType));
-			out<< info.second.x << info.second.y << info.second.left << info.second.top << info.second.width << info.second.width << info.second.advX << info.second.advX;
-		});
+			out << info.second.x << info.second.y << info.second.left << info.second.top << info.second.width << info.second.width << info.second.advX << info.second.advX;
+		}
 		out.close();
-	}
-	
+	}	
 }
 
 const CharInTexture& FontInfo::getCharInTexture(UnicodeType code) {
@@ -196,17 +195,14 @@ const CharInTexture& FontInfo::getCharInTexture(UnicodeType code) {
 			LOGE("error to FT_Load_Char \n");
 			throw error;
 		}
-
+		//FT_BBox bbox;
+		//FT_Glyph glyph;
+		//FT_Get_Glyph(gface->glyph, &glyph);                   //获取字形图像 的信息
+		//FT_Glyph_Get_CBox(glyph, FT_GLYPH_BBOX_TRUNCATE, &bbox);
 		FT_GlyphSlot slot = gface->glyph;
-		auto metrics = slot->metrics;
+		
 		CharInTexture info;
-		/*CharInTexture info2;
-		info2.advX = metrics.horiAdvance >> 6;
-		info2.advY = 0;
-		info2.left = metrics.horiBearingX >> 6;
-		info2.top = metrics.horiBearingY >> 6;
-		info2.width = metrics.width >> 6;
-		info2.height = metrics.height >> 6;*/
+		/*auto metrics = slot->metrics;*/
 		info.left = slot->bitmap_left;
 		info.top = slot->bitmap_top;
 		info.width = slot->bitmap.width;
@@ -260,7 +256,7 @@ unique_ptr<UiRender> UiRender::gInstance = make_unique<UiRender>();
 
 void UiRender::initUiRender() {
 	initTextView(gSavedFontFile, gFontFile, gFontMaterialFile);
-	initButton(gButtonMaterialFile);
+	initBackgroundResource(gBackgroundMaterialFile);
 	mpLastMaterial = Material::loadFromFile(gUIRenderMaterialFile);
 	mpLastMesh = make_shared<Mesh>(MeshType::MESH_FONTS);
 	if (mpLastMesh) {
@@ -278,8 +274,8 @@ void UiRender::updateWidthHeight(float width, float height) {
 }
 
 bool UiRender::initTextView(const string& savedPath, const string& ttfPath, const string& materialPath) {
-	pFontInfo = FontInfo::loadFromFile(savedPath, ttfPath, materialPath);
-	if (pFontInfo) {
+	mpFontInfo = FontInfo::loadFromFile(savedPath, ttfPath, materialPath);
+	if (mpFontInfo) {
 		return true;
 	}
 	else {
@@ -287,22 +283,30 @@ bool UiRender::initTextView(const string& savedPath, const string& ttfPath, cons
 	}
 }
 
-bool UiRender::initButton(const string& buttonMaterial) {
-	mpRectMesh = make_shared<Mesh>(MeshType::MESH_Rect);
+bool UiRender::initBackgroundResource(const string& buttonMaterial) {
+	mpBackgroundMesh = make_shared<Mesh>(MeshType::MESH_Rect);
 	auto pMaterial = make_shared<Material>();
-	if (!pMaterial->parseMaterialFile(buttonMaterial)) {
+	if (pMaterial && !pMaterial->parseMaterialFile(buttonMaterial)) {
 		LOGE("error to parse button material");
+		pMaterial.reset();
 		return false;
 	}
-	else {
-		mpRectMesh->setMaterial(pMaterial);
+	if(mpBackgroundMesh){
+		mpBackgroundMesh->loadMesh();
+		if (pMaterial) {
+			mpBackgroundMesh->setMaterial(pMaterial);
+		}
 		return true;
 	}
 }
 
 void UiRender::drawTextView(TextView* tv) {
-	if (tv != nullptr && pFontInfo) {
-		int originCharSize = pFontInfo->charSize;
+	if (tv != nullptr) {
+		if (!mpFontInfo) {
+			LOGE("ERROR NO fontInfo");
+			return;
+		}
+		int originCharSize = mpFontInfo->charSize;
 		int textSize = tv->getTextSize();//字的点阵大小，像素为单位
 		auto& tvRect = tv->getRect();
 		const auto& text = tv->getText();
@@ -314,20 +318,20 @@ void UiRender::drawTextView(TextView* tv) {
 		//currentPosY = mWindowHeight - currentPosY;//ui的坐标系跟OpenGL的坐标系不一样，需要转换一下
 		//计算出要渲染的文字的纹理信息与位置信息，从(0,0)这个位置开始排版文字，等会再根据textview的属性，translate一下。
 		float currentPosX = 0.0f; //下一个要渲染的文字的基线位置x
-		float currentPosY = -textSize - tv->getLineSpacingInc();//下一个要渲染的文字的基线位置y
+		float lineSpace = tv->getLineSpacingInc();
+		float currentPosY = -textSize - lineSpace;//下一个要渲染的文字的基线位置y
 		float yAdvance = currentPosY;//考虑到textview设置的额外行间距，默认的行间距是freetype渲染文字时的CharSize
 		float xExtraAdvance = tv->getCharSpacingInc();//考虑到textview设置的额外字符间距
 		float maxWidth = tvRect.width;//textView的宽度，字符渲染不能超出这个宽度
 		float maxHeight = tvRect.height;//textView的高度，字符渲染不能超出这个宽度
 		float currentWidth = 0.0f;//当前已经渲染出去的字符的宽度，这个不能超出maxWidth
-		int fontTextureWidth = pFontInfo->pCharTexture->getWidth();//保存字体位图的纹理的宽度
-		int fontTextureHeight = pFontInfo->pCharTexture->getHeight();//保存字体位图的纹理的高度
+		int fontTextureWidth = mpFontInfo->pCharTexture->getWidth();//保存字体位图的纹理的宽度
+		int fontTextureHeight = mpFontInfo->pCharTexture->getHeight();//保存字体位图的纹理的高度
 		int tvMaxLines = tv->getMaxLines(); //textview设置的显示行数
 		int currentLines = 1;			//
 		int totalWidth = 0;				//字符串占用的宽度
-		int totalHeight = currentPosY; //字符串占用的高度
-		int maxYAdv = 0;//统计基线之下还有多少像素
-		float scaleFactor = (float)textSize / (float)pFontInfo->charSize;
+		int totalHeight = -currentPosY; //字符串占用的高度
+		float scaleFactor = (float)textSize / (float)mpFontInfo->charSize;
 		std::vector<CharRenderInfo> charsRenderInfoArray;
 		for(size_t i = 0; i<slen;){
 			UnicodeType code;
@@ -335,7 +339,7 @@ void UiRender::drawTextView(TextView* tv) {
 			pStr += len;
 			i += len;
 			try {
-				const auto& cinfo = pFontInfo->getCharInTexture(code);
+				const auto& cinfo = mpFontInfo->getCharInTexture(code);
 				if (currentPosX + scaleFactor*cinfo.width>maxWidth) {//当前要渲染的文字会超出textview的边界
 					if (currentLines >= tvMaxLines) {
 						if (currentPosX >= maxWidth) {
@@ -346,18 +350,16 @@ void UiRender::drawTextView(TextView* tv) {
 					else {
 						//要换行了,增加一行
 						currentPosX = 0;
-						currentPosY += (yAdvance - maxYAdv);
-						maxYAdv = 0;
+						currentPosY += yAdvance;
+						//maxYAdv = 0;
 						++currentLines;
 						totalWidth = tvRect.width;
-						totalHeight = currentPosY;
+						totalHeight = -currentPosY;
 					}
 				}
 
 				auto maxYAdvTemp = scaleFactor*(cinfo.height - cinfo.top);
-				if (maxYAdvTemp > maxYAdv) {
-					maxYAdv = maxYAdvTemp;
-				}
+				
 				//可以计算纹理矩阵了，mesh中的纹理坐标是(0,0)到(1,1)
 				CharRenderInfo rInfo;
 				
@@ -368,7 +370,7 @@ void UiRender::drawTextView(TextView* tv) {
 
 				//计算文字的model矩阵，渲染ui的时候使用的是正交投影，适配窗口的宽高
 				//注意，ui坐标系统原点在左上角，y轴向下，与传统保持一直，openglY轴向上的
-				rInfo.matrix = glm::translate(rInfo.matrix, glm::vec3(currentPosX+ scaleFactor*cinfo.left, currentPosY+ scaleFactor*(cinfo.top-cinfo.height), 0.0f));
+				rInfo.matrix = glm::translate(rInfo.matrix, glm::vec3(currentPosX+ scaleFactor*cinfo.left, currentPosY+ lineSpace+5 + scaleFactor*(cinfo.top-cinfo.height), 0.0f));
 				rInfo.matrix = glm::scale(rInfo.matrix, glm::vec3(scaleFactor*cinfo.width, scaleFactor*cinfo.height, 1.0f));
 
 				currentPosX += (scaleFactor*cinfo.advX + xExtraAdvance);//考虑到textview设置的额外字符间距
@@ -384,18 +386,17 @@ void UiRender::drawTextView(TextView* tv) {
 		}
 		//经过上面的处理，文字已经排版好了，但是整个文本的左上角在坐标原点(0,0)
 		//需要根据textview的对齐属性（左对齐，右对齐，顶对齐，底对齐，水平居中，垂直居中）,结合textView的位置，确定平移向量，
-		
 		auto textGrivate = tv->getGravity();
 		glm::vec3 moveVec(0.0f, 0.0f, 0.0f);
-		if (textGrivate & LayoutParam::Center) {
-			if (totalWidth > tvRect.width) {
+		if (textGrivate == LayoutParam::Center) {
+			if (totalWidth >= tvRect.width) {
 				moveVec.x = tvRect.x;
 			}
 			else {
 				moveVec.x = tvRect.x + (float)(tvRect.width- totalWidth)/2.0f;
 			}
 
-			if (totalHeight > tvRect.height) {
+			if (totalHeight >= tvRect.height) {
 				moveVec.y = mWindowHeight - tvRect.y;
 			}
 			else {
@@ -404,47 +405,140 @@ void UiRender::drawTextView(TextView* tv) {
 			
 		}
 		else if (textGrivate == LayoutParam::TopCenter) {
-			//todo
+			if (totalWidth >= tvRect.width) {
+				moveVec.x = tvRect.x;
+			}
+			else {
+				moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth) / 2.0f;
+			}
+			moveVec.y = mWindowHeight - tvRect.y;
 		}
 		else if (textGrivate == LayoutParam::LeftCenter) {
-			//todo
+			moveVec.x = tvRect.x;
+
+			if (totalHeight >= tvRect.height) {
+				moveVec.y = mWindowHeight - tvRect.y;
+			}
+			else {
+				moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight) / 2.0f;
+			}
+		}
+		else if (textGrivate == LayoutParam::BottomCenter) {
+			if (totalWidth >= tvRect.width) {
+				moveVec.x = tvRect.x;
+			}
+			else {
+				moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth) / 2.0f;
+			}
+
+			if (totalHeight >= tvRect.height) {
+				moveVec.y = mWindowHeight - tvRect.y;
+			}
+			else {
+				moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight);
+			}
+		}
+		else if (textGrivate == LayoutParam::RightCenter) {
+			if (totalWidth >= tvRect.width) {
+				moveVec.x = tvRect.x;
+			}
+			else {
+				moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth);
+			}
+
+			if (totalHeight >= tvRect.height) {
+				moveVec.y = mWindowHeight - tvRect.y;
+			}
+			else {
+				moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight) / 2.0f;
+			}
+		}
+		else if (textGrivate == LayoutParam::LeftTop) {
+			moveVec.x = tvRect.x;
+			moveVec.y = mWindowHeight - tvRect.y;
+		}
+		else if (textGrivate == LayoutParam::LeftBottom) {
+			moveVec.x = tvRect.x;
+			if (totalHeight >= tvRect.height) {
+				moveVec.y = mWindowHeight - tvRect.y;
+			}
+			else {
+				moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight);
+			}
+		}
+		else if (textGrivate == LayoutParam::RightBottom) {
+			if (totalWidth >= tvRect.width) {
+				moveVec.x = tvRect.x;
+			}
+			else {
+				moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth);
+			}
+			if (totalHeight >= tvRect.height) {
+				moveVec.y = mWindowHeight - tvRect.y;
+			}
+			else {
+				moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight);
+			}
+		}
+		else if (textGrivate == LayoutParam::RightTop) {
+			if (totalWidth >= tvRect.width) {
+				moveVec.x = tvRect.x;
+			}
+			else {
+				moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth);
+			}
+			moveVec.y = mWindowHeight - tvRect.y;
 		}
 
 		//根据对齐属性，调整每一个的位置,并且渲染
-		//glEnable(GL_SCISSOR_TEST);
-		//glScissor(tvRect.x, mWindowHeight-tvRect.y, tvRect.width, tvRect.height);
+		glEnable(GL_SCISSOR_TEST);
+		glScissor(tvRect.x, mWindowHeight-tvRect.y- tvRect.height, tvRect.width, tvRect.height);
 		float trx = 0.0f;
 		for (auto it = charsRenderInfoArray.begin(); it != charsRenderInfoArray.end(); ++it) {
 			glm::mat4 moveToScreenMatrix(1.0f);
 			moveToScreenMatrix = glm::translate(moveToScreenMatrix, moveVec);
 			//it->matrix = glm::translate(it->matrix, moveVec);
 			//绘制
-			if (pFontInfo->mpMaterial) {
-				pFontInfo->mpMaterial->updateUniformColor(tv->getTextColor());
+			if (mpFontInfo->mpMaterial) {
+				mpFontInfo->mpMaterial->updateUniformColor(tv->getTextColor());
 			}
-			if (pFontInfo->mpCharMesh) {
-				pFontInfo->mpCharMesh->render(mProjMatrix*moveToScreenMatrix*it->matrix, it->texMatrix);
+			if (mpFontInfo->mpCharMesh) {
+				mpFontInfo->mpCharMesh->render(mProjMatrix*moveToScreenMatrix*it->matrix, it->texMatrix);
 			}
 		}
-		//glDisable(GL_SCISSOR_TEST);
+		glDisable(GL_SCISSOR_TEST);
 		//处理完毕
 	}
 }
 
-void UiRender::drawButton(Button* bt){
-	//先绘制背景，再绘制文字
-	//先算出button的model矩阵
-	auto& rect = bt->getRect();
-	glm::mat4 model(1.0f);
-	model = glm::scale(model, glm::vec3(rect.width, rect.height, 1.0f));
-	model = glm::translate(model, glm::vec3(rect.x,mWindowHeight-rect.y,0.0f));
-	if (mpRectMesh) {
-		mpRectMesh->render(mProjMatrix*model);
-		drawTextView(bt);
+void UiRender::drawBackground(View* v){
+	if (v && v->needDrawBackground())
+	{
+		auto& rect = v->getRect();
+		glm::mat4 model(1.0f);
+		model = glm::translate(model, glm::vec3(rect.x, (mWindowHeight-rect.y-rect.height), 0.0f));
+		model = glm::scale(model, glm::vec3(rect.width, rect.height, 1.0f));
+		if (mpBackgroundMesh) {
+			//绘制背景
+			if (v->needUpdateBackground()) {
+				auto& color = v->getBackgroundColor();
+				std::array<float, 16> colors;
+				for (int i = 0; i < 4; ++i) {
+					colors[4 * i] = color.r;
+					colors[4 * i + 1] = color.g;
+					colors[4 * i + 2] = color.b;
+					colors[4 * i + 3] = color.a;
+				}
+				mpBackgroundMesh->updateColor(&colors[0], 0, 16 * sizeof(float));
+				v->clearUpdateBackground();
+			}
+			mpBackgroundMesh->render(mProjMatrix*model);
+		}
 	}
 }
 
 void UiRender::drawLinearLayout(LinearLayout* pll) {
+	drawBackground(pll);
 	auto& children = pll->getChildren();
 	for (auto& pChild : children) {
 		if (pChild) {

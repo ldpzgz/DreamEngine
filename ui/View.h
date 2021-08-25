@@ -92,37 +92,13 @@ public:
 
 	virtual ~View() {};
 
-	View(shared_ptr<View> parent,int x, int y, int w, int h) :
-		mpParent(parent),
-		mRect(x, y, w, h)
-	{
-
-	}
-
-	View(int x, int y, int w, int h) :
-		mRect(x,y,w,h)
-	{
-
-	}
-
-	View(shared_ptr<View> parent, const Rect<int>& r) :
-		mpParent(parent),
-		mRect(r)
-	{
-
-	}
-
-	View(const Rect<int>& r) :
-		mRect(r)
-	{
-
-	}
-
 	View() = default;
 
 	virtual void draw() {
 		setDirty(false);
 	}
+
+	virtual void drawBackground();
 
 	weak_ptr<View> getParent() {
 		return mpParent;
@@ -249,6 +225,28 @@ public:
 		return mbIsDirty;
 	}
 
+	virtual void setBackgroundColor(const Color& c) {
+		mBackgroundColor = c;
+		mbNeedUpdateBackground = true;
+		mbHasBackground = true;
+	}
+
+	Color& getBackgroundColor() {
+		return mBackgroundColor;
+	}
+
+	bool needDrawBackground() {
+		return mbHasBackground;
+	}
+
+	bool needUpdateBackground() {
+		return mbNeedUpdateBackground;
+	}
+
+	void clearUpdateBackground() {
+		mbNeedUpdateBackground = false;
+	}
+
 	static shared_ptr<View> createView(const string& name, shared_ptr<View> parent);
 
 	std::string mId;
@@ -272,7 +270,11 @@ public:
 	std::list<std::shared_ptr<View>> mChildren;
 	weak_ptr<DirtyListener> mpDirtyListener;
 	bool mbIsDirty{ false };
+	Color mBackgroundColor{ 0.0f,0.0f,0.0f,0.0f };
+	bool mbHasBackground{ false };
+	bool mbNeedUpdateBackground{ false };
 
+	static void idHandler(const shared_ptr<View>&, const std::string&);
 	static void layoutWidthHandler(const shared_ptr<View>&, const std::string&);
 	static void layoutWidthPercentHandler(const shared_ptr<View>&, const std::string&);
 	static void layoutHeightHandler(const shared_ptr<View>&, const std::string&);
@@ -282,6 +284,7 @@ public:
 	static void layoutMarginLeftHandler(const shared_ptr<View>&, const std::string&);
 	static void layoutMarginRightHandler(const shared_ptr<View>&, const std::string&);
 	static void gravityHandler(const shared_ptr<View>&, const std::string&);
+	static void backgroundHandler(const shared_ptr<View>&, const std::string&);
 
 	static unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> gAttributeHandler;
 };

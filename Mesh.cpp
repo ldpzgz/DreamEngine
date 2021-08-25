@@ -341,9 +341,10 @@ bool Mesh::updataPos(float* pos, int byteOffset, int size)
 	return true;
 }
 
-bool Mesh::updateColor(float* color, int byteOffset, int size) {
+bool Mesh::updateColor(float* color, int offsetInByte, int sizeInByteToBeReplaced) {
 	glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
-	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, color);
+	glBufferSubData(GL_ARRAY_BUFFER, offsetInByte, sizeInByteToBeReplaced, color);
+	checkglerror();
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	return true;
 }
@@ -510,7 +511,8 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc)
 	if (mMeshType == MeshType::MESH_Rectangle 
 		|| mMeshType == MeshType::MESH_DIY
 		|| mMeshType == MeshType::MESH_Cuboid
-		|| mMeshType == MeshType::MESH_FONTS)
+		|| mMeshType == MeshType::MESH_FONTS
+		|| mMeshType == MeshType::MESH_Rect)
 	{
 		drawTriangles(posloc, texloc, norloc,colorloc);
 	}
@@ -535,7 +537,7 @@ void Mesh::render(const glm::mat4& mvpMat) {
 		int norloc = -1;
 		int colorloc = -1;
 		mpMaterial->getVertexAtributeLoc(posloc, texloc, colorloc, norloc);
-		draw(posloc, texloc, norloc);
+		draw(posloc, texloc, norloc, colorloc);
 	}
 	else {
 		LOGE("mesh has no material,can't render");
@@ -593,7 +595,7 @@ bool Mesh::setNormalData(GLfloat* nor, int size, unsigned int drawType)
 bool Mesh::setColorData(GLfloat* nor, int size, unsigned int drawType)
 {
 	glGenBuffers(1, &mColorVbo);
-	glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
 	glBufferData(GL_ARRAY_BUFFER, size, nor, drawType);
 	mColorByteSize = size;
 	return true;

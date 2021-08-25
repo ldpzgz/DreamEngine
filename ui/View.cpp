@@ -3,6 +3,10 @@
 #include "Button.h"
 #include "LinearLayout.h"
 #include "../Log.h"
+#include "UiRender.h"
+void View::drawBackground() {
+	UiRender::getInstance()->drawBackground(this);
+}
 
 void View::calcWidth(int width) {
 	//如果mLayoutWidth==0，肯定是比例布局，由父view来确定尺寸
@@ -78,6 +82,12 @@ bool View::calcRect(const Rect<int>& parentRect) {
 		}
 	}
 	return true;
+}
+
+void View::idHandler(const shared_ptr<View>& pv, const std::string& value) {
+	if (pv && !value.empty()) {
+		pv->setId(value);
+	}
 }
 
 void View::layoutWidthHandler(const shared_ptr<View>& pv, const std::string& value) {
@@ -191,10 +201,41 @@ void View::gravityHandler(const shared_ptr<View>& pv, const std::string& value) 
 		else if (value == "leftCenter") {
 			pv->mGravity = LayoutParam::LeftCenter;
 		}
+		else if (value == "bottomCenter") {
+			pv->mGravity = LayoutParam::BottomCenter;
+		}
+		else if (value == "rightCenter") {
+			pv->mGravity = LayoutParam::RightCenter;
+		}
+		else if (value == "leftTop") {
+			pv->mGravity = LayoutParam::LeftTop;
+		}
+		else if (value == "leftBottom") {
+			pv->mGravity = LayoutParam::LeftBottom;
+		}
+		else if (value == "rightBottom") {
+			pv->mGravity = LayoutParam::RightBottom;
+		}
+		else if (value == "rightTop") {
+			pv->mGravity = LayoutParam::RightTop;
+		}
+	}
+}
+
+void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& value) {
+	if (pv) {
+		Color c;
+		if (!Color::parseColor(value, c)) {
+			LOGE("error to parse backgoundColor who's value is %s", value.c_str());
+		}
+		else {
+			pv->setBackgroundColor(c);
+		}
 	}
 }
 
 unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> View::gAttributeHandler{
+	{ "id",View::idHandler },
 	{ "width",View::layoutWidthHandler },
 	{ "height",View::layoutHeightHandler },
 	{ "widthPercent",View::layoutWidthPercentHandler },
@@ -204,6 +245,7 @@ unordered_map < string, std::function<void(const shared_ptr<View>&, const std::s
 	{ "marginLeft",View::layoutMarginLeftHandler },
 	{ "marginRight",View::layoutMarginRightHandler },
 	{ "gravity",View::gravityHandler },
+	{ "background",View::backgroundHandler },
 	{ "textSize",TextView::textSizeHandler },
 	{ "textColor",TextView::textColorHandler },
 	{ "text",TextView::textHandler },

@@ -6,26 +6,6 @@ using namespace std;
 class TextView : public View {
 public:
 	using View::View;//继承基类的构造函数
-	TextView(shared_ptr<View> parent,const std::string& str, int x, int y, int w, int h) :
-		View(parent,x,y,w,h),
-		mText(str)
-	{
-
-	}
-
-	TextView(shared_ptr<View> parent, const std::string& str, const Rect<int>& r) :
-		View(parent,r),
-		mText(str)
-	{
-
-	}
-
-	TextView(shared_ptr<View> parent,const std::string& str, const Rect<int>& r,const Color& c) :
-		View(parent,r), mText(str), mTextColor(c)
-	{
-
-	}
-
 	TextView() = default;
 
 	void setTextColor(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {

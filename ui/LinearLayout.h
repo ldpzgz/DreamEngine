@@ -13,10 +13,6 @@ public:
 	{
 
 	}
-	explicit LinearLayout(unsigned int layoutParam):
-		mLayoutParam(layoutParam)
-	{
-	}
 
 	void setLayoutParam(unsigned int layoutParam) {
 		mLayoutParam = layoutParam;

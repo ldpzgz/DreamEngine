@@ -104,6 +104,11 @@ public:
 	void setMaterial(std::shared_ptr<Material>& p) {
 		mpMaterial = p;
 	}
+
+	std::shared_ptr<Material>& getMaterial() {
+		return mpMaterial;
+	}
+
 	static void getMaxNumVertexAttr();
 	static void getLineWidthRange();
 	static void getPointSizeRange();

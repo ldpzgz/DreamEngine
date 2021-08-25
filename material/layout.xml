@@ -4,11 +4,11 @@
 	width="matchParent"
 	height="matchParent"
 	gravity="center"
-	orientation="vertical">
+	orientation="horizontal">
 	
 	<TextView
 		id="tv"
-		width="220"
+		width="200"
 		height="40"
 		marginLeft="10"
 		marginRight="10"
@@ -19,13 +19,25 @@
 	</TextView>
 	<TextView
 		id="tv1"
-		width="220"
+		width="200"
 		height="40"
 		marginLeft="10"
 		marginRight="10"
-		gravity="center"
-		textSize="64"
+		gravity="topCenter"
+		textSize="32"
 		textColor="#00ff00ff"
 		text="刘子萱">
 	</TextView>
+	<Button
+		id="bt"
+		width="200"
+		height="32"
+		marginLeft="10"
+		marginRight="10"
+		gravity="bottomCenter"
+		textSize="32"
+		textColor="#ffff00ff"
+		background="#0000ffff"
+		text="abclgpq按钮">
+	</Button>
 </LinearLayout>

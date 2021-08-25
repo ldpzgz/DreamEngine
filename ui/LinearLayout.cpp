@@ -134,10 +134,10 @@ void LinearLayout::draw() {
 void LinearLayout::orientationHandler(const shared_ptr<View>& pv, const string& value) {
 	auto pl = dynamic_pointer_cast<LinearLayout>(pv);
 	if (pl) {
-		if (value == "horizontal") {
+		if (value == "h") {
 			pl->mOrientation = LayoutParam::Horizontal;
 		}
-		else if (value == "vertical") {
+		else if (value == "v") {
 			pl->mOrientation = LayoutParam::Vertical;
 		}
 		else {
