@@ -136,6 +136,8 @@ public:
 	//当窗口变化的时候，需要调用这个函数更新一下
 	void updateWidthHeight(float width, float height);
 
+	//计算TextView文本所占用的宽度和高度以像素为单位,wrapContent的时候用
+	void calcTextViewWidthHeight(TextView* tv);
 	void drawTextView(TextView* tv);
 	void drawBackground(View* tv);
 	void drawLinearLayout(LinearLayout* pll);

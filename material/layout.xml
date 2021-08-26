@@ -2,7 +2,7 @@
 
 <LinearLayout
 	id = "layout1"
-	width="matchParent"
+	width="wrapContent"
 	height="matchParent"
 	gravity="leftBottom"
 	orientation="v">
@@ -31,10 +31,10 @@
 	</TextView>
 	<Button
 		id="bt"
-		width="220"
-		height="32"
-		marginLeft="0"
-		marginRight="10"
+		width="wrapContent"
+		height="wrapContent"
+		marginLeft="10"
+		marginRight="0"
 		gravity="leftCenter"
 		textSize="32"
 		textColor="#ffff00ff"

@@ -300,6 +300,88 @@ bool UiRender::initBackgroundResource(const string& buttonMaterial) {
 	}
 }
 
+void UiRender::calcTextViewWidthHeight(TextView* tv) {
+	if (tv->mLayoutWidth != LayoutParam::WrapContent && tv->mLayoutHeight != LayoutParam::WrapContent) {
+		LOGE("ERROR no need to call UiRender::calcTextViewWidthHeight");
+		return;
+	}
+	auto& tvRect = tv->getRect();
+	const auto& text = tv->getText();
+	unsigned char* pStr = (unsigned char*)text.c_str();
+	int textSize = tv->getTextSize();//字的点阵大小，像素为单位
+	auto slen = text.size();
+	int width = 0;
+	int height = 0;
+	int currentPosX = 0.0f; //下一个要渲染的文字的基线位置x
+	int lineSpace = tv->getLineSpacingInc();
+	int currentPosY = -textSize - lineSpace;//下一个要渲染的文字的基线位置y
+	int yAdvance = currentPosY;//考虑到textview设置的额外行间距，默认的行间距是freetype渲染文字时的CharSize
+	int xExtraAdvance = tv->getCharSpacingInc();//考虑到textview设置的额外字符间距
+	
+	int maxWidth = tv->getMaxWidth();//textView的宽度，字符渲染不能超出这个宽度
+	int maxHeight = tv->getMaxHeight();//textView的高度，字符渲染不能超出这个宽度
+	if (tvRect.width > 0) {
+		maxWidth = tvRect.width;
+	}
+	if (tvRect.height > 0) {
+		maxHeight = tvRect.height;
+	}
+	int currentWidth = 0.0f;//当前已经渲染出去的字符的宽度，这个不能超出maxWidth
+	int fontTextureWidth = mpFontInfo->pCharTexture->getWidth();//保存字体位图的纹理的宽度
+	int fontTextureHeight = mpFontInfo->pCharTexture->getHeight();//保存字体位图的纹理的高度
+	int tvMaxLines = tv->getMaxLines(); //textview设置的显示行数
+	int currentLines = 1;			//
+	int totalWidth = 0;				//字符串占用的宽度
+	int totalHeight = -currentPosY; //字符串占用的高度
+	float scaleFactor = (float)textSize / (float)mpFontInfo->charSize;
+	std::vector<CharRenderInfo> charsRenderInfoArray;
+	for (size_t i = 0; i<slen;) {
+		UnicodeType code;
+		auto len = UtfConvert::utf(pStr, code);
+		pStr += len;
+		i += len;
+		try {
+			const auto& cinfo = mpFontInfo->getCharInTexture(code);
+			//判断宽度高度是否已经超出，是否要退出
+			if (currentPosX + scaleFactor*cinfo.width>maxWidth) {//当前要渲染的文字会超出textview的边界
+				if (currentLines >= tvMaxLines) {
+					if (currentPosX >= maxWidth) {
+						//渲染完毕
+						break;
+					}
+				}
+				else {
+					//要换行了,判断高度是否超出边界
+					if (-currentPosY- yAdvance > maxHeight) {
+						break;
+					}
+					currentPosX = 0;
+					currentPosY += yAdvance;
+					//maxYAdv = 0;
+					++currentLines;
+					totalWidth = maxWidth;
+					totalHeight = -currentPosY;
+				}
+			}
+			//没有超出边界，继续
+			currentPosX += (scaleFactor*cinfo.advX + xExtraAdvance);//考虑到textview设置的额外字符间距
+			if (totalWidth < maxWidth) {
+				totalWidth = currentPosX;
+			}
+		}
+		catch (int error) {
+			LOGE("UiRender::calcTextViewWidthHeight getCharInTexture error %d", error);
+		}
+	}
+
+	if (tv->mLayoutWidth == LayoutParam::WrapContent) {
+		tvRect.width = totalWidth + tv->mLayoutMarginLeft + tv->mLayoutMarginRight;
+	}
+	if (tv->mLayoutHeight == LayoutParam::WrapContent) {
+		tvRect.height = totalHeight + tv->mLayoutMarginTop + tv->mLayoutMarginBottom;
+	}
+}
+
 void UiRender::drawTextView(TextView* tv) {
 	if (tv != nullptr) {
 		if (!mpFontInfo) {

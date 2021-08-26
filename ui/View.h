@@ -167,17 +167,26 @@ public:
 
 	virtual bool calcRect(const Rect<int>& parentRect);
 	/*
-	layout_width 为matchparent,或者固定尺寸的时候的时候调用这个函数计算宽度
+	width为matchparent,或者固定尺寸的时候的时候调用这个函数计算宽度
 	*/
-	virtual void calcWidth(int width);
-	virtual void calcHeight(int height);
-	//宽高由父view来确定的时候，由父view来调用
+	virtual bool calcWidth(int parentWidth);
+	/*
+	height为matchparent,或者固定尺寸的时候的时候调用这个函数计算宽度
+	*/
+	virtual bool calcHeight(int parentHeight);
+	//百分比布局的时候，宽高由父view来确定，由父view来调用设置宽高
 	virtual void setWidth(int width);
+	//百分比布局的时候，宽高由父view来确定，由父view来调用设置宽高
 	virtual void setHeight(int height);
-	virtual int getTotalWidthPercent() {
+
+	virtual void getWidthAccordChildren() {
+	}
+	virtual void getHeightAccordChildren() {
+	}
+	virtual int getChildrenTotalWidthPercent() {
 		return 0;
 	}
-	virtual int getTotalHeightPercent() {
+	virtual int getChildrenTotalHeightPercent() {
 		return 0;
 	}
 	virtual void calcChildPos() {
@@ -297,6 +306,7 @@ public:
 	static void backgroundHandler(const shared_ptr<View>&, const std::string&);
 
 	static unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> gAttributeHandler;
+	static unordered_map<string, int> gGravityKeyValue;
 };
 
 #endif

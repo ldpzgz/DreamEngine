@@ -1,7 +1,7 @@
 #include "LinearLayout.h"
 #include "UiRender.h"
 
-int LinearLayout::getTotalWidthPercent() {
+int LinearLayout::getChildrenTotalWidthPercent() {
 	if (!mChildren.empty()) {
 		for (auto& child : mChildren) {
 			if (child) {
@@ -12,7 +12,7 @@ int LinearLayout::getTotalWidthPercent() {
 	return mTotalWidthPercent;
 }
 
-int LinearLayout::getTotalHeightPercent() {
+int LinearLayout::getChildrenTotalHeightPercent() {
 	if (!mChildren.empty()) {
 		for (auto& child : mChildren) {
 			if (child) {
@@ -21,6 +21,38 @@ int LinearLayout::getTotalHeightPercent() {
 		}
 	}
 	return mTotalHeightPercent;
+}
+
+void LinearLayout::getWidthAccordChildren() {
+	if (mOrientation == LayoutParam::Horizontal) {
+		for (auto& child : mChildren) {
+			mRect.width += child->advanceX();
+		}
+	}
+	else {
+		for (auto& child : mChildren) {
+			auto temp = child->advanceX();
+			if (temp > mRect.width) {
+				mRect.width = temp;
+			}
+		}
+	}
+}
+
+void LinearLayout::getHeightAccordChildren() {
+	if (mOrientation == LayoutParam::Horizontal) {
+		for (auto& child : mChildren) {
+			auto temp = child->advanceY();
+			if (temp > mRect.width) {
+				mRect.width = temp;
+			}
+		}
+	}
+	else {
+		for (auto& child : mChildren) {
+			mRect.height += child->advanceY();
+		}
+	}
 }
 
 void LinearLayout::calcChildPos() {

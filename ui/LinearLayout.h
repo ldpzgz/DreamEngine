@@ -20,9 +20,13 @@ public:
 
 	void draw() override;
 
-	int getTotalWidthPercent() override;
+	int getChildrenTotalWidthPercent() override;
 
-	int getTotalHeightPercent() override;
+	int getChildrenTotalHeightPercent() override;
+
+	void getWidthAccordChildren() override;
+
+	void getHeightAccordChildren() override;
 
 	void calcChildPos() override;
 

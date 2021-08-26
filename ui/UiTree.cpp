@@ -67,33 +67,53 @@ void UiTree::calcViewsPos(shared_ptr<View> pView) {
 }
 
 void UiTree::calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView) {
-	//计算pView的宽度，以及pView的子view的宽度（如果子view是按百分比布局的)
+	//计算pView的宽度高度，以及pView的子view的宽度高度（如果子view是按百分比布局的)
 	if (pView) {
-		//如果pView不是按百分比布局的，否则父view已经帮它计算好了
-		if (pView->mWidthPercent == 0) {
-			pView->calcWidth(parentWidth);
-		}
-		if (pView->mHeightPercent == 0) {
-			pView->calcHeight(parentHeight);
-		}
+		/*
+		从顶向下计算各个view的宽度和高度，不能相互依赖
+		1 父view是wrapContent，需要根据子view的尺寸来计算出父view的尺寸
+		2 子view是percentWidth，或者matchParent，需要根据父view的尺寸来计算子view的尺寸
+		3 不能出现父子相互依赖的情况。
+		*/
+		//matchParent,或者固定尺寸，可计算出来
+		bool hasGetWidth = pView->calcWidth(parentWidth);
+		bool hasGetHeight = pView->calcHeight(parentHeight);
 
 		int myWidth = pView->mRect.width;
 		int myHeight = pView->mRect.height;
 
 		//如果子view是按百分比布局的,帮它们算出宽度
-		auto totalWPercent = pView->getTotalWidthPercent();
-		auto totalHPercent = pView->getTotalHeightPercent();
+		auto totalWPercent = pView->getChildrenTotalWidthPercent();
+		auto totalHPercent = pView->getChildrenTotalHeightPercent();
 
+		//计算子view的宽度，高度
 		for (auto& pChild : pView->mChildren) {
 			if (totalWPercent > 0) {
+				if (!hasGetWidth) {
+					//父与子之间不能相互依赖，父是wrapContent，子是百分比布局，这样是不行的
+					LOGE("ERROR to calc child's width");
+				}
 				int childWidth = (int)((float)myWidth*(float)pChild->mWidthPercent / (float)totalWPercent);
 				pChild->setWidth(childWidth);
 			}
 			if (totalHPercent > 0) {
+				if (!hasGetHeight) {
+					//父与子之间不能相互依赖，父是wrapContent，子是百分比布局，这样是不行的
+					LOGE("ERROR to calc child's height");
+				}
 				int childHeight = (int)((float)myHeight*(float)pChild->mHeightPercent / (float)totalHPercent);
 				pChild->setHeight(childHeight);
 			}
+			//计算子view的尺寸
 			calcViewsWidthHeight(myWidth, myHeight, pChild);
+		}
+
+		//wrapContent的情况下，根据子view计算出尺寸
+		if (!hasGetWidth) {
+			pView->getWidthAccordChildren();
+		}
+		if (!hasGetHeight) {
+			pView->getHeightAccordChildren();
 		}
 	}
 }

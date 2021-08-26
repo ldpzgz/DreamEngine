@@ -1,11 +1,12 @@
 #ifndef _TEXT_VIEW_H_
 #define _TEXT_VIEW_H_
 #include "View.h"
+#include <limits>
 using namespace std;
 
 class TextView : public View {
 public:
-	using View::View;//¼Ì³Ğ»ùÀàµÄ¹¹Ôìº¯Êı
+	using View::View;//ç»§æ‰¿åŸºç±»çš„æ„é€ å‡½æ•°
 	TextView() = default;
 
 	void setTextColor(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
@@ -35,6 +36,23 @@ public:
 	void setTextSize(int size) {
 		mTextSize = size;
 	}
+
+	void setMaxWidth(int max) {
+		mMaxWidth = max;
+	}
+
+	int getMaxWidth() {
+		return mMaxWidth;
+	}
+
+	void setMaxHeight(int max) {
+		mMaxHeight = max;
+	}
+
+	int getMaxHeight() {
+		return mMaxHeight;
+	}
+
 
 	int getTextSize() {
 		return mTextSize;
@@ -67,17 +85,24 @@ public:
 	}
 
 	void draw() override;
+	bool calcWidth(int parentHeight) override;
+	bool calcHeight(int parentHeight) override;
 
 	static void textSizeHandler(const shared_ptr<View>&, const std::string&);
 	static void textColorHandler(const shared_ptr<View>&, const std::string&);
 	static void textHandler(const shared_ptr<View>&, const std::string&);
+	static void maxWidthHandler(const shared_ptr<View>&, const std::string&);
+	static void maxHeightHandler(const shared_ptr<View>&, const std::string&);
+	static void maxLineHandler(const shared_ptr<View>&, const std::string&);
 private:
 	std::string mText;
 	Color mTextColor{0.0f,0.0f,0.0f,1.0f};
-	int mTextSize{ 32 };//ÎÄ×Ö´óĞ¡£¬ÒÔÏñËØÎªµ¥Î»
-	int maxLine{ 1 };
-	int mLineSpacingInc{0}; //ĞĞ¼ä¾àÔöÁ¿
-	int mCharSpacingInc{ 0 };//×Ö·û¼ä¾àÔöÁ¿
-	//unsigned int mAligment{ TextAlignment::AlignCenter}; //ÎÄ±¾¶ÔÆë·½Ê½
+	int mTextSize{ 32 };//æ–‡å­—å¤§å°ï¼Œä»¥åƒç´ ä¸ºå•ä½
+	int maxLine{ 1000000000 };
+	int mMaxWidth{ 100000000 };//é»˜è®¤æ˜¯ä¸€ä¸ªå¾ˆå¤§çš„æ•°std::numeric_limits<int>::max()
+	int mMaxHeight{ 100000000 };//é»˜è®¤æ˜¯ä¸€ä¸ªå¾ˆå¤§çš„æ•°std::numeric_limits<int>::max()
+	int mLineSpacingInc{0}; //è¡Œé—´è·å¢é‡
+	int mCharSpacingInc{ 0 };//å­—ç¬¦é—´è·å¢é‡
+	//unsigned int mAligment{ TextAlignment::AlignCenter}; //æ–‡æœ¬å¯¹é½æ–¹å¼
 };
 #endif

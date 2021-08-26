@@ -4,28 +4,95 @@
 #include "LinearLayout.h"
 #include "../Log.h"
 #include "UiRender.h"
+
+unordered_map<string, int> View::gGravityKeyValue{
+	{ "center" ,LayoutParam::Center },
+	{ "topCenter" ,LayoutParam::TopCenter },
+	{ "leftCenter" ,LayoutParam::LeftCenter },
+	{ "bottomCenter" ,LayoutParam::BottomCenter },
+	{ "rightCenter" ,LayoutParam::RightCenter },
+	{ "leftTop" ,LayoutParam::LeftTop },
+	{ "leftBottom" ,LayoutParam::LeftBottom },
+	{ "rightBottom" ,LayoutParam::RightBottom },
+	{ "rightTop" ,LayoutParam::RightTop }
+};
+
+unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> View::gAttributeHandler{
+	{ "id",View::idHandler },
+	{ "width",View::layoutWidthHandler },
+	{ "height",View::layoutHeightHandler },
+	{ "widthPercent",View::layoutWidthPercentHandler },
+	{ "heightPercent",View::layoutHeightPercentHandler },
+	{ "marginTop",View::layoutMarginTopHandler },
+	{ "marginBottom",View::layoutMarginBottomHandler },
+	{ "marginLeft",View::layoutMarginLeftHandler },
+	{ "marginRight",View::layoutMarginRightHandler },
+	{ "gravity",View::gravityHandler },
+	{ "background",View::backgroundHandler },
+	{ "textSize",TextView::textSizeHandler },
+	{ "textColor",TextView::textColorHandler },
+	{ "text",TextView::textHandler },
+	{ "maxWidth",TextView::maxWidthHandler },
+	{ "maxHeight",TextView::maxHeightHandler },
+	{ "maxLine",TextView::maxLineHandler },
+	{ "orientation",LinearLayout::orientationHandler },
+};
+
 void View::drawBackground() {
 	UiRender::getInstance()->drawBackground(this);
 }
 
-void View::calcWidth(int width) {
-	//如果mLayoutWidth==0，肯定是比例布局，由父view来确定尺寸
-	if (mLayoutWidth == LayoutParam::MatchParent) {
-		mRect.width = width - (mLayoutMarginLeft + mLayoutMarginRight);
+bool View::calcWidth(int parentWidth) {
+	//如果mWidthPercent!=0，是比例布局，已经由父view计算出来了
+	if (mWidthPercent != 0) {
+		return true;
+	}
+
+	if (mLayoutWidth == LayoutParam::WrapContent)
+	{
+		return false;
+	}
+	else if (mLayoutWidth == LayoutParam::MatchParent) {
+		if (parentWidth > 0) {
+			mRect.width = parentWidth - (mLayoutMarginLeft + mLayoutMarginRight);
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 	else if (mLayoutWidth > 0) {
 		mRect.width = mLayoutWidth;
+		return true;
 	}
+	return false;
 }
 
-void View::calcHeight(int height) {
-	//如果mLayoutHeight==0，肯定是比例布局，由父view来确定尺寸
+bool View::calcHeight(int parentHeight) {
+	//如果mHeightPercent != 0，是比例布局，已经由父view计算出来了
+	if (mHeightPercent != 0) {
+		return true;
+	}
+
+	if (mLayoutHeight == LayoutParam::WrapContent)
+	{
+		return false;
+	}
 	if (mLayoutHeight == LayoutParam::MatchParent) {
-		mRect.height = height - (mLayoutMarginTop + mLayoutMarginBottom);
+		if (parentHeight > 0) {
+			mRect.height = parentHeight - (mLayoutMarginTop + mLayoutMarginBottom);
+			return true;
+		}
+		else {
+			return false;
+		}
+		
 	}
 	else if (mLayoutHeight > 0) {
 		mRect.height = mLayoutHeight;
+		return true;
 	}
+	return false;
 }
 
 //按比例布局，宽高由父view来确定
@@ -39,8 +106,8 @@ void View::setHeight(int height) {
 
 //计算自身以及子view的位置尺寸
 bool View::calcRect(const Rect<int>& parentRect) {
-	//计算width，height
-	//width，height是matchparent,或者固定宽度高度的情况，由下面这两个函数处理
+	//计算parentWidth，parentHeight
+	//parentWidth，parentHeight是matchparent,或者固定宽度高度的情况，由下面这两个函数处理
 	if (mWidthPercent == 0) {
 		calcWidth(parentRect.width);
 	}
@@ -192,32 +259,12 @@ void View::layoutMarginRightHandler(const shared_ptr<View>& pv, const std::strin
 
 void View::gravityHandler(const shared_ptr<View>& pv, const std::string& value) {
 	if (pv) {
-		if (value == "center") {
-			pv->mGravity = LayoutParam::Center;
+		auto it = View::gGravityKeyValue.find(value);
+		if (it != View::gGravityKeyValue.end()) {
+			pv->mGravity = it->second;
 		}
-		else if (value == "topCenter") {
-			pv->mGravity = LayoutParam::TopCenter;
-		}
-		else if (value == "leftCenter") {
-			pv->mGravity = LayoutParam::LeftCenter;
-		}
-		else if (value == "bottomCenter") {
-			pv->mGravity = LayoutParam::BottomCenter;
-		}
-		else if (value == "rightCenter") {
-			pv->mGravity = LayoutParam::RightCenter;
-		}
-		else if (value == "leftTop") {
-			pv->mGravity = LayoutParam::LeftTop;
-		}
-		else if (value == "leftBottom") {
-			pv->mGravity = LayoutParam::LeftBottom;
-		}
-		else if (value == "rightBottom") {
-			pv->mGravity = LayoutParam::RightBottom;
-		}
-		else if (value == "rightTop") {
-			pv->mGravity = LayoutParam::RightTop;
+		else {
+			LOGD("there are no gravity attribute %s,please check the layout file", value.c_str());
 		}
 	}
 }
@@ -233,24 +280,6 @@ void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& valu
 		}
 	}
 }
-
-unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> View::gAttributeHandler{
-	{ "id",View::idHandler },
-	{ "width",View::layoutWidthHandler },
-	{ "height",View::layoutHeightHandler },
-	{ "widthPercent",View::layoutWidthPercentHandler },
-	{ "heightPercent",View::layoutHeightPercentHandler },
-	{ "marginTop",View::layoutMarginTopHandler },
-	{ "marginBottom",View::layoutMarginBottomHandler },
-	{ "marginLeft",View::layoutMarginLeftHandler },
-	{ "marginRight",View::layoutMarginRightHandler },
-	{ "gravity",View::gravityHandler },
-	{ "background",View::backgroundHandler },
-	{ "textSize",TextView::textSizeHandler },
-	{ "textColor",TextView::textColorHandler },
-	{ "text",TextView::textHandler },
-	{ "orientation",LinearLayout::orientationHandler },
-};
 
 shared_ptr<View> View::createView(const string& name, shared_ptr<View> parent) {
 	shared_ptr<View> pView;
