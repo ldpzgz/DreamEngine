@@ -9,35 +9,35 @@
 #include <unordered_map>
 #include <string>
 /*
-c++11 ÖĞunicodeÏà¹Ø
-unicode±àÂë£¬ÎªÊÀ½çÉÏµÄÃ¿Ò»¸ö×Ö·û¸ø¶¨Ò»¸ö±àºÅ¡£
-utf-8£¬utf-16£¬utf-32£ºÈçºÎ½«unicode±àÂë´æ´¢µ½ÄÚ´æ»òÎÄ¼şÀïÃæ
+c++11 ä¸­unicodeç›¸å…³
+unicodeç¼–ç ï¼Œä¸ºä¸–ç•Œä¸Šçš„æ¯ä¸€ä¸ªå­—ç¬¦ç»™å®šä¸€ä¸ªç¼–å·ã€‚
+utf-8ï¼Œutf-16ï¼Œutf-32ï¼šå¦‚ä½•å°†unicodeç¼–ç å­˜å‚¨åˆ°å†…å­˜æˆ–æ–‡ä»¶é‡Œé¢
 
-char ¿ÉÒÔ´æ´¢utf-8±àÂëµÄ×Ö·û´®
-wchar_t  C++98 ÖĞµÄ·½Ê½
-char16_t ´æ´¢utf-16±àÂëµÄ×Ö·û´®
-char32_t ´æ´¢utf-32±àÂëµÄ×Ö·û´®
+char å¯ä»¥å­˜å‚¨utf-8ç¼–ç çš„å­—ç¬¦ä¸²
+wchar_t  C++98 ä¸­çš„æ–¹å¼
+char16_t å­˜å‚¨utf-16ç¼–ç çš„å­—ç¬¦ä¸²
+char32_t å­˜å‚¨utf-32ç¼–ç çš„å­—ç¬¦ä¸²
 
-ĞÂÔöµÄ×Ö·û´®Ç°×º£º
-u8(±íÊ¾°ÑºóÃæµÄ×Ö·û´®×ª»»ÎªUTF-8±àÂë£¬´æ´¢µ½±äÁ¿ÀïÃæ,
-u ×ª»»ÎªUTF-16±àÂë£¬´æ´¢µ½±äÁ¿ÀïÃæ,
-U ×ª»»ÎªUTF-32±àÂë£¬´æ´¢µ½±äÁ¿ÀïÃæ,
-const char* sTest = u8"ÄãºÃ";  //Õâ¸öÒª×¢Òâ£¬Èç¹ûÊ¹ÓÃ±àÒëÑ¡Ïî-finput-charset=utf-8Ö¸¶¨´úÂëÎÄ¼ş±àÂëÎªUTF-8£¬¶øÊµ¼ÊÉÏ´úÂëÎÄ¼ş±àÂëÎªGBK£¬»áµ¼ÖÂ±àÒëÆ÷×ª»»³ö´í
-//Èç¹ûÊ¹ÓÃ-finput-charset=gbk£¬ÄÇÃ´±àÒëÆ÷ÔÚ±àÒëÊ±»á½«GBK±àÂëµÄ¡°ÄãºÃ¡±×ª»»ÎªUTF-8±àÂë£¬´æ´¢µ½sTest±äÁ¿ÀïÃæ¡£ÕıÈ·Êä³öE4 BD A0 E5 A5 BD
-const char* sTest = u8"\u4F60\u597D"; //"ÄãºÃ"µÄ unicode±àÂëÂëÖµ·Ö±ğÊÇ 0x4F60 ºÍ 0x597D
+æ–°å¢çš„å­—ç¬¦ä¸²å‰ç¼€ï¼š
+u8(è¡¨ç¤ºæŠŠåé¢çš„å­—ç¬¦ä¸²è½¬æ¢ä¸ºUTF-8ç¼–ç ï¼Œå­˜å‚¨åˆ°å˜é‡é‡Œé¢,
+u è½¬æ¢ä¸ºUTF-16ç¼–ç ï¼Œå­˜å‚¨åˆ°å˜é‡é‡Œé¢,
+U è½¬æ¢ä¸ºUTF-32ç¼–ç ï¼Œå­˜å‚¨åˆ°å˜é‡é‡Œé¢,
+const char* sTest = u8"ä½ å¥½";  //è¿™ä¸ªè¦æ³¨æ„ï¼Œå¦‚æœä½¿ç”¨ç¼–è¯‘é€‰é¡¹-finput-charset=utf-8æŒ‡å®šä»£ç æ–‡ä»¶ç¼–ç ä¸ºUTF-8ï¼Œè€Œå®é™…ä¸Šä»£ç æ–‡ä»¶ç¼–ç ä¸ºGBKï¼Œä¼šå¯¼è‡´ç¼–è¯‘å™¨è½¬æ¢å‡ºé”™
+//å¦‚æœä½¿ç”¨-finput-charset=gbkï¼Œé‚£ä¹ˆç¼–è¯‘å™¨åœ¨ç¼–è¯‘æ—¶ä¼šå°†GBKç¼–ç çš„â€œä½ å¥½â€è½¬æ¢ä¸ºUTF-8ç¼–ç ï¼Œå­˜å‚¨åˆ°sTestå˜é‡é‡Œé¢ã€‚æ­£ç¡®è¾“å‡ºE4 BD A0 E5 A5 BD
+const char* sTest = u8"\u4F60\u597D"; //"ä½ å¥½"çš„ unicodeç¼–ç ç å€¼åˆ†åˆ«æ˜¯ 0x4F60 å’Œ 0x597D
 
 
-char16_t c = u'\u4f60'; // C++¹æ¶¨ \uºóÃæ¸ú×Å4¸ö16½øÖÆÊı£¬Õâ¸öÊıÊÇÒ»¸öunicode±àÂëµÄÖµ¡£
-char32_t C = U'\U00004f60';// C++¹æ¶¨ \UºóÃæ¸ú8¸ö16½øÖÆÊı£¬Õâ¸öÊıÊÇÒ»¸öunicode±àÂëµÄÖµ¡£
+char16_t c = u'\u4f60'; // C++è§„å®š \uåé¢è·Ÿç€4ä¸ª16è¿›åˆ¶æ•°ï¼Œè¿™ä¸ªæ•°æ˜¯ä¸€ä¸ªunicodeç¼–ç çš„å€¼ã€‚
+char32_t C = U'\U00004f60';// C++è§„å®š \Uåé¢è·Ÿ8ä¸ª16è¿›åˆ¶æ•°ï¼Œè¿™ä¸ªæ•°æ˜¯ä¸€ä¸ªunicodeç¼–ç çš„å€¼ã€‚
 
-¿í×Ö·û£¬Õ­×Ö·û£¨¶à×Ö½Ú×Ö·û£©
-ÓĞµÄ±àÂëÊÇ±ä³¤µÄ£¬ÀıÈç UTF-8¡¢GB2312¡¢GBK µÈ£»Èç¹ûÒ»¸ö×Ö·ûÊ¹ÓÃÁËÕâÖÖ±àÂë·½Ê½£¬¾Í³ÆÎª¶à×Ö½Ú×Ö·û£¬»òÕßÕ­×Ö·û
-Ê¹ÓÃ¹Ì¶¨³¤¶È±àÂëÒ»¸ö×Ö·û ±ÈÈçUTF-32¡¢UTF-16 µÈ£»Èç¹ûÒ»¸ö×Ö·ûÊ¹ÓÃÁËÕâÖÖ±àÂë·½Ê½£¬¾Í³ÆÎª¿í×Ö·û¡£
+å®½å­—ç¬¦ï¼Œçª„å­—ç¬¦ï¼ˆå¤šå­—èŠ‚å­—ç¬¦ï¼‰
+æœ‰çš„ç¼–ç æ˜¯å˜é•¿çš„ï¼Œä¾‹å¦‚ UTF-8ã€GB2312ã€GBK ç­‰ï¼›å¦‚æœä¸€ä¸ªå­—ç¬¦ä½¿ç”¨äº†è¿™ç§ç¼–ç æ–¹å¼ï¼Œå°±ç§°ä¸ºå¤šå­—èŠ‚å­—ç¬¦ï¼Œæˆ–è€…çª„å­—ç¬¦
+ä½¿ç”¨å›ºå®šé•¿åº¦ç¼–ç ä¸€ä¸ªå­—ç¬¦ æ¯”å¦‚UTF-32ã€UTF-16 ç­‰ï¼›å¦‚æœä¸€ä¸ªå­—ç¬¦ä½¿ç”¨äº†è¿™ç§ç¼–ç æ–¹å¼ï¼Œå°±ç§°ä¸ºå®½å­—ç¬¦ã€‚
 */
 
-//×ÛÉÏËùÊö£¬ÎÒÃÇÓ¦¸ÃÊ¹ÓÃunicode±àÂë£¬²¢Ê¹ÓÃutf-8±íÊ¾ºÍ´æ´¢×Ö·û¡£
+//ç»¼ä¸Šæ‰€è¿°ï¼Œæˆ‘ä»¬åº”è¯¥ä½¿ç”¨unicodeç¼–ç ï¼Œå¹¶ä½¿ç”¨utf-8è¡¨ç¤ºå’Œå­˜å‚¨å­—ç¬¦ã€‚
 
-//×¼±¸°ÑuiµÄÂß¼­ºÍ»æÖÆ·Ö¿ª
+//å‡†å¤‡æŠŠuiçš„é€»è¾‘å’Œç»˜åˆ¶åˆ†å¼€
 
 
 using namespace std;
@@ -51,7 +51,7 @@ enum MouseState : unsigned char {
 	MouseRButtonUp = 0x10,
 };
 
-enum TextAlignment : unsigned char { //ÕâÀï²»ÊÊºÏÊ¹ÓÃÇ¿ÀàĞÍÃ¶¾Ù
+enum TextAlignment : unsigned char { //è¿™é‡Œä¸é€‚åˆä½¿ç”¨å¼ºç±»å‹æšä¸¾
 	AlignLeft = 0x01,
 	AlignRight = 0x02,
 	AlignTop = 0x04,
@@ -84,7 +84,7 @@ public:
 	virtual void addDirtyView(const shared_ptr<View>& pView) = 0;
 };
 
-//Õâ¸öÀà¼°Æä×ÓÀà¶¼Ö»ÄÜÔÚ¶ÑÖĞ·ÖÅäÄÚ´æ£¬ÓÃÖÇÄÜÖ¸Õë¹ÜÀí
+//è¿™ä¸ªç±»åŠå…¶å­ç±»éƒ½åªèƒ½åœ¨å †ä¸­åˆ†é…å†…å­˜ï¼Œç”¨æ™ºèƒ½æŒ‡é’ˆç®¡ç†
 class View : public Attachable,public std::enable_shared_from_this<View>{
 public:
 	explicit View(shared_ptr<View> parent):mpParent(parent) {
@@ -167,11 +167,11 @@ public:
 
 	virtual bool calcRect(const Rect<int>& parentRect);
 	/*
-	layout_width Îªmatchparent,»òÕß¹Ì¶¨³ß´çµÄÊ±ºòµÄÊ±ºòµ÷ÓÃÕâ¸öº¯Êı¼ÆËã¿í¶È
+	layout_width ä¸ºmatchparent,æˆ–è€…å›ºå®šå°ºå¯¸çš„æ—¶å€™çš„æ—¶å€™è°ƒç”¨è¿™ä¸ªå‡½æ•°è®¡ç®—å®½åº¦
 	*/
 	virtual void calcWidth(int width);
 	virtual void calcHeight(int height);
-	//¿í¸ßÓÉ¸¸viewÀ´È·¶¨µÄÊ±ºò£¬ÓÉ¸¸viewÀ´µ÷ÓÃ
+	//å®½é«˜ç”±çˆ¶viewæ¥ç¡®å®šçš„æ—¶å€™ï¼Œç”±çˆ¶viewæ¥è°ƒç”¨
 	virtual void setWidth(int width);
 	virtual void setHeight(int height);
 	virtual int getTotalWidthPercent() {
@@ -183,17 +183,27 @@ public:
 	virtual void calcChildPos() {
 		return;
 	}
-	void calcX(int x) {
+	 
+	void alignLeftX(int x) {
 		mRect.x = x + mLayoutMarginLeft;
 	}
-	void calcY(int y) {
+	
+	void alignRightX(int x) {
+		mRect.x = x - mLayoutMarginRight - mRect.width;
+	}
+	
+	void alignTopY(int y) {
 		mRect.y = y + mLayoutMarginTop;
 	}
-	//xÊÇ¾ØĞÎÖĞĞÄµãµÄx
+
+	void alignBottomY(int y) {
+		mRect.y = y - ( mRect.height + mLayoutMarginBottom );
+	}
+	//xæ˜¯è¯¥æ§ä»¶çš„ä¸­å¿ƒç‚¹çš„xåæ ‡ï¼Œå†æ ¹æ®å®ƒè‡ªèº«çš„å®½åº¦å¯ä»¥ç®—å‡ºå·¦ä¸Šè§’xåæ ‡
 	void setCenterX(int x) {
 		mRect.x = x - mRect.width/2;
 	}
-	//yÊÇ¾ØĞÎÖĞĞÄµãµÄy
+	//yæ˜¯è¯¥æ§ä»¶çš„ä¸­å¿ƒç‚¹çš„yåæ ‡ï¼Œå†æ ¹æ®å®ƒè‡ªèº«çš„å®½åº¦å¯ä»¥ç®—å‡ºå·¦ä¸Šè§’yåæ ‡
 	void setCenterY(int y) {
 		mRect.y = y - mRect.height/2;
 	}
@@ -254,16 +264,16 @@ public:
 	weak_ptr<void> mpUserData;
 	weak_ptr<View> mpParent;
 	
-	//ÓëparentµÄÏà¶ÔÎ»ÖÃĞÅÏ¢
-	int mLayoutWidth{ 0 };		//match_parent,¾ßÌåµÄ¿í¶È£¬ÒÔÏñËØÎªµ¥Î»
-	int mLayoutHeight{ 0 };		//match_parent,¾ßÌåµÄ¿í¶È£¬ÒÔÏñËØÎªµ¥Î»
+	//ä¸parentçš„ç›¸å¯¹ä½ç½®ä¿¡æ¯
+	int mLayoutWidth{ 0 };		//match_parent,å…·ä½“çš„å®½åº¦ï¼Œä»¥åƒç´ ä¸ºå•ä½
+	int mLayoutHeight{ 0 };		//match_parent,å…·ä½“çš„å®½åº¦ï¼Œä»¥åƒç´ ä¸ºå•ä½
 	int mLayoutMarginTop{ 0 };
 	int mLayoutMarginBottom{ 0 };
 	int mLayoutMarginLeft{ 0 };
 	int mLayoutMarginRight{ 0 };
-	int mWidthPercent{ 0 };		//¿í¶È°Ù·Ö±È
-	int mHeightPercent{ 0 };	//¸ß¶È°Ù·Ö±È
-	int mGravity{ LayoutParam::Center };			//¿ØÖÆviewÄÚ²¿µÄÔªËØ»òÕß×ÓviewÈçºÎ¾ÓÖĞ¶ÔÆë£¬Ë®Æ½¾ÓÖĞ£¬´¹Ö±¾ÓÖĞ£¬¾ÓÖĞ
+	int mWidthPercent{ 0 };		//å®½åº¦ç™¾åˆ†æ¯”
+	int mHeightPercent{ 0 };	//é«˜åº¦ç™¾åˆ†æ¯”
+	int mGravity{ LayoutParam::Center };			//æ§åˆ¶viewå†…éƒ¨çš„å…ƒç´ æˆ–è€…å­viewå¦‚ä½•å±…ä¸­å¯¹é½ï¼Œæ°´å¹³å±…ä¸­ï¼Œå‚ç›´å±…ä¸­ï¼Œå±…ä¸­
 
 	Rect<int> mRect{ 0,0,0,0 };
 

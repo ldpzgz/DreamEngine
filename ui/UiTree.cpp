@@ -86,11 +86,11 @@ void UiTree::calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<
 
 		for (auto& pChild : pView->mChildren) {
 			if (totalWPercent > 0) {
-				int childWidth = (int)((float)myWidth*(float)pView->mWidthPercent / (float)totalWPercent);
+				int childWidth = (int)((float)myWidth*(float)pChild->mWidthPercent / (float)totalWPercent);
 				pChild->setWidth(childWidth);
 			}
 			if (totalHPercent > 0) {
-				int childHeight = (int)((float)myHeight*(float)pView->mHeightPercent / (float)totalHPercent);
+				int childHeight = (int)((float)myHeight*(float)pChild->mHeightPercent / (float)totalHPercent);
 				pChild->setHeight(childHeight);
 			}
 			calcViewsWidthHeight(myWidth, myHeight, pChild);

@@ -26,15 +26,15 @@ int LinearLayout::getTotalHeightPercent() {
 void LinearLayout::calcChildPos() {
 	int x = mRect.x;
 	int y = mRect.y;
-	int totalWidth = 0;
-	int totalHeight = 0;
+	int childTotalWidth = 0;
+	int childTotalHeight = 0;
 	
 	for (auto& pChild : mChildren) {
 		if (mOrientation == LayoutParam::Horizontal) {
-			totalWidth += pChild->advanceX();
+			childTotalWidth += pChild->advanceX();
 		}
 		else if (mOrientation == LayoutParam::Vertical) {
-			totalHeight += pChild->advanceY();
+			childTotalHeight += pChild->advanceY();
 		}
 	}
 
@@ -42,18 +42,60 @@ void LinearLayout::calcChildPos() {
 		if (mGravity == LayoutParam::LeftTop) {
 			for (auto& pChild : mChildren) {
 				if (pChild) {
-					pChild->calcX(x);
-					pChild->calcY(y);
+					pChild->alignLeftX(x);
+					pChild->alignTopY(y);
+					x += pChild->advanceX();
+				}
+			}
+		}
+		else if (mGravity == LayoutParam::LeftBottom) {
+			y = mRect.y + mRect.height;
+			for (auto& pChild : mChildren) {
+				if (pChild) {
+					pChild->alignLeftX(x);
+					pChild->alignBottomY(y);
+					x += pChild->advanceX();
+				}
+			}
+		}
+		else if (mGravity == LayoutParam::RightTop) {
+			x = mRect.x + mRect.width - childTotalWidth;
+			for (auto& pChild : mChildren) {
+				if (pChild) {
+					pChild->alignLeftX(x);
+					pChild->alignTopY(y);
+					x += pChild->advanceX();
+				}
+			}
+		}
+		else if (mGravity == LayoutParam::RightBottom) {
+			x = mRect.x + mRect.width - childTotalWidth;
+			y = mRect.y + mRect.height;
+			for (auto& pChild : mChildren) {
+				if (pChild) {
+					pChild->alignLeftX(x);
+					pChild->alignBottomY(y);
 					x += pChild->advanceX();
 				}
 			}
 		}
 		else if (mGravity == LayoutParam::TopCenter) {
-			x = mRect.x + (mRect.width - totalWidth) / 2;
+			x = mRect.x + (mRect.width - childTotalWidth) / 2;
 			for (auto& pChild : mChildren) {
 				if (pChild) {
-					pChild->calcX(x);
-					pChild->calcY(y);
+					pChild->alignLeftX(x);
+					pChild->alignTopY(y);
+					x += pChild->advanceX();
+				}
+			}
+		}
+		else if (mGravity == LayoutParam::BottomCenter) {
+			x = mRect.x + (mRect.width - childTotalWidth) / 2;
+			y = mRect.y + mRect.height;
+			for (auto& pChild : mChildren) {
+				if (pChild) {
+					pChild->alignLeftX(x);
+					pChild->alignBottomY(y);
 					x += pChild->advanceX();
 				}
 			}
@@ -62,31 +104,73 @@ void LinearLayout::calcChildPos() {
 			y = mRect.y + mRect.height / 2;
 			for (auto& pChild : mChildren) {
 				if (pChild) {
-					pChild->calcX(x);
+					pChild->alignLeftX(x);
 					pChild->setCenterY(y);
 					x += pChild->advanceX();
 				}
 			}
 		}
-		else if (mGravity = LayoutParam::Center) {
-			x = mRect.x + (mRect.width - totalWidth) / 2;
+		else if (mGravity == LayoutParam::RightCenter) {
+			y = mRect.y + mRect.height / 2;
+			x = mRect.x + (mRect.width - childTotalWidth);
+			for (auto& pChild : mChildren) {
+				if (pChild) {
+					pChild->alignLeftX(x);
+					pChild->setCenterY(y);
+					x += pChild->advanceX();
+				}
+			}
+		}
+		else if (mGravity == LayoutParam::Center) {
+			x = mRect.x + (mRect.width - childTotalWidth) / 2;
 			y = mRect.y + mRect.height / 2;
 
 			for (auto& pChild : mChildren) {
 				if (pChild) {
-					pChild->calcX(x);
+					pChild->alignLeftX(x);
 					pChild->setCenterY(y);
 					x += pChild->advanceX();
 				}
 			}
 		}
 	}
-	if (mOrientation == LayoutParam::Vertical) {
+	else if (mOrientation == LayoutParam::Vertical) {
 		if (mGravity == LayoutParam::LeftTop) {
 			for (auto& pChild : mChildren) {
 				if (pChild) {
-					pChild->calcX(x);
-					pChild->calcY(y);
+					pChild->alignLeftX(x);
+					pChild->alignTopY(y);
+					y += pChild->advanceY();
+				}
+			}
+		}
+		else if (mGravity == LayoutParam::LeftBottom) {
+			y = mRect.y + mRect.height - childTotalHeight;
+			for (auto& pChild : mChildren) {
+				if (pChild) {
+					pChild->alignLeftX(x);
+					pChild->alignTopY(y);
+					y += pChild->advanceY();
+				}
+			}
+		}
+		else if (mGravity == LayoutParam::RightBottom) {
+			x = mRect.x + mRect.width;
+			y = mRect.y + mRect.height - childTotalHeight;
+			for (auto& pChild : mChildren) {
+				if (pChild) {
+					pChild->alignRightX(x);
+					pChild->alignTopY(y);
+					y += pChild->advanceY();
+				}
+			}
+		}
+		else if (mGravity == LayoutParam::RightTop) {
+			x = mRect.x + mRect.width;
+			for (auto& pChild : mChildren) {
+				if (pChild) {
+					pChild->alignRightX(x);
+					pChild->alignTopY(y);
 					y += pChild->advanceY();
 				}
 			}
@@ -96,29 +180,52 @@ void LinearLayout::calcChildPos() {
 			for (auto& pChild : mChildren) {
 				if (pChild) {
 					pChild->setCenterX(x);
-					pChild->calcY(y);
+					pChild->alignTopY(y);
 					y += pChild->advanceY();
 				}
 			}
 		}
 		else if (mGravity == LayoutParam::LeftCenter) {
-			y = mRect.y + (mRect.height-totalHeight) / 2;
+			y = mRect.y + (mRect.height-childTotalHeight) / 2;
 			for (auto& pChild : mChildren) {
 				if (pChild) {
-					pChild->calcX(x);
-					pChild->calcY(y);
+					pChild->alignLeftX(x);
+					pChild->alignTopY(y);
 					y += pChild->advanceY();
 				}
 			}
 		}
-		else if (mGravity = LayoutParam::Center) {
+		else if (mGravity == LayoutParam::RightCenter) {
+			x = mRect.x + mRect.width;
+			y = mRect.y + (mRect.height - childTotalHeight) / 2;
+			for (auto& pChild : mChildren) {
+				if (pChild) {
+					pChild->alignRightX(x);
+					pChild->alignTopY(y);
+					y += pChild->advanceY();
+				}
+			}
+		}
+		else if (mGravity == LayoutParam::Center) {
 			x = mRect.x + mRect.width / 2;
-			y = mRect.y + (mRect.height - totalHeight) / 2;
+			y = mRect.y + (mRect.height - childTotalHeight) / 2;
 
 			for (auto& pChild : mChildren) {
 				if (pChild) {
 					pChild->setCenterX(x);
-					pChild->calcY(y);
+					pChild->alignTopY(y);
+					y += pChild->advanceY();
+				}
+			}
+		}
+		else if (mGravity == LayoutParam::BottomCenter) {
+			x = mRect.x + mRect.width / 2;
+			y = mRect.y + (mRect.height - childTotalHeight);
+
+			for (auto& pChild : mChildren) {
+				if (pChild) {
+					pChild->setCenterX(x);
+					pChild->alignTopY(y);
 					y += pChild->advanceY();
 				}
 			}

@@ -9,7 +9,7 @@ void View::drawBackground() {
 }
 
 void View::calcWidth(int width) {
-	//Èç¹ûmLayoutWidth==0£¬¿Ï¶¨ÊÇ±ÈÀı²¼¾Ö£¬ÓÉ¸¸viewÀ´È·¶¨³ß´ç
+	//å¦‚æœmLayoutWidth==0ï¼Œè‚¯å®šæ˜¯æ¯”ä¾‹å¸ƒå±€ï¼Œç”±çˆ¶viewæ¥ç¡®å®šå°ºå¯¸
 	if (mLayoutWidth == LayoutParam::MatchParent) {
 		mRect.width = width - (mLayoutMarginLeft + mLayoutMarginRight);
 	}
@@ -19,7 +19,7 @@ void View::calcWidth(int width) {
 }
 
 void View::calcHeight(int height) {
-	//Èç¹ûmLayoutHeight==0£¬¿Ï¶¨ÊÇ±ÈÀı²¼¾Ö£¬ÓÉ¸¸viewÀ´È·¶¨³ß´ç
+	//å¦‚æœmLayoutHeight==0ï¼Œè‚¯å®šæ˜¯æ¯”ä¾‹å¸ƒå±€ï¼Œç”±çˆ¶viewæ¥ç¡®å®šå°ºå¯¸
 	if (mLayoutHeight == LayoutParam::MatchParent) {
 		mRect.height = height - (mLayoutMarginTop + mLayoutMarginBottom);
 	}
@@ -28,26 +28,26 @@ void View::calcHeight(int height) {
 	}
 }
 
-//°´±ÈÀı²¼¾Ö£¬¿í¸ßÓÉ¸¸viewÀ´È·¶¨
+//æŒ‰æ¯”ä¾‹å¸ƒå±€ï¼Œå®½é«˜ç”±çˆ¶viewæ¥ç¡®å®š
 void View::setWidth(int width) {
 	mRect.width = width - (mLayoutMarginLeft + mLayoutMarginRight);
 }
-//°´±ÈÀı²¼¾Ö£¬¿í¸ßÓÉ¸¸viewÀ´È·¶¨
+//æŒ‰æ¯”ä¾‹å¸ƒå±€ï¼Œå®½é«˜ç”±çˆ¶viewæ¥ç¡®å®š
 void View::setHeight(int height) {
 	mRect.height = height - (mLayoutMarginTop + mLayoutMarginBottom);
 }
 
-//¼ÆËã×ÔÉíÒÔ¼°×ÓviewµÄÎ»ÖÃ³ß´ç
+//è®¡ç®—è‡ªèº«ä»¥åŠå­viewçš„ä½ç½®å°ºå¯¸
 bool View::calcRect(const Rect<int>& parentRect) {
-	//¼ÆËãwidth£¬height
-	//width£¬heightÊÇmatchparent,»òÕß¹Ì¶¨¿í¶È¸ß¶ÈµÄÇé¿ö£¬ÓÉÏÂÃæÕâÁ½¸öº¯Êı´¦Àí
+	//è®¡ç®—widthï¼Œheight
+	//widthï¼Œheightæ˜¯matchparent,æˆ–è€…å›ºå®šå®½åº¦é«˜åº¦çš„æƒ…å†µï¼Œç”±ä¸‹é¢è¿™ä¸¤ä¸ªå‡½æ•°å¤„ç†
 	if (mWidthPercent == 0) {
 		calcWidth(parentRect.width);
 	}
 	if (mHeightPercent == 0) {
 		calcHeight(parentRect.height);
 	}
-	//¼ÆËã×ÓviewµÄ¿í¸ß
+	//è®¡ç®—å­viewçš„å®½é«˜
 	if (!mChildren.empty()) {
 		int percentWidth = 0;
 		int percentHeight = 0;
