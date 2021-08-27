@@ -35,6 +35,8 @@ unordered_map < string, std::function<void(const shared_ptr<View>&, const std::s
 	{ "maxWidth",TextView::maxWidthHandler },
 	{ "maxHeight",TextView::maxHeightHandler },
 	{ "maxLine",TextView::maxLineHandler },
+	{ "charSpace",TextView::charSpaceHandler },
+	{ "lineSpace",TextView::lineSpaceHandler },
 	{ "orientation",LinearLayout::orientationHandler },
 };
 

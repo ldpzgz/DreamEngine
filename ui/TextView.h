@@ -94,6 +94,8 @@ public:
 	static void maxWidthHandler(const shared_ptr<View>&, const std::string&);
 	static void maxHeightHandler(const shared_ptr<View>&, const std::string&);
 	static void maxLineHandler(const shared_ptr<View>&, const std::string&);
+	static void charSpaceHandler(const shared_ptr<View>&, const std::string&);
+	static void lineSpaceHandler(const shared_ptr<View>&, const std::string&);
 private:
 	std::string mText;
 	Color mTextColor{0.0f,0.0f,0.0f,1.0f};
@@ -101,7 +103,7 @@ private:
 	int maxLine{ 1000000000 };
 	int mMaxWidth{ 100000000 };//默认是一个很大的数std::numeric_limits<int>::max()
 	int mMaxHeight{ 100000000 };//默认是一个很大的数std::numeric_limits<int>::max()
-	int mLineSpacingInc{0}; //行间距增量
+	int mLineSpacingInc{ 0 }; //行间距增量
 	int mCharSpacingInc{ 0 };//字符间距增量
 	//unsigned int mAligment{ TextAlignment::AlignCenter}; //文本对齐方式
 };

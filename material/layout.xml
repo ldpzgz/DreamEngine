@@ -21,13 +21,15 @@
 	<TextView
 		id="tv1"
 		width="220"
-		height="40"
+		height="wrapContent"
 		marginLeft="10"
 		marginRight="10"
 		gravity="leftCenter"
 		textSize="32"
 		textColor="#00ff00ff"
-		text="刘子萱">
+		text="刘子萱abcdefghijklmnopqrstuvwxyz"
+		lineSpace="10"
+		maxLine="2">
 	</TextView>
 	<Button
 		id="bt"
@@ -39,6 +41,7 @@
 		textSize="32"
 		textColor="#ffff00ff"
 		background="#0000ffff"
-		text="abclgpq按钮">
+		charSpace="30"
+		text="按钮">
 	</Button>
 </LinearLayout>

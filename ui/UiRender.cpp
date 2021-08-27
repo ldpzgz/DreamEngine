@@ -300,6 +300,7 @@ bool UiRender::initBackgroundResource(const string& buttonMaterial) {
 	}
 }
 
+//宽度或者高度为wrapContent的时候，计算TextView文本的宽度和高度以像素为单位
 void UiRender::calcTextViewWidthHeight(TextView* tv) {
 	if (tv->mLayoutWidth != LayoutParam::WrapContent && tv->mLayoutHeight != LayoutParam::WrapContent) {
 		LOGE("ERROR no need to call UiRender::calcTextViewWidthHeight");
@@ -316,22 +317,19 @@ void UiRender::calcTextViewWidthHeight(TextView* tv) {
 	int lineSpace = tv->getLineSpacingInc();
 	int currentPosY = -textSize - lineSpace;//下一个要渲染的文字的基线位置y
 	int yAdvance = currentPosY;//考虑到textview设置的额外行间距，默认的行间距是freetype渲染文字时的CharSize
-	int xExtraAdvance = tv->getCharSpacingInc();//考虑到textview设置的额外字符间距
+	int charSpace = tv->getCharSpacingInc();//考虑到textview设置的额外字符间距
 	
-	int maxWidth = tv->getMaxWidth();//textView的宽度，字符渲染不能超出这个宽度
-	int maxHeight = tv->getMaxHeight();//textView的高度，字符渲染不能超出这个宽度
+	int maxWidth = tv->getMaxWidth();//textView的最大宽度，字符渲染不能超出这个宽度
+	int maxHeight = tv->getMaxHeight();//textView的最大高度，字符渲染不能超出这个宽度
 	if (tvRect.width > 0) {
-		maxWidth = tvRect.width;
+		maxWidth = tvRect.width;//如果宽度已经指定了，更新最大宽度为指定宽度
 	}
 	if (tvRect.height > 0) {
-		maxHeight = tvRect.height;
+		maxHeight = tvRect.height;//如果高度已经指定了，更新最大高度为指定高度
 	}
-	int currentWidth = 0.0f;//当前已经渲染出去的字符的宽度，这个不能超出maxWidth
-	int fontTextureWidth = mpFontInfo->pCharTexture->getWidth();//保存字体位图的纹理的宽度
-	int fontTextureHeight = mpFontInfo->pCharTexture->getHeight();//保存字体位图的纹理的高度
 	int tvMaxLines = tv->getMaxLines(); //textview设置的显示行数
 	int currentLines = 1;			//
-	int totalWidth = 0;				//字符串占用的宽度
+	int totalWidth = 0;				//记录字符串占用的总宽度
 	int totalHeight = -currentPosY; //字符串占用的高度
 	float scaleFactor = (float)textSize / (float)mpFontInfo->charSize;
 	std::vector<CharRenderInfo> charsRenderInfoArray;
@@ -343,10 +341,12 @@ void UiRender::calcTextViewWidthHeight(TextView* tv) {
 		try {
 			const auto& cinfo = mpFontInfo->getCharInTexture(code);
 			//判断宽度高度是否已经超出，是否要退出
-			if (currentPosX + scaleFactor*cinfo.width>maxWidth) {//当前要渲染的文字会超出textview的边界
+			if (currentPosX + scaleFactor*cinfo.width>maxWidth) {
+				//当前行满了，可能要换行或者结束
 				if (currentLines >= tvMaxLines) {
 					if (currentPosX >= maxWidth) {
-						//渲染完毕
+						//已经达到最大行了，并且当前的最后一个字符已经达到或者超出了最大宽度，渲染完毕
+						//允许最后一个字被截掉了一点。
 						break;
 					}
 				}
@@ -364,9 +364,9 @@ void UiRender::calcTextViewWidthHeight(TextView* tv) {
 				}
 			}
 			//没有超出边界，继续
-			currentPosX += (scaleFactor*cinfo.advX + xExtraAdvance);//考虑到textview设置的额外字符间距
+			currentPosX += (scaleFactor*cinfo.advX + charSpace);//考虑到textview设置的额外字符间距
 			if (totalWidth < maxWidth) {
-				totalWidth = currentPosX;
+				totalWidth = currentPosX - charSpace;
 			}
 		}
 		catch (int error) {
