@@ -47,37 +47,37 @@ public:
 	ShapeType getType() {
 		return mType;
 	}
-	void setCornerRadius(int radius) {
+	void setCornerRadius(float radius) {
 		mRadius = radius;
 	}
-	int getCornerRadius() {
+	float getCornerRadius() {
 		return mRadius;
 	}
-	void setCornerLeftTopRadius(int type) {
-		mLeftTopRadius = type;
+	void setCornerLeftTopRadius(float radius) {
+		mLeftTopRadius = radius;
 	}
-	int getCornerLeftTopRadius() {
+	float getCornerLeftTopRadius() {
 		return mLeftTopRadius;
 	}
 
-	void setCornerLeftBottomRadius(int type) {
-		mLeftBottomRadius = type;
+	void setCornerLeftBottomRadius(float radius) {
+		mLeftBottomRadius = radius;
 	}
-	int getCornerLeftBottomRadius() {
+	float getCornerLeftBottomRadius() {
 		return mLeftBottomRadius;
 	}
 
-	void setCornerRightTopRadius(int type) {
-		mRightTopRadius = type;
+	void setCornerRightTopRadius(float radius) {
+		mRightTopRadius = radius;
 	}
-	int getCornerRightTopRadius() {
+	float getCornerRightTopRadius() {
 		return mRightTopRadius;
 	}
 
-	void setCornerRightBottomRadius(int type) {
-		mRightBottomRadius = type;
+	void setCornerRightBottomRadius(float radius) {
+		mRightBottomRadius = radius;
 	}
-	int getCornerRightBottomRadius() {
+	float getCornerRightBottomRadius() {
 		return mRightBottomRadius;
 	}
 
@@ -172,10 +172,10 @@ public:
 		return mCenterColor;
 	}
 
-	void setGradientRadius(int radius) {
+	void setGradientRadius(float radius) {
 		mGradientRadius = radius;
 	}
-	int getGradientRadius() {
+	float getGradientRadius() {
 		return mGradientRadius;
 	}
 
@@ -251,11 +251,11 @@ public:
 public:
 	ShapeType mType{ ShapeType::Rectangle };
 	//corners的属性，取值范围是[0，0.5]
-	int mRadius{ 0 };
-	int mLeftTopRadius{ 0 };
-	int mLeftBottomRadius{ 0 };
-	int mRightTopRadius{ 0 };
-	int mRightBottomRadius{ 0 };
+	float mRadius{ 0.0f };
+	float mLeftTopRadius{ 0.0f };
+	float mLeftBottomRadius{ 0.0f };
+	float mRightTopRadius{ 0.0f };
+	float mRightBottomRadius{ 0.0f };
 	//solid属性
 	Color mSolidColor{ 0.0f,0.0f,0.0f,1.0f };
 	//stroke属性
@@ -276,7 +276,7 @@ public:
 	Color mStartColor{ 0.0f,0.0f,0.0f,1.0f };
 	Color mEndColor{ 0.0f,0.0f,0.0f,1.0f };
 	Color mCenterColor{ 0.0f,0.0f,0.0f,1.0f };
-	int mGradientRadius{ 0 };//raida
+	float mGradientRadius{ 0.0f };//raida
 	GradientType mGradientType{ GradientType::None };
 
 	//由于shape可以给不同的控件使用，所以这个宽高取值范围是[0,1.0f]

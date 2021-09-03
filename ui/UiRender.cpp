@@ -325,7 +325,7 @@ void UiRender::initShape(std::shared_ptr<Shape>& pShape) {
 		}
 		else if (shapeType == ShapeType::RoundedRectangle) {
 			if (hasBackground) {
-				auto pMesh = make_shared<MeshRoundedRectangle>();
+				pMesh = make_shared<MeshRoundedRectangle>();
 				pShape->setMesh(static_pointer_cast<void>(pMesh));
 				if (cornerRadius > 0.0f) {
 					//四个圆角是一样的半径
@@ -353,7 +353,7 @@ void UiRender::initShape(std::shared_ptr<Shape>& pShape) {
 		}
 		else if (shapeType == ShapeType::Oval) {
 			if (hasBackground) {
-				auto pMesh = make_shared<MeshCircle>();
+				pMesh = make_shared<MeshCircle>();
 				pMesh->loadMesh(width, height, centerX, centerY);
 				pShape->setMesh(static_pointer_cast<void>(pMesh));
 			}

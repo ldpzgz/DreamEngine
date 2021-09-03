@@ -37,7 +37,7 @@ std::unordered_map < std::string, std::function<void(const shared_ptr<Shape>&, c
 void Shape::cornerRadiusHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	try {
 		if (shape) {
-			shape->setCornerRadius(stoi(value));
+			shape->setCornerRadius(stof(value));
 		}
 	}
 	catch (const logic_error& e) {
@@ -47,7 +47,7 @@ void Shape::cornerRadiusHandler(const shared_ptr<Shape>& shape, const std::strin
 void Shape::cornerLeftTopRadiusHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	try {
 		if (shape) {
-			shape->setCornerLeftTopRadius(stoi(value));
+			shape->setCornerLeftTopRadius(stof(value));
 		}
 	}
 	catch (const logic_error& e) {
@@ -58,7 +58,7 @@ void Shape::cornerLeftTopRadiusHandler(const shared_ptr<Shape>& shape, const std
 void Shape::cornerLeftBottomRadiusHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	try {
 		if (shape) {
-			shape->setCornerLeftBottomRadius(stoi(value));
+			shape->setCornerLeftBottomRadius(stof(value));
 		}
 	}
 	catch (const logic_error& e) {
@@ -68,7 +68,7 @@ void Shape::cornerLeftBottomRadiusHandler(const shared_ptr<Shape>& shape, const 
 void Shape::cornerRightTopRadiusHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	try {
 		if (shape) {
-			shape->setCornerRightTopRadius(stoi(value));
+			shape->setCornerRightTopRadius(stof(value));
 		}
 	}
 	catch (const logic_error& e) {
@@ -78,7 +78,7 @@ void Shape::cornerRightTopRadiusHandler(const shared_ptr<Shape>& shape, const st
 void Shape::cornerRightBottomRadiusHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	try {
 		if (shape) {
-			shape->setCornerRightBottomRadius(stoi(value));
+			shape->setCornerRightBottomRadius(stof(value));
 		}
 	}
 	catch (const logic_error& e) {
@@ -99,7 +99,7 @@ void Shape::gradientAngleHandler(const shared_ptr<Shape>& shape, const std::stri
 void Shape::gradientCenterXHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	try {
 		if (shape) {
-			shape->setGradientCenterX(stoi(value));
+			shape->setGradientCenterX(stof(value));
 		}
 	}
 	catch (const logic_error& e) {
@@ -109,7 +109,7 @@ void Shape::gradientCenterXHandler(const shared_ptr<Shape>& shape, const std::st
 void Shape::gradientCenterYHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	try {
 		if (shape) {
-			shape->setGradientCenterY(stoi(value));
+			shape->setGradientCenterY(stof(value));
 		}
 	}
 	catch (const logic_error& e) {
@@ -143,7 +143,7 @@ void Shape::gradientEndColorHandler(const shared_ptr<Shape>& shape, const std::s
 void Shape::gradientRadiusHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	if (shape) {
 		try {
-			shape->setGradientRadius(stoi(value));
+			shape->setGradientRadius(stof(value));
 		}
 		catch (const logic_error& e) {
 			LOGE("error to parse gradientRadius value %s", value.c_str());
@@ -217,7 +217,7 @@ void Shape::paddingTopHandler(const shared_ptr<Shape>& shape, const std::string&
 void Shape::sizeWidthHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	if (shape) {
 		try {
-			shape->setSizeWidth(stoi(value));
+			shape->setSizeWidth(stof(value));
 		}
 		catch (const logic_error& e) {
 			LOGE("error to parse sizeWidth value %s", value.c_str());
@@ -228,7 +228,7 @@ void Shape::sizeWidthHandler(const shared_ptr<Shape>& shape, const std::string& 
 void Shape::sizeHeightHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	if (shape) {
 		try {
-			shape->setSizeHeight(stoi(value));
+			shape->setSizeHeight(stof(value));
 		}
 		catch (const logic_error& e) {
 			LOGE("error to parse sizeHeight value %s", value.c_str());
