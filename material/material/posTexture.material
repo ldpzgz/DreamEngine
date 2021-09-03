@@ -1,4 +1,4 @@
-vs:uiDrawVs{
+vs:rectangleTexVs{
 	#version 300 es
     layout(location = 0) in vec4 a_position;
     layout(location = 1) in vec2 a_texCoord;
@@ -11,7 +11,7 @@ vs:uiDrawVs{
     }
 }
 
-fs:uiDrawFs{
+fs:rectangleTexFs{
 	#version 300 es
 	precision mediump float;
 	in vec2 v_texCoord;
@@ -19,14 +19,13 @@ fs:uiDrawFs{
 	uniform sampler2D s_texture;
 	void main()
 	{
-		//outColor = vec4(0.0f,1.0f,0.0f,1.0f);
-		outColor = texture( s_texture, v_texCoord );
+	  outColor = texture( s_texture, v_texCoord );
 	}
 }
 
-program:uiDraw{
-	vs=uiDrawVs
-	fs=uiDrawFs
+program:rectangleTex{
+	vs=rectangleTexVs
+	fs=rectangleTexFs
 	posLoc=0
 	texcoordLoc=1
 	mvpMatrix=mvp_matrix

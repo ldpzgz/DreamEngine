@@ -19,6 +19,7 @@
 #include "TextView.h"
 #include "Button.h"
 #include "LinearLayout.h"
+#include "Shape.h"
 
 using namespace std;
 using UnicodeType = char32_t;
@@ -65,7 +66,7 @@ public:
 	ttfPath		用于渲染文字的ttf等字体文件的路径
 	materialPath渲染字体用的材质文件，里面会定义保存字符的纹理，每个字符的大小等信息
 	*/
-	static shared_ptr<FontInfo> loadFromFile(const string& savedPath, const string& ttfPath,const string& materialPath);
+	static shared_ptr<FontInfo> loadFromFile(const string& savedPath, const string& ttfPath,const string& materialName);
 
 	/*
 	text 为utf-8编码的字符
@@ -126,12 +127,10 @@ public:
 	ttfPath		使用那个字体文件来渲染字体
 	materialPath 渲染文字使用的material
 	*/
-	bool initTextView(const string& savedPath, const string& ttfPath, const string& materialPath);
-	/*
-	功能：			初始化绘制button需要用到的一些资源
-	buttonMaterial	渲染button使用的material
-	*/
-	bool initBackgroundResource(const string& buttonMaterial);
+	bool initTextView(const string& savedPath, const string& ttfPath, const string& materialName);
+
+	//确定了shape的宽高和中心点之后才能调用这个函数
+	void initShape(std::shared_ptr<Shape>& pShape);
 
 	//当窗口变化的时候，需要调用这个函数更新一下
 	void updateWidthHeight(float width, float height);
@@ -155,7 +154,6 @@ private:
 	static unique_ptr<UiRender> gInstance;
 
 	shared_ptr<FontInfo> mpFontInfo;
-	shared_ptr<Mesh> mpBackgroundMesh;//用于承载Button的背景
 	shared_ptr<Material> mpLastMaterial;//渲染最终的ui的材质
 	shared_ptr<Mesh> mpLastMesh;//渲染最终的ui的材质mesh
 	glm::mat4 mLastMeshModelMatrix;

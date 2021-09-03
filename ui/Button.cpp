@@ -2,13 +2,7 @@
 #include "UiRender.h"
 
 void Button::draw() {
-	drawBackground();
-	//blend
-	glEnable(GL_BLEND);
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
-	glBlendEquation(GL_FUNC_ADD);
 	UiRender::getInstance()->drawTextView(this);
-	glDisable(GL_BLEND);
 	View::draw();
 }
 

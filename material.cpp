@@ -3,14 +3,37 @@
 #include <set>
 #include "Log.h"
 #include "Utils.h"
+#include <filesystem>
 
-const set<string> gStringValueKey = {"vs","fs","program" };
-const set<string> gIntValueKey = { "sampler0","sampler1","sampler2","posLoc","texcoordLoc","norLoc","colorLoc" };
-const set<string> gTexObjValueKey = { "tex0","tex1", "tex2" };
+using namespace std;
+using namespace std::filesystem;
+static const string gMaterialPath = "./opengles3/material/material";
 
 std::unordered_map<std::string, std::shared_ptr<Material>> Material::gMaterials;
 std::unordered_map<std::string, std::shared_ptr<Texture>> Material::gTextures;
 std::unordered_map<std::string, std::shared_ptr<Shader>> Material::gShaders;
+
+void Material::loadAllMaterial() {
+	//遍历UIimage目录
+	path materialPath(gMaterialPath);
+	if (!exists(materialPath)) {
+		LOGE("ERROR the ui image path %s is not exist", gMaterialPath.c_str());
+	}
+
+	if (is_directory(materialPath)) {
+		//是目录
+		directory_iterator list(materialPath);
+		//directory_entry 是一个文件夹里的某一项，可以是path，也可以是文件
+		for (auto& it : list) {
+			auto filePath = it.path();
+			if (is_regular_file(filePath)) {
+				//是文件
+				auto filePathString = filePath.string();
+				Material::loadFromFile(filePathString);
+			}
+		}
+	}
+}
 
 Material::Material()
 {
@@ -22,23 +45,10 @@ Material::~Material() {
 
 shared_ptr<Material> Material::loadFromFile(const string& filename) {
 	auto pMaterial = make_shared<Material>();
-	pMaterial->parseMaterialFile(filename);
-	return pMaterial;
-}
-
-string getFileName(const string& path,const string& suffix) {
-	string temp;
-	auto endpos = path.rfind(suffix);
-	auto startpos = path.find_last_of("\\/");
-	if (endpos != string::npos) {
-		if (startpos == string::npos) {
-			temp = path.substr(0, endpos);
-		}
-		else if (startpos+1 < endpos) {
-			temp = path.substr(startpos+1, endpos-startpos-1);
-		}
+	if (!pMaterial->parseMaterialFile(filename)) {
+		pMaterial.reset();
 	}
-	return temp;
+	return pMaterial;
 }
 
 string Material::getItemName(const string& key) {
@@ -101,7 +111,7 @@ bool Material::parseMaterialFile(const string& path) {
 	bool bParseSuccess = false;
 	ifstream matFile(path);
 	string material((std::istreambuf_iterator<char>(matFile)), std::istreambuf_iterator<char>());
-	string filename = getFileName(path, ".material");
+	string filename = Utils::getFileName(path);
 	if (filename.empty()) {
 		LOGE("error to parse material file path,can't get filename %s",path.c_str());
 		return false;
@@ -161,6 +171,7 @@ bool Material::parseMaterialFile(const string& path) {
 			LOGD("failed to parse material %s", filename.c_str());
 		}
 	}
+	//mContents.clear();
 	return bParseSuccess;
 }
 
@@ -227,27 +238,27 @@ bool Material::findkeyValue(const string& str, const string& mid,const string& e
 
 
 
-shared_ptr<Texture> Material::getTexture(const std::string& name) {
-	shared_ptr<Texture> temp;
+shared_ptr<Texture>& Material::getTexture(const std::string& name) {
+	static std::shared_ptr<Texture> temp;
 	auto it = gTextures.find(name);
 	if (it != gTextures.end())
-		temp = it->second;
+		return it->second;
 	return temp;
 }
 
-shared_ptr<Material> Material::getMaterial(const std::string& name) {
-	shared_ptr<Material> temp;
+shared_ptr<Material>& Material::getMaterial(const std::string& name) {
+	static shared_ptr<Material> temp;
 	auto it = gMaterials.find(name);
 	if (it != gMaterials.end())
-		temp = it->second;
+		return it->second;
 	return temp;
 }
 
-shared_ptr<Shader> Material::getShader(const std::string& name) {
-	shared_ptr<Shader> temp;
+shared_ptr<Shader>& Material::getShader(const std::string& name) {
+	static shared_ptr<Shader> temp;
 	auto it = gShaders.find(name);
 	if (it != gShaders.end())
-		temp = it->second;
+		return it->second;
 	return temp;
 }
 
@@ -260,11 +271,24 @@ std::shared_ptr<Texture> Material::createTexture(const std::string& name,int wid
 	else {
 		auto it = gTextures.try_emplace(name, pTex);
 		if (!it.second) {
-			LOGE("ERROR to add texture %s to gTexture", name.c_str());
+			LOGE("ERROR to add texture %s to gTexture,exist already", name.c_str());
 			pTex.reset();
 		}
 	}
 	return pTex;
+}
+
+std::shared_ptr<Texture> Material::loadTextureFromFile(const std::string& path) {
+	auto texName = Utils::getFileName(path);
+	auto pTexture = Utils::loadImageFromFile(path);
+	if (pTexture) {
+		auto it = gTextures.try_emplace(texName, pTexture);
+		if (!it.second) {
+			LOGE("ERROR to add texture %s to gTexture,exist already", path.c_str());
+			pTexture.reset();
+		}
+	}
+	return pTexture;
 }
 
 bool Material::parseItem(const string& value, Umapss& umap) {
@@ -304,7 +328,7 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 	if (parseItem(texture, umap)) {
 		const auto pPath = umap.find("path");
 		if (pPath != umap.cend()) {
-			auto pTex = loadImageFromFile(pPath->second);
+			auto pTex = Utils::loadImageFromFile(pPath->second);
 			if (pTex && gTextures.try_emplace(textureName,pTex).second) {
 				LOGD("success to parse texture %s from path",textureName.c_str());
 			}

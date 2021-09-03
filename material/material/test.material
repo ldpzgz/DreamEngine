@@ -23,14 +23,8 @@ fs:1{
 	}
 }
 
-texture:test0{
-	path=./opengles3/images/buti.jpg
-}
-
-texture:test1{
-	width=640
-	height=480
-	depth=3
+texture:buti{
+	path=./opengles3/material/drawable/buti.jpg
 }
 
 program:lineBasic{
@@ -40,7 +34,7 @@ program:lineBasic{
 	texcoordLoc=1
 	mvpMatrix=mvp_matrix
 	sampler2D{
-		s_texture=test0
+		s_texture=buti
 	}
 }
 

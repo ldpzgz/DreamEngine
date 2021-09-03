@@ -2,15 +2,17 @@
 #include "../Log.h"
 #include <fstream>
 #include <vector>
+#include "../MeshRoundedRectangle.h"
+#include "../MeshCircle.h"
+
 using namespace std;
 
 const string CharSizeKey("charSize");		//一个字占用的宽高
-static const string gUIRenderMaterialFile("./opengles3/material/uiDraw.material");
+//static const string gUIRenderMaterialFile("./opengles3/material/uiDraw.material");
 static const string gFontTextureName("fontsTexture");
 static const string gFontFile("./opengles3/material/simfang.ttf");
 static const string gSavedFontFile("./opengles3/material/myfont.data");
-static const string gFontMaterialFile("./opengles3/material/font.material");
-static const string gBackgroundMaterialFile("./opengles3/material/background.material");
+static const string gFontMaterialName("font");
 FT_Library  FontInfo::glibrary;
 FT_Face     FontInfo::gface;      /* handle to face object */
 bool FontInfo::gIsFreetypeInit = false;
@@ -74,18 +76,18 @@ bool FontInfo::initFreetype(const string& ttfPath) {
 	return true;
 }
 
-shared_ptr<FontInfo> FontInfo::loadFromFile(const string& savePath, const string& ttfPath, const string& materialPath) {
+shared_ptr<FontInfo> FontInfo::loadFromFile(const string& savePath, const string& ttfPath, const string& materialName) {
 
-	auto pMaterial = make_shared<Material>();
+	auto& pMaterial = Material::getMaterial(materialName);
 
-	if (!pMaterial->parseMaterialFile(materialPath)) {
+	if (!pMaterial) {
 		LOGE("error to parse font material");
 		return shared_ptr<FontInfo>();
 	}
 
-	auto pTex = Material::getTexture(gFontTextureName);
+	auto& pTex = Material::getTexture(gFontTextureName);
 	if (!pTex) {
-		LOGE("font texture %s not found in material %s",gFontTextureName.c_str(), materialPath.c_str());
+		LOGE("font texture %s not found in material %s",gFontTextureName.c_str(), materialName.c_str());
 		pMaterial.reset();
 		return shared_ptr<FontInfo>();
 	}
@@ -93,7 +95,7 @@ shared_ptr<FontInfo> FontInfo::loadFromFile(const string& savePath, const string
 	auto charSize = pMaterial->getKeyAsInt(CharSizeKey);
 
 	if (charSize < 0) {
-		LOGE("not found charSize key in material %s", materialPath.c_str());
+		LOGE("not found charSize key in material %s", materialName.c_str());
 		pMaterial.reset();
 		return shared_ptr<FontInfo>();
 	}
@@ -113,7 +115,7 @@ shared_ptr<FontInfo> FontInfo::loadFromFile(const string& savePath, const string
 		inFile >> countOfChar >> fontInfo->textureWidth >> fontInfo->textureHeight >> fontInfo->curTextureWidth >> fontInfo->curTextureHeight;
 		if (fontInfo->textureWidth != fontInfo->pCharTexture->getWidth() ||
 			fontInfo->textureHeight != fontInfo->pCharTexture->getHeight()) {
-			LOGE("charTexture widht or height is not equal width the one defined in fonts Material file %s", materialPath.c_str());
+			LOGE("charTexture widht or height is not equal width the one defined in fonts Material file %s", materialName.c_str());
 			fontInfo.reset();
 			return fontInfo;
 		}
@@ -255,9 +257,8 @@ const CharInTexture& FontInfo::getCharInTexture(UnicodeType code) {
 unique_ptr<UiRender> UiRender::gInstance = make_unique<UiRender>();
 
 void UiRender::initUiRender() {
-	initTextView(gSavedFontFile, gFontFile, gFontMaterialFile);
-	initBackgroundResource(gBackgroundMaterialFile);
-	mpLastMaterial = Material::loadFromFile(gUIRenderMaterialFile);
+	initTextView(gSavedFontFile, gFontFile, gFontMaterialName);
+	mpLastMaterial = Material::getMaterial("posTexture");
 	mpLastMesh = make_shared<Mesh>(MeshType::MESH_FONTS);
 	if (mpLastMesh) {
 		mpLastMesh->loadMesh();
@@ -273,8 +274,8 @@ void UiRender::updateWidthHeight(float width, float height) {
 	mLastMeshModelMatrix = glm::scale(mLastMeshModelMatrix, glm::vec3(width, height, 1.0f));
 }
 
-bool UiRender::initTextView(const string& savedPath, const string& ttfPath, const string& materialPath) {
-	mpFontInfo = FontInfo::loadFromFile(savedPath, ttfPath, materialPath);
+bool UiRender::initTextView(const string& savedPath, const string& ttfPath, const string& materialName) {
+	mpFontInfo = FontInfo::loadFromFile(savedPath, ttfPath, materialName);
 	if (mpFontInfo) {
 		return true;
 	}
@@ -283,20 +284,132 @@ bool UiRender::initTextView(const string& savedPath, const string& ttfPath, cons
 	}
 }
 
-bool UiRender::initBackgroundResource(const string& buttonMaterial) {
-	mpBackgroundMesh = make_shared<Mesh>(MeshType::MESH_Rect);
-	auto pMaterial = make_shared<Material>();
-	if (pMaterial && !pMaterial->parseMaterialFile(buttonMaterial)) {
-		LOGE("error to parse button material");
-		pMaterial.reset();
-		return false;
-	}
-	if(mpBackgroundMesh){
-		mpBackgroundMesh->loadMesh();
-		if (pMaterial) {
-			mpBackgroundMesh->setMaterial(pMaterial);
+void UiRender::initShape(std::shared_ptr<Shape>& pShape) {
+	if (pShape && !pShape->getInitialized()) {
+		auto shapeType = pShape->getType();
+		auto& solidColor = pShape->getSolidColor();
+		GradientType gradientType = pShape->getGradientType();
+		bool hasGradient = (gradientType != GradientType::None);
+		auto cornerRadius = pShape->getCornerRadius();
+		auto rtRadius = pShape->getCornerRightTopRadius();
+		auto ltRadius = pShape->getCornerLeftTopRadius();
+		auto lbRadius = pShape->getCornerLeftBottomRadius();
+		auto rbRadius = pShape->getCornerRightBottomRadius();
+		auto width = pShape->getSizeWidth();
+		auto height = pShape->getSizeHeight();
+		auto centerX = pShape->getGradientCenterX();
+		auto centerY = pShape->getGradientCenterY();
+		auto gradientAngle = pShape->getGradientAngle();
+		auto& startColor = pShape->getGradientStartColor();
+		auto& endColor = pShape->getGradientEndColor();
+		auto& centerColor = pShape->getGradientCenterColor();
+		auto strokeWidth = pShape->getSrokeWidth();
+		auto& strokeColor = pShape->getSrokeColor();
+		auto& pTexture = static_pointer_cast<Texture>(pShape->getTexture());
+		bool hasBackground = (!solidColor.isZero() || pTexture || gradientType != GradientType::None);
+		shared_ptr<MeshFilledRect> pMesh;
+		shared_ptr<MeshFilledRect> pStrokeMesh;
+		if (shapeType == ShapeType::Rectangle) {
+			if(hasBackground){
+				pMesh = make_shared<MeshFilledRect>();
+				pMesh->loadMesh(width, height, centerX, centerY);
+				pShape->setMesh(static_pointer_cast<void>(pMesh));
+			}
+			if (!strokeColor.isZero()) {
+				pStrokeMesh = make_shared<MeshFilledRect>();
+				pStrokeMesh->loadMesh(width, height, centerX, centerY);
+				pStrokeMesh->setFilled(false);
+				pStrokeMesh->setLineWidth(strokeWidth);
+				pShape->setStrokeMesh(static_pointer_cast<void>(pStrokeMesh));
+			}
 		}
-		return true;
+		else if (shapeType == ShapeType::RoundedRectangle) {
+			if (hasBackground) {
+				auto pMesh = make_shared<MeshRoundedRectangle>();
+				pShape->setMesh(static_pointer_cast<void>(pMesh));
+				if (cornerRadius > 0.0f) {
+					//四个圆角是一样的半径
+					pMesh->loadMesh(cornerRadius, width, height, centerX, centerY);
+				}
+				else {
+					//四个圆角半径不一样
+					pMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, centerX, centerY, width, height);
+				}
+			}
+			if (!strokeColor.isZero()) {
+				pStrokeMesh = make_shared<MeshRoundedRectangle>();
+				if (cornerRadius > 0.0f) {
+					//四个圆角是一样的半径
+					pMesh->loadMesh(cornerRadius, width, height, centerX, centerY);
+				}
+				else {
+					//四个圆角半径不一样
+					pMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, centerX, centerY, width, height);
+				}
+				pStrokeMesh->setFilled(false);
+				pStrokeMesh->setLineWidth(strokeWidth);
+				pShape->setStrokeMesh(static_pointer_cast<void>(pStrokeMesh));
+			}
+		}
+		else if (shapeType == ShapeType::Oval) {
+			if (hasBackground) {
+				auto pMesh = make_shared<MeshCircle>();
+				pMesh->loadMesh(width, height, centerX, centerY);
+				pShape->setMesh(static_pointer_cast<void>(pMesh));
+			}
+			if (!strokeColor.isZero()) {
+				pStrokeMesh = make_shared<MeshCircle>();
+				pStrokeMesh->loadMesh(width, height, centerX, centerY);
+				pStrokeMesh->setFilled(false);
+				pStrokeMesh->setLineWidth(strokeWidth);
+				pShape->setStrokeMesh(static_pointer_cast<void>(pStrokeMesh));
+			}
+		}
+
+		if (pMesh && pTexture) {
+			auto& pMaterial = Material::getMaterial("posTexture");
+			if (pMaterial) {
+				//pMaterial->changeTexture("s_texture", pTexture);//这个每次渲染前都需要调用
+				pMesh->setMaterial(pMaterial);
+			}
+			else {
+				LOGE("ERROR cannot found posTexture material");
+			}
+		}
+		else if (pMesh && hasGradient) {
+			if (gradientType == GradientType::Linear) {
+				auto& pMaterial = Material::getMaterial("posColor");
+				if (pMaterial) {
+					pMesh->setColorData(gradientAngle, startColor, endColor, centerColor);
+					pMesh->setMaterial(pMaterial);
+				}
+			}
+			else {
+				LOGD("warning only support linear gradient type now");
+			}
+		}
+		else if (pMesh && !solidColor.isZero()) {
+			auto& pMaterial = Material::getMaterial("posUniformColor");
+			if (pMaterial) {
+				//pMesh->setUniformColor(solidColor);//这个每次渲染前都需要调用
+				pMesh->setMaterial(pMaterial);
+			}
+			else {
+				LOGE("ERROR cannot found posUniformColor material");
+			}
+		}
+
+		if (pStrokeMesh) {
+			auto& pMaterial = Material::getMaterial("posUniformColor");
+			if (pMaterial) {
+				//pStrokeMesh->setUniformColor(solidColor);//这个每次渲染前都需要调用
+				pStrokeMesh->setMaterial(pMaterial);
+			}
+			else {
+				LOGE("ERROR cannot found posUniformColor material");
+			}
+		}
+		pShape->setInitialized();
 	}
 }
 
@@ -384,6 +497,11 @@ void UiRender::calcTextViewWidthHeight(TextView* tv) {
 
 void UiRender::drawTextView(TextView* tv) {
 	if (tv != nullptr) {
+		drawBackground(tv);
+		const auto& text = tv->getText();
+		if (text.empty()) {
+			return;
+		}
 		if (!mpFontInfo) {
 			LOGE("ERROR NO fontInfo");
 			return;
@@ -391,7 +509,6 @@ void UiRender::drawTextView(TextView* tv) {
 		int originCharSize = mpFontInfo->charSize;
 		int textSize = tv->getTextSize();//字的点阵大小，像素为单位
 		auto& tvRect = tv->getRect();
-		const auto& text = tv->getText();
 		auto slen = text.size();
 		unsigned char* pStr = (unsigned char*)text.c_str();
 
@@ -594,27 +711,41 @@ void UiRender::drawTextView(TextView* tv) {
 }
 
 void UiRender::drawBackground(View* v){
-	if (v && v->needDrawBackground())
+	//绘制view的shape
+	if (v!=nullptr)
 	{
-		auto& rect = v->getRect();
-		glm::mat4 model(1.0f);
-		model = glm::translate(model, glm::vec3(rect.x, (mWindowHeight-rect.y-rect.height), 0.0f));
-		model = glm::scale(model, glm::vec3(rect.width, rect.height, 1.0f));
-		if (mpBackgroundMesh) {
-			//绘制背景
-			if (v->needUpdateBackground()) {
-				auto& color = v->getBackgroundColor();
-				std::array<float, 16> colors;
-				for (int i = 0; i < 4; ++i) {
-					colors[4 * i] = color.r;
-					colors[4 * i + 1] = color.g;
-					colors[4 * i + 2] = color.b;
-					colors[4 * i + 3] = color.a;
-				}
-				mpBackgroundMesh->updateColor(&colors[0], 0, 16 * sizeof(float));
-				v->clearUpdateBackground();
+		auto& pShape = v->getBackgroundShape();
+		if (pShape) {
+			auto paddingLeft = pShape->getPaddingLeft();
+			auto paddingRight = pShape->getPaddingRight();
+			auto paddingTop = pShape->getPaddingTop();
+			auto paddingBottom = pShape->getPaddingBottom();
+			auto padding = pShape->getPadding();
+			if (padding > 0) {
+				paddingLeft = paddingRight = paddingTop = paddingBottom = padding;
 			}
-			mpBackgroundMesh->render(mProjMatrix*model);
+
+			auto& rect = v->getRect();
+			glm::mat4 model(1.0f);
+			model = glm::translate(model, glm::vec3(rect.x + paddingLeft, 
+				(mWindowHeight - rect.y - rect.height + paddingBottom), 0.0f));
+			model = glm::scale(model, 
+				glm::vec3(rect.width-(paddingLeft+ paddingRight), rect.height-(paddingTop+ paddingBottom), 1.0f));
+
+			auto pBackMesh = static_pointer_cast<Mesh>(pShape->getMesh());
+			if (pBackMesh) {
+				auto& pTexture = static_pointer_cast<Texture>(pShape->getTexture());
+				if (pTexture) {
+					pBackMesh->setTexture(pTexture);
+				}
+				pBackMesh->setUniformColor(pShape->getSolidColor());
+				pBackMesh->render(mProjMatrix * model);
+			}
+			auto pBackStrokeMesh = static_pointer_cast<Mesh>(pShape->getStrokeMesh());
+			if (pBackStrokeMesh) {
+				pBackStrokeMesh->setUniformColor(pShape->getSrokeColor());
+				pBackStrokeMesh->render(mProjMatrix * model);
+			}
 		}
 	}
 }

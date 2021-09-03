@@ -11,9 +11,15 @@
 #ifndef Texture
 class Texture;
 #endif
-std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
 
-std::string nowTime();
+namespace Utils {
+	std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
+
+	std::string nowTime();
+
+	std::string getFileName(const std::string& path);
+	std::string getFileSuffix(const std::string& path);
+}
 
 /*
 T	std::chrono::milliseconds,std::chrono::microseconds,..等时间单位。

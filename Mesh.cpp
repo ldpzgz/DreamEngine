@@ -183,11 +183,54 @@ void Mesh::loadMesh()
 			1.0f,-1.0f,0.0f,
 			1.0f,1.0f,0.0f };
 		GLuint indexes[] = { 0,1,2,0,2,3 };
+		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes));
+	}
+	else if (mMeshType == MeshType::MESH_Rectangle_Tex)
+	{
+		GLfloat pos[] = { -1.0f,1.0f,0.0f,
+			-1.0f,-1.0f,0.0f,
+			1.0f,-1.0f,0.0f,
+			1.0f,1.0f,0.0f };
+		GLuint indexes[] = { 0,1,2,0,2,3 };
 		GLfloat tex[] = { 0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,1.0f,1.0f };
 		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
 	}
+	else if (mMeshType == MeshType::MESH_Rectangle_Color)
+	{
+		GLfloat pos[] = { -1.0f,1.0f,0.0f,
+			-1.0f,-1.0f,0.0f,
+			1.0f,-1.0f,0.0f,
+			1.0f,1.0f,0.0f };
+		GLuint indexes[] = { 0,1,2,0,2,3 };
+		GLfloat color[] = {
+			0.0f,0.0f,0.0f,0.0f,
+			0.0f,0.0f,0.0f,0.0f,
+			0.0f,0.0f,0.0f,0.0f,
+			0.0f,0.0f,0.0f,0.0f
+		};
+		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes), nullptr, 0,nullptr,0,color,sizeof(color));
+	}
+	else if (mMeshType == MeshType::MESH_Rectangle_Center_Color)
+	{
+		GLfloat pos[] = { 
+			0.0f,0.0f,0.0f,
+			-1.0f,1.0f,0.0f,
+			-1.0f,-1.0f,0.0f,
+			1.0f,-1.0f,0.0f,
+			1.0f,1.0f,0.0f };
+		GLuint indexes[] = { 0,1,2,0,2,3,0,3,4,0,4,1 };
+		GLfloat color[] = {
+			0.0f,0.0f,0.0f,0.0f,
+			0.0f,0.0f,0.0f,0.0f,
+			0.0f,0.0f,0.0f,0.0f,
+			0.0f,0.0f,0.0f,0.0f,
+			0.0f,0.0f,0.0f,0.0f
+		};
+		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes), nullptr, 0, nullptr, 0, color, sizeof(color));
+	}
 	else if (mMeshType == MeshType::MESH_FONTS) {
-		GLfloat pos[] = { 0.0f,1.0f,0.0f,
+		GLfloat pos[] = { 
+			0.0f,1.0f,0.0f,
 			0.0f,0.0f,0.0f,
 			1.0f,0.0f,0.0f,
 			1.0f,1.0f,0.0f };
@@ -196,7 +239,8 @@ void Mesh::loadMesh()
 		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes), tex, sizeof(tex));
 	}
 	else if (mMeshType == MeshType::MESH_Rect) {
-		GLfloat pos[] = { 0.0f,1.0f,0.0f,
+		GLfloat pos[] = { 
+			0.0f,1.0f,0.0f,
 			0.0f,0.0f,0.0f,
 			1.0f,0.0f,0.0f,
 			1.0f,1.0f,0.0f };
@@ -271,34 +315,6 @@ void Mesh::loadMesh()
 	else if (mMeshType == MeshType::MESH_Triangular_Pyramid) {
 
 	}
-	else if (mMeshType == MeshType::MESH_Circle)
-	{
-		mCounts = 1026;
-		GLfloat* pos = new GLfloat[mCounts *3];
-		GLfloat* tex = new GLfloat[mCounts * 2];
-		if (pos && tex)
-		{
-			float delta = 2.0f*3.1415926535897932f / 1024.0f;
-			pos[0] = pos[1] = pos[2] = 0.0f;
-			tex[0] = tex[1] = 0.5f;
-			for (int i = 1; i < mCounts; ++i)
-			{
-				pos[i * 3] = cos(3.1415926535897932f-(i-1)*delta);
-				pos[i * 3+1] = sin(3.1415926535897932f- (i - 1)*delta);
-				pos[i * 3 + 2] = 0;
-
-				tex[i * 2] = pos[i * 3] * 0.5f + 0.5f;
-				tex[i * 2+1] = pos[i * 3 + 1] * 0.5f + 0.5f;
-			}
-			bool b = createBufferObject(pos, mCounts * 3*sizeof(GLfloat), 0, 0, tex, mCounts * 2*sizeof(GLfloat),0,0);
-			if (!b)
-			{
-				LOGD("error to load circle mesh data\n");
-			}
-			delete[] pos;
-			delete[] tex;
-		}
-	}
 }
 
 bool Mesh::createBufferObject(GLfloat* pos,int posByteSize, GLuint* index,int indexByteSize,
@@ -308,7 +324,6 @@ bool Mesh::createBufferObject(GLfloat* pos,int posByteSize, GLuint* index,int in
 	{
 		setPosData(pos,posByteSize, drawType);
 		checkglerror();
-		mCounts = (posByteSize / (sizeof(float) * 3));
 	}
 	if(tex != nullptr)
 	{
@@ -436,6 +451,7 @@ void Mesh::drawTrangleFan(int posloc, int texloc,int norloc,int colorloc)
 
 	glBindVertexArray(mVAO);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, mCounts);
+	checkglerror();
 	glBindVertexArray(0);
 	//glFrontFace(GL_CCW);
 	//glDrawElements(GL_TRIANGLE_FAN, mNumOfIndex, GL_UNSIGNED_SHORT, (const void*)0);
@@ -452,7 +468,6 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc)
 			glEnableVertexAttribArray(posloc);
 			//indicate a vertexAttrib space 3*float,in mPosVbo
 			glVertexAttribPointer(posloc, 3, GL_FLOAT, GL_FALSE, 0, 0);
-			checkglerror();
 		}
 
 		if (texloc >= 0)
@@ -508,17 +523,16 @@ void Mesh::getPointSizeRange() {
 
 void Mesh::draw(int posloc, int texloc, int norloc, int colorloc)
 {
-	if (mMeshType == MeshType::MESH_Rectangle 
+	if (mMeshType == MeshType::MESH_Rectangle_Tex 
+		|| mMeshType == MeshType::MESH_Rectangle
+		|| mMeshType == MeshType::MESH_Rectangle_Color
+		|| mMeshType == MeshType::MESH_Rectangle_Center_Color
 		|| mMeshType == MeshType::MESH_DIY
 		|| mMeshType == MeshType::MESH_Cuboid
 		|| mMeshType == MeshType::MESH_FONTS
 		|| mMeshType == MeshType::MESH_Rect)
 	{
 		drawTriangles(posloc, texloc, norloc,colorloc);
-	}
-	else if (mMeshType == MeshType::MESH_Circle)
-	{
-		drawTrangleFan(posloc, texloc, norloc, colorloc);
 	}
 	else if (mMeshType == MeshType::MESH_Line_strip)
 	{
@@ -530,14 +544,23 @@ void Mesh::render(const glm::mat4& mvpMat) {
 	if (mpMaterial) {
 		//update mvpMatrix;
 		mpMaterial->updateMvpMatrix(mvpMat);
+		checkglerror();
 		mpMaterial->setTextureMatrix();
+		checkglerror();
+		if (mpUniformColor) {
+			mpMaterial->updateUniformColor(*mpUniformColor);
+		}
+		checkglerror();
 		mpMaterial->enable();
+		checkglerror();
 		int posloc = -1;
 		int texloc = -1;
 		int norloc = -1;
 		int colorloc = -1;
 		mpMaterial->getVertexAtributeLoc(posloc, texloc, colorloc, norloc);
+		checkglerror();
 		draw(posloc, texloc, norloc, colorloc);
+		checkglerror();
 	}
 	else {
 		LOGE("mesh has no material,can't render");
@@ -572,6 +595,7 @@ bool Mesh::setPosData(GLfloat* pos, int size, unsigned int drawType)
 	glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
 	glBufferData(GL_ARRAY_BUFFER, size, pos, drawType);
 	mPosByteSize = size;
+	mCounts = (mPosByteSize / (sizeof(float) * 3));
 	return true;
 }
 bool Mesh::setTexcoordData(GLfloat* tex, int size, unsigned int drawType)

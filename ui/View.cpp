@@ -4,6 +4,7 @@
 #include "LinearLayout.h"
 #include "../Log.h"
 #include "UiRender.h"
+#include "UiManager.h"
 
 unordered_map<string, int> View::gGravityKeyValue{
 	{ "center" ,LayoutParam::Center },
@@ -17,7 +18,7 @@ unordered_map<string, int> View::gGravityKeyValue{
 	{ "rightTop" ,LayoutParam::RightTop }
 };
 
-unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> View::gAttributeHandler{
+unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> View::gLayoutAttributeHandler{
 	{ "id",View::idHandler },
 	{ "width",View::layoutWidthHandler },
 	{ "height",View::layoutHeightHandler },
@@ -273,13 +274,57 @@ void View::gravityHandler(const shared_ptr<View>& pv, const std::string& value) 
 
 void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& value) {
 	if (pv) {
-		Color c;
-		if (!Color::parseColor(value, c)) {
-			LOGE("error to parse backgoundColor who's value is %s", value.c_str());
+		if (!value.empty())
+		{
+			const string colorPrefix = "@color/";
+			const string imagePrefix = "@image/";
+			const string shapePrefix = "@shape/";
+			if (value[0] == '#' || value.find(colorPrefix)==0) {
+				Color c;
+				if (!Color::parseColor(value, c)) {
+					LOGE("error to parse backgoundColor who's value is %s in layout file", value.c_str());
+				}
+				else {
+					pv->setBackgroundColor(c);
+					auto& pShape = pv->getBackgroundShape();
+					if (pShape) {
+						UiRender::getInstance()->initShape(pShape);
+					}
+				}
+			}
+			else if (value.find(imagePrefix) == 0) {
+				string imageName = value.substr(imagePrefix.size());
+				auto& pTex = UiManager::getTexture(imageName);
+				if (pTex) {
+					pv->setBackgroundImg(static_pointer_cast<void>(pTex));
+					auto& pShape = pv->getBackgroundShape();
+					if (pShape) {
+						UiRender::getInstance()->initShape(pShape);
+					}
+				}
+				else {
+					LOGE("ERROR not found %s image in layout file",imageName.c_str());
+				}
+			}
+			else if (value.find(shapePrefix) == 0) {
+				string shapeName = value.substr(shapePrefix.size());
+				auto& pShape = UiManager::getShape(shapeName);
+				if (pShape) {
+					pv->setBackgroundShape(pShape);
+					UiRender::getInstance()->initShape(pShape);
+				}
+				else {
+					LOGE("ERROR not found %s shape in layout file", shapeName.c_str());
+				}
+			}
+			else {
+				LOGE("error to parse backgound value %s in layout file", value.c_str());
+			}
 		}
 		else {
-			pv->setBackgroundColor(c);
+			LOGE("error to parse layout the backgound value is null");
 		}
+		
 	}
 }
 

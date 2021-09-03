@@ -11,7 +11,6 @@ class Material : public enable_shared_from_this<Material> {
 public:
 	Material();
 	~Material();
-	static shared_ptr<Material> loadFromFile(const string& filename);
 	bool parseMaterialFile(const string&);
 	void enable();
 
@@ -35,11 +34,14 @@ public:
 		return mShader;
 	}
 
-	static shared_ptr<Texture> getTexture(const std::string&);
-	static shared_ptr<Material> getMaterial(const std::string&);
-	static shared_ptr<Shader> getShader(const std::string&);
+	static shared_ptr<Texture>& getTexture(const std::string&);
+	static shared_ptr<Material>& getMaterial(const std::string&);
+	static shared_ptr<Shader>& getShader(const std::string&);
 
+	static shared_ptr<Material> loadFromFile(const string& filename);
 	static std::shared_ptr<Texture> createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint format = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, bool autoMipmap = false);
+	static std::shared_ptr<Texture> loadTextureFromFile(const std::string& name);
+	static void loadAllMaterial();
 private:
 	//find key value from startPos at str,
 	//if success set the start position of the key,the pos of '{', the pos of '}' into pos seprately and return true,

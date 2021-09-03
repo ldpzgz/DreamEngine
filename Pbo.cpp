@@ -161,7 +161,7 @@ Pbo::~Pbo() {
 void Pbo::pullColorBufferToMemory(int x,int y,int width,int height) {
 	//auto curTime = time_point_cast<milliseconds>(steady_clock::now());
 	if ( mTimeCounter.elapse(1000.0f / mFrameRate).first) {
-		std::cout << "Pbo::pullColorBufferToMemory " << nowTime()<<std::endl;
+		std::cout << "Pbo::pullColorBufferToMemory " << Utils::nowTime()<<std::endl;
 		if (mWriteIndex < 0) {
 			mWriteIndex = 0;
 		}

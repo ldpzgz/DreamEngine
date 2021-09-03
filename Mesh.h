@@ -20,7 +20,12 @@
 enum class MeshType //枚举类型定义加了class就是强类型枚举，不能隐式转换为其他类型，
 {
 	MESH_Triangle,
-	MESH_Rectangle,
+	MESH_Rectangle,//纯色矩形
+	MESH_FilledRect,//可以填充纯色，可贴图，也可以绘制为线框的矩形
+	MESH_Rectangle_Tex,//用于渲染一张背景图片
+	MESH_Rectangle_Color,//gradient的rectangle
+	MESH_Rectangle_Center_Color,//带center color的rectangle
+	MESH_Rounded_Rectangle,//带center color的rounded rectangle
 	MESH_Cuboid,
 	MESH_Triangular_Pyramid,
 	MESH_Circle,
@@ -56,7 +61,7 @@ public:
 	Mesh & operator = (const Mesh&) = delete; //防止赋值
 	virtual ~Mesh();
 
-	//MESH_Rectangle,MESH_Circle,调用这个函数初始化
+	//MESH_Rectangle_Tex,MESH_Circle,调用这个函数初始化
 	virtual void loadMesh();
 
 
@@ -109,6 +114,28 @@ public:
 		return mpMaterial;
 	}
 
+	void setUniformColor(const Color& color) {
+		if (!mpUniformColor) {
+			mpUniformColor = make_shared<Color>(color);
+		}
+		else {
+			*mpUniformColor = color;
+		}
+	}
+
+	void setTexture(const shared_ptr<Texture>& pTex,const string& samplerName="s_texture") {
+		if (mpMaterial) {
+			mpMaterial->changeTexture(samplerName, pTex);
+		}
+	}
+
+	//这四个函数都是创建vbo，ebo，并从内存上传数据到vbo的显存
+	bool setPosData(GLfloat* pos, int size, unsigned int drawType = GL_STATIC_DRAW);
+	bool setTexcoordData(GLfloat* tex, int size, unsigned int drawType = GL_STATIC_DRAW);
+	bool setNormalData(GLfloat* nor, int size, unsigned int drawType = GL_STATIC_DRAW);
+	bool setColorData(GLfloat* nor, int size, unsigned int drawType = GL_STATIC_DRAW);
+	bool setIndexData(GLuint* index, int indexByteSize, unsigned int drawType = GL_STATIC_DRAW);
+
 	static void getMaxNumVertexAttr();
 	static void getLineWidthRange();
 	static void getPointSizeRange();
@@ -122,13 +149,13 @@ protected:
 	void drawTriangles(int posloc = -1, int texloc = -1, int norloc = -1,int colorloc = -1);
 
 	//当做直线绘制GL_LINE_LOOP
-	void drawLineStrip(int posloc);
+	virtual void drawLineStrip(int posloc);
 
 	//当做三角形扇绘制GL_TRIANGLE_FAN
 	void drawTrangleFan(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1);
 
 	virtual void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1);
-private:
+protected:
 	void reset();
 
 	//4个vbo对象
@@ -153,13 +180,7 @@ private:
 	int mCounts;//for line_strip,triangle_fan,the count of points;
 	unsigned int mId;
 	std::shared_ptr<Material> mpMaterial;
-
-	//这四个函数都是创建vbo，ebo，并从内存上传数据到vbo的显存
-	bool setPosData(GLfloat* pos,int size,unsigned int drawType = GL_STATIC_DRAW);
-	bool setTexcoordData(GLfloat* tex,int size, unsigned int drawType = GL_STATIC_DRAW);
-	bool setNormalData(GLfloat* nor,int size, unsigned int drawType = GL_STATIC_DRAW);
-	bool setColorData(GLfloat* nor, int size, unsigned int drawType = GL_STATIC_DRAW);
-	bool setIndexData(GLuint* index,int indexByteSize, unsigned int drawType = GL_STATIC_DRAW);
+	std::shared_ptr<Color> mpUniformColor;
 	//如果函数内部创建了vao就返回true
 	bool createVaoIfNeed(int posloc=-1, int texloc=-1, int norloc=-1);
 };

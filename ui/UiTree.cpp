@@ -16,12 +16,16 @@ void UiTree::draw() {
 			mFbo.setClearColor(false);
 		}
 		mFbo.startRender();
+		glEnable(GL_BLEND);
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
 		for (auto& pView : mViewsToBeDrawing) {
 			auto pV = pView.lock();
 			if (pV) {
 				pV->draw();
 			}
 		}
+		glDisable(GL_BLEND);
 		mFbo.endRender();
 		mViewsToBeDrawing.clear();
 	}

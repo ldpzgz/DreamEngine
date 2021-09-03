@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">CarCleaner</string>
+    <string name="title_activity_washing">Washing</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="welcome">请使用微信扫码洗车</string>
+    <string name="upgrade_tip">正在升级系统请稍等片刻</string>
+    <string name="start">开始</string>
+    <string name="dust_water_is_run_tip">请先暂停喷水，再开吸尘功能</string>
+    <string name="net_connected">网络:已连接</string>
+    <string name="net_disconnected">网络:已断开</string>
+    <string name="status_normal">状态：正常</string>
+    <string name="status_error">状态：故障 </string>
+    <string name="status_ip">ip地址：</string>
+    <string name="userinfo_parse_error">解析用户信息出错</string>
+    <string name="user_id_is_null">出错了，用户id为空</string>
+    <string name="machine_is_serving">机器忙碌中</string>
+    <string name="park_code_tips">扫码免一小时停车费</string>
+    <string name="net_error_tip">网络出错正在重连</string>
+    <string name="update_qrcode">正在刷新二维码</string>
+    <string name="service_tel">客服：18665002960</string>
+    <string name="wash_tips">开始洗车</string>
+    <string name="wash_tips1">1 现在可以拿起水枪喷水了,清水泡沫无需按键</string>
+    <string name="wash_tips2">2 吸尘 请点击屏幕下方的吸尘按钮启动吸尘</string>
+    <string name="wash_tips3">3 结算 请点击屏幕下方的结算按钮,或者在微信彩虹自助洗车小程序上点击结算</string>
+    <string name="wash_tips6">3 洗手 请点击水龙头旁边的洗手按钮</string>
+    <string name="wash_tips4">客服：</string>
+    <string name="wash_tips5">5 点击触摸屏上的结算按钮或者小程序上点击结算</string>
+    <string name="discount_tips">（这次不会扣费）</string>
+    <string name="pause_run">暂停计费</string>
+    <string name="machine_error">抱歉-机器故障-请使用旁边的机器</string>
+</resources>

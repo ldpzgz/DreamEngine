@@ -3,19 +3,123 @@
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>  //rapidxml::file
 #include <rapidxml_print.hpp>  //rapidxml::print
+#include <filesystem>
+#include "../Utils.h"
+using namespace std::filesystem;
 using namespace std;
 
-static const string gResourceStringFile("./opengles3/material/strings.xml");
-static const string gResourceColorFile("./opengles3/material/colors.xml");
+static const string gStringFile("./opengles3/material/strings.xml");
+static const string gColorFile("./opengles3/material/colors.xml");
+static const string gShapePath("./opengles3/material/shape");
+static const string gUiImagePath("./opengles3/material/uiImage");
+static const string gUiLayoutPath("./opengles3/material/layout");
 
 unique_ptr<UiManager> UiManager::gInstance = make_unique<UiManager>();
 unordered_map<string, string> UiManager::gRStrings;
 unordered_map<string, Color> UiManager::gRColors;
-void UiManager::parseRColors(const string& path) {
-	rapidxml::file<> fdoc(path.c_str());
-	if (fdoc.size() > 0) {
+unordered_map<string, std::shared_ptr<Shape>> UiManager::gRShapes;
+
+void UiManager::loadAllShape() {
+	//遍历UIimage目录
+	path shapePath(gShapePath);
+	if (!exists(shapePath)) {
+		LOGE("ERROR the ui shape path %s is not exist", gShapePath.c_str());
+	}
+
+	if (is_directory(shapePath)) {
+		//是目录
+		directory_iterator list(shapePath);
+		//directory_entry 是一个文件夹里的某一项，可以是path，也可以是文件
+		for (auto& it : list) {
+			auto filePath = it.path();
+			if (is_regular_file(filePath)) {
+				//是文件
+				auto filePathString = filePath.string();
+				parseRShape(filePathString);
+			}
+		}
+	}
+}
+
+void UiManager::loadAllUiImage() {
+	//遍历UIimage目录
+	path imagePath(gUiImagePath);
+	if (!exists(imagePath)) {
+		LOGE("ERROR the ui image path %s is not exist", gUiImagePath.c_str());
+	}
+
+	if (is_directory(imagePath) ){
+		//是目录
+		directory_iterator list(imagePath);
+		//directory_entry 是一个文件夹里的某一项，可以是path，也可以是文件
+		for (auto& it : list) {
+			auto filePath = it.path();
+			if (is_regular_file(filePath)) {
+				//是文件
+				auto filePathString = filePath.string();
+				Material::loadTextureFromFile(filePathString);
+			}
+		}
+	}
+}
+
+void UiManager::parseRShape(const string& path) {
+	shared_ptr<rapidxml::file<>> pfdoc;
+	try {
+		pfdoc = make_shared<rapidxml::file<>>(path.c_str());
+	}
+	catch (std::exception e) {
+		LOGE("error to parseRShape %s file,error %s", path.c_str(), e.what());
+		return;
+	}
+	if (pfdoc && pfdoc->size() > 0) {
+		string shapeName = Utils::getFileName(path);
 		rapidxml::xml_document<> doc;// character type defaults to char
-		doc.parse<0>(fdoc.data());// 0 means default parse flags
+		doc.parse<0>(pfdoc->data());// 0 means default parse flags
+		auto pResNode = doc.first_node("shape");
+		if (pResNode != nullptr) {
+			auto shape = std::make_shared<Shape>();
+			auto attribute = pResNode->first_attribute("type");
+			if (attribute != nullptr && shape) {
+				shape->setType(attribute->value());
+			}
+			pResNode = pResNode->first_node();
+			while (pResNode != nullptr) {
+				auto attribute = pResNode->first_attribute();
+				while (attribute != nullptr) {
+					string key = attribute->name();
+					string value = attribute->value();
+					auto it = Shape::gShapeAttributeHandler.find(key);
+					if (it != Shape::gShapeAttributeHandler.end()) {
+						it->second(shape, value);
+					}
+					else {
+						LOGE("cannot recognize shape attribute %s",key.c_str());
+					}
+					attribute = attribute->next_attribute();
+				}
+				pResNode = pResNode->next_sibling();
+			}
+			if (gRShapes.emplace(shapeName, shape).second == false) {
+				LOGE("ERROR to emplace shape %s ,already exist", shapeName.c_str());
+				shape.reset();
+			}
+		}
+	}
+}
+
+void UiManager::parseRColors(const string& path) {
+	shared_ptr<rapidxml::file<>> pfdoc;
+	try {
+		pfdoc = make_shared<rapidxml::file<>>(path.c_str());
+	}
+	catch (std::exception e) {
+		LOGE("error to parseRStrings %s file,error %s", path.c_str(), e.what());
+		return;
+	}
+	if (pfdoc && pfdoc->size() > 0) {
+		rapidxml::xml_document<> doc;// character type defaults to char
+		doc.parse<0>(pfdoc->data());// 0 means default parse flags
 		auto pResNode = doc.first_node("resources");
 		if (pResNode != nullptr) {
 			auto pColorNode = pResNode->first_node("color");
@@ -42,9 +146,10 @@ void UiManager::parseRColors(const string& path) {
 		}
 	}
 	else {
-		LOGE("error to parse resource string file %s",path);
+		LOGE("error to parse resource string file %s",path.c_str());
 	}
 }
+
 void UiManager::parseRStrings(const string& path) {
 	shared_ptr<rapidxml::file<>> pfdoc;
 	try {
@@ -99,8 +204,8 @@ void parseView(const shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode, 
 			while (attr != nullptr) {
 				string attrName = attr->name();
 				
-				auto it = View::gAttributeHandler.find(attrName);
-				if (it != View::gAttributeHandler.end()) {
+				auto it = View::gLayoutAttributeHandler.find(attrName);
+				if (it != View::gLayoutAttributeHandler.end()) {
 					it->second(pView, attr->value());
 					if (attrName == "id") {
 						//有id的控件，才保存起来，以便查找
@@ -129,10 +234,17 @@ void parseView(const shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode, 
 shared_ptr<UiTree> UiManager::loadFromFile(const string& filepath) {
 	shared_ptr<UiTree> mpTree = make_shared<UiTree>();
 	//读取xml
-	rapidxml::file<> fdoc(filepath.c_str());
-	if (fdoc.size() > 0) {
+	shared_ptr<rapidxml::file<>> pfdoc;
+	try {
+		pfdoc = make_shared<rapidxml::file<>>(filepath.c_str());
+	}
+	catch (std::exception e) {
+		LOGE("error to loadFromFile %s file,error %s", filepath.c_str(), e.what());
+		return mpTree;
+	}
+	if (pfdoc->size() > 0) {
 		rapidxml::xml_document<> doc;// character type defaults to char
-		doc.parse<0>(fdoc.data());// 0 means default parse flags
+		doc.parse<0>(pfdoc->data());// 0 means default parse flags
 
 		auto root = doc.first_node();
 		parseView(shared_ptr<View>(), root, mpTree);
@@ -154,9 +266,7 @@ void UiManager::setUiTree(const shared_ptr<UiTree>& tree) {
 		//计算出view的位置尺寸
 		mpUiTree->updateWidthHeight(mWindowWidth, mWindowHeight);
 		mpUiTree->calcViewsRect(mWindowWidth, mWindowHeight);
-		/*if (mpUiTree->mpRootView) {
-			mpUiTree->mpRootView->setDirty(true);
-		}*/
+		
 		UiRender::getInstance()->setTexture(mpUiTree->mpTexture);
 	}
 }
@@ -212,12 +322,101 @@ void UiManager::mouseLButtonUp(int x, int y) {
 	}
 }
 
+bool Color::parseColor(const std::string& value, Color& color)
+{
+	const string temp = "@color/";
+	auto index1 = value.find(temp);
+	auto size = value.size();
+	if ( index1 == 0) {
+		auto colorName = value.substr(temp.size());
+		color = UiManager::getColor(colorName);
+		return true;
+	}
+	else if (value.empty() || size > 9 || value[0] != '#') {
+		return false;
+	}
+	int index = 0;
+	int relIndex = 1 + 2 * index;
+	bool hasError = false;
+	while (index < 4 && relIndex < size) {
+		auto Rstr = value.substr(relIndex, 2);
+		try {
+			color[index] = (float)std::stoi(Rstr, nullptr, 16) / 255.0f;
+		}
+		catch (.../*const logic_error& e*/) {
+			hasError = true;
+			break;
+		}
+		++index;
+		relIndex = 1 + 2 * index;
+	}
+	if (!hasError) {
+		if (size == 7) {
+			color.a = 1.0f;
+		}
+		else if (size == 5) {
+			color.b = 0.0f;
+			color.a = 1.0f;
+		}
+		else if (size == 3) {
+			color.g = 0.0f;
+			color.b = 0.0f;
+			color.a = 1.0f;
+		}
+	}
+	return !hasError;
+}
+
+Color& UiManager::getColor(const std::string& name) {
+	static Color temp;
+	auto it = gRColors.find(name);
+	if (it != gRColors.end()) {
+		return it->second;
+	}
+	else {
+		LOGE("cannot find %s color in color resource", name.c_str());
+		return temp;
+	}
+}
+
+std::shared_ptr<Shape>& UiManager::getShape(const std::string& name) {
+	static std::shared_ptr<Shape> temp;
+	auto it = gRShapes.find(name);
+	if (it != gRShapes.end()) {
+		return it->second;
+	}
+	else {
+		LOGE("cannot find %s shape in shape resource", name.c_str());
+		return temp;
+	}
+}
+
+std::shared_ptr<Texture>& UiManager::getTexture(const std::string& name) {
+	return Material::getTexture(name);
+}
+
+std::string& UiManager::getString(const std::string& name) {
+	static std::string temp;
+	auto it = gRStrings.find(name);
+	if (it != gRStrings.end()) {
+		return it->second;
+	}
+	else {
+		LOGE("cannot find %s string in string resource",name.c_str());
+		return temp;
+	}
+}
+
 bool UiManager::initUi(int w, int h) {
+	//加载ui string和color配置
+	parseRStrings(gStringFile);
+	parseRColors(gColorFile);
+	//加载ui中需要用到的图片
+	loadAllUiImage();
+	loadAllShape();
 	//初始化uirender
 	UiRender::getInstance()->initUiRender();
-	//加载ui string和color配置
-	parseRStrings(gResourceStringFile);
-	parseRColors(gResourceColorFile);
+
 	updateWidthHeight(w, h);
 	return true;
 }

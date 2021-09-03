@@ -1,29 +1,31 @@
-vs:lv{
+vs:rectangleColorVs{
 	#version 300 es
     layout(location = 0) in vec4 a_position;
+	layout(location = 1) in vec4 a_color;
 	uniform mat4 mvp_matrix;
+	out vec4 v_color;
     void main()
     {
        gl_Position = mvp_matrix * a_position;
+	   v_color = a_color;
     }
 }
 
-fs:1v{
+fs:rectangleColorFs{
 	#version 300 es
 	precision mediump float;
+	in vec4 v_color;
 	layout(location = 0) out vec4 outColor;
 	void main()
 	{
-	  outColor = vec4( 1.0f,0.0f,1.0f,1.0f );
+	  outColor = v_color;
 	}
 }
 
-program:line{
-	vs=lv
-	fs=1v
+program:rectangleColor{
+	vs=rectangleColorVs
+	fs=rectangleColorFs
 	posLoc=0
+	colorLoc=1
 	mvpMatrix=mvp_matrix
 }
-
-
-

@@ -19,7 +19,7 @@ glm::mat4 model(1.0f);
 model = glm::translate(model,glm::vec3(10,10,0));
 model = glm::scale(model,glm::vec3(2.0f,2.0f,0.0f);
 glm::vec4 temp(1.0f,1.0f,0.0f,1.0f);
-auto result = model*temp;
+auto result = temp * model;
 
 result 是先在原点缩放，然后再平移，glm这个库矩阵运算与之前认识的运算顺序相反。
 */

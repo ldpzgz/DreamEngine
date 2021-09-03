@@ -2,7 +2,6 @@
 #include "UiRender.h"
 
 void TextView::draw() {
-	drawBackground();
 	UiRender::getInstance()->drawTextView(this);
 	View::draw();
 }

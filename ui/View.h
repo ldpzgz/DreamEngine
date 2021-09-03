@@ -8,6 +8,7 @@
 #include <memory>
 #include <unordered_map>
 #include <string>
+#include "Shape.h"
 /*
 c++11 中unicode相关
 unicode编码，为世界上的每一个字符给定一个编号。
@@ -245,26 +246,35 @@ public:
 	}
 
 	virtual void setBackgroundColor(const Color& c) {
-		mBackgroundColor = c;
-		mbNeedUpdateBackground = true;
-		mbHasBackground = true;
+		if (!mpBackgroundShape) {
+			mpBackgroundShape = make_shared<Shape>();
+		}
+		mpBackgroundShape->setSolidColor(c);
 	}
 
 	Color& getBackgroundColor() {
-		return mBackgroundColor;
+		static Color temp{ 0.0f,0.0f,0.0f,0.0f };
+		if (mpBackgroundShape) {
+			return mpBackgroundShape->getSolidColor();
+		}
+		return temp;
 	}
 
-	bool needDrawBackground() {
-		return mbHasBackground;
+	void setBackgroundImg(shared_ptr<void>& pTex) {
+		if (!mpBackgroundShape) {
+			mpBackgroundShape = make_shared<Shape>();
+		}
+		mpBackgroundShape->setTexture(pTex);
 	}
 
-	bool needUpdateBackground() {
-		return mbNeedUpdateBackground;
+	std::shared_ptr<Shape>& getBackgroundShape() {
+		return mpBackgroundShape;
 	}
 
-	void clearUpdateBackground() {
-		mbNeedUpdateBackground = false;
+	void setBackgroundShape(const shared_ptr<Shape>& pShape) {
+		mpBackgroundShape = pShape;
 	}
+
 
 	static shared_ptr<View> createView(const string& name, shared_ptr<View> parent);
 
@@ -289,9 +299,7 @@ public:
 	std::list<std::shared_ptr<View>> mChildren;
 	weak_ptr<DirtyListener> mpDirtyListener;
 	bool mbIsDirty{ false };
-	Color mBackgroundColor{ 0.0f,0.0f,0.0f,0.0f };
-	bool mbHasBackground{ false };
-	bool mbNeedUpdateBackground{ false };
+	std::shared_ptr<Shape> mpBackgroundShape;
 
 	static void idHandler(const shared_ptr<View>&, const std::string&);
 	static void layoutWidthHandler(const shared_ptr<View>&, const std::string&);
@@ -305,7 +313,7 @@ public:
 	static void gravityHandler(const shared_ptr<View>&, const std::string&);
 	static void backgroundHandler(const shared_ptr<View>&, const std::string&);
 
-	static unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> gAttributeHandler;
+	static unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> gLayoutAttributeHandler;
 	static unordered_map<string, int> gGravityKeyValue;
 };
 
