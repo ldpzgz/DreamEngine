@@ -47,52 +47,52 @@ public:
 	ShapeType getType() {
 		return mType;
 	}
-	void setCornerRadius(float radius) {
+	void setCornerRadius(int radius) {
 		mRadius = radius;
 	}
-	float getCornerRadius() {
+	int getCornerRadius() {
 		return mRadius;
 	}
-	void setCornerLeftTopRadius(float radius) {
+	void setCornerLeftTopRadius(int radius) {
 		mLeftTopRadius = radius;
 	}
-	float getCornerLeftTopRadius() {
+	int getCornerLeftTopRadius() {
 		return mLeftTopRadius;
 	}
 
-	void setCornerLeftBottomRadius(float radius) {
+	void setCornerLeftBottomRadius(int radius) {
 		mLeftBottomRadius = radius;
 	}
-	float getCornerLeftBottomRadius() {
+	int getCornerLeftBottomRadius() {
 		return mLeftBottomRadius;
 	}
 
-	void setCornerRightTopRadius(float radius) {
+	void setCornerRightTopRadius(int radius) {
 		mRightTopRadius = radius;
 	}
-	float getCornerRightTopRadius() {
+	int getCornerRightTopRadius() {
 		return mRightTopRadius;
 	}
 
-	void setCornerRightBottomRadius(float radius) {
+	void setCornerRightBottomRadius(int radius) {
 		mRightBottomRadius = radius;
 	}
-	float getCornerRightBottomRadius() {
+	int getCornerRightBottomRadius() {
 		return mRightBottomRadius;
 	}
 
-	void setSizeWidth(float width) {
-		mWidth = width;
+	void setOvalWidth(float width) {
+		mOvalWidth = width;
 	}
-	float getSizeWidth() {
-		return mWidth;
+	float getOvalWidth() {
+		return mOvalWidth;
 	}
 
-	void setSizeHeight(float height) {
-		mHeight = height;
+	void setOvalHeight(float height) {
+		mOvalHeight = height;
 	}
-	float getSizeHeight() {
-		return mHeight;
+	float getOvalHeight() {
+		return mOvalHeight;
 	}
 
 	void setSolidColor(const Color& color) {
@@ -179,8 +179,20 @@ public:
 		return mGradientRadius;
 	}
 
-	void setGradientType(GradientType type) {
-		mGradientType = type;
+	void setGradientType(const std::string& type) {
+		if (type == "Linear") {
+			mGradientType = GradientType::Linear;
+		}
+		else if (type == "Radial") {
+			mGradientType = GradientType::Radial;
+		}
+		else if (type == "Sweep") {
+			mGradientType = GradientType::Sweep;
+		}
+		else {
+			LOGE("ERROR cannot recognize gradient type %s",type.c_str());
+		}
+			
 	}
 	GradientType getGradientType() {
 		return mGradientType;
@@ -220,42 +232,16 @@ public:
 	int getPaddingBottom() {
 		return mPaddingBottom;
 	}
-	std::shared_ptr<void>& getTexture() {
-		return mpTexture;
-	}
-	void setTexture(std::shared_ptr<void>& pTexture) {
-		mpTexture = pTexture;
-	}
-	std::shared_ptr<void>& getMesh() {
-		return mpMesh;
-	}
-	void setMesh(std::shared_ptr<void>& pMesh) {
-		mpMesh = pMesh;
-	}
-	void setStrokeMesh(std::shared_ptr<void>& pStrokeMesh) {
-		mpStrokeMesh = pStrokeMesh;
-	}
-	std::shared_ptr<void>& getStrokeMesh() {
-		return mpStrokeMesh;
-	}
-
-	void setInitialized() {
-		mbInitialized = true;
-	}
-
-	bool getInitialized() {
-		return mbInitialized;
-	}
 
 	static std::unordered_map<std::string, std::function<void(const std::shared_ptr<Shape>&, const std::string&)>> gShapeAttributeHandler;
 public:
 	ShapeType mType{ ShapeType::Rectangle };
-	//corners的属性，取值范围是[0，0.5]
-	float mRadius{ 0.0f };
-	float mLeftTopRadius{ 0.0f };
-	float mLeftBottomRadius{ 0.0f };
-	float mRightTopRadius{ 0.0f };
-	float mRightBottomRadius{ 0.0f };
+	//corners的属性，单位是像素
+	int mRadius{ 0 };
+	int mLeftTopRadius{ 0 };
+	int mLeftBottomRadius{ 0 };
+	int mRightTopRadius{ 0 };
+	int mRightBottomRadius{ 0 };
 	//solid属性
 	Color mSolidColor{ 0.0f,0.0f,0.0f,1.0f };
 	//stroke属性
@@ -279,15 +265,13 @@ public:
 	float mGradientRadius{ 0.0f };//raida
 	GradientType mGradientType{ GradientType::None };
 
-	//由于shape可以给不同的控件使用，所以这个宽高取值范围是[0,1.0f]
-	float mWidth{ 1.0f };
-	float mHeight{ 1.0f };
-	
-	bool mbInitialized{ false };
+	//用于计算椭圆的宽高比
+	float mOvalWidth{ 1.0f };
+	float mOvalHeight{ 1.0f };
 
-	std::shared_ptr<void> mpTexture;
-	std::shared_ptr<void> mpMesh;//承载shape的mesh
-	std::shared_ptr<void> mpStrokeMesh;//承载边框的mesh
+	//std::shared_ptr<void> mpTexture;
+	//std::shared_ptr<void> mpMesh;//承载shape的mesh
+	//std::shared_ptr<void> mpStrokeMesh;//承载边框的mesh
 
 private:
 	static void cornerRadiusHandler(const std::shared_ptr<Shape>& shape,const std::string& value);

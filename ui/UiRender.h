@@ -130,7 +130,7 @@ public:
 	bool initTextView(const string& savedPath, const string& ttfPath, const string& materialName);
 
 	//确定了shape的宽高和中心点之后才能调用这个函数
-	void initShape(std::shared_ptr<Shape>& pShape);
+	void initBackground(View* pView);
 
 	//当窗口变化的时候，需要调用这个函数更新一下
 	void updateWidthHeight(float width, float height);

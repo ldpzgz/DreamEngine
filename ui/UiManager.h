@@ -76,6 +76,11 @@ public:
 	static std::shared_ptr<Texture>& getTexture(const std::string& name);
 private:
 	shared_ptr<UiTree> mpUiTree;
+	//Fbo mFboForCopy;
+	/*
+	用于接收mpUiTree（渲染到rbo里面的）的渲染结果
+	*/
+	//shared_ptr<Texture> mpTexture;
 	float mWindowWidth;
 	float mWindowHeight;
 	glm::mat4 mProjMatrix;

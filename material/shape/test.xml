@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape type="roundedRectangle">
-	<corners cornerRadius="0.2"/> 
+	<corners cornerRadius="16"/> 
     <solid solidColor="@color/maskColorbg2" />
 </shape>

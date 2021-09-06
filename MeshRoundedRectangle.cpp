@@ -6,7 +6,7 @@
 #include <glm/mat4x3.hpp>
 #include <glm/gtc/type_ptr.hpp> // value_ptr
 #include <cmath>
-static const int STEP = 256;
+static const int STEP = 32;
 using namespace std;
 
 MeshRoundedRectangle::MeshRoundedRectangle():
@@ -49,7 +49,7 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 	else {
 		if (rightTopRadius >= maxRadius)
 			rightTopRadius = maxRadius;
-		float texX = rightTopRadius/width;
+		float texX = rightTopRadius / width;
 		float texY = rightTopRadius / width;
 		Vec2 texTranslate(1.0f - texX, 1.0f - texY);
 		Vec3 translate(width - rightTopRadius, height - rightTopRadius, 0.0f);

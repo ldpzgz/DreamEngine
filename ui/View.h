@@ -8,7 +8,7 @@
 #include <memory>
 #include <unordered_map>
 #include <string>
-#include "Shape.h"
+#include "Background.h"
 /*
 c++11 中unicode相关
 unicode编码，为世界上的每一个字符给定一个编号。
@@ -246,35 +246,50 @@ public:
 	}
 
 	virtual void setBackgroundColor(const Color& c) {
-		if (!mpBackgroundShape) {
-			mpBackgroundShape = make_shared<Shape>();
+		if (!mpBackground) {
+			mpBackground = make_shared<Background>();
+			mpBackground->mpShape = make_shared<Shape>();
 		}
-		mpBackgroundShape->setSolidColor(c);
+		
+		if (mpBackground->mpShape) {
+			mpBackground->mpShape->setSolidColor(c);
+		}
+		
 	}
 
 	Color& getBackgroundColor() {
 		static Color temp{ 0.0f,0.0f,0.0f,0.0f };
-		if (mpBackgroundShape) {
-			return mpBackgroundShape->getSolidColor();
+		if (mpBackground && mpBackground->mpShape) {
+			return mpBackground->mpShape->getSolidColor();
 		}
 		return temp;
 	}
 
-	void setBackgroundImg(shared_ptr<void>& pTex) {
-		if (!mpBackgroundShape) {
-			mpBackgroundShape = make_shared<Shape>();
+	void setBackgroundImg(shared_ptr<Texture>& pTex) {
+		if (!mpBackground) {
+			mpBackground = make_shared<Background>();
+			mpBackground->mpShape = make_shared<Shape>();
 		}
-		mpBackgroundShape->setTexture(pTex);
+		
+		if (mpBackground->mpTexture) {
+			mpBackground->mpTexture = pTex;
+		}
+		
 	}
 
-	std::shared_ptr<Shape>& getBackgroundShape() {
-		return mpBackgroundShape;
+	std::shared_ptr<Background>& getBackground() {
+		return mpBackground;
 	}
 
 	void setBackgroundShape(const shared_ptr<Shape>& pShape) {
-		mpBackgroundShape = pShape;
+		if (!mpBackground) {
+			mpBackground = make_shared<Background>();
+		}
+
+		mpBackground->mpShape = pShape;
 	}
 
+	void initBackground();
 
 	static shared_ptr<View> createView(const string& name, shared_ptr<View> parent);
 
@@ -299,7 +314,8 @@ public:
 	std::list<std::shared_ptr<View>> mChildren;
 	weak_ptr<DirtyListener> mpDirtyListener;
 	bool mbIsDirty{ false };
-	std::shared_ptr<Shape> mpBackgroundShape;
+	std::shared_ptr<Background> mpBackground;
+	std::shared_ptr<void> mpBackgroundMesh;
 
 	static void idHandler(const shared_ptr<View>&, const std::string&);
 	static void layoutWidthHandler(const shared_ptr<View>&, const std::string&);

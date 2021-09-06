@@ -266,14 +266,20 @@ void UiManager::setUiTree(const shared_ptr<UiTree>& tree) {
 		//计算出view的位置尺寸
 		mpUiTree->updateWidthHeight(mWindowWidth, mWindowHeight);
 		mpUiTree->calcViewsRect(mWindowWidth, mWindowHeight);
-		
-		UiRender::getInstance()->setTexture(mpUiTree->mpTexture);
 	}
 }
 
 void UiManager::updateWidthHeight(float width, float height) {
 	mWindowWidth = width;
 	mWindowHeight = height;
+	/*mFboForCopy.detachColorTexture();
+	if (!mpTexture) {
+		mpTexture = make_shared<Texture>();
+	}
+	mpTexture->unload();
+	mpTexture->load(width, height, nullptr, GL_RGBA);
+	mFboForCopy.attachColorTexture(mpTexture, 0);
+	UiRender::getInstance()->setTexture(mpTexture);*/
 	UiRender::getInstance()->updateWidthHeight(width, height);
 	if (mpUiTree) {
 		mpUiTree->updateWidthHeight(width, height);
@@ -424,7 +430,10 @@ bool UiManager::initUi(int w, int h) {
 void UiManager::draw() {
 	if (mpUiTree) {
 		//这个是将uitree绘制到纹理
-		mpUiTree->draw();
+		if (mpUiTree->draw()) {
+			//把uitree渲染的结果拷贝到mpTexture里面，mpTexture已经设置给了uiRender
+			//Fbo::blitFbo(mpUiTree->mFboForRender, mFboForCopy);
+		}
 		//这个是把纹理显示出来
 		UiRender::getInstance()->drawUi();
 	}

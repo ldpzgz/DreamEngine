@@ -3,19 +3,19 @@
 #include "../Log.h"
 using namespace std;
 
-void UiTree::draw() {
+bool UiTree::draw() {
 	if (!mViewsToBeDrawing.empty()) {
 		//渲染到纹理
-		mFbo.setDepthTest(false);
+		mFboForRender.setDepthTest(false);
 		if (mbRedraw) {
-			mFbo.setClearColorValue(0.0f, 0.0f, 0.0f, 0.0f);
-			mFbo.setClearColor(true);
+			mFboForRender.setClearColorValue(0.0f, 0.0f, 0.0f, 0.0f);
+			mFboForRender.setClearColor(true);
 			mbRedraw = false;
 		}
 		else {
-			mFbo.setClearColor(false);
+			mFboForRender.setClearColor(false);
 		}
-		mFbo.startRender();
+		mFboForRender.startRender();
 		glEnable(GL_BLEND);
 		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 		glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
@@ -26,22 +26,26 @@ void UiTree::draw() {
 			}
 		}
 		glDisable(GL_BLEND);
-		mFbo.endRender();
+		mFboForRender.endRender();
 		mViewsToBeDrawing.clear();
+		return true;
 	}
+	return false;
 }
 
 void UiTree::addDirtyView(const shared_ptr<View>& pView) {
 	mViewsToBeDrawing.emplace_back(pView);
 }
 void UiTree::updateWidthHeight(float width, float height) {
-	mFbo.detachColorTexture();
+	mFboForRender.detachColorRbo();
 	if (!mpTexture) {
 		mpTexture = make_shared<Texture>();
 	}
 	mpTexture->unload();
 	mpTexture->load(width, height, nullptr, GL_RGBA);
-	mFbo.attachColorTexture(mpTexture, 0);
+	UiRender::getInstance()->setTexture(mpTexture);
+	mFboForRender.attachColorTexture(mpTexture,0);
+	//mFboForRender.attachColorRbo(0, width, height);
 	//ui重绘
 	mbRedraw = true;
 	if (mpRootView) {
@@ -119,5 +123,7 @@ void UiTree::calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<
 		if (!hasGetHeight) {
 			pView->getHeightAccordChildren();
 		}
+		//确定了宽高之后，就可以初始化承载背景的shape了
+		pView->initBackground();
 	}
 }

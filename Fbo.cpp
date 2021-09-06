@@ -20,6 +20,10 @@ Fbo::Fbo():
 Fbo::~Fbo()
 {
 	// TODO Auto-generated destructor stub
+	if (mRbo != 0) {
+		glDeleteRenderbuffers(1, &mRbo);
+		mRbo = 0;
+	}
 	deleteFbo();
 }
 
@@ -56,6 +60,80 @@ void Fbo::detachDepthTexture(GLint level) {
 		level);
 	disable();
 }
+extern void checkglerror();
+bool Fbo::attachColorRbo(int attachment_n, int width, int height) {
+	if (mRbo == 0 || mWidth != width || mHeight != height) {
+		if (mRbo != 0) {
+			glDeleteRenderbuffers(1, &mRbo);
+			mRbo = 0;
+		}
+		glGenRenderbuffers(1, &mRbo);
+		if (mRbo == 0) {
+			LOGE("ERROR to create rbo");
+			return false;
+		}
+	}
+	mWidth = width;
+	mHeight = height;
+	glBindRenderbuffer(GL_RENDERBUFFER, mRbo);
+	GLint maxRenderbufferSize = 0;
+	glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &maxRenderbufferSize);
+	LOGD("MAX rbo sample size is %d", maxRenderbufferSize);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_RGBA8, width, height);
+	enable();
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachment_n, GL_RENDERBUFFER, mRbo);
+
+	GLint sampleBuf = 0;
+	glGetIntegerv(GL_SAMPLE_BUFFERS, &sampleBuf);
+
+	bool ret = checkFrameBuffer();
+	disable();
+	return ret;
+}
+
+void Fbo::detachColorRbo(int attachment_n) {
+	enable();
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachment_n, GL_RENDERBUFFER, 0);
+	if (mRbo > 0) {
+		glDeleteRenderbuffers(1, &mRbo);
+		mRbo = 0;
+	}
+	disable();
+}
+
+bool Fbo::checkFrameBuffer() {
+	bool ret = true;
+	GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+	if (error == GL_FRAMEBUFFER_COMPLETE)
+	{
+		LOGD("fbo completed \n");
+		//mbIsAttach = true;
+		ret = true;
+	}
+	else if (error == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
+	{
+		LOGD("fbo incomplete attachment\n");
+		ret = false;
+	}
+	else if (error == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
+	{
+		LOGD("fbo missing attachment\n");
+		ret = false;
+	}
+	//else if(error == GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS)
+	//{
+	//	//Log::info("fbo imcomplete dimensions\n");
+	//	return false;
+	//}
+
+	else if (error == GL_FRAMEBUFFER_UNSUPPORTED)
+	{
+		LOGD("fbo unsupported\n");
+		ret = false;
+	}
+	return ret;
+}
 
 bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attachment_n, GLint level)
 {
@@ -88,41 +166,14 @@ bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attach
 			texture->getId(),
 			level);
 
-	GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	ret = checkFrameBuffer();
 
-	do
-	{
-		if (error == GL_FRAMEBUFFER_COMPLETE)
-		{
-			LOGD("fbo completed \n");
-			//mbIsAttach = true;
-			ret = true;
-		}
-		else if (error == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
-		{
-			LOGD("fbo incomplete attachment\n");
-			ret = false;
-		}
-		else if (error == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
-		{
-			LOGD("fbo missing attachment\n");
-			ret = false;
-		}
-		//else if(error == GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS)
-		//{
-		//	//Log::info("fbo imcomplete dimensions\n");
-		//	return false;
-		//}
-
-		else if (error == GL_FRAMEBUFFER_UNSUPPORTED)
-		{
-			LOGD("fbo unsupported\n");
-			ret = false;
-		}
-	} while (false);
+	GLint sampleBuf = 0;
+	glGetIntegerv(GL_SAMPLE_BUFFERS, &sampleBuf);
 	disable();
 	return ret;
 }
+
 bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level)
 {
 	if (!texture)
@@ -136,34 +187,9 @@ bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level
 				GL_TEXTURE_2D,
 				texture->getId(),
 				level);
-	GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if(error == GL_FRAMEBUFFER_COMPLETE)
-	{
-		return true;
-	}
-	else if(error == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
-	{
-		LOGD("fbo attachDepthTexture incomplete attachment\n");
-		return false;
-	}
-	else if(error == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
-	{
-		LOGD("fbo attachDepthTexture missing attachment\n");
-		return false;
-	}
-	//else if(error == GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS)
-	//{
-	//	//Log::info("fbo imcomplete dimensions\n");
-	//	return false;
-	//}
-
-	else if(error == GL_FRAMEBUFFER_UNSUPPORTED)
-	{
-		LOGD("fbo attachDepthTexture unsupported\n");
-		return false;
-	}
-	return false;
+	return checkFrameBuffer();
 }
+
 void Fbo::disable()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, mPreFrameBuffer);
@@ -213,4 +239,39 @@ void Fbo::setClearColorValue(float r, float g, float b, float a)
 	mClearColor[1] = g;
 	mClearColor[2] = b;
 	mClearColor[3] = a;
+}
+extern void checkglerror();
+bool Fbo::blitFbo(const Fbo& src, const Rect<int>& srcRect, 
+	const Fbo& dst, const Rect<int>& dstRect) {
+	// set the default framebuffer for writing
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER,
+		dst.mFboId);
+	// set the fbo with four color attachments for reading
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, src.mFboId);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
+	glBlitFramebuffer(srcRect.x, srcRect.y,
+		srcRect.x+srcRect.width, srcRect.y+srcRect.height,
+		dstRect.x, dstRect.y,
+		dstRect.x+dstRect.width, dstRect.y+dstRect.height,
+		GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	checkglerror();
+	return true;
+}
+
+bool Fbo::blitFbo(const Fbo& src, const Fbo& dst) {
+	// set the default framebuffer for writing
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER,
+		dst.mFboId);
+	GLenum b[1] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, b);
+	// set the fbo with four color attachments for reading
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, src.mFboId);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
+	glBlitFramebuffer(0, 0,
+		src.mWidth, src.mHeight,
+		0, 0,
+		dst.mWidth, dst.mHeight,
+		GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	checkglerror();
+	return true;
 }

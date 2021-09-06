@@ -45,6 +45,10 @@ void View::drawBackground() {
 	UiRender::getInstance()->drawBackground(this);
 }
 
+void View::initBackground() {
+	UiRender::getInstance()->initBackground(this);
+}
+
 bool View::calcWidth(int parentWidth) {
 	//如果mWidthPercent!=0，是比例布局，已经由父view计算出来了
 	if (mWidthPercent != 0) {
@@ -286,21 +290,21 @@ void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& valu
 				}
 				else {
 					pv->setBackgroundColor(c);
-					auto& pShape = pv->getBackgroundShape();
+					/*auto& pShape = pv->getBackgroundShape();
 					if (pShape) {
-						UiRender::getInstance()->initShape(pShape);
-					}
+						UiRender::getInstance()->initBackground(pShape);
+					}*/
 				}
 			}
 			else if (value.find(imagePrefix) == 0) {
 				string imageName = value.substr(imagePrefix.size());
 				auto& pTex = UiManager::getTexture(imageName);
 				if (pTex) {
-					pv->setBackgroundImg(static_pointer_cast<void>(pTex));
-					auto& pShape = pv->getBackgroundShape();
+					pv->setBackgroundImg(pTex);
+					/*auto& pShape = pv->getBackgroundShape();
 					if (pShape) {
-						UiRender::getInstance()->initShape(pShape);
-					}
+						UiRender::getInstance()->initBackground(pShape);
+					}*/
 				}
 				else {
 					LOGE("ERROR not found %s image in layout file",imageName.c_str());
@@ -311,7 +315,7 @@ void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& valu
 				auto& pShape = UiManager::getShape(shapeName);
 				if (pShape) {
 					pv->setBackgroundShape(pShape);
-					UiRender::getInstance()->initShape(pShape);
+					//UiRender::getInstance()->initBackground(pShape);
 				}
 				else {
 					LOGE("ERROR not found %s shape in layout file", shapeName.c_str());
