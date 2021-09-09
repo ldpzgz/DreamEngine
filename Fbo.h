@@ -10,6 +10,7 @@
 #include<memory>
 #include "Texture.h"
 #include "Rect.h"
+#include <functional>
 /*fbo主要用于渲染到纹理，这样子是比较高效的。
 	一个fbo有三个attachment：n个color attachment，一个depth attachment，一个stencil attachment。
 	color Attachment 能attach rbo，纹理，纹理数组中的一个，立方体纹理中的一个面，3D纹理中的一个切片
@@ -51,16 +52,23 @@ public:
 	virtual ~Fbo();
 	//GL_COLOR_ATTACHMENT0 + attachment_n
 	void detachColorTexture(int attachment_n=0, GLint level=0);
+	void detachColorTextureMS(int attachment_n = 0);
 	void detachDepthTexture(GLint level = 0);
-	bool attachColorTexture(const std::shared_ptr<Texture>& texture,int attachment_n, GLint level=0);
+	void detachDepthTextureMS();
+	bool attachColorTexture(const std::shared_ptr<Texture>& texture,int attachment_n = 0, GLint level=0);
+	bool attachColorTextureMS(const std::shared_ptr<Texture>& texture, int attachment_n = 0);
 	bool attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level=0);
+	bool attachDepthTextureMS(const std::shared_ptr<Texture>& texture);
 
 	bool attachColorRbo(int attachment_n, int width, int height);
 	void detachColorRbo(int attachment_n = 0);
 	
+	void enable();
+	void disable();
 
-	void startRender();
-	void endRender();
+	void render(std::function<void()> func);
+	/*void startRender();
+	void endRender();*/
 	void setDepthTest(bool b) {
 		mbEnableDepthTest = b;
 	}
@@ -68,16 +76,17 @@ public:
 		mbClearColor = b;
 	}
 	void setClearColorValue(float r, float g, float b, float a);
+	void setBlend(bool b);
+	void setBlendValue(int sFactorRgb, int dFactorRgb, int sFactorAlpha, int dFactorAlpha, int modelRgb, int modelAlpha);
 	bool checkFrameBuffer();
 	static bool blitFbo(const Fbo& src,const Rect<int>& srcRect, const Fbo& dst, const Rect<int>& dstRect);
 	static bool blitFbo(const Fbo& src, const Fbo& dst);
 private:
 	void deleteFbo();
-	void enable();
-	void disable();
+	
 	GLuint mFboId{ 0 };
 	GLint mPreFrameBuffer{ 0 };
-	float mPreClearColor[4]{ 0.0f,0.0f,0.0f,0.0f };
+	
 	GLboolean mPrebDepthTest{ false };
 	int mWidth{ 0 }; //render to tex ,tex width
 	int mHeight{ 0 };//render to tex ,tex height
@@ -85,6 +94,13 @@ private:
 	bool mbClearColor{ true };
 	float mClearColor[4]{0.0f,0.0f,0.0f,0.0f};
 	GLuint mRbo{ 0 };
+	GLboolean mbEnableBlend{ 0 };
+	int msFactorRgb{ GL_ONE };
+	int mdFactorRgb{ GL_ONE };
+	int msFactorAlpha{ GL_ONE };
+	int mdFactorAlpha{ GL_ONE };
+	int mModelRgb;
+	int	mModelAlpha;
 };
 
 #endif /* GRAPHICSFBO_H_ */

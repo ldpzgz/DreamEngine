@@ -3,8 +3,12 @@
 #include<string>
 #include <map>
 #include <GLES3/gl3.h>
+#include <GLES3/gl31.h>
+#include <GLES3/gl32.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <GLES3/gl31.h>
+#include <GLES3/gl32.h>
 
 class Texture
 {
@@ -18,8 +22,11 @@ public:
 	{
 		return mTextureId;
 	}
-	
-
+	int getTexTarget() {
+		return mTarget;
+	}
+	//创建一个多重采样纹理，用于添加到fbo，
+	bool loadMS(int width, int height, int samples=4, unsigned int internalformat= GL_RGBA8);
 	//format:GL_RGB,GL_RGBA,GL_DEPTH_COMPONENT
 	//type:GL_UNSIGNED_BYTE,GL_UNSIGNED_SHORT,GL_UNSIGNED_SHORT_5_6_5
 	bool load(int width,int height,unsigned char* pdata,GLint format=GL_RGB,GLenum type=GL_UNSIGNED_BYTE, int aligment = 4,bool autoMipmap=false);
@@ -46,11 +53,13 @@ public:
 protected:
 	//unsigned char* loadImage(const char* mPath);
 
-	GLuint mTextureId;
-	int32_t mWidth;
-	int32_t mHeight;
-	GLint mFormat;
-	int mTarget;//GL_TEXTIURE2D,TEXTURE_CUBE_MAP_POSITIVE_X...
+	GLuint mTextureId{ 0 };
+	int32_t mWidth{ 0 };
+	int32_t mHeight{ 0 };
+	GLint mInternalFormat{ GL_RGB };
+	GLint mFormat{ GL_RGB };
+	int mNumOfSamples{ 0 };
+	int mTarget{ GL_TEXTURE_2D };//GL_TEXTIURE2D,TEXTURE_CUBE_MAP_POSITIVE_X...
 };
 
 //class GraphicsImage

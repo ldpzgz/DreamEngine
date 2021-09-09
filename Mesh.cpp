@@ -185,6 +185,21 @@ void Mesh::loadMesh()
 		GLuint indexes[] = { 0,1,2,0,2,3 };
 		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes));
 	}
+	else if (mMeshType == MeshType::MESH_DIY) {
+		GLfloat pos[] = { 
+			-1.0f,1.0f,0.0f,
+			-1.0f,-1.0f,0.0f,
+			1.0f,-1.0f,0.0f,
+			1.0f,1.0f,0.0f };
+		GLfloat color[] = {
+			0.5f,0.0f,0.0f,1.0f,
+			0.5f,0.0f,0.0f,1.0f,
+			0.5f,0.0f,0.0f,1.0f,
+			0.5f,0.0f,0.0f,1.0f,
+		};
+		GLuint indexes[] = { 0,1,2,3,1,2 };
+		createBufferObject(pos, sizeof(pos), indexes, sizeof(indexes),nullptr,0,nullptr,0,color,sizeof(color));
+	}
 	else if (mMeshType == MeshType::MESH_Rectangle_Tex)
 	{
 		GLfloat pos[] = { -1.0f,1.0f,0.0f,
@@ -468,6 +483,8 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc)
 			glEnableVertexAttribArray(posloc);
 			//indicate a vertexAttrib space 3*float,in mPosVbo
 			glVertexAttribPointer(posloc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+			//glVertexAttribDivisor(posloc, 1);//这个函数一调用，shader 里面posloc这个位置的顶点属性，就会变成uniform属性了，
+			//渲染一个instance，只取一个值出来，渲染下一个instance的时候再取下一个值出来。
 		}
 
 		if (texloc >= 0)
@@ -530,7 +547,8 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc)
 		|| mMeshType == MeshType::MESH_DIY
 		|| mMeshType == MeshType::MESH_Cuboid
 		|| mMeshType == MeshType::MESH_FONTS
-		|| mMeshType == MeshType::MESH_Rect)
+		|| mMeshType == MeshType::MESH_Rect
+		|| mMeshType == MeshType::MESH_DIY)
 	{
 		drawTriangles(posloc, texloc, norloc,colorloc);
 	}

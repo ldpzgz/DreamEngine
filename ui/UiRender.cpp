@@ -158,12 +158,12 @@ void FontInfo::saveToFile() {
 	if (!fontsMap.empty()) {
 		Fbo fbo;
 		fbo.attachColorTexture(pCharTexture, 0);
-		fbo.startRender();
+		fbo.enable();
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		std::vector<unsigned char> imageData;
 		imageData.resize(textureWidth*curTextureHeight);
 			glReadPixels(0, 0, textureWidth, curTextureHeight, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)imageData.data());
-		fbo.endRender();
+		fbo.disable();
 
 		ofstream out(savePath, ios::out | ios::binary);
 		size_t countOfChar = fontsMap.size();
@@ -258,7 +258,7 @@ unique_ptr<UiRender> UiRender::gInstance = make_unique<UiRender>();
 
 void UiRender::initUiRender() {
 	initTextView(gSavedFontFile, gFontFile, gFontMaterialName);
-	mpLastMaterial = Material::getMaterial("posTexture");
+	mpLastMaterial = Material::getMaterial("posTextureMS");
 	mpLastMesh = make_shared<Mesh>(MeshType::MESH_FONTS);
 	if (mpLastMesh) {
 		mpLastMesh->loadMesh();

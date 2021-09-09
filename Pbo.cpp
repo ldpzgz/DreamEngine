@@ -1,5 +1,7 @@
 #include "Pbo.h"
 #include <GLES3/gl3.h>
+#include <GLES3/gl31.h>
+#include <GLES3/gl32.h>
 #include "Log.h"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/imgproc/types_c.h"

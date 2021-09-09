@@ -8,6 +8,8 @@
 #ifndef GRAPHICSSHADER_H_
 #define GRAPHICSSHADER_H_
 #include <GLES3/gl3.h>
+#include <GLES3/gl31.h>
+#include <GLES3/gl32.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <iostream>

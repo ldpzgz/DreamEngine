@@ -9,7 +9,7 @@
 #include "Fbo.h"
 #include "Log.h"
 
-
+extern void checkglerror();
 Fbo::Fbo():
 	mWidth(0),
 	mHeight(0)
@@ -34,9 +34,18 @@ void Fbo::enable()
 		glGenFramebuffers(1,&mFboId);
 	}
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &mPreFrameBuffer);
-	glGetFloatv(GL_COLOR_CLEAR_VALUE, mPreClearColor);
-	glGetBooleanv(GL_DEPTH_TEST, &mPrebDepthTest);
 	glBindFramebuffer(GL_FRAMEBUFFER,mFboId);
+}
+
+void Fbo::detachColorTextureMS(int attachment_n) {
+	enable();
+	glFramebufferTexture2D(
+		GL_FRAMEBUFFER,
+		GL_COLOR_ATTACHMENT0 + attachment_n,
+		GL_TEXTURE_2D_MULTISAMPLE,
+		0,
+		0);
+	disable();
 }
 
 void Fbo::detachColorTexture(int attachment_n, GLint level) {
@@ -50,6 +59,17 @@ void Fbo::detachColorTexture(int attachment_n, GLint level) {
 	disable();
 }
 
+void Fbo::detachDepthTextureMS() {
+	enable();
+	glFramebufferTexture2D(
+		GL_FRAMEBUFFER,
+		GL_DEPTH_ATTACHMENT,
+		GL_TEXTURE_2D_MULTISAMPLE,
+		0,
+		0);
+	disable();
+}
+
 void Fbo::detachDepthTexture(GLint level) {
 	enable();
 	glFramebufferTexture2D(
@@ -60,7 +80,7 @@ void Fbo::detachDepthTexture(GLint level) {
 		level);
 	disable();
 }
-extern void checkglerror();
+
 bool Fbo::attachColorRbo(int attachment_n, int width, int height) {
 	if (mRbo == 0 || mWidth != width || mHeight != height) {
 		if (mRbo != 0) {
@@ -135,6 +155,33 @@ bool Fbo::checkFrameBuffer() {
 	return ret;
 }
 
+bool Fbo::attachColorTextureMS(const std::shared_ptr<Texture>& texture, int attachment_n) {
+	bool ret = false;
+	if (!texture)
+	{
+		LOGE("ERROR Fbo::attachColorTextureMS texture == nullptr");
+		return false;
+	}
+	else if(texture->getTexTarget() != GL_TEXTURE_2D_MULTISAMPLE){
+		LOGE("ERROR Fbo::attachColorTextureMS textureTarget is not GL_TEXTURE_2D_MULTISAMPLE");
+		return false;
+	}
+	enable();
+
+	mWidth = texture->getWidth();
+	mHeight = texture->getHeight();
+	glFramebufferTexture2D(
+		GL_FRAMEBUFFER,
+		GL_COLOR_ATTACHMENT0 + attachment_n,
+		GL_TEXTURE_2D_MULTISAMPLE,
+		texture->getId(),
+		0);
+
+	ret = checkFrameBuffer();
+	disable();
+	return ret;
+}
+
 bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attachment_n, GLint level)
 {
 	bool ret = false;
@@ -143,19 +190,7 @@ bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attach
 		LOGD("Fbo::attachColorTexture texture == nullptr");
 		return false;
 	}
-
 	enable();
-
-	/*if(mbIsAttach)
-	{
-		glFramebufferTexture2D(
-			GL_FRAMEBUFFER,
-			GL_COLOR_ATTACHMENT0 + attachment_n,
-			GL_TEXTURE_2D,
-			0,
-			level);
-		mbIsAttach = false;
-	}*/
 
 	mWidth = texture->getWidth();
 	mHeight = texture->getHeight();
@@ -167,11 +202,28 @@ bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attach
 			level);
 
 	ret = checkFrameBuffer();
-
-	GLint sampleBuf = 0;
-	glGetIntegerv(GL_SAMPLE_BUFFERS, &sampleBuf);
 	disable();
 	return ret;
+}
+
+bool Fbo::attachDepthTextureMS(const std::shared_ptr<Texture>& texture) {
+	if (!texture)
+	{
+		LOGE("ERROR Fbo::attachDepthTexture texture == 0");
+		return false;
+	} 
+	else if(texture->getTexTarget() != GL_TEXTURE_2D_MULTISAMPLE){
+		
+		LOGE("ERROR Fbo::attachDepthTextureMS textureTarget is not GL_TEXTURE_2D_MULTISAMPLE");
+		return false;
+	}
+	glFramebufferTexture2D(
+		GL_FRAMEBUFFER,
+		GL_DEPTH_ATTACHMENT,
+		GL_TEXTURE_2D_MULTISAMPLE,
+		texture->getId(),
+		0);
+	return checkFrameBuffer();
 }
 
 bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level)
@@ -193,13 +245,6 @@ bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level
 void Fbo::disable()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, mPreFrameBuffer);
-	glClearColor(mPreClearColor[0], mPreClearColor[1], mPreClearColor[2], mPreClearColor[3]);
-	if (mPrebDepthTest) {
-		glEnable(GL_DEPTH_TEST);
-	}
-	else {
-		glDisable(GL_DEPTH_TEST);
-	}
 }
 
 void Fbo::deleteFbo()
@@ -211,9 +256,31 @@ void Fbo::deleteFbo()
 	}
 }
 
-void Fbo::startRender()
-{
+void Fbo::render(std::function<void()> func) {
+	float preClearColor[4]{ 0.0f,0.0f,0.0f,0.0f };
+	GLboolean bpreDepthTest;
+	GLboolean bpreBlend;
+	int presFactorRgb = GL_ONE;
+	int predFactorRgb = GL_ONE;
+	int presFactorAlpha = GL_ONE;
+	int predFactorAlpha = GL_ONE;
+	int premodelRgb, premodelAlpha;
+	int preViewport[4];
+	glGetIntegerv(GL_VIEWPORT, preViewport);
+	glGetFloatv(GL_COLOR_CLEAR_VALUE, preClearColor);
+	glGetBooleanv(GL_DEPTH_TEST, &bpreDepthTest);
+	if (mbEnableBlend) {
+		glGetBooleanv(GL_BLEND, &bpreBlend);
+		glGetIntegerv(GL_BLEND_SRC_RGB, &presFactorRgb);
+		glGetIntegerv(GL_BLEND_DST_RGB, &predFactorRgb);
+		glGetIntegerv(GL_BLEND_SRC_ALPHA, &presFactorAlpha);
+		glGetIntegerv(GL_BLEND_DST_ALPHA, &predFactorAlpha);
+		glGetIntegerv(GL_BLEND_EQUATION_RGB, &premodelRgb);
+		glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &premodelAlpha);
+	}
+
 	enable();
+
 	glViewport(0, 0, mWidth, mHeight);
 	glClearColor(mClearColor[0], mClearColor[1], mClearColor[2], mClearColor[3]);
 	if (mbEnableDepthTest) {
@@ -224,14 +291,75 @@ void Fbo::startRender()
 	else {
 		glDisable(GL_DEPTH_TEST);
 	}
+
 	if (mbClearColor) {
 		glClear(GL_COLOR_BUFFER_BIT);//GL_DEPTH_BUFFER_BIT
 	}
-}
-void Fbo::endRender()
-{
+
+	if (mbEnableBlend) {
+		glEnable(GL_BLEND);
+		glBlendFuncSeparate(msFactorRgb, mdFactorRgb, msFactorAlpha, mdFactorAlpha);
+		glBlendEquationSeparate(mModelRgb, mModelAlpha);
+	}
+
+	if (func) {
+		func();
+	}
+
 	disable();
+	//恢复之前的状态
+	glViewport(preViewport[0], preViewport[1], preViewport[2], preViewport[3]);
+	glClearColor(preClearColor[0], preClearColor[1], preClearColor[2], preClearColor[3]);
+	if (bpreDepthTest) {
+		glEnable(GL_DEPTH_TEST);
+	}
+	else {
+		glDisable(GL_DEPTH_TEST);
+	}
+
+	if (mbEnableBlend) {
+		if (bpreBlend) {
+			glEnable(GL_BLEND);
+		}
+		else {
+			glDisable(GL_BLEND);
+		}
+		glBlendFuncSeparate(presFactorRgb, predFactorRgb, presFactorAlpha, predFactorAlpha);
+		glBlendEquationSeparate(premodelRgb, premodelAlpha);
+	}
 }
+
+//void Fbo::startRender()
+//{
+//	glGetFloatv(GL_COLOR_CLEAR_VALUE, mPreClearColor);
+//	glGetBooleanv(GL_DEPTH_TEST, &mPrebDepthTest);
+//	enable();
+//	glViewport(0, 0, mWidth, mHeight);
+//	glClearColor(mClearColor[0], mClearColor[1], mClearColor[2], mClearColor[3]);
+//	if (mbEnableDepthTest) {
+//		glEnable(GL_DEPTH_TEST);
+//		glClearDepthf(0.0f);
+//		glClear(GL_DEPTH_BUFFER_BIT);
+//	}
+//	else {
+//		glDisable(GL_DEPTH_TEST);
+//	}
+//
+//	if (mbClearColor) {
+//		glClear(GL_COLOR_BUFFER_BIT);//GL_DEPTH_BUFFER_BIT
+//	}
+//}
+//void Fbo::endRender()
+//{
+//	disable();
+//	glClearColor(mPreClearColor[0], mPreClearColor[1], mPreClearColor[2], mPreClearColor[3]);
+//	if (mPrebDepthTest) {
+//		glEnable(GL_DEPTH_TEST);
+//	}
+//	else {
+//		glDisable(GL_DEPTH_TEST);
+//	}
+//}
 
 void Fbo::setClearColorValue(float r, float g, float b, float a)
 {
@@ -240,6 +368,20 @@ void Fbo::setClearColorValue(float r, float g, float b, float a)
 	mClearColor[2] = b;
 	mClearColor[3] = a;
 }
+
+void Fbo::setBlend(bool b) {
+	mbEnableBlend = b;
+}
+void Fbo::setBlendValue(int sFactorRgb, int dFactorRgb, int sFactorAlpha, int dFactorAlpha, int modelRgb, int modelAlpha)
+{
+	msFactorRgb = sFactorRgb;
+	mdFactorRgb = dFactorRgb;
+	msFactorAlpha = sFactorAlpha;
+	mdFactorAlpha = dFactorAlpha;
+	mModelRgb = modelRgb;
+	mModelAlpha = modelAlpha;
+}
+
 extern void checkglerror();
 bool Fbo::blitFbo(const Fbo& src, const Rect<int>& srcRect, 
 	const Fbo& dst, const Rect<int>& dstRect) {
