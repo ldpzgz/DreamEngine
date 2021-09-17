@@ -3,19 +3,15 @@
 #include "Mesh.h"
 #include "Rect.h"
 /*
-¿ÉÌî³äµÄ¾ØĞÎmesh£¬ÄÚ²¿Éú³ÉÁËÎÆÀí×ø±ê
-¿ÉÒÔ»æÖÆÎªÌî³äµÄ£¬»òÕßÊÇÏßÈ¦
+å¯å¡«å……çš„çŸ©å½¢meshï¼Œå†…éƒ¨ç”Ÿæˆäº†çº¹ç†åæ ‡
+å¯ä»¥ç»˜åˆ¶ä¸ºå¡«å……çš„ï¼Œæˆ–è€…æ˜¯çº¿åœˆ
 */
 class MeshFilledRect : public Mesh {
 public:
 	MeshFilledRect();
 
 	~MeshFilledRect();
-	/*
-	¹¦ÄÜ	´´½¨Ò»¸ö±»[0,0,width,height]ºĞ×Ó°üÎ§µÄÍÖÔ²
-	centerX	Ô²µÄÖĞĞÄµãxµÄ×ø±ê
-	centerY	Ô²µÄÖĞĞÄµãyµÄ×ø±ê
-	*/
+	
 	virtual void loadMesh(float rightTopRadius, float leftTopRadius, float leftDownRadius,
 		float rightDownRadius, float centerX, float centerY, float width, float height) {
 
@@ -26,7 +22,7 @@ public:
 	}
 	virtual void loadMesh(float width, float height, float centerX, float centerY);
 	void setColorData(float angle, const Color& startColor, const Color& endColor, const Color& centerColor);
-	//ÉèÖÃÎªÒ»¸öÌî³äµÄÔ²»¹ÊÇÒ»¸öÔ²È¦
+	//è®¾ç½®ä¸ºä¸€ä¸ªå¡«å……çš„åœ†è¿˜æ˜¯ä¸€ä¸ªåœ†åœˆ
 	void setFilled(bool b) {
 		mbFilled = b;
 	}

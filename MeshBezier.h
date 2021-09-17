@@ -1,17 +1,19 @@
 #ifndef _MESH_BEZIER_H_
 #define _MESH_BEZIER_H_
 #include "Mesh.h"
+#include "Rect.h"
 /*
-n¸ö¿ØÖÆµã[P1,P2,....Pn]£¬Í¨¹ı¿ØÖÆµãÉú³ÉÒ»¶ÎÇúÏß£¬ÇúÏß»á¾­¹ıP1,Pn,±Æ½üP2,P3...Pn-1¡£
-¶¥µãÔ½¶à£¬½×ÊıÔ½¸ß
+nä¸ªæ§åˆ¶ç‚¹[P1,P2,....Pn]ï¼Œé€šè¿‡æ§åˆ¶ç‚¹ç”Ÿæˆä¸€æ®µæ›²çº¿ï¼Œæ›²çº¿ä¼šç»è¿‡P1,Pn,é€¼è¿‘P2,P3...Pn-1ã€‚
+é¡¶ç‚¹è¶Šå¤šï¼Œé˜¶æ•°è¶Šé«˜
 */
 class MeshBezier : public Mesh {
 public:
 	MeshBezier();
 	~MeshBezier();
 	
-	//Éú³Én¶ÎhermiterÇúÏß£¬4¸öµãÉú³ÉÒ»¶ÎÇúÏß¡£
-	void loadMesh(const std::vector<float>& p) override;
+	void loadMesh(const std::vector<Vec3>& p,int num) override;
+
+	static void getBezierPoints(const std::vector<Vec3>& p, int num, std::vector<Vec3>& result);
 protected:
 	void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1) override;
 };

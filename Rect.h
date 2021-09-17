@@ -124,6 +124,10 @@ struct Vector3 {
 		return *this;
 	}
 
+	T distance(const Vector3<T>& other) const{
+		return sqrt(pow(x - other.x, 2) + pow(y - other.y, 2) + pow(z - other.z, 2));
+	}
+
 	template<typename T>
 	friend Vector3<T> operator+(const Vector3<T>& A, const Vector3<T>& B);
 
@@ -200,6 +204,10 @@ struct Vector2 {
 		x -= other.x;
 		y -= other.y;
 		return *this;
+	}
+
+	T distance(const Vector2<T>& other) const{
+		return sqrt(pow(x - other.x, 2) + pow(y - other.y, 2));
 	}
 
 	template<typename T>
@@ -287,6 +295,10 @@ struct Vector4 {
 		return *this;
 	}
 
+	T distance(const Vector4<T>& other) const{
+		return sqrt(pow(x - other.x, 2) + pow(y - other.y, 2) + pow(z - other.z, 2) + pow(w - other.w, 2));
+	}
+
 	template<typename T>
 	friend Vector4<T> operator+(const Vector4<T>& A, const Vector4<T>& B);
 
@@ -318,6 +330,7 @@ Vector4<T> operator*(T a,const Vector4<T>& v) {
 }
 
 using Vec3 = Vector3<float>;
+using Vec3ui = Vector3<unsigned int>;
 using Vec4 = Vector4<float>;
 using Vec2 = Vector2<float>;
 

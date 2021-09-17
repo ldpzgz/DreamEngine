@@ -1,13 +1,14 @@
-#ifndef _TEXTUREUTILS_H_
-#define _TEXTUREUTILS_H_
+#ifndef _UTILS_H_
+#define _UTILS_H_
 
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <memory>
 #include <chrono>
 #include <iostream>
-#include<iomanip>
-#include<ctime>
+#include <iomanip>
+#include <ctime>
+#include "Log.h"
 #ifndef Texture
 class Texture;
 #endif
@@ -35,13 +36,12 @@ public:
 	返回值：如果超过了deltaCount，返回<true,本次与上次的时间间隔>,否则<false,本次与上次的时间间隔>
 	*/
 	std::pair<bool,int64_t> elapse(int deltaCount) {
-		if (!mbInit) {
-			mPreTime = time_point_cast<T>(std::chrono::high_resolution_clock::now());
-			mbInit = true;
+		if (!mbStart) {
+			start();
 			return std::make_pair<bool, int64_t>(false,0ll);
 		}
 		else {
-			auto curTime = time_point_cast<T>(std::chrono::high_resolution_clock::now());
+			auto curTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
 			auto count = (curTime - mPreTime).count();
 			if (count >= deltaCount) {
 				mPreTime = curTime;
@@ -52,22 +52,57 @@ public:
 			}
 		}
 	}
-
-	int64_t elapseFromReset() {
-		auto curTime = time_point_cast<T>(std::chrono::high_resolution_clock::now());
-		auto count = (curTime - mPreTime).count();
-		return count;
+	//自start以来，过了多少时间，如果还没有调用过start，返回0
+	int64_t elapse() {
+		if (mbStart) {
+			if (mbPause) {
+				return mElapseWhenPause;
+			}
+			else {
+				auto curTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+				auto count = (curTime - mPreTime).count();
+				return count;
+			}
+		}
+		else {
+			LOGD("warning the timercount is not start");
+			return 0;
+		}
 	}
 
-	void reset() {
-		mPreTime = time_point_cast<T>(std::chrono::high_resolution_clock::now());
-		mbInit = true;
+	void start() {
+		mPreTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+		mbStart = true;
+	}
+
+	void stop() {
+		mbStart = false;
+	}
+
+	void pause() {
+		if (mbStart) {
+			auto curTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+			mElapseWhenPause = (curTime - mPreTime).count();
+			mbPause = true;
+		}
+	}
+
+	void resume() {
+		if (mbPause) {
+			mPreTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+			mPreTime -= T(mElapseWhenPause);
+			mbPause = false;
+		}
 	}
 private:
 	TimePoint mPreTime;
-	bool mbInit{ false };
+	int64_t mElapseWhenPause{ 0 };
+	bool mbStart{ false };
+	bool mbPause{ false };
 };
 
+using TimeCounterMil = TimeCounter<std::chrono::milliseconds>;
+using TimeCounterMic = TimeCounter<std::chrono::microseconds>;
 
 namespace UtfConvert
 {

@@ -136,8 +136,7 @@ void MeshFilledRect::loadMesh(float width, float height, float centerX, float ce
 	mCenterY = centerY;
 	mWidth = width;
 	mHeight = height;
-	mCounts = 6;
-	mPoints.reserve(mCounts);
+	int numOfVertex = 6;
 	float tex[2 * 6];
 	tex[0] = mCenterX / mWidth;
 	tex[1] = mCenterY / mHeight;
@@ -162,8 +161,10 @@ void MeshFilledRect::loadMesh(float width, float height, float centerX, float ce
 	tex[10] = 1.0f;
 	tex[11] = 1.0f;
 	mPoints.emplace_back(mWidth, mHeight, 0.0f);
-		
-	bool b = createBufferObject((float*)mPoints.data(), mCounts * 3 * sizeof(GLfloat),nullptr,0,tex,sizeof(GLfloat)*mCounts*2);
+	bool b = createBufferObject((float*)mPoints.data(), numOfVertex *sizeof(Vec3), 
+		numOfVertex,
+		nullptr,0,
+		tex,sizeof(tex));
 	if (!b)
 	{
 		LOGD("error to load MeshFilledRect data\n");
@@ -172,7 +173,7 @@ void MeshFilledRect::loadMesh(float width, float height, float centerX, float ce
 
 void MeshFilledRect::draw(int posloc, int texloc, int norloc, int colorloc) {
 	if (mbFilled) {
-		drawTrangleFan(posloc, texloc, norloc, colorloc);
+		drawTriangleFan(posloc, texloc, norloc, colorloc);
 	}
 	else {
 		drawLineStrip(posloc);
@@ -186,7 +187,9 @@ void MeshFilledRect::drawLineStrip(int posloc) {
 			glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
 			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
 			glEnableVertexAttribArray(posloc);
-			glVertexAttribPointer(posloc, 3, GL_FLOAT, GL_FALSE, 0,(void*)(3*sizeof(GLfloat)));
+			assert(mCountOfVertex != 0);
+			int componentOfPos = mPosByteSize / (sizeof(GLfloat) * mCountOfVertex);
+			glVertexAttribPointer(posloc, componentOfPos, GL_FLOAT, GL_FALSE, 0,(void*)(3*sizeof(GLfloat)));
 		}
 		else {
 
@@ -196,6 +199,6 @@ void MeshFilledRect::drawLineStrip(int posloc) {
 
 	glBindVertexArray(mVAO);
 	glLineWidth(mLineWidth);
-	glDrawArrays(GL_LINE_STRIP, 0, mCounts-1);
+	glDrawArrays(GL_LINE_STRIP, 1, mCountOfVertex-1);
 	glBindVertexArray(0);
 }

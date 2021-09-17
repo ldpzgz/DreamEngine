@@ -2,8 +2,8 @@
 #define _MESH_CIRCLE_H_
 #include "MeshFilledRect.h"
 /*
-ÍÖÔ²mesh£¬ÄÚ²¿Éú³ÉÁËÎÆÀí×ø±ê£¬²»¹ıÎÆÀí×ø±êÊÇ°´Ô²À´Éú³ÉµÄ£¬Èç¹ûÊÇÍÖÔ²£¬ÏÔÊ¾´¦ÀíµÄÍ¼Æ¬»á±äĞÎ
-¿ÉÒÔ»æÖÆÎªÌî³äµÄ£¬»òÕßÊÇÏßÈ¦
+æ¤­åœ†meshï¼Œå†…éƒ¨ç”Ÿæˆäº†çº¹ç†åæ ‡ï¼Œä¸è¿‡çº¹ç†åæ ‡æ˜¯æŒ‰åœ†æ¥ç”Ÿæˆçš„ï¼Œå¦‚æœæ˜¯æ¤­åœ†ï¼Œæ˜¾ç¤ºå¤„ç†çš„å›¾ç‰‡ä¼šå˜å½¢
+å¯ä»¥ç»˜åˆ¶ä¸ºå¡«å……çš„ï¼Œæˆ–è€…æ˜¯çº¿åœˆ
 */
 class MeshCircle : public MeshFilledRect {
 public:
@@ -11,9 +11,9 @@ public:
 
 	~MeshCircle();
 	/*
-	¹¦ÄÜ	´´½¨Ò»¸ö±»[0,0,width,height]ºĞ×Ó°üÎ§µÄÍÖÔ²
-	centerX	Ô²µÄÖĞĞÄµãxµÄ×ø±ê
-	centerY	Ô²µÄÖĞĞÄµãyµÄ×ø±ê
+	åŠŸèƒ½	åˆ›å»ºä¸€ä¸ªè¢«[0,0,width,height]ç›’å­åŒ…å›´çš„æ¤­åœ†
+	centerX	åœ†çš„ä¸­å¿ƒç‚¹xçš„åæ ‡
+	centerY	åœ†çš„ä¸­å¿ƒç‚¹yçš„åæ ‡
 	*/
 	void loadMesh(float width, float height, float centerX, float centerY) override;
 protected:

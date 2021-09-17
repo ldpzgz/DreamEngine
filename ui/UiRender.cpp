@@ -13,83 +13,85 @@ static const string gFontTextureName("fontsTexture");
 static const string gFontFile("./opengles3/material/simfang.ttf");
 static const string gSavedFontFile("./opengles3/material/myfont.data");
 static const string gFontMaterialName("font");
-FT_Library  FontInfo::glibrary;
-FT_Face     FontInfo::gface;      /* handle to face object */
-bool FontInfo::gIsFreetypeInit = false;
 
-FontInfo::FontInfo(const shared_ptr<Texture>& pTex, const shared_ptr<Material>& pMaterial, const string& savePath_, const string& ttfPath, int charSize_) :
-	pCharTexture(pTex),
-	mpMaterial(pMaterial),
-	savePath(savePath_),
-	curTextureHeight(0),
-	charSize(charSize_)
+FontManager::FontManager()
 {
-	initFreetype(ttfPath);
+}
+
+bool FontManager::initFontManager(const shared_ptr<Texture>& pTex, const shared_ptr<Material>& pMaterial, const string& savePath_, const string& ttfPath, int charSize_) {
+	if (!pTex || !pMaterial) {
+		LOGE("ERROR to initFontManager the texture or material is null");
+		return false;
+	}
+	mpCharTexture = pTex;
+	mpMaterial = pMaterial;
+	mSavePath = savePath_;
+	mCharSize = charSize_;
+	
 	if (pTex) {
-		textureWidth = pTex->getWidth();
-		textureHeight = pTex->getHeight();
+		mTextureWidth = pTex->getWidth();
+		mTextureHeight = pTex->getHeight();
 	}
-}
 
-FontInfo::~FontInfo()
-{
-	releaseFreetype();
-}
-
-bool FontInfo::initFreetype(const string& ttfPath) {
-	int error = 0;
-	if (!gIsFreetypeInit)
-	{
-
-		error = FT_Init_FreeType(&glibrary);
-		if (error)
-		{
-			LOGE("error to init freetype\n");
-			return false;
-		}
-
-		error = FT_New_Face(glibrary,
-			ttfPath.c_str(),
-			0,
-			&gface);
-		if (error == FT_Err_Unknown_File_Format)
-		{
-			LOGE("error to FT_New_Face FT_Err_Unknown_File_Format \n");
-			FT_Done_FreeType(glibrary);
-			return false;
-		}
-		else if (error)
-		{
-			LOGE("error to FT_New_Face other \n");
-			FT_Done_FreeType(glibrary);
-			return false;
-		}
-
-		error = FT_Select_Charmap(gface, FT_ENCODING_UNICODE);
-		if (error)
-		{
-			LOGE("error to FT_Select_Charmap \n");
-			return false;
-		}
+	mpCharMesh = make_shared<Mesh>(MeshType::MESH_Rectangle);
+	if (mpCharMesh) {
+		mpCharMesh->loadMesh();
+		mpCharMesh->setMaterial(pMaterial);
 	}
-	gIsFreetypeInit = true;
+
+	mpTextGpuRender = make_shared<TextGpuRender>();
+	if (mpTextGpuRender) {
+		mpTextGpuRender->init();
+		mpTextGpuRender->setRenderTexture(pTex);
+	}
+
+	ifstream inFile(mSavePath, ios::in);
+	if (inFile.is_open()) {
+		//把字符信息取出来
+		int countOfChar = 0;
+		inFile >> countOfChar >> mTextureWidth >> mTextureHeight >> mCurTextureWidth >> mCurTextureHeight;
+		if (mTextureWidth != mpCharTexture->getWidth() || mTextureHeight != mpCharTexture->getHeight()) {
+			LOGE("charTexture widht or height is not equal width the one defined in fonts Material file ");
+			return false;
+		}
+		for (int i = 0; i < countOfChar; ++i) {
+			CharInfo info;
+			UnicodeType code;
+			inFile.read((char*)&code, sizeof(UnicodeType));
+			inFile >> info.x >> info.y >> info.left >> info.top >> info.width >> info.width >> info.advX >> info.advX;
+
+			mFontsMap.insert(make_pair(code, info));
+		}
+
+		//将文件中保存的渲染好的部分字符的图像读取出来
+		int imageSize = mTextureWidth * mCurTextureHeight;
+		std::vector<char> imageData(imageSize,0);
+		inFile.read(imageData.data(), imageSize);
+		//更新纹理，把已经渲染好的字符图像上传到纹理上去
+		mpCharTexture->update(0, 0, mTextureHeight, mCurTextureHeight, imageData.data());
+		inFile.close();
+	}
 	return true;
 }
 
-shared_ptr<FontInfo> FontInfo::loadFromFile(const string& savePath, const string& ttfPath, const string& materialName) {
+FontManager::~FontManager()
+{
+}
+
+shared_ptr<FontManager> FontManager::loadFromFile(const string& savePath, const string& ttfPath, const string& materialName) {
 
 	auto& pMaterial = Material::getMaterial(materialName);
 
 	if (!pMaterial) {
 		LOGE("error to parse font material");
-		return shared_ptr<FontInfo>();
+		return shared_ptr<FontManager>();
 	}
 
 	auto& pTex = Material::getTexture(gFontTextureName);
 	if (!pTex) {
 		LOGE("font texture %s not found in material %s",gFontTextureName.c_str(), materialName.c_str());
 		pMaterial.reset();
-		return shared_ptr<FontInfo>();
+		return shared_ptr<FontManager>();
 	}
 
 	auto charSize = pMaterial->getKeyAsInt(CharSizeKey);
@@ -97,78 +99,29 @@ shared_ptr<FontInfo> FontInfo::loadFromFile(const string& savePath, const string
 	if (charSize < 0) {
 		LOGE("not found charSize key in material %s", materialName.c_str());
 		pMaterial.reset();
-		return shared_ptr<FontInfo>();
+		return shared_ptr<FontManager>();
 	}
 
-	shared_ptr<FontInfo> fontInfo = make_shared<FontInfo>(pTex, pMaterial,savePath, ttfPath, charSize);
-
-	fontInfo->mpCharMesh = make_shared<Mesh>(MeshType::MESH_FONTS);
-	if (fontInfo->mpCharMesh) {
-		fontInfo->mpCharMesh->loadMesh();
-		fontInfo->mpCharMesh->setMaterial(pMaterial);
-	}
-
-	ifstream inFile(savePath, ios::in);
-	if (inFile.is_open()) {
-		//把字符信息取出来
-		int countOfChar = 0;
-		inFile >> countOfChar >> fontInfo->textureWidth >> fontInfo->textureHeight >> fontInfo->curTextureWidth >> fontInfo->curTextureHeight;
-		if (fontInfo->textureWidth != fontInfo->pCharTexture->getWidth() ||
-			fontInfo->textureHeight != fontInfo->pCharTexture->getHeight()) {
-			LOGE("charTexture widht or height is not equal width the one defined in fonts Material file %s", materialName.c_str());
-			fontInfo.reset();
-			return fontInfo;
-		}
-		for (int i = 0; i < countOfChar; ++i) {
-			CharInTexture info;
-			UnicodeType code;
-			inFile.read((char*)&code, sizeof(UnicodeType));
-			inFile >> info.x >> info.y >> info.left >> info.top >> info.width >> info.width >> info.advX >> info.advX;
-
-			fontInfo->fontsMap.insert(make_pair(code, info));
-		}
-		
-		//将文件中保存的渲染好的部分字符的图像读取出来
-		int imageSize = fontInfo->textureWidth*fontInfo->curTextureHeight;
-		std::vector<char> imageData;
-		imageData.resize(imageSize);
-		inFile.read(imageData.data(), imageSize);
-		//更新纹理，把已经渲染好的字符图像上传到纹理上去
-		fontInfo->pCharTexture->update(0, 0, fontInfo->textureHeight, fontInfo->curTextureHeight, imageData.data());
-		inFile.close();
-	}
-
+	shared_ptr<FontManager> fontInfo = make_shared<FontManager>();
+	fontInfo->initFontManager(pTex, pMaterial, savePath, ttfPath, charSize);
 	return fontInfo;
 }
 
-void FontInfo::getTextRenderInfo(const string& text, std::vector<CharRenderInfo>& renderInfoArray, const Rect<int>& rect){
-	
-}
-
-void FontInfo::releaseFreetype()
-{
-	if (gIsFreetypeInit)
-	{
-		FT_Done_Face(gface);
-		FT_Done_FreeType(glibrary);
-	}
-}
-
-void FontInfo::saveToFile() {
-	if (!fontsMap.empty()) {
+void FontManager::saveToFile() {
+	if (!mFontsMap.empty()) {
 		Fbo fbo;
-		fbo.attachColorTexture(pCharTexture, 0);
+		fbo.attachColorTexture(mpCharTexture, 0);
 		fbo.enable();
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		std::vector<unsigned char> imageData;
-		imageData.resize(textureWidth*curTextureHeight);
-			glReadPixels(0, 0, textureWidth, curTextureHeight, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)imageData.data());
+		imageData.resize((size_t)mTextureWidth * (size_t)mCurTextureHeight);
+			glReadPixels(0, 0, mTextureWidth, mCurTextureHeight, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)imageData.data());
 		fbo.disable();
 
-		ofstream out(savePath, ios::out | ios::binary);
-		size_t countOfChar = fontsMap.size();
-		out << countOfChar << textureWidth << textureHeight << curTextureWidth << curTextureHeight;
-		for (const auto& info : fontsMap) {
+		ofstream out(mSavePath, ios::out | ios::binary);
+		size_t countOfChar = mFontsMap.size();
+		out << countOfChar << mTextureWidth << mTextureHeight << mCurTextureWidth << mCurTextureHeight;
+		for (const auto& info : mFontsMap) {
 			out.write((const char*)&info.first, sizeof(UnicodeType));
 			out << info.second.x << info.second.y << info.second.left << info.second.top << info.second.width << info.second.width << info.second.advX << info.second.advX;
 		}
@@ -176,80 +129,144 @@ void FontInfo::saveToFile() {
 	}	
 }
 
-const CharInTexture& FontInfo::getCharInTexture(UnicodeType code) {
-	auto it = fontsMap.find(code);
-	if (it != fontsMap.end()) {
+//const CharInfo& FontManager::getCharIntexture2(UnicodeType code)
+//{
+//	auto it = mFontsMap.find(code);
+//	if (it != mFontsMap.end()) {
+//		return it->second;
+//	}
+//	else {
+//		int error = 0;
+//		error = FT_Set_Pixel_Sizes(gface, mCharSize, mCharSize);
+//		if (error)
+//		{
+//			LOGE("error to FT_Set_Pixel_Sizes \n");
+//			throw error;
+//		}
+//		FT_Select_Charmap(gface, FT_ENCODING_UNICODE);
+//		auto glyphIndex = FT_Get_Char_Index(gface, code);
+//		error = FT_Load_Glyph(gface, glyphIndex, FT_LOAD_DEFAULT);
+//		if (gface->glyph->format == FT_GLYPH_FORMAT_OUTLINE) {
+//			FT_Outline* pOutline = &gface->glyph->outline;
+//			FT_Outline_Funcs callbacks;
+//
+//			callbacks.move_to = TextGpuRender::moveTo;
+//			callbacks.line_to = TextGpuRender::lineTo;
+//			callbacks.conic_to = TextGpuRender::conicTo;
+//			callbacks.cubic_to = TextGpuRender::cubicTo;
+//			callbacks.shift = 0;
+//			callbacks.delta = 0;
+//			printf("ExtractOutline \n");
+//			FT_Error error = FT_Outline_Decompose(pOutline, &callbacks, pOutline);
+//			if (error) {
+//				printf("Couldn't extract the outline: FT_Outline_Decompose() failed");
+//			}
+//		}
+//		else {
+//			error = FT_Render_Glyph(gface->glyph, FT_RENDER_MODE_NORMAL);
+//			if (error)
+//			{
+//				LOGE("error to FT_Load_Char \n");
+//				throw error;
+//			}
+//			//FT_BBox bbox;
+//			//FT_Glyph glyph;
+//			//FT_Get_Glyph(gface->glyph, &glyph);                   //获取字形图像 的信息
+//			//FT_Glyph_Get_CBox(glyph, FT_GLYPH_BBOX_TRUNCATE, &bbox);
+//			FT_GlyphSlot slot = gface->glyph;
+//
+//			CharInfo info;
+//			/*auto metrics = slot->metrics;*/
+//			info.left = slot->bitmap_left;
+//			info.top = slot->bitmap_top;
+//			info.width = slot->bitmap.width;
+//			info.height = slot->bitmap.rows;
+//			info.advX = slot->advance.x >> 6;
+//			info.advY = slot->advance.y >> 6;
+//			if (mCurTextureHeight == 0) {
+//				mCurTextureHeight = mCharSize;
+//			}
+//
+//			if (mCurTextureWidth + info.width > mTextureWidth) {//当前行写不下要换一行了
+//				mCurTextureWidth = 0;
+//				if (mCurTextureHeight + mCharSize > mTextureHeight)
+//				{
+//					//当前纹理已经写满了
+//					throw - 1;
+//				}
+//				mCurTextureHeight += mCharSize;
+//			}
+//
+//			info.x = mCurTextureWidth;
+//			info.y = mCurTextureHeight - mCharSize;
+//
+//			//把字符点阵数据更新到纹理上。
+//			//由于opengl纹理坐标的原点是在左下角，上下颠倒一下图像
+//			std::vector<unsigned char> tempBuf;
+//			tempBuf.resize(info.width * info.height);
+//			unsigned char* pStart = slot->bitmap.buffer;
+//			unsigned char* pEnd = tempBuf.data();
+//			for (int i = info.height - 1; i >= 0; --i) {
+//				memcpy(pEnd, pStart + (slot->bitmap.pitch * i), info.width);
+//				pEnd += info.width;
+//			}
+//			mpCharTexture->update(info.x, info.y, info.width, info.height, tempBuf.data());
+//
+//			mCurTextureWidth += info.width;
+//
+//			auto& ret = mFontsMap.try_emplace(code, info);
+//			if (ret.second)
+//			{
+//				return ret.first->second;
+//				LOGD("success to insert map \n");
+//			}
+//			else {
+//				throw - 2;
+//			}
+//		}
+//	}
+//}
+
+const CharInfo& FontManager::getCharInTexture(UnicodeType code) {
+	static CharInfo tempInfo;
+	auto it = mFontsMap.find(code);
+	if (it != mFontsMap.end()) {
 		return it->second;
 	}
 	else {
-		//使用freetype渲染出来，然后更新到纹理上，记录字符在纹理上的位置信息。
-		int error = 0;
-		error = FT_Set_Pixel_Sizes(gface, charSize, charSize);
-		if (error)
-		{
-			LOGE("error to FT_Set_Pixel_Sizes \n");
-			throw error;
-		}
-		FT_Select_Charmap(gface, FT_ENCODING_UNICODE);
-		error = FT_Load_Char(gface, code, FT_LOAD_RENDER);
-		if (error)
-		{
-			LOGE("error to FT_Load_Char \n");
-			throw error;
-		}
-		//FT_BBox bbox;
-		//FT_Glyph glyph;
-		//FT_Get_Glyph(gface->glyph, &glyph);                   //获取字形图像 的信息
-		//FT_Glyph_Get_CBox(glyph, FT_GLYPH_BBOX_TRUNCATE, &bbox);
-		FT_GlyphSlot slot = gface->glyph;
-		
-		CharInTexture info;
-		/*auto metrics = slot->metrics;*/
-		info.left = slot->bitmap_left;
-		info.top = slot->bitmap_top;
-		info.width = slot->bitmap.width;
-		info.height = slot->bitmap.rows;
-		info.advX = slot->advance.x >> 6;
-		info.advY = slot->advance.y >> 6;
-		if (curTextureHeight == 0) {
-			curTextureHeight = charSize;
-		}
+		CharInfo info;
+		std::vector<unsigned char> tempBuf;
 
-		if (curTextureWidth + info.width > textureWidth) {//当前行写不下要换一行了
-			curTextureWidth = 0;
-			if (curTextureHeight + charSize > textureHeight)
+		getCharBitmap(code, mCharSize,info, tempBuf);
+
+		if (mCurTextureHeight == 0) {
+			mCurTextureHeight = mCharSize;
+		}
+		if (mCurTextureWidth + info.width > mTextureWidth) {//当前行写不下要换一行了
+			mCurTextureWidth = 0;
+			if (mCurTextureHeight + mCharSize > mTextureHeight)
 			{
 				//当前纹理已经写满了
-				throw -1;
+				return tempInfo;
 			}
-			curTextureHeight += charSize;
+			mCurTextureHeight += mCharSize;
 		}
-
-		info.x = curTextureWidth;
-		info.y = curTextureHeight - charSize;
+		info.x = mCurTextureWidth;
+		info.y = mCurTextureHeight - mCharSize;
 		
-		//把字符点阵数据更新到纹理上。
-		//由于opengl纹理坐标的原点是在左下角，上下颠倒一下图像
-		std::vector<unsigned char> tempBuf;
-		tempBuf.resize(info.width*info.height);
-		unsigned char* pStart = slot->bitmap.buffer;
-		unsigned char* pEnd = tempBuf.data();
-		for (int i = info.height -1; i >=0; --i) {
-			memcpy(pEnd, pStart + (slot->bitmap.pitch*i), info.width);
-			pEnd += info.width;
-		}
-		pCharTexture->update(info.x, info.y, info.width, info.height, tempBuf.data());
+		mpCharTexture->update(info.x, info.y, info.width, info.height, tempBuf.data());
 
-		curTextureWidth += info.width;
+		mCurTextureWidth += info.width;
 
-		auto& ret = fontsMap.try_emplace(code, info);
+		auto& ret = mFontsMap.try_emplace(code, info);
 		if (ret.second)
 		{
 			return ret.first->second;
-			LOGD("success to insert map \n");
+			LOGD("success to insert code-charinfo pair \n");
 		}
 		else {
-			throw - 2;
+			LOGD("ERROR to insert code-charinfo pair \n");
+			return tempInfo;
 		}
 	}
 }
@@ -259,7 +276,7 @@ unique_ptr<UiRender> UiRender::gInstance = make_unique<UiRender>();
 void UiRender::initUiRender() {
 	initTextView(gSavedFontFile, gFontFile, gFontMaterialName);
 	mpLastMaterial = Material::getMaterial("posTextureMS");
-	mpLastMesh = make_shared<Mesh>(MeshType::MESH_FONTS);
+	mpLastMesh = make_shared<Mesh>(MeshType::MESH_Rectangle);
 	if (mpLastMesh) {
 		mpLastMesh->loadMesh();
 		mpLastMesh->setMaterial(mpLastMaterial);
@@ -275,8 +292,8 @@ void UiRender::updateWidthHeight(float width, float height) {
 }
 
 bool UiRender::initTextView(const string& savedPath, const string& ttfPath, const string& materialName) {
-	mpFontInfo = FontInfo::loadFromFile(savedPath, ttfPath, materialName);
-	if (mpFontInfo) {
+	mpFontManager = FontManager::loadFromFile(savedPath, ttfPath, materialName);
+	if (mpFontManager) {
 		return true;
 	}
 	else {
@@ -473,15 +490,15 @@ void UiRender::calcTextViewWidthHeight(TextView* tv) {
 	int currentLines = 1;			//
 	int totalWidth = 0;				//记录字符串占用的总宽度
 	int totalHeight = -currentPosY; //字符串占用的高度
-	float scaleFactor = (float)textSize / (float)mpFontInfo->charSize;
-	std::vector<CharRenderInfo> charsRenderInfoArray;
+	float scaleFactor = (float)textSize / (float)mpFontManager->mCharSize;
+	std::vector<CharPosition> charsRenderInfoArray;
 	for (size_t i = 0; i<slen;) {
 		UnicodeType code;
 		auto len = UtfConvert::utf(pStr, code);
 		pStr += len;
 		i += len;
 		try {
-			const auto& cinfo = mpFontInfo->getCharInTexture(code);
+			const auto& cinfo = mpFontManager->getCharInTexture(code);
 			//判断宽度高度是否已经超出，是否要退出
 			if (currentPosX + scaleFactor*cinfo.width>maxWidth) {
 				//当前行满了，可能要换行或者结束
@@ -531,11 +548,11 @@ void UiRender::drawTextView(TextView* tv) {
 		if (text.empty()) {
 			return;
 		}
-		if (!mpFontInfo) {
+		if (!mpFontManager) {
 			LOGE("ERROR NO fontInfo");
 			return;
 		}
-		int originCharSize = mpFontInfo->charSize;
+		int originCharSize = mpFontManager->mCharSize;
 		int textSize = tv->getTextSize();//字的点阵大小，像素为单位
 		auto& tvRect = tv->getRect();
 		auto slen = text.size();
@@ -553,21 +570,21 @@ void UiRender::drawTextView(TextView* tv) {
 		float maxWidth = tvRect.width;//textView的宽度，字符渲染不能超出这个宽度
 		float maxHeight = tvRect.height;//textView的高度，字符渲染不能超出这个宽度
 		float currentWidth = 0.0f;//当前已经渲染出去的字符的宽度，这个不能超出maxWidth
-		int fontTextureWidth = mpFontInfo->pCharTexture->getWidth();//保存字体位图的纹理的宽度
-		int fontTextureHeight = mpFontInfo->pCharTexture->getHeight();//保存字体位图的纹理的高度
+		int fontTextureWidth = mpFontManager->mpCharTexture->getWidth();//保存字体位图的纹理的宽度
+		int fontTextureHeight = mpFontManager->mpCharTexture->getHeight();//保存字体位图的纹理的高度
 		int tvMaxLines = tv->getMaxLines(); //textview设置的显示行数
 		int currentLines = 1;			//
 		int totalWidth = 0;				//字符串占用的宽度
 		int totalHeight = -currentPosY; //字符串占用的高度
-		float scaleFactor = (float)textSize / (float)mpFontInfo->charSize;
-		std::vector<CharRenderInfo> charsRenderInfoArray;
+		float scaleFactor = (float)textSize / (float)mpFontManager->mCharSize;
+		std::vector<CharPosition> charsRenderInfoArray;
 		for(size_t i = 0; i<slen;){
 			UnicodeType code;
 			auto len = UtfConvert::utf(pStr, code);
 			pStr += len;
 			i += len;
 			try {
-				const auto& cinfo = mpFontInfo->getCharInTexture(code);
+				const auto& cinfo = mpFontManager->getCharInTexture(code);
 				if (currentPosX + scaleFactor*cinfo.width>maxWidth) {//当前要渲染的文字会超出textview的边界
 					if (currentLines >= tvMaxLines) {
 						if (currentPosX >= maxWidth) {
@@ -589,7 +606,7 @@ void UiRender::drawTextView(TextView* tv) {
 				auto maxYAdvTemp = scaleFactor*(cinfo.height - cinfo.top);
 				
 				//可以计算纹理矩阵了，mesh中的纹理坐标是(0,0)到(1,1)
-				CharRenderInfo rInfo;
+				CharPosition rInfo;
 				
 				rInfo.texMatrix = glm::translate(rInfo.texMatrix, glm::vec3((float)cinfo.x / (float)fontTextureWidth,
 					(float)cinfo.y / (float)fontTextureHeight,0.0f));
@@ -605,7 +622,7 @@ void UiRender::drawTextView(TextView* tv) {
 				if (totalWidth < tvRect.width) {
 					totalWidth = currentPosX;
 				}
-				charsRenderInfoArray.emplace_back(std::forward<CharRenderInfo>(rInfo));
+				charsRenderInfoArray.emplace_back(rInfo);
 			}
 			catch (int error) {
 				LOGE("getCharInfo error %d", error);
@@ -727,11 +744,11 @@ void UiRender::drawTextView(TextView* tv) {
 			moveToScreenMatrix = glm::translate(moveToScreenMatrix, moveVec);
 			//it->matrix = glm::translate(it->matrix, moveVec);
 			//绘制
-			if (mpFontInfo->mpMaterial) {
-				mpFontInfo->mpMaterial->updateUniformColor(tv->getTextColor());
+			if (mpFontManager->mpMaterial) {
+				mpFontManager->mpMaterial->setUniformColor(tv->getTextColor());
 			}
-			if (mpFontInfo->mpCharMesh) {
-				mpFontInfo->mpCharMesh->render(mProjMatrix*moveToScreenMatrix*it->matrix, it->texMatrix);
+			if (mpFontManager->mpCharMesh) {
+				mpFontManager->mpCharMesh->render(mProjMatrix*moveToScreenMatrix*it->matrix, it->texMatrix);
 			}
 		}
 		glDisable(GL_SCISSOR_TEST);

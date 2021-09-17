@@ -2,6 +2,7 @@
 #define _PACKT_GRAPHICSTEXTURE_HPP_
 #include<string>
 #include <map>
+#include <memory>
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
 #include <GLES3/gl32.h>
@@ -61,6 +62,8 @@ protected:
 	int mNumOfSamples{ 0 };
 	int mTarget{ GL_TEXTURE_2D };//GL_TEXTIURE2D,TEXTURE_CUBE_MAP_POSITIVE_X...
 };
+
+using TextureP = std::shared_ptr<Texture>;
 
 //class GraphicsImage
 //{

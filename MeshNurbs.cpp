@@ -14,18 +14,13 @@ void MeshNurbs::draw(int posloc, int texloc, int norloc, int colorloc) {
 	drawLineStrip(posloc);
 }
 
-void MeshNurbs::loadMesh(const std::vector<float>& P, const std::vector<int>& knots, const std::vector<float>& w) {
-	std::vector<float> pos;
-	auto n = P.size() / 3 - 1;
+void MeshNurbs::loadMesh(const std::vector<Vec3>& P, const std::vector<int>& knots, const std::vector<float>& w) {
+	std::vector<Vec3> pos;
+	auto n = P.size() - 1;
 	float u = 0.0f;
 	float delta = (n - 2) / 1000.0f;
 	for (; u < n - 2; u += delta) {
 		int i = std::floor(u);
-
-		glm::vec3 P0(P[3 * i], P[3 * i + 1], P[3 * i + 2]);
-		glm::vec3 P1(P[3 * (i + 1)], P[3 * (i + 1) + 1], P[3 * (i + 1) + 2]);
-		glm::vec3 P2(P[3 * (i + 2)], P[3 * (i + 2) + 1], P[3 * (i + 2) + 2]);
-		glm::vec3 P3(P[3 * (i + 3)], P[3 * (i + 3) + 1], P[3 * (i + 3) + 2]);
 
 		float a = Niku(i, 3, u, knots);
 		float b = Niku(i + 1, 3, u, knots);
@@ -33,15 +28,14 @@ void MeshNurbs::loadMesh(const std::vector<float>& P, const std::vector<int>& kn
 		float d = Niku(i + 3, 3, u, knots);
 
 		auto wu = a * w[i] + b * w[i + 1] + c * w[i + 2] + d * w[i + 3];
-		auto vec = a * w[i] / wu * P0 + b * w[i+1] / wu * P1 + c * w[i+2] / wu * P2 + d * w[i+3] / wu * P3;
-		pos.emplace_back(vec.x);
-		pos.emplace_back(vec.y);
-		pos.emplace_back(vec.z);
+		auto vec = a * w[i] / wu * P[i] + b * w[i+1] / wu * P[i+1] + c * w[i+2] / wu * P[i+2] + d * w[i+3] / wu * P[i+3];
+		pos.emplace_back(vec);
 	}
-	for (auto xyz : P) {
+	/*for (auto xyz : P) {
 		pos.emplace_back(xyz);
-	}
-	bool b = createBufferObject(pos.data(), sizeof(float)*pos.size(), nullptr, 0);
+	}*/
+	int numOfVertex = pos.size();
+	bool b = createBufferObject((float*)pos.data(), sizeof(Vec3)* numOfVertex, numOfVertex,nullptr, 0);
 	if (!b)
 	{
 		LOGD("error to loadCRSplines\n");

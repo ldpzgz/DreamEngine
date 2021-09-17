@@ -14,11 +14,10 @@ void MeshCRSpline::draw(int posloc, int texloc, int norloc, int colorloc) {
 	drawLineStrip(posloc);
 }
 
-void MeshCRSpline::loadMesh(const std::vector<float>& points) {
-	int index = 1;
-	auto size = points.size();
-	auto endIndex = size / 3;
-	std::vector<float> pos;
+void MeshCRSpline::loadMesh(const std::vector<Vec3>& points,int num) {
+	
+	auto endIndex = points.size();
+	std::vector<Vec3> pos;
 
 	glm::mat4x4 Mh(
 		0.0f, -1.0f, 2.0f, -1.0f,
@@ -27,31 +26,29 @@ void MeshCRSpline::loadMesh(const std::vector<float>& points) {
 		0.0f, 0.0f, -1.0f, 1.0f
 	);
 	Mh *= 0.5f;
-
+	int index = 1;
 	while (index <= endIndex - 3) {
 
 		glm::mat3x4 G(
-			points[3 * (index - 1)], points[3 * index], points[3 * (index + 1)], points[3 * (index + 2)],
-			points[3 * (index - 1) + 1], points[3 * index + 1], points[3 * (index + 1) + 1], points[3 * (index + 2) + 1],
-			points[3 * (index - 1) + 2], points[3 * index + 2], points[3 * (index + 1) + 2], points[3 * (index + 2) + 2]
+			points[index - 1].x, points[index].x, points[index + 1].x, points[index + 2].x,
+			points[index - 1].y, points[index].y, points[index + 1].y, points[index + 2].y,
+			points[index - 1].z, points[index].z, points[index + 1].z, points[index + 2].z
 		);
-
-		for (int i = 0; i < 50; ++i) {
+		float numf = num - 1;
+		for (int i = 0; i < num; ++i) {
 			glm::vec4 t;
 			t.x = 1.0f;
-			t.y = i*0.02f;
+			t.y = (float)i / numf;
 			t.z = t.y*t.y;
 			t.w = t.z*t.y;
 
 			auto v = t*Mh*G;
-			pos.emplace_back(v.x);
-			pos.emplace_back(v.y);
-			pos.emplace_back(v.z);
+			pos.emplace_back(v.x, v.y, v.z);
 		}
 		++index;
 	}
-
-	bool b = createBufferObject(pos.data(), sizeof(float)*pos.size(), nullptr, 0);
+	int numOfVertex = pos.size();
+	bool b = createBufferObject((float*)pos.data(), sizeof(Vec3)* numOfVertex, numOfVertex, nullptr, 0);
 	if (!b)
 	{
 		LOGD("error to loadCRSplines\n");

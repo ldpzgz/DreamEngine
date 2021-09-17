@@ -278,11 +278,32 @@ void Fbo::render(std::function<void()> func) {
 		glGetIntegerv(GL_BLEND_EQUATION_RGB, &premodelRgb);
 		glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &premodelAlpha);
 	}
+	GLboolean preCullFace = false;
+	int preCullFaceModel = GL_BACK;
+	int preFrontFace = GL_CCW;
+	glGetBooleanv(GL_CULL_FACE, &preCullFace);
+	glGetIntegerv(GL_CULL_FACE_MODE, &preCullFaceModel);
+	glGetIntegerv(GL_FRONT_FACE, &preFrontFace);
+	if (mbCullFace) {
+		glEnable(GL_CULL_FACE);
+		glCullFace(mCullFaceMode);
+		glFrontFace(mFrontFace);
+	}
+	else {
+		glDisable(GL_CULL_FACE);
+	}
 
 	enable();
 
 	glViewport(0, 0, mWidth, mHeight);
-	glClearColor(mClearColor[0], mClearColor[1], mClearColor[2], mClearColor[3]);
+	if (mbClearColor) {
+		glClearColor(mClearColor[0], mClearColor[1], mClearColor[2], mClearColor[3]);
+		glClear(GL_COLOR_BUFFER_BIT);//GL_DEPTH_BUFFER_BIT
+		if (mbClearColorOnlyOnce) {
+			mbClearColor = false;
+		}
+	}
+	
 	if (mbEnableDepthTest) {
 		glEnable(GL_DEPTH_TEST);
 		glClearDepthf(0.0f);
@@ -290,10 +311,6 @@ void Fbo::render(std::function<void()> func) {
 	}
 	else {
 		glDisable(GL_DEPTH_TEST);
-	}
-
-	if (mbClearColor) {
-		glClear(GL_COLOR_BUFFER_BIT);//GL_DEPTH_BUFFER_BIT
 	}
 
 	if (mbEnableBlend) {
@@ -327,39 +344,16 @@ void Fbo::render(std::function<void()> func) {
 		glBlendFuncSeparate(presFactorRgb, predFactorRgb, presFactorAlpha, predFactorAlpha);
 		glBlendEquationSeparate(premodelRgb, premodelAlpha);
 	}
-}
 
-//void Fbo::startRender()
-//{
-//	glGetFloatv(GL_COLOR_CLEAR_VALUE, mPreClearColor);
-//	glGetBooleanv(GL_DEPTH_TEST, &mPrebDepthTest);
-//	enable();
-//	glViewport(0, 0, mWidth, mHeight);
-//	glClearColor(mClearColor[0], mClearColor[1], mClearColor[2], mClearColor[3]);
-//	if (mbEnableDepthTest) {
-//		glEnable(GL_DEPTH_TEST);
-//		glClearDepthf(0.0f);
-//		glClear(GL_DEPTH_BUFFER_BIT);
-//	}
-//	else {
-//		glDisable(GL_DEPTH_TEST);
-//	}
-//
-//	if (mbClearColor) {
-//		glClear(GL_COLOR_BUFFER_BIT);//GL_DEPTH_BUFFER_BIT
-//	}
-//}
-//void Fbo::endRender()
-//{
-//	disable();
-//	glClearColor(mPreClearColor[0], mPreClearColor[1], mPreClearColor[2], mPreClearColor[3]);
-//	if (mPrebDepthTest) {
-//		glEnable(GL_DEPTH_TEST);
-//	}
-//	else {
-//		glDisable(GL_DEPTH_TEST);
-//	}
-//}
+	if (preCullFace) {
+		glEnable(GL_CULL_FACE);
+		glCullFace(preCullFaceModel);
+		glFrontFace(preFrontFace);
+	}
+	else {
+		glDisable(GL_CULL_FACE);
+	}
+}
 
 void Fbo::setClearColorValue(float r, float g, float b, float a)
 {
@@ -382,7 +376,6 @@ void Fbo::setBlendValue(int sFactorRgb, int dFactorRgb, int sFactorAlpha, int dF
 	mModelAlpha = modelAlpha;
 }
 
-extern void checkglerror();
 bool Fbo::blitFbo(const Fbo& src, const Rect<int>& srcRect, 
 	const Fbo& dst, const Rect<int>& dstRect) {
 	// set the default framebuffer for writing

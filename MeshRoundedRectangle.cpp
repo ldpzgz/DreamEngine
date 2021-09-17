@@ -126,9 +126,11 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 
 	mPoints.emplace_back(lastPoint);
 	texcoord.emplace_back(lastTex);
-
-	bool b = createBufferObject((float*)mPoints.data(), 3*sizeof(float)*mPoints.size(), nullptr, 0,
-		(float*)texcoord.data(),2*sizeof(float)*texcoord.size());
+	int numOfVertex = mPoints.size();
+	bool b = createBufferObject((float*)mPoints.data(), 3*sizeof(float)* numOfVertex, 
+		numOfVertex,
+		nullptr, 0,
+		(float*)texcoord.data(),texcoord.size()*sizeof(Vec2));
 	if (!b)
 	{
 		LOGD("error to load MeshRoundedRectangle\n");

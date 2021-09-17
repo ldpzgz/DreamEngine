@@ -19,21 +19,18 @@
 #include <glm/mat4x3.hpp>
 #include <glm/gtc/type_ptr.hpp> // value_ptr
 #include "Attachable.h"
+#include "Rect.h"
 enum class MeshType //枚举类型定义加了class就是强类型枚举，不能隐式转换为其他类型，
 {
+	MESH_None,
 	MESH_Triangle,
 	MESH_Rectangle,//纯色矩形
 	MESH_FilledRect,//可以填充纯色，可贴图，也可以绘制为线框的矩形
-	MESH_Rectangle_Tex,//用于渲染一张背景图片
-	MESH_Rectangle_Color,//gradient的rectangle
-	MESH_Rectangle_Center_Color,//带center color的rectangle
 	MESH_Rounded_Rectangle,//带center color的rounded rectangle
-	MESH_Cuboid,
-	MESH_Triangular_Pyramid,
-	MESH_Circle,
-	MESH_Lines,
+	MESH_Cuboid,//立方体
+	MESH_Circle,//填充的圆，或者圆圈
 	MESH_Line_strip,
-	MESH_DIY,
+	MESH_Cubic_Spline,
 	MESH_Cubic_Hermiter_Curves,//hermiter曲线，后面的贝塞尔曲线，cr_spline都可以由这个曲线实现
 		//一段3次hermiter曲线，由两个顶点，以及这两个顶点处的切线经过cubic插值而成。曲线会经过这两个顶点
 		//切线有方向和大小，用于控制曲线的形状。如果两段hermiter曲线需要平滑连接，连接处的顶点的切线方向必须相同。
@@ -48,47 +45,67 @@ enum class MeshType //枚举类型定义加了class就是强类型枚举，不�
 		//通过n个控制点，绘制n-3条曲线，曲线不经过任何控制点，只逼近但是曲线之间是C2连续的
 	MESH_NURBS,
 		//这个在设计软件中最通用
-
-	MESH_FONTS, //渲染文字的时候用的，一个文字
-	MESH_Rect,//渲染具有Rect的背景的view用的
+	MESH_DIY,
 };
 
+enum class DrawType {
+	Triangles,
+	TriangleFan,
+	Lines,
+	LineStrip,
+	Points,
+};
 class Mesh : public Attachable
 {
 public:
-	explicit Mesh(MeshType meshType );
-	Mesh();
-	Mesh(Mesh&&);
+	explicit Mesh(MeshType meshType) noexcept;
+	Mesh(MeshType meshType,DrawType drawType) noexcept;
+	Mesh() = default;
+	Mesh(const Mesh&&) noexcept;
 	Mesh(const Mesh&) = delete; //防止拷贝
 	Mesh & operator = (const Mesh&) = delete; //防止赋值
 	virtual ~Mesh();
 
-	//MESH_Rectangle_Tex,MESH_Circle,调用这个函数初始化
+	//MESH_Rectangle_Tex,+MESH_Circle,调用这个函数初始化
 	virtual void loadMesh();
 
+	//nurbs
+	virtual void loadMesh(const std::vector<Vec3>& p, const std::vector<int>& knots, const std::vector<float>& w) {
 
-	virtual void loadMesh(const std::vector<float>& p, const std::vector<int>& knots, const std::vector<float>& w) {
+	}
+
+	virtual void loadMesh(const std::vector<Vec3>& p,int num) {
 
 	}
 
-	virtual void loadMesh(const std::vector<float>& p) {
+	virtual void loadMesh(const std::vector<Vec2>& p, int num) {
 
 	}
+
+	virtual void loadMesh(const std::vector<Vec2>& p) {
+
+	}
+
+	virtual void loadMesh(const std::vector<Vec3>& p) {
+
+	}
+
+	virtual void loadMesh(const std::vector<Vec3>& pos, const std::vector<Vec3ui>& index);
 
 	//uniform b spline
 	//void loadUBS(const std::vector<float>& points);
 
-	//更新pos vbo
+	//更新pos vbo，如果要更新的数据超过原来vbo的大小，先删除vbo，再创建一个新的vbo
 	bool updataPos(float* pos,int byteOffset,int size);
-	//更新纹理坐标vbo
+	//更新纹理坐标vbo，如果要更新的数据超过原来vbo的大小，先删除vbo，再创建一个新的vbo
 	bool updataTexcoord(float* tex, int byteOffset, int size);
     //更新索引vbo
-	bool updataIndex(float* pIndex, int byteOffset, int size);
+	bool updataIndex(GLuint* pIndex, int byteOffset, int size);
 
-	//更新color vbo
+	//更新color vbo，如果要更新的数据超过原来vbo的大小，先删除vbo，再创建一个新的vbo
 	bool updateColor(float* color, int byteOffset, int size);
 
-	//更新法向量 vbo
+	//更新法向量 vbo，如果要更新的数据超过原来vbo的大小，先删除vbo，再创建一个新的vbo
 	bool updateNormal(float* normal, int byteOffset, int size);
 
 	void render(const glm::mat4& projviewMat);
@@ -108,7 +125,7 @@ public:
 	unsigned int getId() {
 		return mId;
 	}
-	void setMaterial(std::shared_ptr<Material>& p) {
+	void setMaterial(const std::shared_ptr<Material>& p) {
 		mpMaterial = p;
 	}
 
@@ -125,17 +142,26 @@ public:
 		}
 	}
 
+	void setUniformColor(float r,float g,float b,float a) {
+		if (!mpUniformColor) {
+			mpUniformColor = make_shared<Color>(r,g,b,a);
+		}
+		else {
+			*mpUniformColor = Color(r,g,b,a);
+		}
+	}
+
 	void setTexture(const shared_ptr<Texture>& pTex,const string& samplerName="s_texture") {
 		if (mpMaterial) {
 			mpMaterial->changeTexture(samplerName, pTex);
 		}
 	}
 
-	//这四个函数都是创建vbo，ebo，并从内存上传数据到vbo的显存
-	bool setPosData(GLfloat* pos, int size, unsigned int drawType = GL_STATIC_DRAW);
-	bool setTexcoordData(GLfloat* tex, int size, unsigned int drawType = GL_STATIC_DRAW);
-	bool setNormalData(GLfloat* nor, int size, unsigned int drawType = GL_STATIC_DRAW);
-	bool setColorData(GLfloat* nor, int size, unsigned int drawType = GL_STATIC_DRAW);
+	//这四个函数都是创建vbo，ebo，并从内存上传数据到vbo的显存,如果之前存在vbo了，先删除
+	bool setPosData(GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	bool setTexcoordData(GLfloat* tex, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	bool setNormalData(GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	bool setColorData(GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setIndexData(GLuint* index, int indexByteSize, unsigned int drawType = GL_STATIC_DRAW);
 
 	static void getMaxNumVertexAttr();
@@ -144,7 +170,7 @@ public:
 protected:
 	//根据指定的顶点坐标数据，纹理坐标数据，法向量坐标数据，顶点索引数据，以及他们的大小（字节为单位）
 	//创建对应的vbo，类型为静态GL_STATIC_DRAW
-	bool createBufferObject(GLfloat* pos, int posByteSize, GLuint* index, int indexByteSize,
+	bool createBufferObject(GLfloat* pos, int posByteSize,int countOfVertex, GLuint* index, int indexByteSize,
 		GLfloat* tex = 0, int texByteSize = 0, GLfloat* nor = 0, int norByteSize = 0, GLfloat* color = 0, int colorByteSize = 0, int drawType = GL_STATIC_DRAW);
 
 	//当做三角形绘制GL_TRIANGLES
@@ -154,33 +180,34 @@ protected:
 	virtual void drawLineStrip(int posloc);
 
 	//当做三角形扇绘制GL_TRIANGLE_FAN
-	void drawTrangleFan(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1);
+	virtual void drawTriangleFan(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1);
 
 	virtual void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1);
 protected:
 	void reset();
 
 	//4个vbo对象
-	GLuint mPosVbo;//这个是vbo
-	GLuint mTexVbo; //这个是vbo
-	GLuint mNorVbo;//这个是vbo
-	GLuint mColorVbo;//这个是vbo
-	GLuint mIndexVbo; //这个别人叫ebo
-	GLuint mVAO;//这个是vao，顶点数组对象，opengles3.0才支持，是一个集合。把设定顶点属性的过程打包到一起，简化绘制流程。
-	GLfloat mLineWidth;
+	GLuint mPosVbo{ 0 };//这个是vbo
+	GLuint mTexVbo{ 0 }; //这个是vbo
+	GLuint mNorVbo{ 0 };//这个是vbo
+	GLuint mColorVbo{ 0 };//这个是vbo
+	GLuint mIndexVbo{ 0 }; //这个别人叫ebo
+	GLuint mVAO{ 0 };//这个是vao，顶点数组对象，opengles3.0才支持，是一个集合。把设定顶点属性的过程打包到一起，简化绘制流程。
+	GLfloat mLineWidth{ 1.0f };
 
-	int mposLocation;//顶点的位置属性在shader中的location
-	int mnorLocation;//顶点的法向量属性在shader中的location
-	int mtexLocation;//顶点的纹理坐标属性在shader中的location
+	int mposLocation{ -1 };//顶点的位置属性在shader中的location
+	int mnorLocation{ -1 };//顶点的法向量属性在shader中的location
+	int mtexLocation{ -1 };//顶点的纹理坐标属性在shader中的location
 	
-	unsigned int mPosByteSize;
-	unsigned int mTexByteSize;
-	unsigned int mNorByteSize;
-	unsigned int mColorByteSize;
-	unsigned int mIndexByteSize;
-	MeshType mMeshType;
-	int mCounts;//for line_strip,triangle_fan,the count of points;
-	unsigned int mId;
+	unsigned int mPosByteSize{ 0 };
+	unsigned int mTexByteSize{ 0 };
+	unsigned int mNorByteSize{ 0 };
+	unsigned int mColorByteSize{ 0 };
+	unsigned int mIndexByteSize{ 0 };
+	MeshType mMeshType{ MeshType::MESH_None };
+	DrawType mDrawType{ DrawType::Triangles };
+	int mCountOfVertex{ 0 };//vertex的个数，这里默认pos，texcoord，normal，color等属性的顶点个数都是一样的;
+	unsigned int mId{ 0 };
 	std::shared_ptr<Material> mpMaterial;
 	std::shared_ptr<Color> mpUniformColor;
 	//如果函数内部创建了vao就返回true

@@ -84,13 +84,13 @@ void Material::setTextureMatrix() {
 	}
 }
 
-void Material::updateUniformColor(const Color& color) {
+void Material::setUniformColor(const Color& color) {
 	if (mShader) {
 		mShader->setUniformColor(color);
 	}
 }
 
-void Material::updateUniformColor(float r, float g, float b, float a) {
+void Material::setUniformColor(float r, float g, float b, float a) {
 	if (mShader) {
 		mShader->setUniformColor(r,g,b,a);
 	}

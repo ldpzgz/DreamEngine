@@ -18,8 +18,8 @@ public:
 	void updateMvpMatrix(const glm::mat4& pdata);
 	void updateTextureMatrix(const glm::mat4& pdata);
 	void setTextureMatrix();
-	void updateUniformColor(const Color& color);
-	void updateUniformColor(float r,float g,float b,float a);
+	void setUniformColor(const Color& color);
+	void setUniformColor(float r,float g,float b,float a);
 	//-------------------------------------------------------------
 
 	void getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc);

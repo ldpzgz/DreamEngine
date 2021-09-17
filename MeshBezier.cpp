@@ -14,10 +14,9 @@ void MeshBezier::draw(int posloc, int texloc, int norloc, int colorloc) {
 	drawLineStrip(posloc);
 }
 
-void MeshBezier::loadMesh(const std::vector<float>& points) {
+void MeshBezier::getBezierPoints(const std::vector<Vec3>& points, int num, std::vector<Vec3>& result) {
 	int index = 0;
-	auto n = points.size() / 3 - 1;
-	std::vector<float> pos;
+	auto n = points.size() - 1;
 	std::vector<float> tk;
 	std::vector < float> t_1k;
 	std::vector<float> nk;
@@ -32,20 +31,22 @@ void MeshBezier::loadMesh(const std::vector<float>& points) {
 			nk.push_back(nk[n - k]);
 		}
 	}
-	constexpr float delta = 1.0f / 1000.0f;
-	for (int i = 0; i < 1000; ++i) {
-		glm::vec3 vec(0.0f, 0.0f, 0.0f);
+	float numf = num - 1;
+	for (int i = 0; i < num; ++i) {
+		Vec3 vec(0.0f, 0.0f, 0.0f);
 		for (int k = 0; k <= n; ++k) {
-			glm::vec3 Pn(points[3 * k], points[3 * k + 1], points[3 * k + 2]);
-			auto t = i*delta;
-			vec += nk[k] * std::powf(t, k) * std::powf(1 - t, n - k)*Pn;
+			auto t = i / numf;
+			vec += nk[k] * std::powf(t, k) * std::powf(1 - t, n - k) * points[k];
 		}
-		pos.emplace_back(vec.x);
-		pos.emplace_back(vec.y);
-		pos.emplace_back(vec.z);
+		result.emplace_back(vec);
 	}
+}
 
-	bool b = createBufferObject(pos.data(), sizeof(float)*pos.size(), nullptr, 0);
+void MeshBezier::loadMesh(const std::vector<Vec3>& points,int num) {
+	std::vector<Vec3> pos;
+	getBezierPoints(points, num, pos);
+	int numOfVertex = pos.size();
+	bool b = createBufferObject((GLfloat*)pos.data(), sizeof(Vec3)* numOfVertex, numOfVertex, nullptr, 0);
 	if (!b)
 	{
 		LOGD("error to load Bezier Curves\n");

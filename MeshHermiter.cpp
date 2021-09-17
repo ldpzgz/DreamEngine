@@ -14,11 +14,10 @@ void MeshHermiter::draw(int posloc, int texloc, int norloc, int colorloc) {
 	drawLineStrip(posloc);
 }
 
-void MeshHermiter::loadMesh(const std::vector<float>& points) {
-	int index = 0;
+void MeshHermiter::loadMesh(const std::vector<Vec3>& points,int num) {
 	auto size = points.size();
-	auto endIndex = size / 12;
-	std::vector<float> pos;
+	auto endIndex = size / 4;
+	std::vector<Vec3> pos;
 
 	glm::mat4x4 Mh(
 		1.0f, 0.0f, -3.0f, 2.0f,
@@ -26,31 +25,30 @@ void MeshHermiter::loadMesh(const std::vector<float>& points) {
 		0.0f, 1.0f, -2.0f, 1.0f,
 		0.0f, 0.0f, -1.0f, 1.0f
 	);
-
+	float numf = num - 1;
+	size_t index = 0;
 	while (index < endIndex) {
 
 		glm::mat3x4 G(
-			points[12 * index], points[12 * index + 3], points[12 * index + 6], points[12 * index + 9],
-			points[12 * index + 1], points[12 * index + 4], points[12 * index + 7], points[12 * index + 10],
-			points[12 * index + 2], points[12 * index + 5], points[12 * index + 8], points[12 * index + 11]
+			points[4 * index].x, points[4 * index + 1].x, points[4 * index + 2].x, points[4 * index + 3].x,
+			points[4 * index].y, points[4 * index + 1].y, points[4 * index + 2].y, points[4 * index + 3].y,
+			points[4 * index].z, points[4 * index + 1].z, points[4 * index + 2].z, points[4 * index + 3].z
 		);
 
-		for (int i = 0; i < 50; ++i) {
+		for (int i = 0; i < num; ++i) {
 			glm::vec4 t;
 			t.x = 1.0f;
-			t.y = i*0.02f;
+			t.y = i / numf;
 			t.z = t.y*t.y;
 			t.w = t.z*t.y;
 
 			auto v = t*Mh*G;
-			pos.emplace_back(v.x);
-			pos.emplace_back(v.y);
-			pos.emplace_back(v.z);
+			pos.emplace_back(v.x,v.y,v.z);
 		}
 		++index;
 	}
-
-	bool b = createBufferObject(pos.data(), sizeof(float)*pos.size(), nullptr, 0);
+	int numOfVertex = pos.size();
+	bool b = createBufferObject((float*)pos.data(), sizeof(Vec3)* numOfVertex, numOfVertex,nullptr, 0);
 	if (!b)
 	{
 		LOGD("error to loadHermiterCurves\n");

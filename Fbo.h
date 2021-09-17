@@ -50,6 +50,23 @@ class Fbo
 public:
 	Fbo();
 	virtual ~Fbo();
+	void setClearColorValue(float r, float g, float b, float a);
+	//设置是否需要clear color，默认会clearcolor，如果下次不需要了，要设置为false
+	void setClearColor(bool b,bool once = true) {
+		mbClearColor = b;
+		mbClearColorOnlyOnce = once;
+	}
+	void setDepthTest(bool b) {
+		mbEnableDepthTest = b;
+	}
+	void setBlend(bool b);
+	void setBlendValue(int sFactorRgb, int dFactorRgb, int sFactorAlpha, int dFactorAlpha, int modelRgb, int modelAlpha);
+	void setCullFace(bool b,int model = GL_BACK,int frontFace=GL_CCW) {
+		mbCullFace = b;
+		mCullFaceMode = model;
+		mFrontFace = frontFace;
+	}
+
 	//GL_COLOR_ATTACHMENT0 + attachment_n
 	void detachColorTexture(int attachment_n=0, GLint level=0);
 	void detachColorTextureMS(int attachment_n = 0);
@@ -63,27 +80,15 @@ public:
 	bool attachColorRbo(int attachment_n, int width, int height);
 	void detachColorRbo(int attachment_n = 0);
 	
+	void render(std::function<void()> func);
+
 	void enable();
 	void disable();
-
-	void render(std::function<void()> func);
-	/*void startRender();
-	void endRender();*/
-	void setDepthTest(bool b) {
-		mbEnableDepthTest = b;
-	}
-	void setClearColor(bool b) {
-		mbClearColor = b;
-	}
-	void setClearColorValue(float r, float g, float b, float a);
-	void setBlend(bool b);
-	void setBlendValue(int sFactorRgb, int dFactorRgb, int sFactorAlpha, int dFactorAlpha, int modelRgb, int modelAlpha);
-	bool checkFrameBuffer();
 	static bool blitFbo(const Fbo& src,const Rect<int>& srcRect, const Fbo& dst, const Rect<int>& dstRect);
 	static bool blitFbo(const Fbo& src, const Fbo& dst);
 private:
 	void deleteFbo();
-	
+	bool checkFrameBuffer();
 	GLuint mFboId{ 0 };
 	GLint mPreFrameBuffer{ 0 };
 	
@@ -92,6 +97,7 @@ private:
 	int mHeight{ 0 };//render to tex ,tex height
 	bool mbEnableDepthTest{ false };
 	bool mbClearColor{ true };
+	bool mbClearColorOnlyOnce{ false };
 	float mClearColor[4]{0.0f,0.0f,0.0f,0.0f};
 	GLuint mRbo{ 0 };
 	GLboolean mbEnableBlend{ 0 };
@@ -101,6 +107,9 @@ private:
 	int mdFactorAlpha{ GL_ONE };
 	int mModelRgb;
 	int	mModelAlpha;
+	GLboolean mbCullFace{ false };
+	int mFrontFace{ GL_CCW };
+	int mCullFaceMode{ GL_BACK };
 };
 
 #endif /* GRAPHICSFBO_H_ */
