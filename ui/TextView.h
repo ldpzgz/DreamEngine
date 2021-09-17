@@ -2,6 +2,7 @@
 #define _TEXT_VIEW_H_
 #include "View.h"
 #include <limits>
+#include "CharPosition.h"
 using namespace std;
 
 class TextView : public View {
@@ -10,14 +11,25 @@ public:
 	TextView() = default;
 
 	void setTextColor(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
+		Color temp(r,g,b,a);
+		if (mTextColor != temp) {
+			setDirty(true);
+		}
 		mTextColor[0] = r; mTextColor[1] = g; mTextColor[2] = b; mTextColor[3] = a;
 	}
 
 	void setTextColor(unsigned char r, unsigned char g, unsigned char b) {
-		mTextColor[0] = r; mTextColor[1] = g; mTextColor[2] = b;
+		Color temp(r, g, b);
+		if (mTextColor != temp) {
+			setDirty(true);
+		}
+		mTextColor = temp;
 	}
 
 	void setTextColor(const Color& c) {
+		if (mTextColor != c) {
+			setDirty(true);
+		}
 		mTextColor = c;
 	}
 
@@ -30,6 +42,10 @@ public:
 	}
 
 	void setText(const std::string& str) {
+		if (mText != str) {
+			setDirty(true);
+			calcTextPosition();
+		}
 		mText = str;
 	}
 
@@ -83,6 +99,20 @@ public:
 	int getLineSpacingInc() {
 		return mLineSpacingInc;
 	}
+	//计算出文本所在的屏幕位置，以及每个字符对应的纹理坐标(所有字符存在一张纹理上面)
+	void calcTextPosition();
+
+	std::vector<CharPosition>& getCharPositionArray() {
+		return mTextPositions;
+	}
+
+	void setUpdateTextPosition(bool b) {
+		mbUpdateTextPositioin = b;
+	}
+
+	bool getUpdateTextPosition() {
+		return mbUpdateTextPositioin;
+	}
 
 	void draw() override;
 	bool calcWidth(int parentHeight) override;
@@ -105,6 +135,9 @@ private:
 	int mMaxHeight{ 100000000 };//默认是一个很大的数std::numeric_limits<int>::max()
 	int mLineSpacingInc{ 0 }; //行间距增量
 	int mCharSpacingInc{ 0 };//字符间距增量
+
+	std::vector<CharPosition> mTextPositions;
+	bool mbUpdateTextPositioin{ true };
 	//unsigned int mAligment{ TextAlignment::AlignCenter}; //文本对齐方式
 };
 #endif

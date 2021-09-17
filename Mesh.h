@@ -20,6 +20,7 @@
 #include <glm/gtc/type_ptr.hpp> // value_ptr
 #include "Attachable.h"
 #include "Rect.h"
+#include <memory>
 enum class MeshType //枚举类型定义加了class就是强类型枚举，不能隐式转换为其他类型，
 {
 	MESH_None,
@@ -96,7 +97,7 @@ public:
 	//void loadUBS(const std::vector<float>& points);
 
 	//更新pos vbo，如果要更新的数据超过原来vbo的大小，先删除vbo，再创建一个新的vbo
-	bool updataPos(float* pos,int byteOffset,int size);
+	bool updataPos(float* pos,int byteOffset,int size, int numOfVertex);
 	//更新纹理坐标vbo，如果要更新的数据超过原来vbo的大小，先删除vbo，再创建一个新的vbo
 	bool updataTexcoord(float* tex, int byteOffset, int size);
     //更新索引vbo
@@ -213,5 +214,6 @@ protected:
 	//如果函数内部创建了vao就返回true
 	bool createVaoIfNeed(int posloc=-1, int texloc=-1, int norloc=-1);
 };
+using MeshP = std::shared_ptr<Mesh>;
 
 #endif /* GRAPHICSMESH_H_ */

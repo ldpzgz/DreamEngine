@@ -61,4 +61,6 @@ private:
 	static std::unordered_map<std::string, std::shared_ptr<Shader>> gShaders;
 };
 
+using MaterialP = std::shared_ptr<Material>;
+
 #endif

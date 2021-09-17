@@ -35,7 +35,7 @@ public:
 
 	bool initFontManager(const shared_ptr<Texture>& pTex, const shared_ptr<Material>& pMaterial, const string& filePath, const string& ttfPath, int charSize_);
 
-	const CharInfo& getCharInTexture(UnicodeType code);
+	bool getCharInTexture(UnicodeType code,CharInfo& info);
 
 	//const CharInfo& getCharIntexture2(UnicodeType code);
 
@@ -94,6 +94,7 @@ public:
 	//宽度或者高度为wrapContent的时候，计算TextView文本的宽度和高度以像素为单位
 	void calcTextViewWidthHeight(TextView* tv);
 	void drawTextView(TextView* tv);
+	void calcTextPosition(TextView* tv);
 	void drawBackground(View* tv);
 	void drawLinearLayout(LinearLayout* pll);
 

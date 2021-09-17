@@ -120,3 +120,7 @@ void TextView::textHandler(const shared_ptr<View>& pv, const string& value) {
 		ptv->setText(value);
 	}
 }
+
+void TextView::calcTextPosition() {
+	UiRender::getInstance()->calcTextPosition(this);
+}

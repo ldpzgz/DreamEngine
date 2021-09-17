@@ -56,7 +56,7 @@ void releaseFreetype()
 	}
 }
 
-void getCharBitmap(UnicodeType code, int charPixelSize, CharInfo& info, std::vector<unsigned char>& tempBuf) {
+bool getCharBitmap(UnicodeType code, int charPixelSize, CharInfo& info, std::vector<unsigned char>& tempBuf) {
 	if (!gIsFreetypeInit) {
 		initFreetype(gFontFile);
 	}
@@ -67,14 +67,14 @@ void getCharBitmap(UnicodeType code, int charPixelSize, CharInfo& info, std::vec
 	if (error)
 	{
 		LOGE("error to FT_Set_Pixel_Sizes \n");
-		return;
+		return false;
 	}
 	FT_Select_Charmap(gface, FT_ENCODING_UNICODE);
 	error = FT_Load_Char(gface, code, FT_LOAD_RENDER);
 	if (error)
 	{
 		LOGE("error to FT_Load_Char \n");
-		return;
+		return false;
 	}
 	
 	FT_GlyphSlot slot = gface->glyph;
@@ -95,4 +95,6 @@ void getCharBitmap(UnicodeType code, int charPixelSize, CharInfo& info, std::vec
 		memcpy(pEnd, pStart + (slot->bitmap.pitch * i), info.width);
 		pEnd += info.width;
 	}
+
+	return true;
 }

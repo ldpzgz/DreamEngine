@@ -16,6 +16,7 @@
 // Include all GLM extensions
 #include <glm/ext.hpp> // perspective, translate, rotate
 #include <glm/gtx/matrix_transform_2d.hpp>
+#include "TextView.h"
 /*
 * 渲染步骤如下：
 * 1 从free type得到的字符的三角形mesh，设置posUniformColor材质，指定color为1/255。
@@ -54,14 +55,19 @@ public:
 	//当字形转换为三角形之后，调用这个函数生成mesh
 	void generateMesh();
 
+	void drawTextView(TextView* tv);
+
 	void render(glm::mat4 modelMatrix);
 
 	static int moveTo(const FT_Vector* vec,void* userData);
 	static int lineTo(const FT_Vector* vec, void* userData);
 	static int conicTo(const FT_Vector* control1, const FT_Vector* to, void* userData);
 	static int cubicTo(const FT_Vector* control1, const FT_Vector* control2, const FT_Vector* to, void* userData);
-	std::shared_ptr<Mesh> mpMesh;
-	std::shared_ptr<Material> mpMaterial;
+	MeshP mpMesh;
+	MaterialP mpUniformColorMaterial;
+	MaterialP mpTextGpuRenderMaterial;
+	TextureP mpFirstTexture;
+	TextureP mpMultisampleTexture;
 	std::shared_ptr<Fbo> mpFbo;
 	std::vector<Vec3> mPos;
 	std::vector<Vec3ui> mIndex;

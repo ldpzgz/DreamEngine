@@ -227,46 +227,46 @@ void FontManager::saveToFile() {
 //	}
 //}
 
-const CharInfo& FontManager::getCharInTexture(UnicodeType code) {
-	static CharInfo tempInfo;
+bool FontManager::getCharInTexture(UnicodeType code, CharInfo& info) {
 	auto it = mFontsMap.find(code);
 	if (it != mFontsMap.end()) {
-		return it->second;
+		info = it->second;
+		return true;
 	}
 	else {
-		CharInfo info;
 		std::vector<unsigned char> tempBuf;
 
-		getCharBitmap(code, mCharSize,info, tempBuf);
-
-		if (mCurTextureHeight == 0) {
-			mCurTextureHeight = mCharSize;
-		}
-		if (mCurTextureWidth + info.width > mTextureWidth) {//当前行写不下要换一行了
-			mCurTextureWidth = 0;
-			if (mCurTextureHeight + mCharSize > mTextureHeight)
-			{
-				//当前纹理已经写满了
-				return tempInfo;
+		if (getCharBitmap(code, mCharSize, info, tempBuf)) {
+			if (mCurTextureHeight == 0) {
+				mCurTextureHeight = mCharSize;
 			}
-			mCurTextureHeight += mCharSize;
-		}
-		info.x = mCurTextureWidth;
-		info.y = mCurTextureHeight - mCharSize;
-		
-		mpCharTexture->update(info.x, info.y, info.width, info.height, tempBuf.data());
+			if (mCurTextureWidth + info.width > mTextureWidth) {//当前行写不下要换一行了
+				mCurTextureWidth = 0;
+				if (mCurTextureHeight + mCharSize > mTextureHeight)
+				{
+					//当前纹理已经写满了
+					LOGE("ERROR the current char Texture is full");
+					return false;
+				}
+				mCurTextureHeight += mCharSize;
+			}
+			info.x = mCurTextureWidth;
+			info.y = mCurTextureHeight - mCharSize;
 
-		mCurTextureWidth += info.width;
+			mpCharTexture->update(info.x, info.y, info.width, info.height, tempBuf.data());
 
-		auto& ret = mFontsMap.try_emplace(code, info);
-		if (ret.second)
-		{
-			return ret.first->second;
-			LOGD("success to insert code-charinfo pair \n");
+			mCurTextureWidth += info.width;
+
+			auto& ret = mFontsMap.try_emplace(code, info);
+			if (!ret.second)
+			{
+				LOGD("ERROR to insert code-charinfo pair \n");
+			}
+			return true;
 		}
 		else {
-			LOGD("ERROR to insert code-charinfo pair \n");
-			return tempInfo;
+			LOGE("FreetypeUtils getCharBitmap error");
+			return false;
 		}
 	}
 }
@@ -497,39 +497,38 @@ void UiRender::calcTextViewWidthHeight(TextView* tv) {
 		auto len = UtfConvert::utf(pStr, code);
 		pStr += len;
 		i += len;
-		try {
-			const auto& cinfo = mpFontManager->getCharInTexture(code);
-			//判断宽度高度是否已经超出，是否要退出
-			if (currentPosX + scaleFactor*cinfo.width>maxWidth) {
-				//当前行满了，可能要换行或者结束
-				if (currentLines >= tvMaxLines) {
-					if (currentPosX >= maxWidth) {
-						//已经达到最大行了，并且当前的最后一个字符已经达到或者超出了最大宽度，渲染完毕
-						//允许最后一个字被截掉了一点。
-						break;
-					}
-				}
-				else {
-					//要换行了,判断高度是否超出边界
-					if (-currentPosY- yAdvance > maxHeight) {
-						break;
-					}
-					currentPosX = 0;
-					currentPosY += yAdvance;
-					//maxYAdv = 0;
-					++currentLines;
-					totalWidth = maxWidth;
-					totalHeight = -currentPosY;
+		
+		CharInfo cinfo;
+		if (!mpFontManager->getCharInTexture(code, cinfo)) {
+			continue;
+		}
+		//判断宽度高度是否已经超出，是否要退出
+		if (currentPosX + scaleFactor*cinfo.width>maxWidth) {
+			//当前行满了，可能要换行或者结束
+			if (currentLines >= tvMaxLines) {
+				if (currentPosX >= maxWidth) {
+					//已经达到最大行了，并且当前的最后一个字符已经达到或者超出了最大宽度，渲染完毕
+					//允许最后一个字被截掉了一点。
+					break;
 				}
 			}
-			//没有超出边界，继续
-			currentPosX += (scaleFactor*cinfo.advX + charSpace);//考虑到textview设置的额外字符间距
-			if (totalWidth < maxWidth) {
-				totalWidth = currentPosX - charSpace;
+			else {
+				//要换行了,判断高度是否超出边界
+				if (-currentPosY- yAdvance > maxHeight) {
+					break;
+				}
+				currentPosX = 0;
+				currentPosY += yAdvance;
+				//maxYAdv = 0;
+				++currentLines;
+				totalWidth = maxWidth;
+				totalHeight = -currentPosY;
 			}
 		}
-		catch (int error) {
-			LOGE("UiRender::calcTextViewWidthHeight getCharInTexture error %d", error);
+		//没有超出边界，继续
+		currentPosX += (scaleFactor*cinfo.advX + charSpace);//考虑到textview设置的额外字符间距
+		if (totalWidth < maxWidth) {
+			totalWidth = currentPosX - charSpace;
 		}
 	}
 
@@ -541,214 +540,226 @@ void UiRender::calcTextViewWidthHeight(TextView* tv) {
 	}
 }
 
+void UiRender::calcTextPosition(TextView* tv) {
+	const auto& text = tv->getText();
+	if (text.empty()) {
+		return;
+	}
+	if (!mpFontManager) {
+		LOGE("ERROR NO fontInfo");
+		return;
+	}
+	int originCharSize = mpFontManager->mCharSize;
+	int textSize = tv->getTextSize();//字的点阵大小，像素为单位
+	auto& tvRect = tv->getRect();
+	auto slen = text.size();
+	unsigned char* pStr = (unsigned char*)text.c_str();
+
+	//float currentPosX = tvRect.x; //下一个要渲染的文字的位置x
+	//float currentPosY = tvRect.y + tvRect.height / 2.0f + tvCharSize / 2.0f;//下一个要渲染的文字的位置x
+	//currentPosY = mWindowHeight - currentPosY;//ui的坐标系跟OpenGL的坐标系不一样，需要转换一下
+	//计算出要渲染的文字的纹理信息与位置信息，从(0,0)这个位置开始排版文字，等会再根据textview的属性，translate一下。
+	float currentPosX = 0.0f; //下一个要渲染的文字的基线位置x
+	float lineSpace = tv->getLineSpacingInc();
+	float currentPosY = -textSize - lineSpace;//下一个要渲染的文字的基线位置y
+	float yAdvance = currentPosY;//考虑到textview设置的额外行间距，默认的行间距是freetype渲染文字时的CharSize
+	float xExtraAdvance = tv->getCharSpacingInc();//考虑到textview设置的额外字符间距
+	float maxWidth = tvRect.width;//textView的宽度，字符渲染不能超出这个宽度
+	float maxHeight = tvRect.height;//textView的高度，字符渲染不能超出这个宽度
+	float currentWidth = 0.0f;//当前已经渲染出去的字符的宽度，这个不能超出maxWidth
+	int fontTextureWidth = mpFontManager->mpCharTexture->getWidth();//保存字体位图的纹理的宽度
+	int fontTextureHeight = mpFontManager->mpCharTexture->getHeight();//保存字体位图的纹理的高度
+	int tvMaxLines = tv->getMaxLines(); //textview设置的显示行数
+	int currentLines = 1;			//
+	int totalWidth = 0;				//字符串占用的宽度
+	int totalHeight = -currentPosY; //字符串占用的高度
+	float scaleFactor = (float)textSize / (float)mpFontManager->mCharSize;
+	std::vector<CharPosition>& textPositions = tv->getCharPositionArray();
+	textPositions.clear();
+	for (size_t i = 0; i < slen;) {
+		UnicodeType code;
+		auto len = UtfConvert::utf(pStr, code);
+		pStr += len;
+		i += len;
+		
+		CharInfo cinfo;
+		if (!mpFontManager->getCharInTexture(code, cinfo)) {
+			continue;
+		}
+		if (currentPosX + scaleFactor * cinfo.width > maxWidth) {//当前要渲染的文字会超出textview的边界
+			if (currentLines >= tvMaxLines) {
+				if (currentPosX >= maxWidth) {
+					//渲染完毕
+					break;
+				}
+			}
+			else {
+				//要换行了,增加一行
+				currentPosX = 0;
+				currentPosY += yAdvance;
+				//maxYAdv = 0;
+				++currentLines;
+				totalWidth = tvRect.width;
+				totalHeight = -currentPosY;
+			}
+		}
+
+		auto maxYAdvTemp = scaleFactor * (cinfo.height - cinfo.top);
+
+		//可以计算纹理矩阵了，mesh中的纹理坐标是(0,0)到(1,1)
+		CharPosition rInfo;
+
+		rInfo.texMatrix = glm::translate(rInfo.texMatrix, glm::vec3((float)cinfo.x / (float)fontTextureWidth,
+			(float)cinfo.y / (float)fontTextureHeight, 0.0f));
+		rInfo.texMatrix = glm::scale(rInfo.texMatrix, glm::vec3((float)cinfo.width / (float)fontTextureWidth,
+			(float)cinfo.height / (float)fontTextureHeight, 1.0f));
+
+		//计算文字的model矩阵，渲染ui的时候使用的是正交投影，适配窗口的宽高
+		//注意，ui坐标系统原点在左上角，y轴向下，与传统保持一直，openglY轴向上的
+		rInfo.matrix = glm::translate(rInfo.matrix, glm::vec3(currentPosX + scaleFactor * cinfo.left, currentPosY + lineSpace + 5 + scaleFactor * (cinfo.top - cinfo.height), 0.0f));
+		rInfo.matrix = glm::scale(rInfo.matrix, glm::vec3(scaleFactor * cinfo.width, scaleFactor * cinfo.height, 1.0f));
+
+		currentPosX += (scaleFactor * cinfo.advX + xExtraAdvance);//考虑到textview设置的额外字符间距
+		if (totalWidth < tvRect.width) {
+			totalWidth = currentPosX;
+		}
+		textPositions.emplace_back(rInfo);
+		
+	}
+	//经过上面的处理，文字已经排版好了，但是整个文本的左上角在坐标原点(0,0)
+	//需要根据textview的对齐属性（左对齐，右对齐，顶对齐，底对齐，水平居中，垂直居中）,结合textView的位置，确定平移向量，
+	auto textGrivate = tv->getGravity();
+	glm::vec3 moveVec(0.0f, 0.0f, 0.0f);
+	if (textGrivate == LayoutParam::Center) {
+		if (totalWidth >= tvRect.width) {
+			moveVec.x = tvRect.x;
+		}
+		else {
+			moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth) / 2.0f;
+		}
+
+		if (totalHeight >= tvRect.height) {
+			moveVec.y = mWindowHeight - tvRect.y;
+		}
+		else {
+			moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight) / 2.0f;
+		}
+
+	}
+	else if (textGrivate == LayoutParam::TopCenter) {
+		if (totalWidth >= tvRect.width) {
+			moveVec.x = tvRect.x;
+		}
+		else {
+			moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth) / 2.0f;
+		}
+		moveVec.y = mWindowHeight - tvRect.y;
+	}
+	else if (textGrivate == LayoutParam::LeftCenter) {
+		moveVec.x = tvRect.x;
+
+		if (totalHeight >= tvRect.height) {
+			moveVec.y = mWindowHeight - tvRect.y;
+		}
+		else {
+			moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight) / 2.0f;
+		}
+	}
+	else if (textGrivate == LayoutParam::BottomCenter) {
+		if (totalWidth >= tvRect.width) {
+			moveVec.x = tvRect.x;
+		}
+		else {
+			moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth) / 2.0f;
+		}
+
+		if (totalHeight >= tvRect.height) {
+			moveVec.y = mWindowHeight - tvRect.y;
+		}
+		else {
+			moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight);
+		}
+	}
+	else if (textGrivate == LayoutParam::RightCenter) {
+		if (totalWidth >= tvRect.width) {
+			moveVec.x = tvRect.x;
+		}
+		else {
+			moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth);
+		}
+
+		if (totalHeight >= tvRect.height) {
+			moveVec.y = mWindowHeight - tvRect.y;
+		}
+		else {
+			moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight) / 2.0f;
+		}
+	}
+	else if (textGrivate == LayoutParam::LeftTop) {
+		moveVec.x = tvRect.x;
+		moveVec.y = mWindowHeight - tvRect.y;
+	}
+	else if (textGrivate == LayoutParam::LeftBottom) {
+		moveVec.x = tvRect.x;
+		if (totalHeight >= tvRect.height) {
+			moveVec.y = mWindowHeight - tvRect.y;
+		}
+		else {
+			moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight);
+		}
+	}
+	else if (textGrivate == LayoutParam::RightBottom) {
+		if (totalWidth >= tvRect.width) {
+			moveVec.x = tvRect.x;
+		}
+		else {
+			moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth);
+		}
+		if (totalHeight >= tvRect.height) {
+			moveVec.y = mWindowHeight - tvRect.y;
+		}
+		else {
+			moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight);
+		}
+	}
+	else if (textGrivate == LayoutParam::RightTop) {
+		if (totalWidth >= tvRect.width) {
+			moveVec.x = tvRect.x;
+		}
+		else {
+			moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth);
+		}
+		moveVec.y = mWindowHeight - tvRect.y;
+	}
+
+	glm::mat4 moveToScreenMatrix(1.0f);
+	moveToScreenMatrix = glm::translate(moveToScreenMatrix, moveVec);
+
+	for (auto& info : textPositions) {
+		info.matrix = moveToScreenMatrix * info.matrix;
+	}
+}
+
 void UiRender::drawTextView(TextView* tv) {
 	if (tv != nullptr) {
 		drawBackground(tv);
-		const auto& text = tv->getText();
-		if (text.empty()) {
-			return;
+		if (tv->getUpdateTextPosition()) {
+			calcTextPosition(tv);
 		}
-		if (!mpFontManager) {
-			LOGE("ERROR NO fontInfo");
-			return;
-		}
-		int originCharSize = mpFontManager->mCharSize;
-		int textSize = tv->getTextSize();//字的点阵大小，像素为单位
-		auto& tvRect = tv->getRect();
-		auto slen = text.size();
-		unsigned char* pStr = (unsigned char*)text.c_str();
-
-		//float currentPosX = tvRect.x; //下一个要渲染的文字的位置x
-		//float currentPosY = tvRect.y + tvRect.height / 2.0f + tvCharSize / 2.0f;//下一个要渲染的文字的位置x
-		//currentPosY = mWindowHeight - currentPosY;//ui的坐标系跟OpenGL的坐标系不一样，需要转换一下
-		//计算出要渲染的文字的纹理信息与位置信息，从(0,0)这个位置开始排版文字，等会再根据textview的属性，translate一下。
-		float currentPosX = 0.0f; //下一个要渲染的文字的基线位置x
-		float lineSpace = tv->getLineSpacingInc();
-		float currentPosY = -textSize - lineSpace;//下一个要渲染的文字的基线位置y
-		float yAdvance = currentPosY;//考虑到textview设置的额外行间距，默认的行间距是freetype渲染文字时的CharSize
-		float xExtraAdvance = tv->getCharSpacingInc();//考虑到textview设置的额外字符间距
-		float maxWidth = tvRect.width;//textView的宽度，字符渲染不能超出这个宽度
-		float maxHeight = tvRect.height;//textView的高度，字符渲染不能超出这个宽度
-		float currentWidth = 0.0f;//当前已经渲染出去的字符的宽度，这个不能超出maxWidth
-		int fontTextureWidth = mpFontManager->mpCharTexture->getWidth();//保存字体位图的纹理的宽度
-		int fontTextureHeight = mpFontManager->mpCharTexture->getHeight();//保存字体位图的纹理的高度
-		int tvMaxLines = tv->getMaxLines(); //textview设置的显示行数
-		int currentLines = 1;			//
-		int totalWidth = 0;				//字符串占用的宽度
-		int totalHeight = -currentPosY; //字符串占用的高度
-		float scaleFactor = (float)textSize / (float)mpFontManager->mCharSize;
-		std::vector<CharPosition> charsRenderInfoArray;
-		for(size_t i = 0; i<slen;){
-			UnicodeType code;
-			auto len = UtfConvert::utf(pStr, code);
-			pStr += len;
-			i += len;
-			try {
-				const auto& cinfo = mpFontManager->getCharInTexture(code);
-				if (currentPosX + scaleFactor*cinfo.width>maxWidth) {//当前要渲染的文字会超出textview的边界
-					if (currentLines >= tvMaxLines) {
-						if (currentPosX >= maxWidth) {
-							//渲染完毕
-							break;
-						}
-					}
-					else {
-						//要换行了,增加一行
-						currentPosX = 0;
-						currentPosY += yAdvance;
-						//maxYAdv = 0;
-						++currentLines;
-						totalWidth = tvRect.width;
-						totalHeight = -currentPosY;
-					}
-				}
-
-				auto maxYAdvTemp = scaleFactor*(cinfo.height - cinfo.top);
-				
-				//可以计算纹理矩阵了，mesh中的纹理坐标是(0,0)到(1,1)
-				CharPosition rInfo;
-				
-				rInfo.texMatrix = glm::translate(rInfo.texMatrix, glm::vec3((float)cinfo.x / (float)fontTextureWidth,
-					(float)cinfo.y / (float)fontTextureHeight,0.0f));
-				rInfo.texMatrix = glm::scale(rInfo.texMatrix, glm::vec3((float)cinfo.width / (float)fontTextureWidth,
-					(float)cinfo.height / (float)fontTextureHeight,1.0f));
-
-				//计算文字的model矩阵，渲染ui的时候使用的是正交投影，适配窗口的宽高
-				//注意，ui坐标系统原点在左上角，y轴向下，与传统保持一直，openglY轴向上的
-				rInfo.matrix = glm::translate(rInfo.matrix, glm::vec3(currentPosX+ scaleFactor*cinfo.left, currentPosY+ lineSpace+5 + scaleFactor*(cinfo.top-cinfo.height), 0.0f));
-				rInfo.matrix = glm::scale(rInfo.matrix, glm::vec3(scaleFactor*cinfo.width, scaleFactor*cinfo.height, 1.0f));
-
-				currentPosX += (scaleFactor*cinfo.advX + xExtraAdvance);//考虑到textview设置的额外字符间距
-				if (totalWidth < tvRect.width) {
-					totalWidth = currentPosX;
-				}
-				charsRenderInfoArray.emplace_back(rInfo);
-			}
-			catch (int error) {
-				LOGE("getCharInfo error %d", error);
-			}
-
-		}
-		//经过上面的处理，文字已经排版好了，但是整个文本的左上角在坐标原点(0,0)
-		//需要根据textview的对齐属性（左对齐，右对齐，顶对齐，底对齐，水平居中，垂直居中）,结合textView的位置，确定平移向量，
-		auto textGrivate = tv->getGravity();
-		glm::vec3 moveVec(0.0f, 0.0f, 0.0f);
-		if (textGrivate == LayoutParam::Center) {
-			if (totalWidth >= tvRect.width) {
-				moveVec.x = tvRect.x;
-			}
-			else {
-				moveVec.x = tvRect.x + (float)(tvRect.width- totalWidth)/2.0f;
-			}
-
-			if (totalHeight >= tvRect.height) {
-				moveVec.y = mWindowHeight - tvRect.y;
-			}
-			else {
-				moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight) / 2.0f;
-			}
-			
-		}
-		else if (textGrivate == LayoutParam::TopCenter) {
-			if (totalWidth >= tvRect.width) {
-				moveVec.x = tvRect.x;
-			}
-			else {
-				moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth) / 2.0f;
-			}
-			moveVec.y = mWindowHeight - tvRect.y;
-		}
-		else if (textGrivate == LayoutParam::LeftCenter) {
-			moveVec.x = tvRect.x;
-
-			if (totalHeight >= tvRect.height) {
-				moveVec.y = mWindowHeight - tvRect.y;
-			}
-			else {
-				moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight) / 2.0f;
-			}
-		}
-		else if (textGrivate == LayoutParam::BottomCenter) {
-			if (totalWidth >= tvRect.width) {
-				moveVec.x = tvRect.x;
-			}
-			else {
-				moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth) / 2.0f;
-			}
-
-			if (totalHeight >= tvRect.height) {
-				moveVec.y = mWindowHeight - tvRect.y;
-			}
-			else {
-				moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight);
-			}
-		}
-		else if (textGrivate == LayoutParam::RightCenter) {
-			if (totalWidth >= tvRect.width) {
-				moveVec.x = tvRect.x;
-			}
-			else {
-				moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth);
-			}
-
-			if (totalHeight >= tvRect.height) {
-				moveVec.y = mWindowHeight - tvRect.y;
-			}
-			else {
-				moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight) / 2.0f;
-			}
-		}
-		else if (textGrivate == LayoutParam::LeftTop) {
-			moveVec.x = tvRect.x;
-			moveVec.y = mWindowHeight - tvRect.y;
-		}
-		else if (textGrivate == LayoutParam::LeftBottom) {
-			moveVec.x = tvRect.x;
-			if (totalHeight >= tvRect.height) {
-				moveVec.y = mWindowHeight - tvRect.y;
-			}
-			else {
-				moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight);
-			}
-		}
-		else if (textGrivate == LayoutParam::RightBottom) {
-			if (totalWidth >= tvRect.width) {
-				moveVec.x = tvRect.x;
-			}
-			else {
-				moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth);
-			}
-			if (totalHeight >= tvRect.height) {
-				moveVec.y = mWindowHeight - tvRect.y;
-			}
-			else {
-				moveVec.y = mWindowHeight - tvRect.y - (float)(tvRect.height - totalHeight);
-			}
-		}
-		else if (textGrivate == LayoutParam::RightTop) {
-			if (totalWidth >= tvRect.width) {
-				moveVec.x = tvRect.x;
-			}
-			else {
-				moveVec.x = tvRect.x + (float)(tvRect.width - totalWidth);
-			}
-			moveVec.y = mWindowHeight - tvRect.y;
-		}
+		auto tvRect = tv->getRect();
+		auto& textPositions = tv->getCharPositionArray();
 
 		//根据对齐属性，调整每一个的位置,并且渲染
 		glEnable(GL_SCISSOR_TEST);
 		glScissor(tvRect.x, mWindowHeight-tvRect.y- tvRect.height, tvRect.width, tvRect.height);
 		float trx = 0.0f;
-		for (auto it = charsRenderInfoArray.begin(); it != charsRenderInfoArray.end(); ++it) {
-			glm::mat4 moveToScreenMatrix(1.0f);
-			moveToScreenMatrix = glm::translate(moveToScreenMatrix, moveVec);
-			//it->matrix = glm::translate(it->matrix, moveVec);
+		for (auto& charPos : textPositions) {
 			//绘制
 			if (mpFontManager->mpMaterial) {
 				mpFontManager->mpMaterial->setUniformColor(tv->getTextColor());
 			}
 			if (mpFontManager->mpCharMesh) {
-				mpFontManager->mpCharMesh->render(mProjMatrix*moveToScreenMatrix*it->matrix, it->texMatrix);
+				mpFontManager->mpCharMesh->render(mProjMatrix * charPos.matrix, charPos.texMatrix);
 			}
 		}
 		glDisable(GL_SCISSOR_TEST);

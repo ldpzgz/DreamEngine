@@ -12,6 +12,6 @@
 bool initFreetype(const std::string& ttfPath);
 void releaseFreetype();
 
-void getCharBitmap(UnicodeType code,int charPixelSize,CharInfo& info, std::vector<unsigned char>& tempBuf);
+bool getCharBitmap(UnicodeType code,int charPixelSize,CharInfo& info, std::vector<unsigned char>& tempBuf);
 void getCharOutline();
 #endif

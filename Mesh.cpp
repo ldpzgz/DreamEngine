@@ -156,21 +156,6 @@ void Mesh::loadMesh()
 		GLfloat tex[] = { 1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,1.0f,0.0f };
 		createBufferObject((GLfloat*)pos.data(), pos.size()*sizeof(Vec3),4, indexes, sizeof(indexes), tex, sizeof(tex));
 	}
-	else if (mMeshType == MeshType::MESH_DIY) {
-		GLfloat pos[] = { 
-			-1.0f,1.0f,0.0f,
-			-1.0f,-1.0f,0.0f,
-			1.0f,-1.0f,0.0f,
-			1.0f,1.0f,0.0f };
-		GLfloat color[] = {
-			0.5f,0.0f,0.0f,1.0f,
-			0.5f,0.0f,0.0f,1.0f,
-			0.5f,0.0f,0.0f,1.0f,
-			0.5f,0.0f,0.0f,1.0f,
-		};
-		GLuint indexes[] = { 0,1,2,3,1,2 };
-		createBufferObject(pos, sizeof(pos), 4,indexes, sizeof(indexes),nullptr,0,nullptr,0,color,sizeof(color));
-	}
 	else if (mMeshType == MeshType::MESH_Triangle) {
 		GLfloat pos[] = { 0.0f,1.0f,0.0f,
 			-1.0f,-1.0f,0.0f,
@@ -267,13 +252,14 @@ bool Mesh::createBufferObject(GLfloat* pos,int posByteSize, int countOfVertex, G
 }
 
 //更新pos vbo
-bool Mesh::updataPos(float* pos, int byteOffset, int size)
+bool Mesh::updataPos(float* pos, int byteOffset, int size,int numOfVertex)
 {
 	if (size + byteOffset > mPosByteSize) {
 		if (byteOffset > 0) {
 			LOGE("ERROR to update mesh pos data, the size + byteOffset is greater then vbo size");
 			return false;
 		}
+		mCountOfVertex = numOfVertex;
 		setPosData(pos, size);
 	}
 	else {

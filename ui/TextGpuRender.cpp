@@ -2,9 +2,15 @@
 #include "../MeshBezier.h"
 void TextGpuRender::init() {
 	mpMesh = make_shared<Mesh>(MeshType::MESH_DIY);
-	mpMaterial = Material::getMaterial("textGpuRender");
-	mpMesh->setMaterial(mpMaterial);
+	mpUniformColorMaterial = Material::getMaterial("posUniformColor");
+	mpTextGpuRenderMaterial = Material::getMaterial("textGpuRender");
+	mpMultisampleTexture = Material::getTexture("tgrTexture");
+	mpFirstTexture = Material::createTexture("tgrFirst", 512, 512, nullptr, GL_LUMINANCE);
+
+	mpMesh->setMaterial(mpUniformColorMaterial);
+	mpMesh->setUniformColor(1.0f / 255.0f, 0.0f, 0.0f, 0.0f);
 	mpFbo = make_shared<Fbo>();
+	mpFbo->attachColorTexture(mpFirstTexture);
 	mpFbo->setDepthTest(false);
 	mpFbo->setBlend(true);
 	mpFbo->setBlendValue(GL_ONE, GL_ONE, GL_ONE, GL_ONE, GL_FUNC_ADD, GL_FUNC_ADD);
@@ -74,7 +80,7 @@ int TextGpuRender::cubicTo(const FT_Vector* control1,const FT_Vector* control2,c
 
 void TextGpuRender::generateMesh() {
 	if (mpMesh) {
-		mpMesh->updataPos((GLfloat*)mPos.data(), 0,sizeof(Vec3) * mPos.size());
+		mpMesh->updataPos((GLfloat*)mPos.data(), 0,sizeof(Vec3) * mPos.size(), mPos.size());
 		mpMesh->updataIndex((GLuint*)mIndex.data(), 0,sizeof(Vec3ui) * mIndex.size());
 	}
 	else {
@@ -91,4 +97,8 @@ void TextGpuRender::render(glm::mat4 modelMatrix) {
 	else {
 		LOGE("ERROR to call TextGpuRender::render the mpFbo or mpMesh is null");
 	}
+}
+
+void TextGpuRender::drawTextView(TextView* tv) {
+
 }

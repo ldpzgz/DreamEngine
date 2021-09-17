@@ -46,6 +46,20 @@ public:
 		rgba[3] = 1.0f;
 	}
 
+	Color(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
+		rgba[0] = r / 255.0f;
+		rgba[1] = g / 255.0f;
+		rgba[2] = b / 255.0f;
+		rgba[3] = a / 255.0f;
+	}
+
+	Color(unsigned char r, unsigned char g, unsigned char b) {
+		rgba[0] = r / 255.0f;
+		rgba[1] = g / 255.0f;
+		rgba[2] = b / 255.0f;
+		rgba[3] = 1.0f;
+	}
+
 	Color() :r(0.0f),g(0.0f),b(0.0f),a(1.0f){
 	};
 
@@ -53,6 +67,14 @@ public:
 
 	float& operator[](int index) {
 		return rgba[index];
+	}
+
+	bool operator==(const Color& c) {
+		return (r == c.r && g == c.g && b == c.b && a == c.a);
+	}
+
+	bool operator!=(const Color& c) {
+		return (r != c.r || g != c.g || b != c.b || a != c.a);
 	}
 
 	bool isZero() const{
