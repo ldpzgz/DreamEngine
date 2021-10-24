@@ -10,7 +10,7 @@ MeshBezier::~MeshBezier() {
 
 }
 
-void MeshBezier::draw(int posloc, int texloc, int norloc, int colorloc) {
+void MeshBezier::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc) {
 	drawLineStrip(posloc);
 }
 

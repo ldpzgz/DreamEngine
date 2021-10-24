@@ -54,18 +54,20 @@ public:
 
 	bool initShaderFromFile(const char* vsFile,const char* psFile);
 
-	void setLocation(int pos, int tex=-1, int color=-1, int nor=-1) {
+	void setLocation(int pos, int tex=-1, int color=-1, int nor=-1,int tangent=-1) {
 		mPosLoc = pos;
 		mTexcoordLoc = tex;
 		mColorLoc = color;
 		mNormalLoc = nor;
+		mTangentLoc = tangent;
 	}
 
-	void getLocation(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc) {
+	void getLocation(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc,int& tangentLoc) {
 		posLoc = mPosLoc;
 		texcoordLoc = mTexcoordLoc;
 		colorLoc = mColorLoc;
 		normalLoc = mNormalLoc;
+		tangentLoc = mTangentLoc;
 	}
 
 	int getPosLoc() {
@@ -118,10 +120,21 @@ public:
 	void setTextureMatrix(const glm::mat4&);
 	void setUniformColor(float r, float g, float b, float a);
 	void setUniformColor(Color color);
+	void setLightPos(const Vec3& lightPos);
+	void setViewPos(const Vec3& viewPos);
+	void setLightColor(const Vec3& lightColor);
+	void setMvMatrix(const glm::mat4&);
+	void setViewMatrix(const glm::mat4&);
 
 	void enable();
 
 	void getMvpMatrixLoc(const std::string& mvpMatrixNameInShader);
+	void getMvMatrixLoc(const std::string& mvMatrixNameInShader);
+	void getViewMatrixLoc(const std::string& viewMatrixNameInShader);
+	void getLightPosLoc(const std::string& lightPosNameInShader);
+	void getViewPosLoc(const std::string& viewPosNameInShader);
+	void getLightColorLoc(const std::string& lightColorNameInShader);
+
 	void getTextureMatrixLoc(const std::string& textureMatrixNameInShader);
 	void getUniformColorLoc(const std::string& uniformColorNameInShader);
 
@@ -136,18 +149,29 @@ private:
 	int mTexcoordLoc{ -1 };
 	int mColorLoc{ -1 };
 	int mNormalLoc{ -1 };
+	int mTangentLoc{ -1 };
 
 	int mMvpMatrixLoc{ -1 };
+	int mMvMatrixLoc{ -1 };
+	int mViewMatrixLoc{ -1 };
 	int mTextureMatrixLoc{ -1 };
+	int mLightPosLoc{ -1 };
+	int mViewPosLoc{ -1 };
+	int mLightColorLoc{ -1 };
 	int mUniformColorLoc{ -1 }; //在fs里面可以有个uniform vec4 color，用于设置输出固定颜色
 	std::string mName;
-	glm::mat4 mMvpMatrix;
-	glm::mat4 mTextureMatrix;
+	glm::mat4 mMvpMatrix{ 1 };
+	glm::mat4 mMvMatrix{ 1 };
+	glm::mat4 mViewMatrix{ 1 };
+	glm::mat4 mTextureMatrix{ 1 };
 	//int mSamplerCount;
 	std::map<std::string,int> mAttributeLocMap;
 	std::map<std::string,int> mUniformLocMap;
 	std::unordered_map<int, std::shared_ptr<Texture>> mSamplerToTex;//Sampler in shader to Texture;
 	Color mUniformColor{ 0.0f,0.0f,0.0f,0.0f };
+	Vec3 mLightPos{ 0.0f,100.0f,0.0f };
+	Vec3 mViewPos{ 0.0f,100.0f,0.0f };
+	Vec3 mLightColor{ 1.0f,1.0f,1.0f };
 protected:
 	//GL_VERTEX_SHADER,GL_FRAGMENT_SHADER
 	GLuint loadShader ( GLenum type, const char *shaderSrc );

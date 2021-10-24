@@ -8,7 +8,7 @@ public:
 	explicit Camera(const shared_ptr<Scene>& ps);
 	Camera(const shared_ptr<Scene>& ps,float asp);
 	~Camera();
-	//²ÎÊı·Ö±ğÊÇÕÅ¿ª½Ç£¬¿í¸ß±È£¬½üÆ½Ãæ£¬Ô¶Æ½Ãæ
+	//å‚æ•°åˆ†åˆ«æ˜¯å¼ å¼€è§’ï¼Œå®½é«˜æ¯”ï¼Œè¿‘å¹³é¢ï¼Œè¿œå¹³é¢
 	void perspective(float fovy, float aspect, float n, float f);
 
 	void ortho(float left, float right, float bottom, float top, float zNear, float zFar);
@@ -16,7 +16,7 @@ public:
 	void renderScene();
 
 	void renderNode(const shared_ptr<Node<glm::mat4>>& node) const;
-	//ÉèÖÃ¿í¸ß±È£¬Õâ¸öÓë´°¿ÚÏÔÊ¾ÇøÓò²»·ûºÏµÄ»°£¬»­Ãæ»á±äĞÎ
+	//è®¾ç½®å®½é«˜æ¯”ï¼Œè¿™ä¸ªä¸çª—å£æ˜¾ç¤ºåŒºåŸŸä¸ç¬¦åˆçš„è¯ï¼Œç”»é¢ä¼šå˜å½¢
 	void setAspect(float asp);
 
 	void translate(float x, float y, float z);
@@ -24,13 +24,17 @@ public:
 	void rotate(float angle, const glm::vec3& vec);
 
 	void lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up);
+
+	Vec3& getPosition() {
+		return mPosition;
+	}
 private:
-	float aspect;//ÆÁÄ»¿í¸ß±È
-	float fov;
-	float nearp;
-	float farp;
-	glm::mat4 mProjMatrix;
-	glm::mat4 mProjViewMatrix;
+	float aspect{ 4.0f / 3.0f };//å±å¹•å®½é«˜æ¯”
+	float fov{ 45.0f };
+	float nearp{ 0.1f };
+	float farp{ 1000.0f };
+	glm::mat4 mProjMatrix{ 1.0f };
+	Vec3 mPosition{ 0.0f,0.0f,0.0f };
 	weak_ptr<Scene> mpScene;
 };
 

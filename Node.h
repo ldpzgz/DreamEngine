@@ -104,7 +104,7 @@ public:
 		updateChildWorldMatrix();
 	}
 
-
+	//只返回我自己的matrix
 	T& getMatrix() {
 		return mMat;
 	}

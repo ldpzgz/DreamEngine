@@ -202,11 +202,20 @@ void Shader::enable()
 		if (it->second) {
 			it->second->active(GL_TEXTURE0 + texNum);
 			glUniform1i(it->first, texNum);
+			++texNum;
 		}
 	}
 
 	if (mMvpMatrixLoc >= 0) {
 		glUniformMatrix4fv(mMvpMatrixLoc, 1, GL_FALSE, glm::value_ptr(mMvpMatrix));
+	}
+
+	if (mMvMatrixLoc >= 0) {
+		glUniformMatrix4fv(mMvMatrixLoc, 1, GL_FALSE, glm::value_ptr(mMvMatrix));
+	}
+
+	if (mViewMatrixLoc >= 0) {
+		glUniformMatrix4fv(mViewMatrixLoc, 1, GL_FALSE, glm::value_ptr(mViewMatrix));
 	}
 
 	if (mTextureMatrixLoc >= 0) {
@@ -215,6 +224,18 @@ void Shader::enable()
 
 	if (mUniformColorLoc >= 0) {
 		glUniform4f(mUniformColorLoc, mUniformColor[0], mUniformColor[1], mUniformColor[2], mUniformColor[3]);
+	}
+
+	if (mLightPosLoc >= 0) {
+		glUniform3f(mLightPosLoc, mLightPos.x, mLightPos.y, mLightPos.z);
+	}
+
+	if (mViewPosLoc >= 0) {
+		glUniform3f(mViewPosLoc, mViewPos.x, mViewPos.y, mViewPos.z);
+	}
+
+	if (mLightColorLoc >= 0) {
+		glUniform3f(mLightColorLoc, mLightColor.x, mLightColor.y, mLightColor.z);
 	}
 }
 
@@ -296,11 +317,58 @@ void Shader::setUniformColor(Color color) {
 	mUniformColor = color;
 }
 
+void Shader::setLightPos(const Vec3& lightPos) {
+	mLightPos = lightPos;
+}
+void Shader::setViewPos(const Vec3& viewPos) {
+	mViewPos = viewPos;
+}
+void Shader::setLightColor(const Vec3& lightColor) {
+	mLightColor = lightColor;
+}
+void Shader::setMvMatrix(const glm::mat4& m) {
+	mMvMatrix = m;
+}
+void Shader::setViewMatrix(const glm::mat4& m) {
+	mViewMatrix = m;
+}
+
 
 void Shader::getMvpMatrixLoc(const std::string& mvpMatrixNameInShader) {
 	mMvpMatrixLoc = glGetUniformLocation(mProgram, mvpMatrixNameInShader.c_str());
 	if (mMvpMatrixLoc < 0) {
 		LOGE("the shader %s  has no %s uniform member", mName.c_str(), mvpMatrixNameInShader.c_str());
+	}
+}
+
+void Shader::getMvMatrixLoc(const std::string& mvMatrixNameInShader) {
+	mMvMatrixLoc = glGetUniformLocation(mProgram, mvMatrixNameInShader.c_str());
+	if (mMvMatrixLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), mvMatrixNameInShader.c_str());
+	}
+}
+void Shader::getViewMatrixLoc(const std::string& viewMatrixNameInShader) {
+	mViewMatrixLoc = glGetUniformLocation(mProgram, viewMatrixNameInShader.c_str());
+	if (mViewMatrixLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), viewMatrixNameInShader.c_str());
+	}
+}
+void Shader::getLightPosLoc(const std::string& lightPosNameInShader) {
+	mLightPosLoc = glGetUniformLocation(mProgram, lightPosNameInShader.c_str());
+	if (mLightPosLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), lightPosNameInShader.c_str());
+	}
+}
+void Shader::getViewPosLoc(const std::string& viewPosNameInShader) {
+	mViewPosLoc = glGetUniformLocation(mProgram, viewPosNameInShader.c_str());
+	if (mViewPosLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), viewPosNameInShader.c_str());
+	}
+}
+void Shader::getLightColorLoc(const std::string& lightColorNameInShader) {
+	mLightColorLoc = glGetUniformLocation(mProgram, lightColorNameInShader.c_str());
+	if (mLightColorLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), lightColorNameInShader.c_str());
 	}
 }
 

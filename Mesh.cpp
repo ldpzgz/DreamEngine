@@ -8,6 +8,8 @@
 #include "Mesh.h"
 #include "Log.h"
 #include <cmath>
+#include <fstream>
+#include "LdpMesh.h"
 //extern void checkglerror();
 void checkglerror()
 {
@@ -48,6 +50,8 @@ void Mesh::reset() {
 	mPosVbo = 0;
 	mTexVbo = 0;
 	mNorVbo = 0;
+	mTangentVbo = 0;
+	mBiNormalVbo = 0;
 	mColorVbo = 0;
 	mIndexVbo = 0;
 	mposLocation = 0;
@@ -60,6 +64,8 @@ void Mesh::reset() {
 	mColorByteSize = 0;
 	mTexByteSize = 0;
 	mIndexByteSize = 0;
+	mTangentByteSize = 0;
+	mBiNormalByteSize = 0;
 	mMeshType = MeshType::MESH_None;
 	mCountOfVertex = 0;
 	mDrawType = DrawType::Triangles;
@@ -220,25 +226,92 @@ void Mesh::loadMesh(const std::vector<Vec3>& pos, const std::vector<Vec3ui>& ind
 	createBufferObject((float*)pos.data(), pos.size() * sizeof(Vec3), pos.size(), (GLuint*)index.data() , index.size()*sizeof(Vec3ui));
 }
 
-bool Mesh::createBufferObject(GLfloat* pos,int posByteSize, int countOfVertex, GLuint* index,int indexByteSize,
-	GLfloat* tex,int texByteSize,GLfloat* nor,int norByteSize, GLfloat* color, int colorByteSize,int drawType)
+void Mesh::loadMesh(const std::string meshFilePath) {
+	std::ifstream infile;
+	infile.open(meshFilePath, std::ifstream::in | std::ifstream::binary);
+	if (infile.good()) {
+		LdpMesh mesh;
+		infile.read((char*)&mesh, sizeof(mesh));
+		if (infile.gcount() == sizeof(mesh)) {
+			std::vector<float> pos;
+			std::vector<float> texcoord;
+			std::vector<float> normal;
+			std::vector<float> tangent;
+			std::vector<float> bitangent;
+			std::vector<unsigned int> index;
+			if (mesh.vertexCount > 0) {
+				pos.reserve(mesh.vertexCount*3);
+				infile.read((char*)pos.data(), mesh.vertexLength);
+				assert(infile.gcount() == mesh.vertexLength);
+			}
+
+			if (mesh.texcoordLength > 0) {
+				texcoord.reserve(mesh.vertexCount * 2);
+				infile.read((char*)texcoord.data(), mesh.texcoordLength);
+				assert(infile.gcount() == mesh.texcoordLength);
+			}
+
+			if (mesh.normalLength > 0) {
+				normal.reserve(mesh.vertexCount * 3);
+				infile.read((char*)normal.data(), mesh.normalLength);
+				assert(infile.gcount() == mesh.normalLength);
+			}
+
+			if (mesh.tangentsLength > 0) {
+				tangent.reserve(mesh.vertexCount * 3);
+				infile.read((char*)tangent.data(), mesh.tangentsLength);
+				assert(infile.gcount() == mesh.tangentsLength);
+			}
+
+			if (mesh.bitangentsLength > 0) {
+				bitangent.reserve(mesh.vertexCount * 3);
+				infile.read((char*)bitangent.data(), mesh.bitangentsLength);
+				assert(infile.gcount() == mesh.bitangentsLength);
+			}
+
+			if (mesh.indexLength > 0) {
+				index.reserve(mesh.indexLength/sizeof(unsigned int));
+				infile.read((char*)index.data(), mesh.indexLength);
+				assert(infile.gcount() == mesh.indexLength);
+			}
+
+			createBufferObject(pos.data(), mesh.vertexLength, mesh.vertexCount, 
+				index.data(), mesh.indexLength, 
+				texcoord.data(), mesh.texcoordLength,
+				normal.data(),mesh.normalLength,
+				nullptr,0,
+				tangent.data(),mesh.tangentsLength);
+		}
+	}
+}
+
+bool Mesh::createBufferObject(GLfloat* pos,int posByteSize, int countOfVertex, 
+	GLuint* index,int indexByteSize,
+	GLfloat* tex,int texByteSize,
+	GLfloat* nor,int norByteSize, 
+	GLfloat* color, int colorByteSize,
+	GLfloat* tangent, int tangentByteSize,
+	int drawType)
 {
-	if(pos != nullptr)
+	if(pos != nullptr && posByteSize>0)
 	{
 		mCountOfVertex = countOfVertex;
 		setPosData(pos,posByteSize, drawType);
 		checkglerror();
 	}
-	if(tex != nullptr)
+	if(tex != nullptr && texByteSize > 0)
 	{
 		setTexcoordData(tex,texByteSize, drawType);
 	}
-	if(nor != nullptr)
+	if(nor != nullptr && norByteSize > 0)
 	{
 		setNormalData(nor,norByteSize, drawType);
 	}
-	if (color != nullptr) {
+	if (color != nullptr && colorByteSize > 0) {
 		setColorData(color, colorByteSize, drawType);
+	}
+	if (tangent != nullptr && tangentByteSize > 0) {
+		setTangentData(tangent, tangentByteSize, drawType);
 	}
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -301,6 +374,36 @@ bool Mesh::updateNormal(float* normal, int byteOffset, int size) {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	return true;
 }
+
+//bool Mesh::updateBiNormal(float* biNormal, int byteOffset, int size) {
+//	if (size + byteOffset > mBiNormalByteSize)
+//	{
+//		if (byteOffset > 0) {
+//			LOGE("ERROR to update mesh normal data, the size + byteOffset is greater then vbo size");
+//			return false;
+//		}
+//		setBiTangentData(biNormal, size);
+//	}
+//	glBindBuffer(GL_ARRAY_BUFFER, mBiNormalVbo);
+//	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, biNormal);
+//	glBindBuffer(GL_ARRAY_BUFFER, 0);
+//	return true;
+//}
+
+bool Mesh::updateTangent(float* tangent, int byteOffset, int size) {
+	if (size + byteOffset > mTangentByteSize)
+	{
+		if (byteOffset > 0) {
+			LOGE("ERROR to update mesh normal data, the size + byteOffset is greater then vbo size");
+			return false;
+		}
+		setNormalData(tangent, size);
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, mTangentVbo);
+	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, tangent);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	return true;
+}
 //更新纹理坐标vbo
 bool Mesh::updataTexcoord(float* tex, int byteOffset, int size)
 {
@@ -359,7 +462,7 @@ void Mesh::drawLineStrip(int posloc)
 	//glDrawElements(GL_LINE_LOOP, mNumOfIndex, GL_UNSIGNED_INT, (const void*)0);
 }
 
-void Mesh::drawTriangleFan(int posloc, int texloc,int norloc,int colorloc)
+void Mesh::drawTriangleFan(int posloc, int texloc,int norloc,int colorloc, int tangentloc)
 {
 	//glFrontFace(GL_CW);
 	if (createVaoIfNeed(posloc)){
@@ -391,6 +494,13 @@ void Mesh::drawTriangleFan(int posloc, int texloc,int norloc,int colorloc)
 
 		}
 
+		if (tangentloc > 0) {
+			glBindBuffer(GL_ARRAY_BUFFER, mTangentVbo);
+			glEnableVertexAttribArray(tangentloc);
+			int componentOfTangent = mTangentByteSize / (sizeof(GLfloat) * mCountOfVertex);
+			glVertexAttribPointer(tangentloc, componentOfTangent, GL_FLOAT, GL_FALSE, 0, 0);
+		}
+
 		if (colorloc >= 0) {
 			glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
 			glEnableVertexAttribArray(colorloc);
@@ -412,7 +522,7 @@ void Mesh::drawTriangleFan(int posloc, int texloc,int norloc,int colorloc)
 }
 
 
-void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc)
+void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc, int tangentloc)
 {
 	if (createVaoIfNeed(posloc)) {
 		glBindVertexArray(mVAO);
@@ -443,6 +553,13 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc)
 			int componentOfNormal = mNorByteSize / (sizeof(GLfloat) * mCountOfVertex);
 			glVertexAttribPointer(norloc, componentOfNormal, GL_FLOAT, GL_FALSE, 0, 0);
 
+		}
+
+		if (tangentloc > 0) {
+			glBindBuffer(GL_ARRAY_BUFFER, mTangentVbo);
+			glEnableVertexAttribArray(tangentloc);
+			int componentOfTangent = mTangentByteSize / (sizeof(GLfloat) * mCountOfVertex);
+			glVertexAttribPointer(tangentloc, componentOfTangent, GL_FLOAT, GL_FALSE, 0, 0);
 		}
 
 		if (colorloc >= 0) {
@@ -481,15 +598,15 @@ void Mesh::getPointSizeRange() {
 	LOGD("gl global Param: GL_ALIASED_POINT_SIZE_RANGE %f,%f", pointSizeRange[0], pointSizeRange[1]);
 }
 
-void Mesh::draw(int posloc, int texloc, int norloc, int colorloc)
+void Mesh::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc)
 {
 	if (mDrawType == DrawType::Triangles)
 	{
-		drawTriangles(posloc, texloc, norloc,colorloc);
+		drawTriangles(posloc, texloc, norloc,colorloc, tangentloc);
 	}
 	else if (mDrawType == DrawType::TriangleFan)
 	{
-		drawTriangleFan(posloc, texloc, norloc, colorloc);
+		drawTriangleFan(posloc, texloc, norloc, colorloc, tangentloc);
 	}
 	else if (mDrawType == DrawType::LineStrip)
 	{
@@ -497,11 +614,17 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc)
 	}
 }
 
-void Mesh::render(const glm::mat4& mvpMat) {
+void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat, const Vec3& lightPos, const Vec3& viewPos) {
 	if (mpMaterial) {
 		//update mvpMatrix;
-		mpMaterial->updateMvpMatrix(mvpMat);
+		mpMaterial->setMvpMatrix(mvpMat);
+		mpMaterial->setMvMatrix(mvMat);
+		//mpMaterial->setViewMatrix(viewMat);
 		mpMaterial->setTextureMatrix();
+		mpMaterial->setLightPos(lightPos);
+		mpMaterial->setViewPos(viewPos);
+
+		
 		if (mpUniformColor) {
 			mpMaterial->setUniformColor(*mpUniformColor);
 		}
@@ -510,8 +633,9 @@ void Mesh::render(const glm::mat4& mvpMat) {
 		int texloc = -1;
 		int norloc = -1;
 		int colorloc = -1;
-		mpMaterial->getVertexAtributeLoc(posloc, texloc, colorloc, norloc);
-		draw(posloc, texloc, norloc, colorloc);
+		int tangentloc = -1;
+		mpMaterial->getVertexAtributeLoc(posloc, texloc, colorloc, norloc,tangentloc);
+		draw(posloc, texloc, norloc, colorloc,tangentloc);
 	}
 	else {
 		LOGE("mesh has no material,can't render");
@@ -521,15 +645,34 @@ void Mesh::render(const glm::mat4& mvpMat) {
 void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& texMat) {
 	if (mpMaterial) {
 		//update mvpMatrix;
-		mpMaterial->updateMvpMatrix(mvpMat);
-		mpMaterial->updateTextureMatrix(texMat);
+		mpMaterial->setMvpMatrix(mvpMat);
+		mpMaterial->setTextureMatrix(texMat);
 		mpMaterial->enable();
 		int posloc = -1;
 		int texloc = -1;
 		int norloc = -1;
 		int colorloc = -1;
-		mpMaterial->getVertexAtributeLoc(posloc, texloc, colorloc, norloc);
-		draw(posloc, texloc, norloc);
+		int tangentloc = -1;
+		mpMaterial->getVertexAtributeLoc(posloc, texloc, colorloc, norloc, tangentloc);
+		draw(posloc, texloc, norloc,colorloc,tangentloc);
+	}
+	else {
+		LOGE("mesh has no material,can't render");
+	}
+}
+
+void Mesh::render(const glm::mat4& mvpMat) {
+	if (mpMaterial) {
+		//update mvpMatrix;
+		mpMaterial->setMvpMatrix(mvpMat);
+		mpMaterial->enable();
+		int posloc = -1;
+		int texloc = -1;
+		int norloc = -1;
+		int colorloc = -1;
+		int tangentloc = -1;
+		mpMaterial->getVertexAtributeLoc(posloc, texloc, colorloc, norloc, tangentloc);
+		draw(posloc, texloc, norloc, colorloc, tangentloc);
 	}
 	else {
 		LOGE("mesh has no material,can't render");
@@ -570,7 +713,7 @@ bool Mesh::setTexcoordData(GLfloat* tex, int size, unsigned int drawType)
 	return true;
 }
 
-bool Mesh::setNormalData(GLfloat* nor, int size, unsigned int drawType)
+bool Mesh::setNormalData(GLfloat* nor, int sizeInbyte, unsigned int drawType)
 {
 	if (mNorVbo > 0) {
 		glDeleteBuffers(1, &mNorVbo);
@@ -582,10 +725,42 @@ bool Mesh::setNormalData(GLfloat* nor, int size, unsigned int drawType)
 	}
 	glGenBuffers(1, &mNorVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
-	glBufferData(GL_ARRAY_BUFFER, size, nor, drawType);
-	mNorByteSize = size;
+	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, nor, drawType);
+	mNorByteSize = sizeInbyte;
 	return true;
 }
+
+bool Mesh::setTangentData(GLfloat* tangent, int sizeInbyte, unsigned int drawType) {
+	if (mTangentVbo > 0) {
+		glDeleteBuffers(1, &mTangentVbo);
+		if (mVAO != 0) {
+			//先删除原来的vao
+			glDeleteVertexArrays(1, &mVAO);
+			mVAO = 0;
+		}
+	}
+	glGenBuffers(1, &mTangentVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, mTangentVbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, tangent, drawType);
+	mTangentByteSize = sizeInbyte;
+	return true;
+}
+
+//bool Mesh::setBiTangentData(GLfloat* binormal, int sizeInbyte, unsigned int drawType) {
+//	if (mBiNormalVbo > 0) {
+//		glDeleteBuffers(1, &mBiNormalVbo);
+//		if (mVAO != 0) {
+//			//先删除原来的vao
+//			glDeleteVertexArrays(1, &mVAO);
+//			mVAO = 0;
+//		}
+//	}
+//	glGenBuffers(1, &mBiNormalVbo);
+//	glBindBuffer(GL_ARRAY_BUFFER, mBiNormalVbo);
+//	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, binormal, drawType);
+//	mBiNormalByteSize = sizeInbyte;
+//	return true;
+//}
 
 bool Mesh::setColorData(GLfloat* nor, int size, unsigned int drawType)
 {
@@ -630,6 +805,21 @@ void Mesh::unLoadMesh()
 		mNorVbo = 0;
 		mNorByteSize = 0;
 	}
+
+	if (mTangentVbo != 0)
+	{
+		glDeleteBuffers(1, &mTangentVbo);
+		mTangentVbo = 0;
+		mTangentByteSize = 0;
+	}
+
+	if (mBiNormalVbo != 0)
+	{
+		glDeleteBuffers(1, &mBiNormalVbo);
+		mBiNormalVbo = 0;
+		mBiNormalByteSize = 0;
+	}
+
 	if (mTexVbo != 0)
 	{
 		glDeleteBuffers(1, &mTexVbo);

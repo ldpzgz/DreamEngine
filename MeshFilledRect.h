@@ -27,7 +27,7 @@ public:
 		mbFilled = b;
 	}
 protected:
-	void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1) override;
+	void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1) override;
 	void drawLineStrip(int posloc) override;
 	bool mbFilled{true};
 	float mCenterX{ 0.0f };

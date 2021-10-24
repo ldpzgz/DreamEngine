@@ -24,7 +24,7 @@ public:
 	*/
 	void loadMesh(const std::vector<Vec3>& P, const std::vector<int>& knots,const std::vector<float>& w) override;
 protected:
-	void draw(int posloc = -1, int texloc = -1, int norloc = -1,int colorloc = -1) override;
+	void draw(int posloc = -1, int texloc = -1, int norloc = -1,int colorloc = -1, int tangentloc=-1) override;
 private:
 	//计算nonuniform b-splines的per-control-point blend function,k是阶数，三阶就好了
 	float Niku(int i, int k, float u, const std::vector<int>& knots);

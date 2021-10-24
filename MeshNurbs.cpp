@@ -10,7 +10,7 @@ MeshNurbs::~MeshNurbs() {
 
 }
 
-void MeshNurbs::draw(int posloc, int texloc, int norloc, int colorloc) {
+void MeshNurbs::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc) {
 	drawLineStrip(posloc);
 }
 

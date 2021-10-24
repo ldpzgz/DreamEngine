@@ -171,9 +171,9 @@ void MeshFilledRect::loadMesh(float width, float height, float centerX, float ce
 	}
 }
 
-void MeshFilledRect::draw(int posloc, int texloc, int norloc, int colorloc) {
+void MeshFilledRect::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc) {
 	if (mbFilled) {
-		drawTriangleFan(posloc, texloc, norloc, colorloc);
+		drawTriangleFan(posloc, texloc, norloc, colorloc, tangentloc);
 	}
 	else {
 		drawLineStrip(posloc);

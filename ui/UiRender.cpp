@@ -39,11 +39,11 @@ bool FontManager::initFontManager(const shared_ptr<Texture>& pTex, const shared_
 		mpCharMesh->setMaterial(pMaterial);
 	}
 
-	mpTextGpuRender = make_shared<TextGpuRender>();
+	/*mpTextGpuRender = make_shared<TextGpuRender>();
 	if (mpTextGpuRender) {
 		mpTextGpuRender->init();
 		mpTextGpuRender->setRenderTexture(pTex);
-	}
+	}*/
 
 	ifstream inFile(mSavePath, ios::in);
 	if (inFile.is_open()) {

@@ -93,6 +93,8 @@ public:
 
 	virtual void loadMesh(const std::vector<Vec3>& pos, const std::vector<Vec3ui>& index);
 
+	virtual void loadMesh(const std::string meshFilePath);
+
 	//uniform b spline
 	//void loadUBS(const std::vector<float>& points);
 
@@ -109,9 +111,15 @@ public:
 	//更新法向量 vbo，如果要更新的数据超过原来vbo的大小，先删除vbo，再创建一个新的vbo
 	bool updateNormal(float* normal, int byteOffset, int size);
 
-	void render(const glm::mat4& projviewMat);
+	//bool updateBiNormal(float* normal, int byteOffset, int size);
+
+	bool updateTangent(float* normal, int byteOffset, int size);
+
+	void render(const glm::mat4& projviewMat, const glm::mat4& modelMat, const Vec3& lightPos,const Vec3& viewPos);
 
 	void render(const glm::mat4& mvpMat, const glm::mat4& texMat);
+
+	void render(const glm::mat4& mvpMat);
 
 	void unLoadMesh();
 
@@ -162,6 +170,8 @@ public:
 	bool setPosData(GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setTexcoordData(GLfloat* tex, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setNormalData(GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	bool setTangentData(GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	//bool setBiTangentData(GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setColorData(GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setIndexData(GLuint* index, int indexByteSize, unsigned int drawType = GL_STATIC_DRAW);
 
@@ -171,28 +181,35 @@ public:
 protected:
 	//根据指定的顶点坐标数据，纹理坐标数据，法向量坐标数据，顶点索引数据，以及他们的大小（字节为单位）
 	//创建对应的vbo，类型为静态GL_STATIC_DRAW
-	bool createBufferObject(GLfloat* pos, int posByteSize,int countOfVertex, GLuint* index, int indexByteSize,
-		GLfloat* tex = 0, int texByteSize = 0, GLfloat* nor = 0, int norByteSize = 0, GLfloat* color = 0, int colorByteSize = 0, int drawType = GL_STATIC_DRAW);
+	bool createBufferObject(GLfloat* pos, int posByteSize, int countOfVertex,
+		GLuint* index, int indexByteSize,
+		GLfloat* tex = 0, int texByteSize = 0,
+		GLfloat* nor = 0, int norByteSize = 0,
+		GLfloat* color = 0, int colorByteSize = 0,
+		GLfloat* tangent = 0, int tangentByteSize = 0,
+		int drawType = GL_STATIC_DRAW);
 
 	//当做三角形绘制GL_TRIANGLES
-	void drawTriangles(int posloc = -1, int texloc = -1, int norloc = -1,int colorloc = -1);
+	void drawTriangles(int posloc = -1, int texloc = -1, int norloc = -1,int colorloc = -1, int tangentloc = -1);
 
 	//当做直线绘制GL_LINE_LOOP
 	virtual void drawLineStrip(int posloc);
 
 	//当做三角形扇绘制GL_TRIANGLE_FAN
-	virtual void drawTriangleFan(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1);
+	virtual void drawTriangleFan(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1);
 
-	virtual void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1);
+	virtual void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc=-1);
 protected:
 	void reset();
 
 	//4个vbo对象
-	GLuint mPosVbo{ 0 };//这个是vbo
-	GLuint mTexVbo{ 0 }; //这个是vbo
-	GLuint mNorVbo{ 0 };//这个是vbo
-	GLuint mColorVbo{ 0 };//这个是vbo
-	GLuint mIndexVbo{ 0 }; //这个别人叫ebo
+	GLuint mPosVbo{ 0 };
+	GLuint mTexVbo{ 0 }; 
+	GLuint mNorVbo{ 0 };
+	GLuint mTangentVbo{ 0 };
+	GLuint mBiNormalVbo{ 0 };
+	GLuint mColorVbo{ 0 };
+	GLuint mIndexVbo{ 0 }; 
 	GLuint mVAO{ 0 };//这个是vao，顶点数组对象，opengles3.0才支持，是一个集合。把设定顶点属性的过程打包到一起，简化绘制流程。
 	GLfloat mLineWidth{ 1.0f };
 
@@ -203,6 +220,8 @@ protected:
 	unsigned int mPosByteSize{ 0 };
 	unsigned int mTexByteSize{ 0 };
 	unsigned int mNorByteSize{ 0 };
+	unsigned int mTangentByteSize{ 0 };
+	unsigned int mBiNormalByteSize{ 0 };
 	unsigned int mColorByteSize{ 0 };
 	unsigned int mIndexByteSize{ 0 };
 	MeshType mMeshType{ MeshType::MESH_None };

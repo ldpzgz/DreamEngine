@@ -10,7 +10,7 @@ MeshCubicSpline::~MeshCubicSpline() {
 
 }
 
-void MeshCubicSpline::draw(int posloc, int texloc, int norloc, int colorloc) {
+void MeshCubicSpline::draw(int posloc, int texloc, int norloc, int colorloc,int tangentloc) {
 	drawLineStrip(posloc);
 }
 

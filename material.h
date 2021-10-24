@@ -15,14 +15,19 @@ public:
 	void enable();
 
 	//下面这几个函数设置或者更新material里面program定义的变量
-	void updateMvpMatrix(const glm::mat4& pdata);
-	void updateTextureMatrix(const glm::mat4& pdata);
+	void setMvpMatrix(const glm::mat4& pdata);
+	void setMvMatrix(const glm::mat4& pdata);
+	void setViewMatrix(const glm::mat4& pdata);
+	void setTextureMatrix(const glm::mat4& pdata);
 	void setTextureMatrix();
 	void setUniformColor(const Color& color);
 	void setUniformColor(float r,float g,float b,float a);
+	void setLightPos(const Vec3& lightPos);
+	void setViewPos(const Vec3& viewPos);
+	void setLightColor(const Vec3& lightColor);
 	//-------------------------------------------------------------
 
-	void getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc);
+	void getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc,int& tangentloc);
 
 	//如果材质文件里面有个key对应的value是整数，可以用这个函数获取到
 	int getKeyAsInt(const string& key);

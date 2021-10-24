@@ -60,13 +60,24 @@ string Material::getItemName(const string& key) {
 	return temp;
 }
 
-void Material::updateMvpMatrix(const glm::mat4& pdata) {
+void Material::setMvpMatrix(const glm::mat4& pdata) {
 	if (mShader) {
 		mShader->setMvpMatrix(pdata);
 	}
 }
 
-void Material::updateTextureMatrix(const glm::mat4& pdata) {
+void Material::setMvMatrix(const glm::mat4& pdata) {
+	if (mShader) {
+		mShader->setMvMatrix(pdata);
+	}
+}
+void Material::setViewMatrix(const glm::mat4& pdata) {
+	if (mShader) {
+		mShader->setViewMatrix(pdata);
+	}
+}
+
+void Material::setTextureMatrix(const glm::mat4& pdata) {
 	if (!mpTextureMatrix) {
 		mpTextureMatrix = make_shared<glm::mat4>(1.0f);
 	}
@@ -96,14 +107,30 @@ void Material::setUniformColor(float r, float g, float b, float a) {
 	}
 }
 
+void Material::setLightPos(const Vec3& lightPos) {
+	if (mShader) {
+		mShader->setLightPos(lightPos);
+	}
+}
+void Material::setViewPos(const Vec3& viewPos) {
+	if (mShader) {
+		mShader->setViewPos(viewPos);
+	}
+}
+void Material::setLightColor(const Vec3& lightColor) {
+	if (mShader) {
+		mShader->setLightColor(lightColor);
+	}
+}
+
 void Material::enable() {
 	if (mShader) {
 		mShader->enable();
 	}
 }
-void Material::getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc) {
+void Material::getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc,int& tangentloc) {
 	if (mShader) {
-		mShader->getLocation(posLoc, texcoordLoc, colorLoc, normalLoc);
+		mShader->getLocation(posLoc, texcoordLoc, colorLoc, normalLoc, tangentloc);
 	}
 }
 
@@ -385,8 +412,14 @@ bool Material::parseProgram(const string& programName,const string& program) {
 	int posLoc = -1;
 	int texcoordLoc = -1;
 	int normalLoc = -1;
+	int tangentLoc = -1;
 	int colorLoc = -1;
 	std::string mvpMatrixName;
+	std::string mvMatrixName;
+	std::string viewMatrixName;
+	std::string lightPosName;
+	std::string lightColorName;
+	std::string viewPosName;
 	std::string textureMatrixName;
 	std::string uniformColor;
 	Umapss umapSampler;
@@ -450,14 +483,51 @@ bool Material::parseProgram(const string& programName,const string& program) {
 
 		}
 
+		const auto pTangentLoc = umap.find("tangentLoc");
+		if (pTangentLoc != umap.cend()) {
+			try {
+				tangentLoc = std::stoi(pTangentLoc->second);
+			}
+			catch (exception e) {
+				LOGE("parseProgram error to stoi normalLoc");
+				tangentLoc = -1;
+			}
+
+		}
+
 		const auto pMvp = umap.find("mvpMatrix");
 		if (pMvp != umap.cend()) {
 			mvpMatrixName = pMvp->second;
 		}
 
+		const auto pModelMatrix = umap.find("mvMatrix");
+		if (pModelMatrix != umap.cend()) {
+			mvMatrixName = pModelMatrix->second;
+		}
+
+		const auto pViewMatrix = umap.find("viewMatrix");
+		if (pViewMatrix != umap.cend()) {
+			viewMatrixName = pViewMatrix->second;
+		}
+
 		const auto pTextureMatrix = umap.find("textureMatrix");
 		if (pTextureMatrix != umap.cend()) {
 			textureMatrixName = pTextureMatrix->second;
+		}
+
+		const auto pLightPos = umap.find("lightPos");
+		if (pLightPos != umap.cend()) {
+			lightPosName = pLightPos->second;
+		}
+
+		const auto pLightColor = umap.find("lightColor");
+		if (pLightColor != umap.cend()) {
+			lightColorName = pLightColor->second;
+		}
+
+		const auto pViewPos = umap.find("viewPos");
+		if (pViewPos != umap.cend()) {
+			viewPosName = pViewPos->second;
 		}
 
 		//由于在fs里面经常需要设置一个颜色值，所以把这个抽出来，下面的代码会拿到这个uniform的loc，
@@ -501,9 +571,24 @@ bool Material::parseProgram(const string& programName,const string& program) {
 				
 				if (gShaders.try_emplace(programName, mShader).second) {
 					bsuccess = true;
-					mShader->setLocation(posLoc, texcoordLoc, colorLoc, normalLoc);
+					mShader->setLocation(posLoc, texcoordLoc, colorLoc, normalLoc, tangentLoc);
 					if (!mvpMatrixName.empty()) {
 						mShader->getMvpMatrixLoc(mvpMatrixName);
+					}
+					if (!mvMatrixName.empty()) {
+						mShader->getMvMatrixLoc(mvMatrixName);
+					}
+					if (!viewMatrixName.empty()) {
+						mShader->getViewMatrixLoc(viewMatrixName);
+					}
+					if (!lightPosName.empty()) {
+						mShader->getLightPosLoc(lightPosName);
+					}
+					if (!lightColorName.empty()) {
+						mShader->getLightColorLoc(lightColorName);
+					}
+					if (!viewPosName.empty()) {
+						mShader->getViewPosLoc(viewPosName);
 					}
 					if (!textureMatrixName.empty()) {
 						mShader->getTextureMatrixLoc(textureMatrixName);
