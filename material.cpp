@@ -46,11 +46,11 @@ Material::~Material() {
 	mpContents->clear();
 }
 
-Material::Material(const std::shared_ptr<Material>& pMat) {
-	mName = pMat->mName;
-	mpContents = pMat->mpContents;
-	mShader = pMat->mShader;
-	mSamplerName2Texture = pMat->mSamplerName2Texture;
+Material::Material(const Material& pMat) {
+	mName = pMat.mName;
+	mpContents = pMat.mpContents;
+	mShader = pMat.mShader;
+	mSamplerName2Texture = pMat.mSamplerName2Texture;
 }
 
 shared_ptr<Material> Material::loadFromFile(const string& filename) {
@@ -167,6 +167,7 @@ bool Material::parseMaterialFile(const string& path) {
 	std::string::size_type startPos = 0;
 	std::string::size_type keyValuePos[3];
 	std::string programKey;
+	std::vector<std::string> materialKeys;
 	while (findkeyValue(material, "{","}",startPos, keyValuePos)) {
 		//analsys，store key-value to mpContents;
 		auto temppos = material.find_first_of("\x20\r\n\t{", keyValuePos[0]);
@@ -189,6 +190,9 @@ bool Material::parseMaterialFile(const string& path) {
 			}
 			else if (key.find("program") != string::npos) {
 				programKey = key;
+			}
+			else if (key.find("material") != string::npos) {
+				materialKeys.emplace_back(key);
 			}
 		}
 
@@ -218,8 +222,48 @@ bool Material::parseMaterialFile(const string& path) {
 		else {
 			LOGD("failed to parse material %s", filename.c_str());
 		}
+
+		//parse Material
+		for (auto& key : materialKeys) {
+			auto it = mpContents->find(key);
+			if (it != mpContents->end()) {
+				auto matName = getItemName(key);
+				parseMaterial(matName, it->second);
+			}
+		}
 	}
 	//mpContents->clear();
+	return bParseSuccess;
+}
+
+bool Material::parseMaterial(const string& matName, const string& material) {
+	Umapss umap;
+	bool bParseSuccess = true;
+	if (parseItem(material, umap)) {
+		auto pMaterial = clone(*this);
+		for (auto& pair : umap) {
+			
+			auto pTex = gTextures.find(pair.second);
+			
+			if (pTex != gTextures.end()) {
+				pMaterial->setTextureForSampler(pair.first,pTex->second);
+			}
+			else {
+				LOGE("parse material script error,cannot find texture %s", pair.second.c_str());
+				bParseSuccess = false;
+			}
+		}
+		if (gMaterials.try_emplace(matName, pMaterial).second) {
+			LOGD("success to add material %s to gMaterials", matName.c_str());
+		}
+		else {
+			LOGD("failed to add material %s to gMaterials", matName.c_str());
+		}
+	}
+	else {
+		LOGE("parse material script error,syntax error");
+		bParseSuccess = false;
+	}
 	return bParseSuccess;
 }
 
@@ -296,16 +340,14 @@ shared_ptr<Texture>& Material::getTexture(const std::string& name) {
 shared_ptr<Material> Material::getMaterial(const std::string& name) {
 	auto it = gMaterials.find(name);
 	if (it != gMaterials.end())
-		return clone(it->second);
+		return it->second;
 	return gpMaterialNothing;
 }
 
-shared_ptr<Material> Material::clone(const shared_ptr<Material>& pMat) {
-	if (pMat) {
-		MaterialP pMaterial = std::make_shared<Material>(pMat);
-		return pMaterial;
-	}
+shared_ptr<Material> Material::clone(const Material& pMat) {
 	
+	MaterialP pMaterial = std::make_shared<Material>(pMat);
+	return pMaterial;
 	return gpMaterialNothing;
 }
 

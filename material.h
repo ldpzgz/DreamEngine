@@ -11,7 +11,7 @@ class Material : public enable_shared_from_this<Material> {
 public:
 	Material();
 	~Material();
-	explicit Material(const std::shared_ptr<Material>& pMat);
+	Material(const Material& mat);
 	bool parseMaterialFile(const string&);
 	void enable();
 
@@ -63,7 +63,7 @@ public:
 	static std::shared_ptr<Texture> loadTextureFromFile(const std::string& name);
 	static void loadAllMaterial();
 private:
-	static shared_ptr<Material> clone(const shared_ptr<Material>&);
+	static shared_ptr<Material> clone(const Material&);
 	//find key value from startPos at str,
 	//if success set the start position of the key,the pos of '{', the pos of '}' into pos seprately and return true,
 	//else return false
@@ -91,6 +91,7 @@ private:
 	bool parseTexture(const string& textureName, const string& texture);
 	using Umapss = std::unordered_map<std::string, std::string>;
 
+	bool parseMaterial(const string& matName, const string& material);
 	/*
 	* 将value字符串里面形如key=value、或者key{value}格式的，key和value字符串解析出来，存储到umap里面
 	*/

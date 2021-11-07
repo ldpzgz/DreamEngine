@@ -93,3 +93,13 @@ program:tbnlightP{
 		s_normal=none
 	}
 }
+texture:carDiffuse{
+	path=./opengles3/material/drawable/carDiffuse.png
+}
+texture:carNormal{
+	path=./opengles3/material/drawable/carNormal.png
+}
+material:car{
+	s_texture=carDiffuse
+	s_normal=carNormal
+}
