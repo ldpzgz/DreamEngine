@@ -53,6 +53,8 @@ fs:tbnlightFs{
 		vec3 viewDir  = normalize(TangentViewPos - TangentFragPos);
 		
 		vec3 objectColor = texture( s_texture, vTexCoord ).rgb;
+		float gamma = 1.8f;
+		objectColor = pow(objectColor, vec3(1.0f/gamma));
 		
 		//ambient 
 	    float ambientStrength = 0.1;

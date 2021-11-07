@@ -101,7 +101,7 @@ public:
 	//指定最后要显示出来的纹理，当前uitree的纹理，每棵ui树都会渲染到它自己的纹理上面。
 	void setTexture(const shared_ptr<Texture>& pTex) {
 		if (mpLastMaterial) {
-			mpLastMaterial->changeTexture("s_texture", pTex);
+			mpLastMaterial->setTextureForSampler("s_texture", pTex);
 		}
 	}
 

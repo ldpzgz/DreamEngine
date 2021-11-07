@@ -7,6 +7,9 @@
 
 using namespace std;
 using namespace std::filesystem;
+
+MaterialP gpMaterialNothing;
+
 static const string gMaterialPath = "./opengles3/material/material";
 
 std::unordered_map<std::string, std::shared_ptr<Material>> Material::gMaterials;
@@ -37,10 +40,17 @@ void Material::loadAllMaterial() {
 
 Material::Material()
 {
-
+	mpContents = std::make_shared<std::unordered_map<std::string, std::string>>();
 }
 Material::~Material() {
-	mContents.clear();
+	mpContents->clear();
+}
+
+Material::Material(const std::shared_ptr<Material>& pMat) {
+	mName = pMat->mName;
+	mpContents = pMat->mpContents;
+	mShader = pMat->mShader;
+	mSamplerName2Texture = pMat->mSamplerName2Texture;
 }
 
 shared_ptr<Material> Material::loadFromFile(const string& filename) {
@@ -60,79 +70,90 @@ string Material::getItemName(const string& key) {
 	return temp;
 }
 
-void Material::setMvpMatrix(const glm::mat4& pdata) {
-	if (mShader) {
-		mShader->setMvpMatrix(pdata);
-	}
-}
-
-void Material::setMvMatrix(const glm::mat4& pdata) {
-	if (mShader) {
-		mShader->setMvMatrix(pdata);
-	}
-}
-void Material::setViewMatrix(const glm::mat4& pdata) {
-	if (mShader) {
-		mShader->setViewMatrix(pdata);
-	}
-}
-
-void Material::setTextureMatrix(const glm::mat4& pdata) {
-	if (!mpTextureMatrix) {
-		mpTextureMatrix = make_shared<glm::mat4>(1.0f);
-	}
-	if (mpTextureMatrix) {
-		*mpTextureMatrix = pdata;
-	}
-	if (mShader) {
-		mShader->setTextureMatrix(pdata);
-	}
-}
-
-void Material::setTextureMatrix() {
-	if (mpTextureMatrix && mShader) {
-		mShader->setTextureMatrix(*mpTextureMatrix);
-	}
-}
-
-void Material::setUniformColor(const Color& color) {
-	if (mShader) {
-		mShader->setUniformColor(color);
-	}
-}
-
-void Material::setUniformColor(float r, float g, float b, float a) {
-	if (mShader) {
-		mShader->setUniformColor(r,g,b,a);
-	}
-}
-
-void Material::setLightPos(const Vec3& lightPos) {
-	if (mShader) {
-		mShader->setLightPos(lightPos);
-	}
-}
-void Material::setViewPos(const Vec3& viewPos) {
-	if (mShader) {
-		mShader->setViewPos(viewPos);
-	}
-}
-void Material::setLightColor(const Vec3& lightColor) {
-	if (mShader) {
-		mShader->setLightColor(lightColor);
-	}
-}
-
+//void Material::setMvpMatrix(const glm::mat4& pdata) {
+//	if (mShader) {
+//		mShader->setMvpMatrix(pdata);
+//	}
+//}
+//
+//void Material::setMvMatrix(const glm::mat4& pdata) {
+//	if (mShader) {
+//		mShader->setMvMatrix(pdata);
+//	}
+//}
+//void Material::setViewMatrix(const glm::mat4& pdata) {
+//	if (mShader) {
+//		mShader->setViewMatrix(pdata);
+//	}
+//}
+//
+//void Material::setTextureMatrix(const glm::mat4& pdata) {
+//	if (!mpTextureMatrix) {
+//		mpTextureMatrix = make_shared<glm::mat4>(1.0f);
+//	}
+//	if (mpTextureMatrix) {
+//		*mpTextureMatrix = pdata;
+//	}
+//	if (mShader) {
+//		mShader->setTextureMatrix(pdata);
+//	}
+//}
+//
+//void Material::setTextureMatrix() {
+//	if (mpTextureMatrix && mShader) {
+//		mShader->setTextureMatrix(*mpTextureMatrix);
+//	}
+//}
+//
+//void Material::setUniformColor(const Color& color) {
+//	if (mShader) {
+//		mShader->setUniformColor(color);
+//	}
+//}
+//
+//void Material::setUniformColor(float r, float g, float b, float a) {
+//	if (mShader) {
+//		mShader->setUniformColor(r,g,b,a);
+//	}
+//}
+//
+//void Material::setLightPos(const Vec3& lightPos) {
+//	if (mShader) {
+//		mShader->setLightPos(lightPos);
+//	}
+//}
+//void Material::setViewPos(const Vec3& viewPos) {
+//	if (mShader) {
+//		mShader->setViewPos(viewPos);
+//	}
+//}
+//void Material::setLightColor(const Vec3& lightColor) {
+//	if (mShader) {
+//		mShader->setLightColor(lightColor);
+//	}
+//}
+//
 void Material::enable() {
 	if (mShader) {
+		if (mpUniformColor) {
+			mShader->setUniformColor(*mpUniformColor);
+		}
 		mShader->enable();
+		int texNum = 0;
+		for (auto it = mSamplerName2Texture.begin(); it != mSamplerName2Texture.end(); it++) {
+			if (it->second) {
+				it->second->active(GL_TEXTURE0 + texNum);
+				glUniform1i(it->first, texNum);
+				++texNum;
+			}
+		}
 	}
 }
-void Material::getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc,int& tangentloc) {
-	if (mShader) {
-		mShader->getLocation(posLoc, texcoordLoc, colorLoc, normalLoc, tangentloc);
-	}
-}
+//void Material::getVertexAtributeLoc(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc,int& tangentloc) {
+//	if (mShader) {
+//		mShader->getLocation(posLoc, texcoordLoc, colorLoc, normalLoc, tangentloc);
+//	}
+//}
 
 bool Material::parseMaterialFile(const string& path) {
 	bool bParseSuccess = false;
@@ -147,7 +168,7 @@ bool Material::parseMaterialFile(const string& path) {
 	std::string::size_type keyValuePos[3];
 	std::string programKey;
 	while (findkeyValue(material, "{","}",startPos, keyValuePos)) {
-		//analsys，store key-value to mContents;
+		//analsys，store key-value to mpContents;
 		auto temppos = material.find_first_of("\x20\r\n\t{", keyValuePos[0]);
 		if (temppos != string::npos) {
 			string key = material.substr(keyValuePos[0], temppos - keyValuePos[0]);
@@ -157,7 +178,7 @@ bool Material::parseMaterialFile(const string& path) {
 			if (tempPos != string::npos && tempPos>0) {
 				value = value.substr(tempPos);
 			}
-			if (!mContents.try_emplace(key, value).second) {
+			if (!mpContents->try_emplace(key, value).second) {
 				LOGE("%s:%s:%s error to emplace key %s", __FILE__,__func__, __LINE__,key);
 			}
 			else if (key.find("texture") != string::npos) {
@@ -175,8 +196,8 @@ bool Material::parseMaterialFile(const string& path) {
 	}
 
 	if (!programKey.empty()) {
-		auto it = mContents.find(programKey);
-		if (it != mContents.end()) {
+		auto it = mpContents->find(programKey);
+		if (it != mpContents->end()) {
 			auto programName = getItemName(programKey);
 			if (!programName.empty()) {
 				bParseSuccess = parseProgram(programName, it->second);
@@ -198,7 +219,7 @@ bool Material::parseMaterialFile(const string& path) {
 			LOGD("failed to parse material %s", filename.c_str());
 		}
 	}
-	//mContents.clear();
+	//mpContents->clear();
 	return bParseSuccess;
 }
 
@@ -266,27 +287,34 @@ bool Material::findkeyValue(const string& str, const string& mid,const string& e
 
 
 shared_ptr<Texture>& Material::getTexture(const std::string& name) {
-	static std::shared_ptr<Texture> temp;
 	auto it = gTextures.find(name);
 	if (it != gTextures.end())
 		return it->second;
-	return temp;
+	return gpTextureNothing;
 }
 
-shared_ptr<Material>& Material::getMaterial(const std::string& name) {
-	static shared_ptr<Material> temp;
+shared_ptr<Material> Material::getMaterial(const std::string& name) {
 	auto it = gMaterials.find(name);
 	if (it != gMaterials.end())
-		return it->second;
-	return temp;
+		return clone(it->second);
+	return gpMaterialNothing;
+}
+
+shared_ptr<Material> Material::clone(const shared_ptr<Material>& pMat) {
+	if (pMat) {
+		MaterialP pMaterial = std::make_shared<Material>(pMat);
+		return pMaterial;
+	}
+	
+	return gpMaterialNothing;
 }
 
 shared_ptr<Shader>& Material::getShader(const std::string& name) {
-	static shared_ptr<Shader> temp;
 	auto it = gShaders.find(name);
 	if (it != gShaders.end())
 		return it->second;
-	return temp;
+	LOGE("cannot find shader %s",name.c_str());
+	return gpShaderNothing;
 }
 
 std::shared_ptr<Texture> Material::createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint format, GLenum type, bool autoMipmap) {
@@ -560,11 +588,11 @@ bool Material::parseProgram(const string& programName,const string& program) {
 		return false;
 	}
 
-	const auto ptrVs = mContents.find(vs_key);
-	const auto ptrFs = mContents.find(fs_key);
+	const auto ptrVs = mpContents->find(vs_key);
+	const auto ptrFs = mpContents->find(fs_key);
 	bool bsuccess = false;
 	do {
-		if (ptrVs != mContents.cend() && ptrFs != mContents.cend()) {
+		if (ptrVs != mpContents->cend() && ptrFs != mpContents->cend()) {
 			mShader = std::make_shared<Shader>(programName);
 			if (mShader->initShader(ptrVs->second, ptrFs->second)) {
 				LOGD("initShader %s success", programName.c_str());
@@ -597,15 +625,24 @@ bool Material::parseProgram(const string& programName,const string& program) {
 						mShader->getUniformColorLoc(uniformColor);
 					}
 					if (!umapSampler.empty()) {
+						auto& samplers = mShader->getSamplerNames();
+						auto& uniforms = mShader->getUniforms();
 						for (auto& item : umapSampler) {
+							if (uniforms.find(item.first) != uniforms.end()) {
+								samplers.emplace_back(item.first);
+							}
+							else {
+								LOGE("error in material file sampler2D has no %s",item.first.c_str());
+							}
+
 							const auto pTex = gTextures.find(item.second);
 							int loc = mShader->getUniformLoc(item.first.c_str()); //
 							if (loc != -1) {
 								if (pTex != gTextures.end()) {
-									mShader->setTextureForSampler(loc, pTex->second); //
+									mSamplerName2Texture.emplace(loc, pTex->second);
 								}
 								else {
-									mShader->setTextureForSampler(loc, shared_ptr<Texture>()); //
+									mSamplerName2Texture.emplace(loc, shared_ptr<Texture>()); //
 								}
 							}
 							else {
@@ -615,7 +652,7 @@ bool Material::parseProgram(const string& programName,const string& program) {
 					}
 				}
 				else {
-					LOGE("insert program %s to container failed", programName.c_str());
+					LOGE("insert program %s to container failed，maybe the program name has conflict ", programName.c_str());
 				}
 			}
 			else {
@@ -633,9 +670,9 @@ bool Material::parseProgram(const string& programName,const string& program) {
 }
 
 int Material::getKeyAsInt(const string& key) {
-	auto it = mContents.find(key);
+	auto it = mpContents->find(key);
 	int ret = -1;
-	if (it != mContents.end()) {
+	if (it != mpContents->end()) {
 		try {
 			ret = std::stoi(it->second);
 		}
@@ -647,14 +684,15 @@ int Material::getKeyAsInt(const string& key) {
 	return ret;
 }
 
-void Material::changeTexture(const string& samplerName, const shared_ptr<Texture>& pTex) {
+void Material::setTextureForSampler(const string& samplerName, const shared_ptr<Texture>& pTex) {
 	if (mShader) {
-		int loc = mShader->getUniformLoc(samplerName.c_str());
-		if (loc != -1) {
-			mShader->setTextureForSampler(loc,pTex);
+		int samplerLoc = mShader->getUniformLoc(samplerName.c_str());
+		if (samplerLoc != -1) {
+			//mShader->setTextureForSampler(samplerLoc,pTex);
+			mSamplerName2Texture[samplerLoc] = pTex;
 		}
 		else {
-			LOGD("Material::changeTexture no sampler %s",samplerName.c_str());
+			LOGD("Material::setTextureForSampler no sampler %s",samplerName.c_str());
 		}
 	}
 }

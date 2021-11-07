@@ -142,29 +142,11 @@ public:
 		return mpMaterial;
 	}
 
-	void setUniformColor(const Color& color) {
-		if (!mpUniformColor) {
-			mpUniformColor = make_shared<Color>(color);
-		}
-		else {
-			*mpUniformColor = color;
-		}
-	}
-
-	void setUniformColor(float r,float g,float b,float a) {
-		if (!mpUniformColor) {
-			mpUniformColor = make_shared<Color>(r,g,b,a);
-		}
-		else {
-			*mpUniformColor = Color(r,g,b,a);
-		}
-	}
-
-	void setTexture(const shared_ptr<Texture>& pTex,const string& samplerName="s_texture") {
-		if (mpMaterial) {
-			mpMaterial->changeTexture(samplerName, pTex);
-		}
-	}
+	//void setTexture(const shared_ptr<Texture>& pTex,const string& samplerName="s_texture") {
+	//	if (mpMaterial) {
+	//		mpMaterial->setTextureForSampler(samplerName, pTex);
+	//	}
+	//}
 
 	//这四个函数都是创建vbo，ebo，并从内存上传数据到vbo的显存,如果之前存在vbo了，先删除
 	bool setPosData(GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
@@ -229,7 +211,7 @@ protected:
 	int mCountOfVertex{ 0 };//vertex的个数，这里默认pos，texcoord，normal，color等属性的顶点个数都是一样的;
 	unsigned int mId{ 0 };
 	std::shared_ptr<Material> mpMaterial;
-	std::shared_ptr<Color> mpUniformColor;
+	
 	//如果函数内部创建了vao就返回true
 	bool createVaoIfNeed(int posloc=-1, int texloc=-1, int norloc=-1);
 };

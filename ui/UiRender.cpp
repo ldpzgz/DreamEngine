@@ -80,7 +80,7 @@ FontManager::~FontManager()
 
 shared_ptr<FontManager> FontManager::loadFromFile(const string& savePath, const string& ttfPath, const string& materialName) {
 
-	auto& pMaterial = Material::getMaterial(materialName);
+	auto pMaterial = Material::getMaterial(materialName);
 
 	if (!pMaterial) {
 		LOGE("error to parse font material");
@@ -414,9 +414,9 @@ void UiRender::initBackground(View* pView) {
 		}
 
 		if (pMesh && pTexture) {
-			auto& pMaterial = Material::getMaterial("posTexture");
+			auto pMaterial = Material::getMaterial("posTexture");
 			if (pMaterial) {
-				//pMaterial->changeTexture("s_texture", pTexture);//这个每次渲染前都需要调用
+				//pMaterial->setTextureForSampler("s_texture", pTexture);//这个每次渲染前都需要调用
 				pMesh->setMaterial(pMaterial);
 			}
 			else {
@@ -425,7 +425,7 @@ void UiRender::initBackground(View* pView) {
 		}
 		else if (pMesh && hasGradient) {
 			if (gradientType == GradientType::Linear) {
-				auto& pMaterial = Material::getMaterial("posColor");
+				auto pMaterial = Material::getMaterial("posColor");
 				if (pMaterial) {
 					pMesh->setColorData(gradientAngle, startColor, endColor, centerColor);
 					pMesh->setMaterial(pMaterial);
@@ -436,7 +436,7 @@ void UiRender::initBackground(View* pView) {
 			}
 		}
 		else if (pMesh && !solidColor.isZero()) {
-			auto& pMaterial = Material::getMaterial("posUniformColor");
+			auto pMaterial = Material::getMaterial("posUniformColor");
 			if (pMaterial) {
 				//pMesh->setUniformColor(solidColor);//这个每次渲染前都需要调用
 				pMesh->setMaterial(pMaterial);
@@ -447,7 +447,7 @@ void UiRender::initBackground(View* pView) {
 		}
 
 		if (pStrokeMesh) {
-			auto& pMaterial = Material::getMaterial("posUniformColor");
+			auto pMaterial = Material::getMaterial("posUniformColor");
 			if (pMaterial) {
 				//pStrokeMesh->setUniformColor(solidColor);//这个每次渲染前都需要调用
 				pStrokeMesh->setMaterial(pMaterial);
@@ -797,15 +797,21 @@ void UiRender::drawBackground(View* v){
 
 			if (pBackMesh) {
 				auto& pTexture = pBack->mpTexture;
-				if (pTexture) {
-					pBackMesh->setTexture(pTexture);
+				auto& pMat = pBackMesh->getMaterial();
+				if (pMat) {
+					pMat->setUniformColor(pShape->getSolidColor());
+					if (pTexture) {
+						pMat->setTextureForSampler("s_texture", pTexture);
+					}
 				}
-				pBackMesh->setUniformColor(pShape->getSolidColor());
 				pBackMesh->render(mProjMatrix * model);
 			}
 			
 			if (pBackStrokeMesh) {
-				pBackStrokeMesh->setUniformColor(pShape->getSrokeColor());
+				auto& pMat = pBackStrokeMesh->getMaterial();
+				if (pMat) {
+					pMat->setUniformColor(pShape->getSrokeColor());
+				}
 				pBackStrokeMesh->render(mProjMatrix * model);
 			}
 		}

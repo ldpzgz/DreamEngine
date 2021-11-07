@@ -15,7 +15,9 @@ public:
 
 	void renderScene();
 
-	void renderNode(const shared_ptr<Node<glm::mat4>>& node) const;
+	void deferredRenderScene();
+
+	
 	//设置宽高比，这个与窗口显示区域不符合的话，画面会变形
 	void setAspect(float asp);
 
@@ -29,6 +31,9 @@ public:
 		return mPosition;
 	}
 private:
+	void renderNode(const shared_ptr<Node<glm::mat4>>& node) const;
+	void geometryPass(const shared_ptr<Node<glm::mat4>>& node) const;
+	void lightingPass(const shared_ptr<Scene>& pScene);
 	float aspect{ 4.0f / 3.0f };//屏幕宽高比
 	float fov{ 45.0f };
 	float nearp{ 0.1f };

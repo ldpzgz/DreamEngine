@@ -61,6 +61,22 @@ void Camera::renderNode(const shared_ptr<Node<glm::mat4>>& node) const
 	}
 }
 
+void Camera::deferredRenderScene() {
+	auto scene = mpScene.lock();
+	if (scene) {
+		const auto& rootNode = scene->getRoot();
+		geometryPass(rootNode);
+	}
+}
+
+void Camera::geometryPass(const shared_ptr<Node<glm::mat4>>& node) const{
+
+}
+
+void Camera::lightingPass(const shared_ptr<Scene>& pScene) {
+
+}
+
 void Camera::setAspect(float asp) {
 	aspect = asp;
 	perspective(fov, aspect, nearp, farp);

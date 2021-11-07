@@ -10,6 +10,7 @@
 #include <string>
 #include <fstream>
 extern void checkglerror();
+PShader gpShaderNothing;
 Shader::Shader(const std::string& name) :
 	mName(name)
 {
@@ -197,29 +198,29 @@ GLuint Shader::loadShader(GLenum type, const char *shaderSrc)
 void Shader::enable()
 {
 	glUseProgram ( mProgram );
-	int texNum = 0;
+	/*int texNum = 0;
 	for (auto it = mSamplerToTex.begin(); it != mSamplerToTex.end(); it++) {
 		if (it->second) {
 			it->second->active(GL_TEXTURE0 + texNum);
 			glUniform1i(it->first, texNum);
 			++texNum;
 		}
+	}*/
+
+	if (mMvpMatrixLoc >= 0 && mpMvpMatrix) {
+		glUniformMatrix4fv(mMvpMatrixLoc, 1, GL_FALSE, glm::value_ptr(*mpMvpMatrix));
 	}
 
-	if (mMvpMatrixLoc >= 0) {
-		glUniformMatrix4fv(mMvpMatrixLoc, 1, GL_FALSE, glm::value_ptr(mMvpMatrix));
+	if (mMvMatrixLoc >= 0 && mpMvMatrix) {
+		glUniformMatrix4fv(mMvMatrixLoc, 1, GL_FALSE, glm::value_ptr(*mpMvMatrix));
 	}
 
-	if (mMvMatrixLoc >= 0) {
-		glUniformMatrix4fv(mMvMatrixLoc, 1, GL_FALSE, glm::value_ptr(mMvMatrix));
+	if (mViewMatrixLoc >= 0 && mpViewMatrix) {
+		glUniformMatrix4fv(mViewMatrixLoc, 1, GL_FALSE, glm::value_ptr(*mpViewMatrix));
 	}
 
-	if (mViewMatrixLoc >= 0) {
-		glUniformMatrix4fv(mViewMatrixLoc, 1, GL_FALSE, glm::value_ptr(mViewMatrix));
-	}
-
-	if (mTextureMatrixLoc >= 0) {
-		glUniformMatrix4fv(mTextureMatrixLoc, 1, GL_FALSE, glm::value_ptr(mTextureMatrix));
+	if (mTextureMatrixLoc >= 0 && mpTextureMatrix) {
+		glUniformMatrix4fv(mTextureMatrixLoc, 1, GL_FALSE, glm::value_ptr(*mpTextureMatrix));
 	}
 
 	if (mUniformColorLoc >= 0) {
@@ -240,9 +241,9 @@ void Shader::enable()
 }
 
 //结果小于0表示错误
-int Shader::getAttributeLoc(const char* attrName)
+int Shader::getAttributeLoc(const std::string& attrName)
 {
-	if(attrName!=0)
+	if(!attrName.empty())
 	{
 		std::map<std::string,int>::iterator it = mAttributeLocMap.find(attrName);
 		if(it!=mAttributeLocMap.end())
@@ -253,9 +254,18 @@ int Shader::getAttributeLoc(const char* attrName)
 	return -1;
 }
 //结果小于0表示错误
-int Shader::getUniformLoc(const char* uniformName)
+int Shader::getUniformLoc(const std::string& uniformName)
 {
-	return glGetUniformLocation(mProgram, uniformName);
+	//return glGetUniformLocation(mProgram, uniformName);
+	if (!uniformName.empty())
+	{
+		auto it = mUniformLocMap.find(uniformName);
+		if (it != mUniformLocMap.end())
+		{
+			return it->second;
+		}
+	}
+	return -1;
 }
 
 void Shader::setUniform1i(const char* uniformName,int value)
@@ -289,7 +299,13 @@ void Shader::setUniform4f(const char* uniformName,float x,float y,float z,float 
 
 void Shader::setMvpMatrix(const glm::mat4& pMatrix) {
 	if (mMvpMatrixLoc >= 0 ) {
-		mMvpMatrix = pMatrix;
+		if (!mpMvpMatrix) {
+			mpMvpMatrix = std::make_unique<glm::mat4>(1.0f);
+		}
+		if (mpMvpMatrix) {
+			*mpMvpMatrix = pMatrix;
+		}
+			
 	}
 	else {
 		LOGD("the mMvpMatrixLoc of shader %s has not been got",mName.c_str());
@@ -298,7 +314,12 @@ void Shader::setMvpMatrix(const glm::mat4& pMatrix) {
 
 void Shader::setTextureMatrix(const glm::mat4& pMatrix) {
 	if (mTextureMatrixLoc >= 0) {
-		mTextureMatrix = pMatrix;
+		if (!mpTextureMatrix) {
+			mpTextureMatrix = std::make_unique<glm::mat4>(1.0f);
+		}
+		if (mpTextureMatrix) {
+			*mpTextureMatrix = pMatrix;
+		}
 	}
 	else {
 		LOGD("the mTextureMatrixLoc of shader %s has not been got", mName.c_str());
@@ -327,10 +348,32 @@ void Shader::setLightColor(const Vec3& lightColor) {
 	mLightColor = lightColor;
 }
 void Shader::setMvMatrix(const glm::mat4& m) {
-	mMvMatrix = m;
+	if (mMvMatrixLoc >= 0) {
+		if (!mpMvMatrix) {
+			mpMvMatrix = std::make_unique<glm::mat4>(1.0f);
+		}
+		if (mpMvMatrix) {
+			*mpMvMatrix = m;
+		}
+	}
+	else {
+		LOGD("the mMvMatrixLoc of shader %s has not been got", mName.c_str());
+	}
+	
 }
 void Shader::setViewMatrix(const glm::mat4& m) {
-	mViewMatrix = m;
+	if (mViewMatrixLoc >= 0) {
+		if (!mpViewMatrix) {
+			mpViewMatrix = std::make_unique<glm::mat4>(1.0f);
+		}
+		if (mpViewMatrix) {
+			*mpViewMatrix = m;
+		}
+	}
+	else {
+		LOGD("the mViewMatrixLoc of shader %s has not been got", mName.c_str());
+	}
+	
 }
 
 
@@ -385,6 +428,31 @@ void Shader::getUniformColorLoc(const std::string& uniformColorNameInShader) {
 		LOGE("the shader %s  has no %s uniform member", mName.c_str(), uniformColorNameInShader.c_str());
 	}
 }
+
+void Shader::getDiffuseTextureLoc(const std::string& diffuseSamplerInShader) {
+	mDiffuseTextureLoc = glGetUniformLocation(mProgram, diffuseSamplerInShader.c_str());
+	if (mDiffuseTextureLoc < 0) {
+		LOGE("the shader %s  has no %s sampler", mName.c_str(), diffuseSamplerInShader.c_str());
+	}
+}
+void Shader::getNormalTextureLoc(const std::string& normalSamplerInShader) {
+	mNormalTextureLoc = glGetUniformLocation(mProgram, normalSamplerInShader.c_str());
+	if (mNormalTextureLoc < 0) {
+		LOGE("the shader %s  has no %s sampler", mName.c_str(), normalSamplerInShader.c_str());
+	}
+}
+
+//std::shared_ptr<Texture>& Shader::getTexture(const std::string& samplerName) {
+//	
+//	auto loc = getUniformLoc(samplerName);
+//	if (loc >= 0) {
+//		auto p = mSamplerToTex.find(loc);
+//		if (p != mSamplerToTex.end()) {
+//			return p->second;
+//		}
+//	}
+//	return gpTextureNothing;
+//}
 
 void Shader::deleteShader()
 {

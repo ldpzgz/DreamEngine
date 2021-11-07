@@ -96,20 +96,20 @@ public:
 
 	void deleteShader();
 	//结果小于0表示错误
-	int getAttributeLoc(const char* attrName);
+	int getAttributeLoc(const std::string& attrName);
 	//结果小于0表示错误
-	int getUniformLoc(const char* uniformName);
+	int getUniformLoc(const std::string& uniformName);
 
-	void setTextureForSampler(int samplerLoc, const std::shared_ptr<Texture>& pTexture) {
-		auto it = mSamplerToTex.find(samplerLoc);
-		if (it != mSamplerToTex.end()) {
-			it->second = pTexture;
-		}else{
-			if (!mSamplerToTex.try_emplace(samplerLoc, pTexture).second) {
-				LOGD("changeTexture emplace failed");
-			}
-		}
-	}
+	//void setTextureForSampler(int samplerLoc, const std::shared_ptr<Texture>& pTexture) {
+	//	auto it = mSamplerToTex.find(samplerLoc);
+	//	if (it != mSamplerToTex.end()) {
+	//		it->second = pTexture;
+	//	}else{
+	//		if (!mSamplerToTex.try_emplace(samplerLoc, pTexture).second) {
+	//			LOGD("changeTexture emplace failed");
+	//		}
+	//	}
+	//}
 
 	void setUniform1i(const char* uniformName,int value);
 	void setUniform1f(const char* uniformName,float x);
@@ -118,13 +118,16 @@ public:
 	void setUniform4f(const char* uniformName,float x,float y,float z,float w);
 	void setMvpMatrix(const glm::mat4&);
 	void setTextureMatrix(const glm::mat4&);
+	void setMvMatrix(const glm::mat4&);
+	void setViewMatrix(const glm::mat4&);
 	void setUniformColor(float r, float g, float b, float a);
 	void setUniformColor(Color color);
 	void setLightPos(const Vec3& lightPos);
 	void setViewPos(const Vec3& viewPos);
 	void setLightColor(const Vec3& lightColor);
-	void setMvMatrix(const glm::mat4&);
-	void setViewMatrix(const glm::mat4&);
+	void setDiffuseTexture();
+	void setNormalTexture();
+	
 
 	void enable();
 
@@ -134,13 +137,28 @@ public:
 	void getLightPosLoc(const std::string& lightPosNameInShader);
 	void getViewPosLoc(const std::string& viewPosNameInShader);
 	void getLightColorLoc(const std::string& lightColorNameInShader);
-
 	void getTextureMatrixLoc(const std::string& textureMatrixNameInShader);
 	void getUniformColorLoc(const std::string& uniformColorNameInShader);
+	void getDiffuseTextureLoc(const std::string& diffuseSamplerInShader);
+	void getNormalTextureLoc(const std::string& normalSamplerInShader);
 
-	std::unordered_map<int, std::shared_ptr<Texture>>& getTexture() {
-		return mSamplerToTex;
+	std::vector<std::string>& getSamplerNames() {
+		return mSamplerNames;
 	}
+
+	std::map<std::string, int>& getUniforms() {
+		return mUniformLocMap;
+	}
+	//std::shared_ptr<Texture>& getTexture(const std::string& samplerName) {
+	//	auto loc = getUniformLoc(samplerName);
+	//	if (loc >= 0) {
+	//		auto p = mSamplerToTex.find(loc);
+	//		if (p != mSamplerToTex.end()) {
+	//			return p->second;
+	//		}
+	//	}
+	//	return gpTextureNothing;
+	//}
 private:
 	GLuint mVs{ 0 };
 	GLuint mFs{ 0 };
@@ -159,15 +177,18 @@ private:
 	int mViewPosLoc{ -1 };
 	int mLightColorLoc{ -1 };
 	int mUniformColorLoc{ -1 }; //在fs里面可以有个uniform vec4 color，用于设置输出固定颜色
-	std::string mName;
-	glm::mat4 mMvpMatrix{ 1 };
-	glm::mat4 mMvMatrix{ 1 };
-	glm::mat4 mViewMatrix{ 1 };
-	glm::mat4 mTextureMatrix{ 1 };
+	int mDiffuseTextureLoc{ -1 };
+	int mNormalTextureLoc{ -1 };
+	std::string mName;	//只是用来输出日志
+	std::unique_ptr<glm::mat4> mpMvpMatrix;
+	std::unique_ptr<glm::mat4> mpMvMatrix;
+	std::unique_ptr<glm::mat4> mpViewMatrix;
+	std::unique_ptr<glm::mat4> mpTextureMatrix;
 	//int mSamplerCount;
 	std::map<std::string,int> mAttributeLocMap;
 	std::map<std::string,int> mUniformLocMap;
-	std::unordered_map<int, std::shared_ptr<Texture>> mSamplerToTex;//Sampler in shader to Texture;
+	std::vector<std::string> mSamplerNames;
+	//std::unordered_map<int, std::shared_ptr<Texture>> mSamplerToTex;//Sampler in shader to Texture;
 	Color mUniformColor{ 0.0f,0.0f,0.0f,0.0f };
 	Vec3 mLightPos{ 0.0f,100.0f,0.0f };
 	Vec3 mViewPos{ 0.0f,100.0f,0.0f };
@@ -176,4 +197,7 @@ protected:
 	//GL_VERTEX_SHADER,GL_FRAGMENT_SHADER
 	GLuint loadShader ( GLenum type, const char *shaderSrc );
 };
+
+using PShader = std::shared_ptr<Shader>;
+extern PShader gpShaderNothing;
 #endif /* GRAPHICSSHADER_H_ */

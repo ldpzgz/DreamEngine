@@ -10,6 +10,22 @@
 #include <EGL/eglext.h>
 #include <GLES3/gl31.h>
 #include <GLES3/gl32.h>
+/*
+void glTexImage2D(	GLenum target,
+	GLint level,
+	GLint internalFormat,
+	GLsizei width,
+	GLsizei height,
+	GLint border,
+	GLenum format,
+	GLenum type,
+	const void * data);
+
+	internalFormat: Specifies the number of color components in the texture
+	type：a single color component's type ：signed or unsigned bytes, shorts, or longs, or single-precision floating-point values
+	format:these values are grouped into sets of one, two, three, or four values, depending on format
+
+*/
 
 class Texture
 {
@@ -64,6 +80,7 @@ protected:
 };
 
 using TextureP = std::shared_ptr<Texture>;
+extern TextureP gpTextureNothing;
 
 //class GraphicsImage
 //{

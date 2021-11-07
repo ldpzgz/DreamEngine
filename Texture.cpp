@@ -2,6 +2,7 @@
 #include "Texture.h"
 #include "Log.h"
 
+TextureP gpTextureNothing;
 extern void checkglerror();
 
 Texture::Texture()

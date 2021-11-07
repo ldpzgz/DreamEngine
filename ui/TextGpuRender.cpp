@@ -8,7 +8,7 @@ void TextGpuRender::init() {
 	mpFirstTexture = Material::createTexture("tgrFirst", 512, 512, nullptr, GL_LUMINANCE);
 
 	mpMesh->setMaterial(mpUniformColorMaterial);
-	mpMesh->setUniformColor(1.0f / 255.0f, 0.0f, 0.0f, 0.0f);
+	mpUniformColorMaterial->setUniformColor(1.0f / 255.0f, 0.0f, 0.0f, 0.0f);
 	mpFbo = make_shared<Fbo>();
 	mpFbo->attachColorTexture(mpFirstTexture);
 	mpFbo->setDepthTest(false);
