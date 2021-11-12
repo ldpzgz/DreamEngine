@@ -127,3 +127,11 @@ void UiTree::calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<
 		pView->initBackground();
 	}
 }
+
+shared_ptr<View>& UiTree::findViewById(const std::string& id) {
+	auto it = mViews.find(id);
+	if (it != mViews.end()) {
+		return it->second;
+	}
+	return gpViewNothing;
+}

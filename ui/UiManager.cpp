@@ -64,9 +64,9 @@ void UiManager::loadAllUiImage() {
 }
 
 void UiManager::parseRShape(const string& path) {
-	shared_ptr<rapidxml::file<>> pfdoc;
+	unique_ptr<rapidxml::file<>> pfdoc;
 	try {
-		pfdoc = make_shared<rapidxml::file<>>(path.c_str());
+		pfdoc = make_unique<rapidxml::file<>>(path.c_str());
 	}
 	catch (std::exception e) {
 		LOGE("error to parseRShape %s file,error %s", path.c_str(), e.what());
@@ -109,9 +109,9 @@ void UiManager::parseRShape(const string& path) {
 }
 
 void UiManager::parseRColors(const string& path) {
-	shared_ptr<rapidxml::file<>> pfdoc;
+	unique_ptr<rapidxml::file<>> pfdoc;
 	try {
-		pfdoc = make_shared<rapidxml::file<>>(path.c_str());
+		pfdoc = make_unique<rapidxml::file<>>(path.c_str());
 	}
 	catch (std::exception e) {
 		LOGE("error to parseRStrings %s file,error %s", path.c_str(), e.what());
@@ -151,9 +151,9 @@ void UiManager::parseRColors(const string& path) {
 }
 
 void UiManager::parseRStrings(const string& path) {
-	shared_ptr<rapidxml::file<>> pfdoc;
+	unique_ptr<rapidxml::file<>> pfdoc;
 	try {
-		pfdoc = make_shared<rapidxml::file<>>(path.c_str());
+		pfdoc = make_unique<rapidxml::file<>>(path.c_str());
 	}
 	catch (std::exception e) {
 		LOGE("error to parseRStrings %s file,error %s", path.c_str(),e.what());

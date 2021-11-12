@@ -6,6 +6,8 @@
 #include "UiRender.h"
 #include "UiManager.h"
 
+std::shared_ptr<View> gpViewNothing;
+
 unordered_map<string, int> View::gGravityKeyValue{
 	{ "center" ,LayoutParam::Center },
 	{ "topCenter" ,LayoutParam::TopCenter },

@@ -333,4 +333,6 @@ public:
 	static unordered_map<string, int> gGravityKeyValue;
 };
 
+extern std::shared_ptr<View> gpViewNothing;
+
 #endif

@@ -28,6 +28,8 @@ public:
 	void calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView);
 	void calcViewsPos(shared_ptr<View> pView);
 
+	shared_ptr<View>& findViewById(const std::string& id);
+
 	shared_ptr<View> mpRootView;
 	unordered_map<std::string, shared_ptr<View>> mViews;//存储拥有id的view
 	list<weak_ptr<View>> mViewsToBeDrawing;

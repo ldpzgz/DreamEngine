@@ -495,6 +495,10 @@ void UiRender::calcTextViewWidthHeight(TextView* tv) {
 	for (size_t i = 0; i<slen;) {
 		UnicodeType code;
 		auto len = UtfConvert::utf(pStr, code);
+		if (len == 0) {
+			LOGE("ERROR in UiRender::calcTextViewWidthHeight convert utf8 to unicode,zhe input text is not utf8 encoded ");
+			break;
+		}
 		pStr += len;
 		i += len;
 		

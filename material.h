@@ -91,6 +91,10 @@ private:
 	bool parseTexture(const string& textureName, const string& texture);
 	using Umapss = std::unordered_map<std::string, std::string>;
 
+	/*
+	* 分析配置文件里面的：material:matName{material}，内容
+	* 根据里面的内容生成名字为matName的material对象，保存到gMaterial里面。
+	*/
 	bool parseMaterial(const string& matName, const string& material);
 	/*
 	* 将value字符串里面形如key=value、或者key{value}格式的，key和value字符串解析出来，存储到umap里面
