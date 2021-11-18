@@ -1,4 +1,4 @@
-vs:1{
+vs{
 	#version 300 es
     layout(location = 0) in vec4 a_position;
     layout(location = 1) in vec2 a_texCoord;
@@ -11,7 +11,7 @@ vs:1{
     }
 }
 
-fs:1{
+fs{
 	#version 300 es
 	precision mediump float;
 	in vec2 v_texCoord;
@@ -28,12 +28,10 @@ texture:buti{
 }
 
 program:lineBasic{
-	vs=1
-	fs=1
 	posLoc=0
 	texcoordLoc=1
 	mvpMatrix=mvp_matrix
-	sampler2D{
+	sampler{
 		s_texture=buti
 	}
 }

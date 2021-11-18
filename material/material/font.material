@@ -1,4 +1,4 @@
-vs:fontVs{
+vs{
 	#version 300 es
     layout(location = 0) in vec4 a_position;
 	layout(location = 1) in vec2 a_tex;
@@ -13,7 +13,7 @@ vs:fontVs{
     }
 }
 
-fs:fontFs{
+fs{
 	#version 300 es
 	precision mediump float;
 	uniform vec4 color;
@@ -34,14 +34,12 @@ texture:fontsTexture{
 }
 
 program:fontsBasic{
-	vs=fontVs
-	fs=fontFs
 	posLoc=0
 	texcoordLoc=1
 	mvpMatrix=mvp_matrix
 	textureMatrix=texture_matrix
 	uniformColor=color
-	sampler2D{
+	sampler{
 		s_texture=fontsTexture
 	}
 }

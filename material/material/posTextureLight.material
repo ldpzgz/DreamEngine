@@ -1,4 +1,4 @@
-vs:posTextureLightVs{
+vs{
 	#version 300 es
     layout (location = 0) in vec3 aPos;
 	layout (location = 1) in vec3 aNormal;
@@ -17,7 +17,7 @@ vs:posTextureLightVs{
     }
 }
 
-fs:posTextureLightFs{
+fs{
 	#version 300 es
 	precision mediump float;
 	in vec2 vTexCoord;
@@ -57,8 +57,6 @@ fs:posTextureLightFs{
 }
 
 program:posTextureLightp{
-	vs=posTextureLightVs
-	fs=posTextureLightFs
 	posLoc=0
 	normalLoc=1
 	texcoordLoc=2
@@ -67,7 +65,15 @@ program:posTextureLightp{
 	lightPos=lightPos
 	viewPos=viewPos
 	lightColor=lightColor
-	sampler2D{
+	sampler{
 		s_texture=none
+	}
+}
+texture:car2Diffuse{
+	path=./opengles3/material/drawable/car2.BMP
+}
+material:car2{
+	sampler{
+		s_texture=car2Diffuse
 	}
 }

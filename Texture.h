@@ -43,10 +43,16 @@ public:
 		return mTarget;
 	}
 	//创建一个多重采样纹理，用于添加到fbo，
-	bool loadMS(int width, int height, int samples=4, unsigned int internalformat= GL_RGBA8);
+	bool createMStexture(int width, int height, int samples=4, unsigned int internalformat= GL_RGBA8);
 	//format:GL_RGB,GL_RGBA,GL_DEPTH_COMPONENT
 	//type:GL_UNSIGNED_BYTE,GL_UNSIGNED_SHORT,GL_UNSIGNED_SHORT_5_6_5
 	bool load(int width,int height,unsigned char* pdata,GLint format=GL_RGB,GLenum type=GL_UNSIGNED_BYTE, int aligment = 4,bool autoMipmap=false);
+	
+	/*
+	* path:指定了六个cubemap文件所在的路径，这个路径里面有"right.jpg","left.jpg","top.jpg","bottom.jpg","front.jpg","back.jpg"
+	*/
+	bool loadCubemap(const std::string& path);
+
 	void unload();
 
 	////参数为是否自动为这个纹理生存mipmap
@@ -76,7 +82,7 @@ protected:
 	GLint mInternalFormat{ GL_RGB };
 	GLint mFormat{ GL_RGB };
 	int mNumOfSamples{ 0 };
-	int mTarget{ GL_TEXTURE_2D };//GL_TEXTIURE2D,TEXTURE_CUBE_MAP_POSITIVE_X...
+	int mTarget{ GL_TEXTURE_2D };//GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_2D_ARRAY, or GL_TEXTURE_CUBE_MAP
 };
 
 using TextureP = std::shared_ptr<Texture>;

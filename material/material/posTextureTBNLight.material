@@ -1,4 +1,4 @@
-vs:tbnlightVs{
+vs{
 	#version 300 es
     layout(location = 0) in vec4 aPos;
     layout(location = 1) in vec2 aTexCoord;
@@ -32,7 +32,7 @@ vs:tbnlightVs{
     }
 }
 
-fs:tbnlightFs{
+fs{
 	#version 300 es
 	precision mediump float;
 	in vec2 vTexCoord;
@@ -77,8 +77,6 @@ fs:tbnlightFs{
 }
 
 program:tbnlightP{
-	vs=tbnlightVs
-	fs=tbnlightFs
 	posLoc=0
 	texcoordLoc=1
 	normalLoc=2
@@ -88,7 +86,7 @@ program:tbnlightP{
 	lightPos=lightPos
 	viewPos=viewPos
 	lightColor=lightColor
-	sampler2D{
+	sampler{
 		s_texture=none
 		s_normal=none
 	}
@@ -100,6 +98,8 @@ texture:carNormal{
 	path=./opengles3/material/drawable/carNormal.png
 }
 material:car{
-	s_texture=carDiffuse
-	s_normal=carNormal
+	sampler{
+		s_texture=carDiffuse
+		s_normal=carNormal
+	}
 }

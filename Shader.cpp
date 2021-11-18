@@ -356,10 +356,6 @@ void Shader::setMvMatrix(const glm::mat4& m) {
 			*mpMvMatrix = m;
 		}
 	}
-	else {
-		LOGD("the mMvMatrixLoc of shader %s has not been got", mName.c_str());
-	}
-	
 }
 void Shader::setViewMatrix(const glm::mat4& m) {
 	if (mViewMatrixLoc >= 0) {
@@ -370,10 +366,6 @@ void Shader::setViewMatrix(const glm::mat4& m) {
 			*mpViewMatrix = m;
 		}
 	}
-	else {
-		LOGD("the mViewMatrixLoc of shader %s has not been got", mName.c_str());
-	}
-	
 }
 
 

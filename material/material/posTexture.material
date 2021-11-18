@@ -1,4 +1,4 @@
-vs:rectangleTexVs{
+vs{
 	#version 300 es
     layout(location = 0) in vec4 a_position;
     layout(location = 1) in vec2 a_texCoord;
@@ -11,7 +11,7 @@ vs:rectangleTexVs{
     }
 }
 
-fs:rectangleTexFs{
+fs{
 	#version 300 es
 	precision mediump float;
 	in vec2 v_texCoord;
@@ -24,12 +24,10 @@ fs:rectangleTexFs{
 }
 
 program:rectangleTex{
-	vs=rectangleTexVs
-	fs=rectangleTexFs
 	posLoc=0
 	texcoordLoc=1
 	mvpMatrix=mvp_matrix
-	sampler2D{
+	sampler{
 		s_texture=none
 	}
 }

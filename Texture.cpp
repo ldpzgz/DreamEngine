@@ -1,7 +1,9 @@
 ﻿//#include "StdAfx.h"
 #include "Texture.h"
 #include "Log.h"
-
+#include <vector>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 TextureP gpTextureNothing;
 extern void checkglerror();
 
@@ -68,7 +70,7 @@ int32_t Texture::getWidth() {
 //	return STATUS_OK;
 //}
 
-bool Texture::loadMS(int width,int height,int samples,unsigned int internalformat) {
+bool Texture::createMStexture(int width,int height,int samples,unsigned int internalformat) {
 	mInternalFormat = internalformat;
 	mWidth = width;
 	mHeight = height;
@@ -148,6 +150,69 @@ bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum
 	{
 		glGenerateMipmap(mTarget);
 	}
+
+	if (glGetError() != GL_NO_ERROR)
+	{
+		LOGE("Error loading texture into OpenGL.");
+		unload();
+		return false;
+	}
+	return true;
+}
+
+bool Texture::loadCubemap(const std::string& path) {
+	mTarget = GL_TEXTURE_CUBE_MAP;
+	glGenTextures(1, &mTextureId);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(mTarget, mTextureId);
+
+	std::vector<std::string> filename{ "/right.jpg","/left.jpg","/top.jpg","/bottom.jpg","/front.jpg","/back.jpg" };
+
+	int nrChannels;
+	int i = 0;
+	for (auto& afile:filename)
+	{
+		auto filePath = path + afile;
+		unsigned char* data = stbi_load(filePath.c_str(), &mWidth, &mHeight, &nrChannels, 0);
+		if (data)
+		{
+			if (nrChannels == 3) {
+				mFormat = GL_RGB;
+			}
+			else if (nrChannels == 4) {
+				mFormat = GL_RGBA;
+			}
+			else if (nrChannels == 1) {
+				mFormat = GL_LUMINANCE;
+			}
+			else {
+				LOGE("Cubemap texture %s,unknow channels: d", filePath.c_str(), nrChannels);
+			}
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0, mFormat, mWidth, mHeight, 0, mFormat, GL_UNSIGNED_BYTE, data
+			);
+			stbi_image_free(data);
+		}
+		else
+		{
+			LOGE( "Cubemap tex failed to load at path: %s", filePath.c_str());
+			stbi_image_free(data);
+		}
+		++i;
+	}
+
+	//int align = 0;
+	//glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);//默认是4，the alignment requirements for the start of each pixel row in memory
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+
+
+	// Set-up texture properties.
+	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	if (glGetError() != GL_NO_ERROR)
 	{

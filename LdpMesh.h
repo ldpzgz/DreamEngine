@@ -26,9 +26,6 @@ struct LdpMesh {
 	int tangentsPos{ 0 };
 	int tangentsLength{ 0 };
 
-	int bitangentsPos{ 0 };
-	int bitangentsLength{ 0 };
-
 	int indexPos{ 0 };
 	int indexLength{ 0 };
 };

@@ -263,11 +263,11 @@ void Mesh::loadMesh(const std::string meshFilePath) {
 				assert(infile.gcount() == mesh.tangentsLength);
 			}
 
-			if (mesh.bitangentsLength > 0) {
+			/*if (mesh.bitangentsLength > 0) {
 				bitangent.reserve(mesh.vertexCount * 3);
 				infile.read((char*)bitangent.data(), mesh.bitangentsLength);
 				assert(infile.gcount() == mesh.bitangentsLength);
-			}
+			}*/
 
 			if (mesh.indexLength > 0) {
 				index.reserve(mesh.indexLength/sizeof(unsigned int));
@@ -626,6 +626,7 @@ void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat, const Vec3& l
 			pShader->setViewPos(viewPos);
 
 			mpMaterial->enable();
+			mpMaterial->setMyRenderOperation();
 			int posloc = -1;
 			int texloc = -1;
 			int norloc = -1;
@@ -633,6 +634,7 @@ void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat, const Vec3& l
 			int tangentloc = -1;
 			pShader->getLocation(posloc, texloc, colorloc, norloc,tangentloc);
 			draw(posloc, texloc, norloc, colorloc,tangentloc);
+			mpMaterial->restoreRenderOperation();
 		}
 		else {
 			LOGE("mesh has no shader,can't render");
@@ -651,6 +653,7 @@ void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& texMat) {
 			pShader->setMvpMatrix(mvpMat);
 			pShader->setTextureMatrix(texMat);
 			mpMaterial->enable();
+			mpMaterial->setMyRenderOperation();
 			int posloc = -1;
 			int texloc = -1;
 			int norloc = -1;
@@ -658,6 +661,7 @@ void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& texMat) {
 			int tangentloc = -1;
 			pShader->getLocation(posloc, texloc, colorloc, norloc, tangentloc);
 			draw(posloc, texloc, norloc, colorloc, tangentloc);
+			mpMaterial->restoreRenderOperation();
 		}
 		else {
 			LOGE("mesh has no shader 2,can't render");
@@ -674,6 +678,7 @@ void Mesh::render(const glm::mat4& mvpMat) {
 		if (pShader) {
 			pShader->setMvpMatrix(mvpMat);
 			mpMaterial->enable();
+			mpMaterial->setMyRenderOperation();
 			int posloc = -1;
 			int texloc = -1;
 			int norloc = -1;
@@ -681,6 +686,7 @@ void Mesh::render(const glm::mat4& mvpMat) {
 			int tangentloc = -1;
 			pShader->getLocation(posloc, texloc, colorloc, norloc, tangentloc);
 			draw(posloc, texloc, norloc, colorloc, tangentloc);
+			mpMaterial->restoreRenderOperation();
 		}
 		else {
 			LOGE("mesh has no shader 3,can't render");

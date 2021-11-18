@@ -16,6 +16,251 @@ std::unordered_map<std::string, std::shared_ptr<Material>> Material::gMaterials;
 std::unordered_map<std::string, std::shared_ptr<Texture>> Material::gTextures;
 std::unordered_map<std::string, std::shared_ptr<Shader>> Material::gShaders;
 
+std::unordered_map<std::string, std::function<bool(const std::shared_ptr<Material>&, const std::string&)>> Material::gMaterialHandlers{
+	{"sampler",Material::samplerHandler},
+	{"op",Material::opHandler},
+	{"depthTest",Material::opDepthHandler},
+	{"blend",Material::opBlendHandler},
+	{"cullFace",Material::opCullfaceHandler}
+};
+static std::unordered_map<std::string,unsigned int> gBlendFuncMap{
+	{"one",GL_ONE},
+	{"zero",GL_ZERO},
+	{"sc",GL_SRC_COLOR},
+	{"dc",GL_DST_COLOR},
+	{"1-sc",GL_ONE_MINUS_SRC_COLOR},
+	{"1-dc",GL_ONE_MINUS_DST_COLOR},
+	{"sa",GL_SRC_ALPHA},
+	{"da",GL_DST_ALPHA},
+	{"1-sa",GL_ONE_MINUS_SRC_ALPHA},
+	{"1-da",GL_ONE_MINUS_DST_ALPHA}
+};
+
+static std::unordered_map<std::string, unsigned int> gBlendEquationMap{
+	{"add",GL_FUNC_ADD},
+	{"sub",GL_FUNC_SUBTRACT},
+	{"rsub",GL_FUNC_REVERSE_SUBTRACT},
+	{"min",GL_MIN},
+	{"max",GL_MAX}
+};
+
+bool Material::samplerHandler(const std::shared_ptr<Material>& pMaterial, const std::string& samplerContent) {
+	Umapss contents;
+	if (pMaterial->parseItem(samplerContent, contents)) {
+		for (auto pairs : contents) {
+			auto pTexture = gTextures.find(pairs.second);
+			if (pTexture != gTextures.end()) {
+				pMaterial->setTextureForSampler(pairs.first, pTexture->second);
+			}
+			else {
+				LOGE("parse material's sampler property error,cannot find texture %s", pairs.second.c_str());
+				return true;
+			}
+		}
+	}
+	else {
+		LOGD("ERROR to parse material's sampler property: %s",samplerContent.c_str());
+		return false;
+	}
+	return true;
+}
+bool Material::opHandler(const std::shared_ptr<Material>& pMaterial, const std::string& opContent) {
+	Umapss contents;
+	if (pMaterial->parseItem(opContent, contents)) {
+		for (auto pairs : contents) {
+			auto it = gMaterialHandlers.find(pairs.first);
+			if (it != gMaterialHandlers.end()) {
+				it->second(pMaterial, pairs.second);
+			}
+			else {
+				LOGE("error parse material-op,cannot recognize key %s in material op",pairs.first.c_str());
+			}
+		}
+	}
+	else {
+		LOGE("parse material's op property error,contents is %s", opContent.c_str());
+		return false;
+	}
+	return true;
+}
+
+bool Material::opDepthHandler(const std::shared_ptr<Material>& pMaterial, const std::string& value) {
+	if (value == "true") {
+		pMaterial->setDepthTest(true);
+	}
+	else if (value == "false") {
+		pMaterial->setDepthTest(false);
+	}
+	else {
+		LOGE("syntax error in Material::opDepthHandler");
+		return false;
+	}
+	return true;
+}
+bool Material::opBlendHandler(const std::shared_ptr<Material>& pMaterial, const std::string& value) {
+	bool bEnable = false;
+	unsigned int srcFactor = GL_SRC_ALPHA;
+	unsigned int dstFactor = GL_ONE_MINUS_SRC_ALPHA;
+	unsigned int equation = GL_FUNC_ADD;
+	bool hasError = false;
+	do {
+		if (value != "false") {
+			std::string bEnableStr;
+			std::string srcFactorStr;
+			std::string dstFactorStr;
+			std::string equationStr;
+			auto pos1 = value.find(',');
+			if (pos1 != std::string::npos) {
+				bEnableStr = value.substr(0, pos1);
+				auto pos2 = value.find(',', pos1 + 1);
+				if (pos2 != std::string::npos) {
+					srcFactorStr = value.substr(pos1 + 1, pos2 - pos1 - 1);
+					auto pos3 = value.find(',', pos2 + 1);
+					if (pos3 != std::string::npos) {
+						dstFactorStr = value.substr(pos2 + 1, pos3 - pos2 - 1);
+						equationStr = value.substr(pos3 + 1);
+					}
+					else {
+						hasError = true;
+						break;
+					}
+				}
+				else {
+					hasError = true;
+					break;
+				}
+			}
+			else {
+				hasError = true;
+				break;
+			}
+			if (bEnableStr == "true") {
+				bEnable = true;
+			}
+			else {
+				hasError = true;
+				break;
+			}
+			auto srcPair = gBlendFuncMap.find(srcFactorStr);
+			if (srcPair != gBlendFuncMap.end()) {
+				srcFactor = srcPair->second;
+			}
+			else {
+				hasError = true;
+				break;
+			}
+
+			auto dstPair = gBlendFuncMap.find(dstFactorStr);
+			if (dstPair != gBlendFuncMap.end()) {
+				dstFactor = dstPair->second;
+			}
+			else {
+				hasError = true;
+				break;
+			}
+
+			auto equationPair = gBlendEquationMap.find(equationStr);
+			if (equationPair != gBlendEquationMap.end()) {
+				equation = equationPair->second;
+			}
+			else {
+				hasError = true;
+				break;
+			}
+
+		}
+	} while (false);
+	if (hasError) {
+		LOGE("ERROR to parse material-op-blend value %s",value.c_str());
+		return false;
+	}
+	else {
+		pMaterial->setBlend(bEnable, srcFactor, dstFactor, equation);
+		return true;
+	}
+}
+bool Material::opCullfaceHandler(const std::shared_ptr<Material>& pMaterial, const std::string& value) {
+	
+	std::string bEnableStr;
+	std::string cullWhichFaceStr;
+	bool bEnable = false;
+	int cullWhichFace = 1;
+	bool hasError = false;
+	do {
+		auto pos = value.find(',');
+		if (pos != std::string::npos) {
+			bEnableStr = value.substr(0, pos);
+			cullWhichFaceStr = value.substr(pos + 1);
+			if (bEnableStr == "true") {
+				bEnable = true;
+			}
+			else if (bEnableStr == "false") {
+				bEnable = false;
+			}
+			else {
+				hasError = true;
+				break;
+			}
+
+			if (cullWhichFaceStr == "front") {
+				cullWhichFace = GL_FRONT;
+			}
+			else if (cullWhichFaceStr == "back") {
+				cullWhichFace = GL_BACK;
+			}
+			else if (cullWhichFaceStr == "frontAndBack") {
+				cullWhichFace = GL_FRONT_AND_BACK;
+			}
+			else {
+				hasError = true;
+				break;
+			}
+		}
+		else if (value == "false") {
+			bEnable = false;
+		}
+		else {
+			hasError = true;
+			break;
+		}
+	} while (false);
+
+	if (hasError) {
+		LOGE("error to parse material-op-cullface value is %s",value.c_str());
+		return false;
+	}
+	else {
+		pMaterial->setCullWhichFace(bEnable, cullWhichFace);
+		return true;
+	}
+	
+}
+
+void Material::setDepthTest(bool b) {
+	if (!mMyOpData) {
+		mMyOpData = std::make_unique< OpData >();
+	}
+	mMyOpData->mbDepthTest = b;
+}
+void Material::setCullWhichFace(bool b, int whichFace) {
+	if (!mMyOpData) {
+		mMyOpData = std::make_unique< OpData >();
+	}
+	mMyOpData->mbCullFace = b;
+	mMyOpData->mCullWhichFace = whichFace;
+}
+void Material::setBlend(bool b, unsigned int srcFactor, unsigned int destFactor,unsigned int blendOp) {
+	if (!mMyOpData) {
+		mMyOpData = std::make_unique< OpData >();
+	}
+	mMyOpData->mbBlendTest = b;
+	mMyOpData->mBlendSrcFactor = srcFactor;
+	mMyOpData->mBlendDstFactor = destFactor;
+	mMyOpData->mBlendEquation = blendOp;
+}
+
+
+
 void Material::loadAllMaterial() {
 	//遍历UIimage目录
 	path materialPath(gMaterialPath);
@@ -70,69 +315,89 @@ string Material::getItemName(const string& key) {
 	return temp;
 }
 
-//void Material::setMvpMatrix(const glm::mat4& pdata) {
-//	if (mShader) {
-//		mShader->setMvpMatrix(pdata);
-//	}
-//}
-//
-//void Material::setMvMatrix(const glm::mat4& pdata) {
-//	if (mShader) {
-//		mShader->setMvMatrix(pdata);
-//	}
-//}
-//void Material::setViewMatrix(const glm::mat4& pdata) {
-//	if (mShader) {
-//		mShader->setViewMatrix(pdata);
-//	}
-//}
-//
-//void Material::setTextureMatrix(const glm::mat4& pdata) {
-//	if (!mpTextureMatrix) {
-//		mpTextureMatrix = make_shared<glm::mat4>(1.0f);
-//	}
-//	if (mpTextureMatrix) {
-//		*mpTextureMatrix = pdata;
-//	}
-//	if (mShader) {
-//		mShader->setTextureMatrix(pdata);
-//	}
-//}
-//
-//void Material::setTextureMatrix() {
-//	if (mpTextureMatrix && mShader) {
-//		mShader->setTextureMatrix(*mpTextureMatrix);
-//	}
-//}
-//
-//void Material::setUniformColor(const Color& color) {
-//	if (mShader) {
-//		mShader->setUniformColor(color);
-//	}
-//}
-//
-//void Material::setUniformColor(float r, float g, float b, float a) {
-//	if (mShader) {
-//		mShader->setUniformColor(r,g,b,a);
-//	}
-//}
-//
-//void Material::setLightPos(const Vec3& lightPos) {
-//	if (mShader) {
-//		mShader->setLightPos(lightPos);
-//	}
-//}
-//void Material::setViewPos(const Vec3& viewPos) {
-//	if (mShader) {
-//		mShader->setViewPos(viewPos);
-//	}
-//}
-//void Material::setLightColor(const Vec3& lightColor) {
-//	if (mShader) {
-//		mShader->setLightColor(lightColor);
-//	}
-//}
-//
+//深度测试，blend，cullface等操作
+void Material::setMyRenderOperation() {
+	if (mMyOpData) {
+		if (!mOthersOpData) {
+			mOthersOpData = std::make_unique<Material::OpData>();
+		}
+		if (mMyOpData->mbDepthTest >= 0) {
+			GLboolean bDepthTest = true;
+			glGetBooleanv(GL_DEPTH_TEST, &bDepthTest);
+			mOthersOpData->mbDepthTest = bDepthTest;
+
+			if (mMyOpData->mbDepthTest == 0) {
+				glDisable(GL_DEPTH_TEST);
+			}
+			else {
+				glEnable(GL_DEPTH_TEST);
+			}
+		}
+
+		if (mMyOpData->mbBlendTest >= 0) {
+			GLboolean bBlendTest = false;
+			glGetBooleanv(GL_BLEND, &bBlendTest);
+			mOthersOpData->mbBlendTest = bBlendTest;
+			glGetIntegerv(GL_BLEND_SRC_RGB, &mOthersOpData->mBlendSrcFactor);
+			glGetIntegerv(GL_BLEND_DST_RGB, &mOthersOpData->mBlendDstFactor);
+			glGetIntegerv(GL_BLEND_EQUATION_RGB, &mOthersOpData->mBlendEquation);
+			if (mMyOpData->mbBlendTest == 0) {
+				glDisable(GL_BLEND);
+			}
+			else {
+				glEnable(GL_BLEND);
+				glBlendFunc(mMyOpData->mBlendSrcFactor, mMyOpData->mBlendDstFactor);
+				glBlendEquation(mMyOpData->mBlendEquation);
+			}
+		}
+		
+		if (mMyOpData->mbCullFace >= 0) {
+			GLboolean preCullFace = false;
+			int preCullFaceModel = GL_BACK;
+			glGetBooleanv(GL_CULL_FACE, &preCullFace);
+			mOthersOpData->mbCullFace = preCullFace;
+			glGetIntegerv(GL_CULL_FACE_MODE, &mOthersOpData->mCullWhichFace);
+			if (mMyOpData->mbCullFace == 0) {
+				glDisable(GL_CULL_FACE);
+			}
+			else {
+				glEnable(GL_CULL_FACE);
+				glCullFace(mMyOpData->mCullWhichFace);
+			}
+		}
+	}
+}
+
+//恢复之前的深度测试，blend，cullface等操作
+void Material::restoreRenderOperation() {
+	if (!mOthersOpData) {
+		return;
+	}
+	if (mOthersOpData->mbDepthTest == 0) {
+		glDisable(GL_DEPTH_TEST);
+	}
+	else {
+		glEnable(GL_DEPTH_TEST);
+	}
+
+	if (mOthersOpData->mbBlendTest == 0) {
+		glDisable(GL_BLEND);
+	}
+	else {
+		glEnable(GL_BLEND);
+		glBlendFunc(mOthersOpData->mBlendSrcFactor, mOthersOpData->mBlendDstFactor);
+		glBlendEquation(mOthersOpData->mBlendEquation);
+	}
+
+	if (mOthersOpData->mbCullFace== 0) {
+		glDisable(GL_CULL_FACE);
+	}
+	else {
+		glEnable(GL_CULL_FACE);
+		glCullFace(mOthersOpData->mCullWhichFace);
+	}
+}
+
 void Material::enable() {
 	if (mShader) {
 		if (mpUniformColor) {
@@ -186,6 +451,12 @@ bool Material::parseMaterialFile(const string& path) {
 				auto textureName = getItemName(key);
 				if (!textureName.empty()) {
 					bParseSuccess = parseTexture(textureName, value);
+				}
+			}
+			else if (key.find("cubeTexture") != string::npos) {
+				auto textureName = getItemName(key);
+				if (!textureName.empty()) {
+					bParseSuccess = parseCubeTexture(textureName, value);
 				}
 			}
 			else if (key.find("program") != string::npos) {
@@ -242,28 +513,29 @@ bool Material::parseMaterial(const string& matName, const string& material) {
 	if (parseItem(material, umap)) {
 		auto pMaterial = clone(*this);
 		for (auto& pair : umap) {
-			
-			auto pTex = gTextures.find(pair.second);
-			
-			if (pTex != gTextures.end()) {
-				pMaterial->setTextureForSampler(pair.first,pTex->second);
+			auto it = gMaterialHandlers.find(pair.first);
+			if (it != gMaterialHandlers.end()) {
+				if (!it->second(pMaterial, pair.second))
+				{
+					bParseSuccess = false;
+					break;
+				}
+			}
+		}
+		if (bParseSuccess) {
+			if (gMaterials.try_emplace(matName, pMaterial).second) {
+				LOGD("success to add material %s to gMaterials", matName.c_str());
 			}
 			else {
-				LOGE("parse material script error,cannot find texture %s", pair.second.c_str());
-				bParseSuccess = false;
+				LOGD("failed to add material %s to gMaterials", matName.c_str());
 			}
-		}
-		if (gMaterials.try_emplace(matName, pMaterial).second) {
-			LOGD("success to add material %s to gMaterials", matName.c_str());
-		}
-		else {
-			LOGD("failed to add material %s to gMaterials", matName.c_str());
 		}
 	}
 	else {
 		LOGE("parse material script error,syntax error");
 		bParseSuccess = false;
 	}
+	
 	return bParseSuccess;
 }
 
@@ -417,6 +689,30 @@ bool Material::parseItem(const string& value, Umapss& umap) {
 	return true;
 }
 
+bool Material::parseCubeTexture(const string& textureName, const string& texture) {
+	Umapss umap;
+	int width;
+	int height;
+	int depth;
+	if (parseItem(texture, umap)) {
+		const auto pPath = umap.find("path");
+		if (pPath != umap.cend()) {
+			auto pTex = std::make_shared<Texture>();
+			if (pTex->loadCubemap(pPath->second) && gTextures.try_emplace(textureName, pTex).second) {
+				LOGD("success to parse texture %s from path", textureName.c_str());
+			}
+			else {
+				LOGE("failed to load cubetexture %s from path", textureName.c_str());
+			}
+		}
+	}
+	else {
+		LOGE("parseCubeTexture parse error %s",textureName.c_str());
+		return false;
+	}
+	return true;
+}
+
 bool Material::parseTexture(const string& textureName, const string& texture) {
 	Umapss umap;
 	int width;
@@ -477,8 +773,8 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 
 bool Material::parseProgram(const string& programName,const string& program) {
 	Umapss umap;
-	string vs_key;
-	string fs_key;
+	string vs_key{ "vs" };
+	string fs_key{ "fs" };
 	int posLoc = -1;
 	int texcoordLoc = -1;
 	int normalLoc = -1;
@@ -495,16 +791,6 @@ bool Material::parseProgram(const string& programName,const string& program) {
 	Umapss umapSampler;
 			
 	if (parseItem(program, umap)) {
-		const auto pvs = umap.find("vs");
-		if (pvs != umap.cend()) {
-			vs_key = "vs:" + pvs->second;
-		}
-
-		const auto pfs = umap.find("fs");
-		if (pfs != umap.cend()) {
-			fs_key = "fs:" + pfs->second;
-		}
-
 		const auto pPosLoc = umap.find("posLoc");
 		if (pPosLoc != umap.cend()) {
 			try {
@@ -608,25 +894,20 @@ bool Material::parseProgram(const string& programName,const string& program) {
 		}
 
 		//为shader里面的sampler指定Texture（通过texture的名字）
-		const auto pSampler = umap.find("sampler2D");
+		const auto pSampler = umap.find("sampler");
 		
 		if (pSampler != umap.cend()) {
 			if (parseItem(pSampler->second, umapSampler)) {
 
 			}
 			else {
-				LOGE("error to parse sampler2D in program %s", programName.c_str());
+				LOGE("error to parse sampler in program %s", programName.c_str());
 			}
 		}
 		
 	}
 	else {
 		LOGE("ERROR TO PARSE PROGRAM");
-		return false;
-	}
-
-	if (vs_key.empty() || fs_key.empty()) {
-		LOGE("error to parse program %s", program.c_str());
 		return false;
 	}
 

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <memory>
+#include <functional>
 #include <unordered_map>
 #include "Shader.h"
 #include "Texture.h"
@@ -14,6 +15,12 @@ public:
 	Material(const Material& mat);
 	bool parseMaterialFile(const string&);
 	void enable();
+
+	//深度测试，blend，cullface等操作
+	void setMyRenderOperation();
+
+	//恢复之前的深度测试，blend，cullface等操作
+	void restoreRenderOperation();
 
 	//如果材质文件里面有个key对应的value是整数，可以用这个函数获取到
 	int getKeyAsInt(const string& key);
@@ -54,6 +61,16 @@ public:
 		mName = name;
 	}
 
+	struct OpData {
+		int mbDepthTest{-1};//0 关闭，1 开启
+		int mbBlendTest{ -1 };//0 关闭，1 开启
+		int mbCullFace{ -1 }; //0 关闭，1开启
+		int mCullWhichFace{ 0 };
+		int mBlendSrcFactor{ 0 };
+		int mBlendDstFactor{ 0 };
+		int mBlendEquation{ 0 };
+	};
+
 	static shared_ptr<Texture>& getTexture(const std::string&);
 	static shared_ptr<Material> getMaterial(const std::string&);
 	static shared_ptr<Shader>& getShader(const std::string&);
@@ -77,7 +94,7 @@ private:
 	/*
 	* programName,program:后面跟的名字
 	* program，要被分析的program的内容
-	* 分析program，创建shader，将shader放到gShader全局变量里面，
+	* 分析program，创建名字为programName的shader，将shader放到gShader全局变量里面，
 	* 拿到shader的各种uniform的loc，为shader里面的sampler指定纹理。
 	*/
 	bool parseProgram(const string& programName,const string& program);
@@ -89,6 +106,15 @@ private:
 	* 这个函数分析texture的内容，创建一个纹理，将纹理保存到gTexture全局变量里面
 	*/
 	bool parseTexture(const string& textureName, const string& texture);
+
+	/*
+	* textureName  material文件里面texture：后面跟的纹理的名字
+	* texture material文件里面texture的内容
+	* texture的内容要么是一个path=xxxx，这样的路径
+	* 要么就是长、宽、深度三个信息确定一个纹理。
+	* 这个函数分析texture的内容，创建一个纹理，将纹理保存到gTexture全局变量里面
+	*/
+	bool parseCubeTexture(const string& textureName, const string& texture);
 	using Umapss = std::unordered_map<std::string, std::string>;
 
 	/*
@@ -101,6 +127,17 @@ private:
 	*/
 	bool parseItem(const string& value, Umapss& umap);
 
+	void setDepthTest(bool b);
+	void setCullWhichFace(bool b, int fontface);
+	void setBlend(bool b, unsigned int srcFactor, unsigned int destFactor, unsigned int blendOp);
+
+	static bool samplerHandler(const std::shared_ptr<Material>&, const std::string& samplerContent);
+	static bool opHandler(const std::shared_ptr<Material>&, const std::string&);
+	static bool opDepthHandler(const std::shared_ptr<Material>&, const std::string&);
+	static bool opBlendHandler(const std::shared_ptr<Material>&, const std::string&);
+	static bool opCullfaceHandler(const std::shared_ptr<Material>&, const std::string&);
+	static std::unordered_map<std::string, std::function<bool(const std::shared_ptr<Material>&, const std::string&)>> gMaterialHandlers;
+	
 	std::shared_ptr < std::unordered_map<std::string, std::string>> mpContents;//保存的是材质文件里面形如key{value}的key-value对
 	
 	std::shared_ptr<Shader> mShader;
@@ -110,6 +147,9 @@ private:
 	std::unordered_map<int, std::shared_ptr<Texture>> mSamplerName2Texture;
 
 	std::string mName;
+
+	std::unique_ptr <OpData> mOthersOpData;
+	std::unique_ptr <OpData> mMyOpData;
 
 	static std::unordered_map<std::string, std::shared_ptr<Material>> gMaterials;
 	static std::unordered_map<std::string, std::shared_ptr<Texture>> gTextures;

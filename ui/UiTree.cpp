@@ -39,7 +39,7 @@ void UiTree::updateWidthHeight(float width, float height) {
 		mpTexture = make_shared<Texture>();
 	}
 	mpTexture->unload();
-	mpTexture->loadMS(width, height);
+	mpTexture->createMStexture(width, height);
 	UiRender::getInstance()->setTexture(mpTexture);
 	mFboForRender.attachColorTextureMS(mpTexture);
 	mFboForRender.setDepthTest(false);

@@ -42,6 +42,6 @@
 		textSize="32"
 		textColor="#ffff00ff"
 		charSpace="30"
-		text="按钮">
+		text="确定">
 	</Button>
 </LinearLayout>

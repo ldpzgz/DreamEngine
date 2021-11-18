@@ -1,0 +1,44 @@
+vs{
+	#version 300 es
+    layout(location = 0) in vec3 a_position;
+	uniform mat4 mvp_matrix;
+    out vec3 v_texCoord;
+    void main()
+    {
+       vec4 pos = mvp_matrix * vec4(a_position,1.0f);
+       v_texCoord = a_position;
+	   gl_Position = pos;
+    }
+}
+
+fs{
+	#version 300 es
+	precision mediump float;
+	in vec3 v_texCoord;
+	layout(location = 0) out vec4 outColor;
+	uniform samplerCube skybox;
+	void main()
+	{
+	  outColor = texture( skybox, v_texCoord );
+	}
+}
+
+program:cubemap{
+	posLoc=0
+	mvpMatrix=mvp_matrix
+	sampler{
+		skybox=none
+	}
+}
+cubeTexture:skyboxT{
+	path=./opengles3/material/drawable/skybox
+}
+material:skyboxM{
+	sampler{
+		skybox=skyboxT
+	}
+	op{
+		depthTest=true
+		cullFace=true,front
+	}
+}
