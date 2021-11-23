@@ -383,7 +383,7 @@ void Material::restoreRenderOperation() {
 	if (mOthersOpData->mbBlendTest == 0) {
 		glDisable(GL_BLEND);
 	}
-	else {
+	else if(mOthersOpData->mbBlendTest == 1) {
 		glEnable(GL_BLEND);
 		glBlendFunc(mOthersOpData->mBlendSrcFactor, mOthersOpData->mBlendDstFactor);
 		glBlendEquation(mOthersOpData->mBlendEquation);
@@ -392,7 +392,7 @@ void Material::restoreRenderOperation() {
 	if (mOthersOpData->mbCullFace== 0) {
 		glDisable(GL_CULL_FACE);
 	}
-	else {
+	else if(mOthersOpData->mbCullFace == 1) {
 		glEnable(GL_CULL_FACE);
 		glCullFace(mOthersOpData->mCullWhichFace);
 	}

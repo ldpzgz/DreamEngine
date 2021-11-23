@@ -18,6 +18,14 @@ public:
 		mLayoutParam = layoutParam;
 	}
 
+	bool isVertical() {
+		return mOrientation == LayoutParam::Vertical;
+	}
+
+	bool isHorizontal() {
+		return mOrientation == LayoutParam::Horizontal;
+	}
+
 	void draw() override;
 
 	int getChildrenTotalWidthPercent() override;
@@ -30,7 +38,7 @@ public:
 
 	void calcChildPos() override;
 
-	static void orientationHandler(const shared_ptr<View>&, const string&);
+	void orientationHandler(const string& content) override;
 private:
 	unsigned int mLayoutParam{ LayoutParam::Horizontal };
 	int mOrientation{ 0 };

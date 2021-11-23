@@ -85,6 +85,22 @@ public:
 	virtual void addDirtyView(const shared_ptr<View>& pView) = 0;
 };
 
+class MoveListener {
+public:
+	MoveListener() = default;
+	virtual ~MoveListener() {
+
+	}
+	const Vec2i& getTranslateVector() {
+		return mTranslateVector;
+	};
+	void translate(const Vec2i& move) {
+		mTranslateVector += move;
+	}
+protected:
+	Vec2i mTranslateVector;
+};
+
 //这个类及其子类都只能在堆中分配内存，用智能指针管理
 class View : public Attachable,public std::enable_shared_from_this<View>{
 public:
@@ -228,6 +244,13 @@ public:
 		mpDirtyListener = pDirtyListener;
 	}
 
+	void setMoveListener(const shared_ptr<MoveListener>& pMoveListener) {
+		mpMoveListener = pMoveListener;
+		for (auto& pchild : mChildren) {
+			pchild->setMoveListener(pMoveListener);
+		}
+	}
+
 	void setDirty(bool b) {
 		if (mbIsDirty == b) {
 			return;
@@ -237,6 +260,13 @@ public:
 			auto pListener = mpDirtyListener.lock();
 			if (pListener) {
 				pListener->addDirtyView(shared_from_this());
+			}
+			
+			if (!mpBackground) {
+				auto pParent = mpParent.lock();
+				if (pParent) {
+					pParent->setDirty(true);
+				}
 			}
 		}
 	}
@@ -291,6 +321,20 @@ public:
 
 	void initBackground();
 
+	Vec2i getTranslateVector(){
+		auto pMoveLis = mpMoveListener.lock();
+		if (pMoveLis) {
+			return pMoveLis->getTranslateVector();
+		}
+		else {
+			return Vec2i();
+		}
+	}
+
+	virtual void afterGetWidthHeight() {
+
+	}
+
 	static shared_ptr<View> createView(const string& name, shared_ptr<View> parent);
 
 	std::string mId;
@@ -310,9 +354,11 @@ public:
 	int mGravity{ LayoutParam::Center };			//控制view内部的元素或者子view如何居中对齐，水平居中，垂直居中，居中
 
 	Rect<int> mRect{ 0,0,0,0 };
+	Vec2i mTranslateVector;
 
 	std::list<std::shared_ptr<View>> mChildren;
 	weak_ptr<DirtyListener> mpDirtyListener;
+	weak_ptr<MoveListener> mpMoveListener;
 	bool mbIsDirty{ false };
 	std::shared_ptr<Background> mpBackground;
 	std::shared_ptr<void> mpBackgroundMesh;
@@ -329,8 +375,48 @@ public:
 	static void gravityHandler(const shared_ptr<View>&, const std::string&);
 	static void backgroundHandler(const shared_ptr<View>&, const std::string&);
 
+	static void orientationHandler_s(const shared_ptr<View>&, const string&);
+	static void textSizeHandler_s(const shared_ptr<View>&, const std::string&);
+	static void textColorHandler_s(const shared_ptr<View>&, const std::string&);
+	static void textHandler_s(const shared_ptr<View>&, const std::string&);
+	static void maxWidthHandler_s(const shared_ptr<View>&, const std::string&);
+	static void maxHeightHandler_s(const shared_ptr<View>&, const std::string&);
+	static void maxLineHandler_s(const shared_ptr<View>&, const std::string&);
+	static void charSpaceHandler_s(const shared_ptr<View>&, const std::string&);
+	static void lineSpaceHandler_s(const shared_ptr<View>&, const std::string&);
+
 	static unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> gLayoutAttributeHandler;
 	static unordered_map<string, int> gGravityKeyValue;
+	
+
+	virtual void orientationHandler(const string& content) {
+
+	}
+
+	virtual void textSizeHandler(const std::string& content) {
+
+	}
+	virtual void textColorHandler(const std::string& content) {
+
+	}
+	virtual void textHandler(const std::string& content) {
+
+	}
+	virtual void maxWidthHandler(const std::string& content) {
+
+	}
+	virtual void maxHeightHandler(const std::string& content) {
+
+	}
+	virtual void maxLineHandler(const std::string& content) {
+
+	}
+	virtual void charSpaceHandler(const std::string& content) {
+
+	}
+	virtual void lineSpaceHandler(const std::string& content) {
+
+	}
 };
 
 extern std::shared_ptr<View> gpViewNothing;

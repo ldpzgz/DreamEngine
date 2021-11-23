@@ -2,6 +2,7 @@
 #include "TextView.h"
 #include "Button.h"
 #include "LinearLayout.h"
+#include "ScrollView.h"
 #include "../Log.h"
 #include "UiRender.h"
 #include "UiManager.h"
@@ -32,15 +33,15 @@ unordered_map < string, std::function<void(const shared_ptr<View>&, const std::s
 	{ "marginRight",View::layoutMarginRightHandler },
 	{ "gravity",View::gravityHandler },
 	{ "background",View::backgroundHandler },
-	{ "textSize",TextView::textSizeHandler },
-	{ "textColor",TextView::textColorHandler },
-	{ "text",TextView::textHandler },
-	{ "maxWidth",TextView::maxWidthHandler },
-	{ "maxHeight",TextView::maxHeightHandler },
-	{ "maxLine",TextView::maxLineHandler },
-	{ "charSpace",TextView::charSpaceHandler },
-	{ "lineSpace",TextView::lineSpaceHandler },
-	{ "orientation",LinearLayout::orientationHandler },
+	{ "textSize",View::textSizeHandler_s },
+	{ "textColor",View::textColorHandler_s },
+	{ "text",View::textHandler_s },
+	{ "maxWidth",View::maxWidthHandler_s },
+	{ "maxHeight",View::maxHeightHandler_s },
+	{ "maxLine",View::maxLineHandler_s },
+	{ "charSpace",View::charSpaceHandler_s },
+	{ "lineSpace",View::lineSpaceHandler_s },
+	{ "orientation",View::orientationHandler_s },
 };
 
 void View::drawBackground() {
@@ -51,6 +52,7 @@ void View::initBackground() {
 	UiRender::getInstance()->initBackground(this);
 }
 
+//只计算MatchParent与固定宽度情况下的宽度
 bool View::calcWidth(int parentWidth) {
 	//如果mWidthPercent!=0，是比例布局，已经由父view计算出来了
 	if (mWidthPercent != 0) {
@@ -76,7 +78,7 @@ bool View::calcWidth(int parentWidth) {
 	}
 	return false;
 }
-
+//只计算MatchParent与固定高度情况下的高度
 bool View::calcHeight(int parentHeight) {
 	//如果mHeightPercent != 0，是比例布局，已经由父view计算出来了
 	if (mHeightPercent != 0) {
@@ -133,6 +135,7 @@ bool View::calcRect(const Rect<int>& parentRect) {
 				percentHeight += child->mHeightPercent;
 			}
 		}
+		//如果子view是百分比布局，根据子view的百分比、父view的宽度计算出每个ziview的宽度
 		if (percentWidth > 0) {
 			for (auto& child : mChildren) {
 				if (child) {
@@ -144,7 +147,7 @@ bool View::calcRect(const Rect<int>& parentRect) {
 		else {
 			calcWidth(mRect.width);
 		}
-
+		//同上
 		if (percentHeight > 0) {
 			for (auto& child : mChildren) {
 				if (child) {
@@ -334,6 +337,54 @@ void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& valu
 	}
 }
 
+void View::orientationHandler_s(const shared_ptr<View>& pView, const string& content) {
+	if (pView) {
+		pView->orientationHandler(content);
+	}
+}
+
+void View::textSizeHandler_s(const shared_ptr<View>& pView, const std::string& content) {
+	if (pView) {
+		pView->textSizeHandler(content);
+	}
+}
+void View::textColorHandler_s(const shared_ptr<View>& pView, const std::string& content) {
+	if (pView) {
+		pView->textColorHandler(content);
+	}
+}
+void View::textHandler_s(const shared_ptr<View>& pView, const std::string& content) {
+	if (pView) {
+		pView->textHandler(content);
+	}
+}
+void View::maxWidthHandler_s(const shared_ptr<View>& pView, const std::string& content) {
+	if (pView) {
+		pView->maxWidthHandler(content);
+	}
+}
+void View::maxHeightHandler_s(const shared_ptr<View>& pView, const std::string& content) {
+	if (pView) {
+		pView->maxHeightHandler(content);
+	}
+}
+void View::maxLineHandler_s(const shared_ptr<View>& pView, const std::string& content) {
+	if (pView) {
+		pView->maxLineHandler(content);
+	}
+}
+void View::charSpaceHandler_s(const shared_ptr<View>& pView, const std::string& content) {
+	if (pView) {
+		pView->charSpaceHandler(content);
+	}
+}
+void View::lineSpaceHandler_s(const shared_ptr<View>& pView, const std::string& content) {
+	if (pView) {
+		pView->lineSpaceHandler(content);
+	}
+}
+
+
 shared_ptr<View> View::createView(const string& name, shared_ptr<View> parent) {
 	shared_ptr<View> pView;
 	if (name == "LinearLayout") {
@@ -344,6 +395,9 @@ shared_ptr<View> View::createView(const string& name, shared_ptr<View> parent) {
 	}
 	else if (name == "Button") {
 		pView = make_shared<Button>(parent);
+	}
+	else if (name == "ScrollView") {
+		pView = make_shared<ScrollView>(parent);
 	}
 	else {
 		LOGE("can not create %s view",name.c_str());

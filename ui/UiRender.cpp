@@ -544,6 +544,11 @@ void UiRender::calcTextViewWidthHeight(TextView* tv) {
 	}
 }
 
+/*
+* 根据textview的各种属性，计算出textview里面每个文字的大小位置
+* 最终得到每个文字的方位矩阵，纹理矩阵。
+* 这个函数只计算textview控件能够显示得出来的那些文字
+*/
 void UiRender::calcTextPosition(TextView* tv) {
 	const auto& text = tv->getText();
 	if (text.empty()) {
@@ -580,6 +585,11 @@ void UiRender::calcTextPosition(TextView* tv) {
 	float scaleFactor = (float)textSize / (float)mpFontManager->mCharSize;
 	std::vector<CharPosition>& textPositions = tv->getCharPositionArray();
 	textPositions.clear();
+
+	/*
+	* 拿到每个字，在存储字符的纹理里面的位置。
+	* 计算出textview的方框内能容下的所有字符的宽度高度。
+	*/
 	for (size_t i = 0; i < slen;) {
 		UnicodeType code;
 		auto len = UtfConvert::utf(pStr, code);
@@ -630,7 +640,7 @@ void UiRender::calcTextPosition(TextView* tv) {
 		textPositions.emplace_back(rInfo);
 		
 	}
-	//经过上面的处理，文字已经排版好了，但是整个文本的左上角在坐标原点(0,0)
+	//经过上面的处理，文字的大小位置已经计算好了，但是整个文本的左上角在坐标原点(0,0)
 	//需要根据textview的对齐属性（左对齐，右对齐，顶对齐，底对齐，水平居中，垂直居中）,结合textView的位置，确定平移向量，
 	auto textGrivate = tv->getGravity();
 	glm::vec3 moveVec(0.0f, 0.0f, 0.0f);
@@ -743,19 +753,28 @@ void UiRender::calcTextPosition(TextView* tv) {
 		info.matrix = moveToScreenMatrix * info.matrix;
 	}
 }
-
+extern void checkglerror();
 void UiRender::drawTextView(TextView* tv) {
 	if (tv != nullptr) {
+		checkglerror();
 		drawBackground(tv);
+		checkglerror();
 		if (tv->getUpdateTextPosition()) {
 			calcTextPosition(tv);
+			tv->setUpdateTextPosition(false);
 		}
 		auto tvRect = tv->getRect();
+		auto moveVec = tv->getTranslateVector();//view可能会被其他控件平移过，比如scrollview
+		tvRect.translate(moveVec);
 		auto& textPositions = tv->getCharPositionArray();
 
 		//根据对齐属性，调整每一个的位置,并且渲染
-		glEnable(GL_SCISSOR_TEST);
-		glScissor(tvRect.x, mWindowHeight-tvRect.y- tvRect.height, tvRect.width, tvRect.height);
+		GLboolean bScissorTest;
+		glGetBooleanv(GL_SCISSOR_TEST, &bScissorTest);
+		if (!bScissorTest) {
+			glEnable(GL_SCISSOR_TEST);
+			glScissor(tvRect.x, mWindowHeight-tvRect.y- tvRect.height, tvRect.width, tvRect.height);
+		}
 		float trx = 0.0f;
 		for (auto& charPos : textPositions) {
 			//绘制
@@ -763,21 +782,26 @@ void UiRender::drawTextView(TextView* tv) {
 				mpFontManager->mpMaterial->setUniformColor(tv->getTextColor());
 			}
 			if (mpFontManager->mpCharMesh) {
-				mpFontManager->mpCharMesh->render(mProjMatrix * charPos.matrix, charPos.texMatrix);
+				glm::mat4 tempMat(1.0f);
+				tempMat = glm::translate(tempMat, glm::vec3(moveVec.x, -moveVec.y, 0.0f));
+				tempMat = tempMat * charPos.matrix;
+				mpFontManager->mpCharMesh->render(mProjMatrix * tempMat, charPos.texMatrix);
 			}
 		}
-		glDisable(GL_SCISSOR_TEST);
+		if (!bScissorTest) {
+			glDisable(GL_SCISSOR_TEST);
+		}
 		//处理完毕
 	}
 }
 
-void UiRender::drawBackground(View* v){
+bool UiRender::drawBackground(View* v){
 	//绘制view的shape
 	if (v!=nullptr)
 	{
 		auto& pBack = v->getBackground();
 		if (!pBack) {
-			return;
+			return false;
 		}
 		auto& pShape = pBack->mpShape;
 		auto& pBackMesh = pBack->mpMesh;
@@ -792,7 +816,9 @@ void UiRender::drawBackground(View* v){
 				paddingLeft = paddingRight = paddingTop = paddingBottom = padding;
 			}
 
-			auto& rect = v->getRect();
+			auto rect = v->getRect();
+			auto moveVec = v->getTranslateVector();//view可能会被其他控件平移过，比如scrollview
+			rect.translate(moveVec);
 			glm::mat4 model(1.0f);
 			model = glm::translate(model, glm::vec3(rect.x + paddingLeft, 
 				(mWindowHeight - rect.y - rect.height + paddingBottom), 0.0f));
@@ -809,6 +835,8 @@ void UiRender::drawBackground(View* v){
 					}
 				}
 				pBackMesh->render(mProjMatrix * model);
+				
+				return true;
 			}
 			
 			if (pBackStrokeMesh) {
@@ -829,6 +857,37 @@ void UiRender::drawLinearLayout(LinearLayout* pll) {
 		if (pChild) {
 			pChild->draw();
 		}
+	}
+}
+
+void UiRender::drawScrollView(ScrollView* psv) {
+	drawBackground(psv);
+	auto rect = psv->getRect();
+	auto& children = psv->getChildren();
+	bool hasDrawAChild = false;
+	GLboolean bScissorTest;
+	glGetBooleanv(GL_SCISSOR_TEST, &bScissorTest);
+	if (!bScissorTest) {
+		glEnable(GL_SCISSOR_TEST);
+		glScissor(rect.x, mWindowHeight - rect.y - rect.height, rect.width, rect.height);
+	}
+	for (auto& pChild : children) {
+		if (pChild) {
+			auto childRect = pChild->getRect();
+			auto childMove = pChild->getTranslateVector();
+			childRect.translate(childMove);
+			if (childRect.intersect(rect)) {
+				pChild->draw();
+				hasDrawAChild = true;
+			}
+			else if (hasDrawAChild) {
+				//后面的肯定不可见了
+				break;
+			}
+		}
+	}
+	if (!bScissorTest) {
+		glDisable(GL_SCISSOR_TEST);
 	}
 }
 

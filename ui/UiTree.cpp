@@ -2,11 +2,12 @@
 #include "UiRender.h"
 #include "../Log.h"
 using namespace std;
-
 bool UiTree::draw() {
 	if (!mViewsToBeDrawing.empty()) {
 		//渲染到纹理
-		
+		if (mpRootView && mpRootView->getDirty()) {
+			mbRedraw = true;
+		}
 		if (mbRedraw) {
 			mFboForRender.setClearColorValue(0.0f, 0.0f, 0.0f, 0.0f);
 			mFboForRender.setClearColor(true);
@@ -77,13 +78,16 @@ void UiTree::calcViewsPos(shared_ptr<View> pView) {
 void UiTree::calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView) {
 	//计算pView的宽度高度，以及pView的子view的宽度高度（如果子view是按百分比布局的)
 	if (pView) {
+
 		/*
+		* view的宽度和高度有三种设置方式：matchParent、固定值、wrapContent
 		从顶向下计算各个view的宽度和高度，不能相互依赖
 		1 父view是wrapContent，需要根据子view的尺寸来计算出父view的尺寸
 		2 子view是percentWidth，或者matchParent，需要根据父view的尺寸来计算子view的尺寸
 		3 不能出现父子相互依赖的情况。
 		*/
-		//matchParent,或者固定尺寸，可计算出来
+		//matchParent,或者固定尺寸，可计算出来，并返回true
+		//如果是wrapContent，返回false
 		bool hasGetWidth = pView->calcWidth(parentWidth);
 		bool hasGetHeight = pView->calcHeight(parentHeight);
 
@@ -123,6 +127,7 @@ void UiTree::calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<
 		if (!hasGetHeight) {
 			pView->getHeightAccordChildren();
 		}
+		pView->afterGetWidthHeight();
 		//确定了宽高之后，就可以初始化承载背景的shape了
 		pView->initBackground();
 	}

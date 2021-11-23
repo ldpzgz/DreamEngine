@@ -118,14 +118,14 @@ public:
 	bool calcWidth(int parentHeight) override;
 	bool calcHeight(int parentHeight) override;
 
-	static void textSizeHandler(const shared_ptr<View>&, const std::string&);
-	static void textColorHandler(const shared_ptr<View>&, const std::string&);
-	static void textHandler(const shared_ptr<View>&, const std::string&);
-	static void maxWidthHandler(const shared_ptr<View>&, const std::string&);
-	static void maxHeightHandler(const shared_ptr<View>&, const std::string&);
-	static void maxLineHandler(const shared_ptr<View>&, const std::string&);
-	static void charSpaceHandler(const shared_ptr<View>&, const std::string&);
-	static void lineSpaceHandler(const shared_ptr<View>&, const std::string&);
+	void textSizeHandler(const std::string&) override;
+	void textColorHandler(const std::string&) override;
+	void textHandler(const std::string&) override;
+	void maxWidthHandler(const std::string&) override;
+	void maxHeightHandler(const std::string&) override;
+	void maxLineHandler(const std::string&) override;
+	void charSpaceHandler(const std::string&) override;
+	void lineSpaceHandler(const std::string&) override;
 private:
 	std::string mText;
 	Color mTextColor{0.0f,0.0f,0.0f,1.0f};

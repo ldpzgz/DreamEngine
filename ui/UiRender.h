@@ -12,8 +12,8 @@
 #include "TextView.h"
 #include "Button.h"
 #include "LinearLayout.h"
+#include "ScrollView.h"
 #include "Shape.h"
-#include "TextGpuRender.h"
 
 using namespace std;
 
@@ -51,7 +51,6 @@ public:
 	shared_ptr<Material> mpMaterial;
 	shared_ptr<Texture> mpCharTexture;
 	map<UnicodeType, CharInfo> mFontsMap;
-	TextGpuRenderP mpTextGpuRender;
 };
 
 //class View;
@@ -95,8 +94,9 @@ public:
 	void calcTextViewWidthHeight(TextView* tv);
 	void drawTextView(TextView* tv);
 	void calcTextPosition(TextView* tv);
-	void drawBackground(View* tv);
+	bool drawBackground(View* tv);
 	void drawLinearLayout(LinearLayout* pll);
+	void drawScrollView(ScrollView* psv);
 
 	//指定最后要显示出来的纹理，当前uitree的纹理，每棵ui树都会渲染到它自己的纹理上面。
 	void setTexture(const shared_ptr<Texture>& pTex) {

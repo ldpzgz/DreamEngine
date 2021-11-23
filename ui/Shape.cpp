@@ -23,8 +23,8 @@ std::unordered_map < std::string, std::function<void(const shared_ptr<Shape>&, c
 	{ "paddingBottom",Shape::paddingBottomHandler},
 	{ "paddingTop",Shape::paddingTopHandler },
 
-	{ "sizeWidth",Shape::sizeWidthHandler },
-	{ "sizeHeight",Shape::sizeHeightHandler },
+	{ "ovalWidth",Shape::sizeWidthHandler },
+	{ "ovalHeight",Shape::sizeHeightHandler },
 
 	{"solidColor",Shape::solidColorHandler },
 
