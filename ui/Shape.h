@@ -14,9 +14,19 @@ enum class ShapeType : int {
 enum class GradientType:int{
 	None,
 	Linear,
-	Radial,//Radial£¬sweepÕâÁ½¸öµÄĞ§¹ûÃ»Ê²Ã´ÄñÓÃ£¬²»ÊµÏÖÁË
+	Radial,//Radialï¼Œsweepè¿™ä¸¤ä¸ªçš„æ•ˆæœæ²¡ä»€ä¹ˆé¸Ÿç”¨ï¼Œä¸å®ç°äº†
 	Sweep
 };
+
+/*
+* è¡¨ç¤ºä¸€ä¸ªå½¢çŠ¶ï¼Œæœ‰ä¸‰ç§çŸ©å½¢ï¼Œåœ†è§’çŸ©å½¢ï¼Œæ¤­åœ†
+* å½¢çŠ¶å¯ä»¥å¡«å……ï¼š
+*	è®¾ç½®äº†è¿™ä¸‰ç§æƒ…å†µçš„ä¸€ç§ï¼šsolidColor.isZero() || pTexture || gradientType != GradientType::None
+*	å°±éœ€è¦å¡«å……ï¼Œä»£è¡¨ä¸‰ç§å¡«å……æ¨¡å¼ï¼šçº¯è‰²ï¼Œçº¹ç†ï¼Œæ¸å˜è‰²ã€‚
+	å¦‚æœ
+* å¯ä»¥æœ‰è¾¹æ¡†ï¼š
+*	è®¾ç½®äº†ï¼šstrokeColorï¼Œå°±ä¼šæœ‰ä¸€ä¸ªè¾¹æ¡†ï¼Œå¦åˆ™æ²¡æœ‰è¾¹æ¡†ã€‚
+*/
 
 class Shape {
 public:
@@ -236,42 +246,42 @@ public:
 	static std::unordered_map<std::string, std::function<void(const std::shared_ptr<Shape>&, const std::string&)>> gShapeAttributeHandler;
 public:
 	ShapeType mType{ ShapeType::Rectangle };
-	//cornersµÄÊôĞÔ£¬µ¥Î»ÊÇÏñËØ
+	//cornersçš„å±æ€§ï¼Œå•ä½æ˜¯åƒç´ 
 	int mRadius{ 0 };
 	int mLeftTopRadius{ 0 };
 	int mLeftBottomRadius{ 0 };
 	int mRightTopRadius{ 0 };
 	int mRightBottomRadius{ 0 };
-	//solidÊôĞÔ
+	//solidå±æ€§
 	Color mSolidColor{ 0.0f,0.0f,0.0f,1.0f };
-	//strokeÊôĞÔ
+	//strokeå±æ€§
 	int mSrokeWidth{ 0 };
 	Color mSrokeColor{ 0.0f,0.0f,0.0f,1.0f };
-	int mDashWidth{ 0 };//ÊµÏßµÄ³¤¶È
-	int mDashGap{ 0 };//ĞéÏßµÄ³¤¶È
-	//paddingÊôĞÔ,µ¥Î»ÊÇÏñËØ
+	int mDashWidth{ 0 };//å®çº¿çš„é•¿åº¦
+	int mDashGap{ 0 };//è™šçº¿çš„é•¿åº¦
+	//paddingå±æ€§,å•ä½æ˜¯åƒç´ 
 	int mPadding{ 0 };
 	int mPaddingLeft{ 0 };
 	int mPaddingTop{ 0 };
 	int mPaddingRight{ 0 };
 	int mPaddingBottom{ 0 };
-	//gradientÊôĞÔ
+	//gradientå±æ€§
 	int mAngle{ 0 };//linear
-	float mCenterX{ 0.5f };//È¡Öµ·¶Î§[0.0f,1.0f]
-	float mCenterY{ 0.5f };//Ö»ÊµÏÖlinear£¬centerx£¬yÔÚÓĞcenterColorµÄÇé¿öÏÂ²ÅÊ¹ÓÃ
+	float mCenterX{ 0.5f };//å–å€¼èŒƒå›´[0.0f,1.0f]
+	float mCenterY{ 0.5f };//åªå®ç°linearï¼Œcenterxï¼Œyåœ¨æœ‰centerColorçš„æƒ…å†µä¸‹æ‰ä½¿ç”¨
 	Color mStartColor{ 0.0f,0.0f,0.0f,1.0f };
 	Color mEndColor{ 0.0f,0.0f,0.0f,1.0f };
 	Color mCenterColor{ 0.0f,0.0f,0.0f,1.0f };
 	float mGradientRadius{ 0.0f };//raida
 	GradientType mGradientType{ GradientType::None };
 
-	//ÓÃÓÚ¼ÆËãÍÖÔ²µÄ¿í¸ß±È
+	//ç”¨äºè®¡ç®—æ¤­åœ†çš„å®½é«˜æ¯”
 	float mOvalWidth{ 1.0f };
 	float mOvalHeight{ 1.0f };
 
 	//std::shared_ptr<void> mpTexture;
-	//std::shared_ptr<void> mpMesh;//³ĞÔØshapeµÄmesh
-	//std::shared_ptr<void> mpStrokeMesh;//³ĞÔØ±ß¿òµÄmesh
+	//std::shared_ptr<void> mpMesh;//æ‰¿è½½shapeçš„mesh
+	//std::shared_ptr<void> mpStrokeMesh;//æ‰¿è½½è¾¹æ¡†çš„mesh
 
 private:
 	static void cornerRadiusHandler(const std::shared_ptr<Shape>& shape,const std::string& value);

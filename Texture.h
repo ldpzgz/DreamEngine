@@ -53,6 +53,8 @@ public:
 	*/
 	bool loadCubemap(const std::string& path);
 
+	bool loadFromeFile(const std::string& path);
+
 	void unload();
 
 	////参数为是否自动为这个纹理生存mipmap
@@ -73,6 +75,7 @@ public:
 	//传入一个数组，用于获取支持的压缩纹理格式
 	static void getCompressFormat(GLint* formats);
 
+	static std::unique_ptr<Texture> loadImageFromFile(const std::string& path);
 protected:
 	//unsigned char* loadImage(const char* mPath);
 

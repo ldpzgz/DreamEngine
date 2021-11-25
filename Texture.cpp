@@ -92,14 +92,10 @@ bool Texture::createMStexture(int width,int height,int samples,unsigned int inte
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(mTarget, mTextureId);
 	// Set-up texture properties.
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER,
-		GL_NEAREST);
-	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,
-		GL_NEAREST);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S,
-		GL_CLAMP_TO_EDGE);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T,
-		GL_CLAMP_TO_EDGE);
+	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
 
 	glTexStorage2DMultisample(mTarget,
 		mNumOfSamples,
@@ -120,14 +116,10 @@ bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(mTarget, mTextureId);//mTarget是GL_TEXTURE_CUBE_MAP的时候要注意，
 	// Set-up texture properties.
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER,
-		GL_LINEAR);
-	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,
-		GL_LINEAR);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S,
-		GL_CLAMP_TO_EDGE);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T,
-		GL_CLAMP_TO_EDGE);
+	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
 	// Loads image data into OpenGL.
 	
 	int internalformat = mFormat;//only 1,2,3,4
@@ -160,6 +152,45 @@ bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum
 	return true;
 }
 
+bool Texture::loadFromeFile(const std::string& path) {
+	mTarget = GL_TEXTURE_2D;
+	glGenTextures(1, &mTextureId);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(mTarget, mTextureId);
+	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	int nrChannels;
+	unsigned char* data = stbi_load(path.c_str(), &mWidth, &mHeight, &nrChannels, 0);
+	if (data)
+	{
+		if (nrChannels == 3) {
+			mFormat = GL_RGB;
+		}
+		else if (nrChannels == 4) {
+			mFormat = GL_RGBA;
+		}
+		else if (nrChannels == 1) {
+			mFormat = GL_LUMINANCE;
+		}
+		else {
+			LOGE("Cubemap texture %s,unknow channels: d", path.c_str(), nrChannels);
+		}
+		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, GL_UNSIGNED_BYTE, data);
+		stbi_image_free(data);
+		return true;
+	}
+	else
+	{
+		LOGE("Cubemap tex failed to load at path: %s", path.c_str());
+		stbi_image_free(data);
+		unload();
+		return false;
+	}
+
+}
+
 bool Texture::loadCubemap(const std::string& path) {
 	mTarget = GL_TEXTURE_CUBE_MAP;
 	glGenTextures(1, &mTextureId);
@@ -188,6 +219,7 @@ bool Texture::loadCubemap(const std::string& path) {
 			else {
 				LOGE("Cubemap texture %s,unknow channels: d", filePath.c_str(), nrChannels);
 			}
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
 				0, mFormat, mWidth, mHeight, 0, mFormat, GL_UNSIGNED_BYTE, data
 			);
@@ -203,9 +235,6 @@ bool Texture::loadCubemap(const std::string& path) {
 
 	//int align = 0;
 	//glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);//默认是4，the alignment requirements for the start of each pixel row in memory
-
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-
 
 	// Set-up texture properties.
 	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER,GL_LINEAR);
@@ -272,4 +301,12 @@ int Texture::numOfCompressFormat()
 void Texture::getCompressFormat(GLint* formats)
 {
 	glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS,formats);
+}
+
+std::unique_ptr<Texture> Texture::loadImageFromFile(const std::string& path) {
+	auto pTex = std::make_unique<Texture>();
+	if (pTex) {
+		pTex->loadFromeFile(path);
+	}
+	return pTex;
 }
