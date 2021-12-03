@@ -183,6 +183,10 @@ public:
 	}
 
 	virtual bool calcRect(int parentWidth, int parentHeight);
+
+	shared_ptr<View>& findViewById(const std::string& id);
+	//将有Id的控件搜集起来，以便查找
+	void getId2View(std::unique_ptr< std::unordered_map< std::string, std::shared_ptr<View> > >& pId2ViewMap);
 protected:
 	virtual bool calcWidthHeight(int parentWidth, int parentHeight);
 	virtual bool calcPos();
@@ -245,6 +249,11 @@ public:
 
 	void setDirtyListener(const shared_ptr<DirtyListener>& pDirtyListener) {
 		mpDirtyListener = pDirtyListener;
+		for (auto& pChild : mChildren) {
+			if (pChild) {
+				pChild->setDirtyListener(pDirtyListener);
+			}
+		}
 	}
 
 	void setMoveListener(const shared_ptr<MoveListener>& pMoveListener) {
@@ -255,7 +264,7 @@ public:
 	}
 
 	void setDirty(bool b) {
-		if (mbIsDirty == b) {
+		if (!mpDirtyListener.lock() || mbIsDirty == b) {
 			return;
 		}
 		mbIsDirty = b;
@@ -364,7 +373,7 @@ public:
 	bool mbIsDirty{ false };
 	std::shared_ptr<Background> mpBackground;
 	std::shared_ptr<void> mpBackgroundMesh;
-
+	std::unique_ptr< std::unordered_map<std::string, std::shared_ptr<View>> > mpId2ViewMap;
 	static void idHandler(const shared_ptr<View>&, const std::string&);
 	static void layoutWidthHandler(const shared_ptr<View>&, const std::string&);
 	static void layoutWidthPercentHandler(const shared_ptr<View>&, const std::string&);

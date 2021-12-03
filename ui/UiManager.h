@@ -41,7 +41,7 @@ public:
 	}
 
 	//从一个xml文件里面加载一棵ui树，准备模仿Android的ui系统
-	static shared_ptr<UiTree> loadFromFile(const string& filepath);
+	static shared_ptr<View> loadFromFile(const string& filepath);
 
 	/*
 	功能：	初始化ui，初始化uirender，加载string.xml,color.xml等
@@ -81,8 +81,8 @@ private:
 	用于接收mpUiTree（渲染到rbo里面的）的渲染结果
 	*/
 	//shared_ptr<Texture> mpTexture;
-	float mWindowWidth;
-	float mWindowHeight;
+	float mWindowWidth{ 0.0f };
+	float mWindowHeight{ 0.0f };
 	glm::mat4 mProjMatrix{1.0f};
 
 	static unique_ptr<UiManager> gInstance;

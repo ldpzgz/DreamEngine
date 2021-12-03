@@ -457,6 +457,45 @@ void View::lineSpaceHandler_s(const shared_ptr<View>& pView, const std::string& 
 	}
 }
 
+shared_ptr<View>& View::findViewById(const std::string& id) {
+	if (mpId2ViewMap && !id.empty()) {
+		auto it = mpId2ViewMap->find(id);
+		if (it != mpId2ViewMap->end()) {
+			return it->second;
+		}
+		else {
+			return gpViewNothing;
+		}
+	}
+	else {
+		return gpViewNothing;
+	}
+}
+
+void View::getId2View(std::unique_ptr< std::unordered_map< std::string, std::shared_ptr<View> > >& pId2ViewMap) {
+	if (pId2ViewMap) {
+		if (!mId.empty()) {
+			pId2ViewMap->emplace(mId, shared_from_this());
+		}
+		for (auto& pchild : mChildren) {
+			if (pchild) {
+				pchild->getId2View(pId2ViewMap);
+			}
+		}
+	}
+	else {
+		mpId2ViewMap = make_unique< std::unordered_map<std::string, std::shared_ptr<View>> >();
+		if (!mId.empty()) {
+			mpId2ViewMap->emplace(mId, shared_from_this());
+		}
+		for (auto& pchild : mChildren) {
+			if (pchild) {
+				pchild->getId2View(mpId2ViewMap);
+			}
+		}
+	}
+}
+
 
 shared_ptr<View> View::createView(const string& name, shared_ptr<View> parent) {
 	shared_ptr<View> pView;

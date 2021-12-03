@@ -13,13 +13,19 @@
 
 using namespace std;
 
-class UiTree : public DirtyListener {
+class UiTree : public DirtyListener,public std::enable_shared_from_this< DirtyListener >{
 public:
 	//应该把uiTree绘制到一张纹理上，避免每次都去绘制所有ui，很多时候，ui是没有变化的，
 	//只更新有变化的ui
 	bool draw();
 	void addDirtyView(const shared_ptr<View>& pView) override;
+	/*
+	* 创建fbo，支持渲染到多重采样纹理
+	*/
 	void updateWidthHeight(float width, float height);
+
+	//设置rootView，并为每一个view设置dirty监听器
+	void setRootView(const std::shared_ptr<View>& pRootView);
 
 	/*
 	计算uitree上所有view的实际尺寸
@@ -29,10 +35,7 @@ public:
 //	void calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView);
 //	void calcViewsPos(shared_ptr<View> pView);
 public:
-	shared_ptr<View>& findViewById(const std::string& id);
-
 	shared_ptr<View> mpRootView;
-	unordered_map<std::string, shared_ptr<View>> mViews;//存储拥有id的view
 	list<weak_ptr<View>> mViewsToBeDrawing;
 	Fbo mFboForRender;
 	shared_ptr<Texture> mpTexture;

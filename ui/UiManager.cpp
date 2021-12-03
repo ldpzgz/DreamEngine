@@ -184,20 +184,15 @@ void UiManager::parseRStrings(const string& path) {
 	}
 }
 
-void parseView(const shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode, shared_ptr<UiTree>& mpTree) {
+shared_ptr<View> parseView(shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode) {
 	shared_ptr<View> pView;
 	if (pnode != nullptr) {
 		string viewName = pnode->name();
 		pView = View::createView(viewName, nullptr);
-		
 		if (pView) {
-			pView->setDirtyListener(mpTree);
 			if (parent) {
 				pView->setParent(parent);
 				parent->addChild(pView);
-			}
-			else{
-				mpTree->mpRootView = pView;
 			}
 
 			auto attr = pnode->first_attribute();
@@ -207,10 +202,6 @@ void parseView(const shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode, 
 				auto it = View::gLayoutAttributeHandler.find(attrName);
 				if (it != View::gLayoutAttributeHandler.end()) {
 					it->second(pView, attr->value());
-					if (attrName == "id") {
-						//有id的控件，才保存起来，以便查找
-						mpTree->mViews.emplace(attr->value(), pView);
-					}
 				}
 				else {
 					LOGD("there are no %s attributeHandler,please supplement", attrName.c_str());
@@ -222,17 +213,18 @@ void parseView(const shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode, 
 		auto child = pnode->first_node();
 		auto sibling = pnode->next_sibling();
 		if (child != nullptr) {
-			parseView(pView, child, mpTree);
+			parseView(pView, child);
 		}
 		if (sibling != nullptr) {
-			parseView(parent, sibling, mpTree);
+			parseView(parent, sibling);
 		}
 	}
+	return pView;
 }
 
 //加载ui的布局文件
-shared_ptr<UiTree> UiManager::loadFromFile(const string& filepath) {
-	shared_ptr<UiTree> mpTree = make_shared<UiTree>();
+shared_ptr<View> UiManager::loadFromFile(const string& filepath) {
+	shared_ptr<View> rootView;
 	//读取xml
 	unique_ptr<rapidxml::file<>> pfdoc;
 	try {
@@ -240,16 +232,18 @@ shared_ptr<UiTree> UiManager::loadFromFile(const string& filepath) {
 	}
 	catch (std::exception e) {
 		LOGE("error to loadFromFile %s file,error %s", filepath.c_str(), e.what());
-		return mpTree;
+		return gpViewNothing;
 	}
 	if (pfdoc->size() > 0) {
 		auto pDoc = make_unique < rapidxml::xml_document<> >();// character type defaults to char
 		pDoc->parse<0>(pfdoc->data());// 0 means default parse flags
 
-		auto root = pDoc->first_node();
-		parseView(shared_ptr<View>(), root, mpTree);
+		auto rootNode = pDoc->first_node();
+		rootView = parseView(rootView, rootNode);
+		//将有Id的控件搜集起来，以便查找
+		rootView->getId2View(std::unique_ptr < std::unordered_map<std::string, std::shared_ptr<View>> >());
 	}
-	return mpTree;
+	return rootView;
 }
 
 UiManager::UiManager() {

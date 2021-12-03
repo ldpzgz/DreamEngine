@@ -2,6 +2,7 @@
 #include "UiRender.h"
 #include "../Log.h"
 using namespace std;
+
 bool UiTree::draw() {
 	if (!mViewsToBeDrawing.empty()) {
 		//渲染到纹理
@@ -29,6 +30,15 @@ bool UiTree::draw() {
 		return true;
 	}
 	return false;
+}
+
+void UiTree::setRootView(const std::shared_ptr<View>& pRootView) {
+	if (pRootView) {
+		mpRootView = pRootView;
+		auto pDirtyListener = shared_from_this();
+		pRootView->setDirtyListener(pDirtyListener);
+		pRootView->setDirty(true);
+	}
 }
 
 void UiTree::addDirtyView(const shared_ptr<View>& pView) {
@@ -130,11 +140,3 @@ void UiTree::calcViewsRect(int windowWidth, int windowHeight) {
 //		pView->initBackground();
 //	}
 //}
-
-shared_ptr<View>& UiTree::findViewById(const std::string& id) {
-	auto it = mViews.find(id);
-	if (it != mViews.end()) {
-		return it->second;
-	}
-	return gpViewNothing;
-}
