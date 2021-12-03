@@ -6,17 +6,7 @@ class UiRender;
 class LinearLayout :public View {
 public:
 	friend UiRender;
-	using View::View;//¼Ì³Ð»ùÀàµÄ¹¹Ôìº¯Êý
-	LinearLayout(shared_ptr<View> parent, unsigned int layoutParam):
-		View(parent),
-		mLayoutParam(layoutParam)
-	{
-
-	}
-
-	void setLayoutParam(unsigned int layoutParam) {
-		mLayoutParam = layoutParam;
-	}
+	using View::View;//ç»§æ‰¿åŸºç±»çš„æž„é€ å‡½æ•°
 
 	bool isVertical() {
 		return mOrientation == LayoutParam::Vertical;
@@ -40,8 +30,7 @@ public:
 
 	void orientationHandler(const string& content) override;
 private:
-	unsigned int mLayoutParam{ LayoutParam::Horizontal };
-	int mOrientation{ 0 };
+	int mOrientation{ LayoutParam::Horizontal };
 	int mTotalWidthPercent{ 0 };
 	int mTotalHeightPercent{ 0 };
 };

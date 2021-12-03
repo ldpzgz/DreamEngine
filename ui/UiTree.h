@@ -25,9 +25,10 @@ public:
 	计算uitree上所有view的实际尺寸
 	*/
 	void calcViewsRect(int windowWidth, int windowHeight);
-	void calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView);
-	void calcViewsPos(shared_ptr<View> pView);
-
+//private:
+//	void calcViewsWidthHeight(int parentWidth, int parentHeight, shared_ptr<View> pView);
+//	void calcViewsPos(shared_ptr<View> pView);
+public:
 	shared_ptr<View>& findViewById(const std::string& id);
 
 	shared_ptr<View> mpRootView;

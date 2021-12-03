@@ -13,6 +13,7 @@
 #include "Button.h"
 #include "LinearLayout.h"
 #include "ScrollView.h"
+#include "ListView.h"
 #include "Shape.h"
 
 using namespace std;
@@ -97,6 +98,7 @@ public:
 	bool drawBackground(View* tv);
 	void drawLinearLayout(LinearLayout* pll);
 	void drawScrollView(ScrollView* psv);
+	void drawListView(ListView* psv);
 
 	//指定最后要显示出来的纹理，当前uitree的纹理，每棵ui树都会渲染到它自己的纹理上面。
 	void setTexture(const shared_ptr<Texture>& pTex) {

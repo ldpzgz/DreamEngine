@@ -125,8 +125,6 @@ public:
 	void setLightPos(const Vec3& lightPos);
 	void setViewPos(const Vec3& viewPos);
 	void setLightColor(const Vec3& lightColor);
-	void setDiffuseTexture();
-	void setNormalTexture();
 	
 
 	void enable();

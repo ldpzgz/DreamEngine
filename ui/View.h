@@ -182,7 +182,10 @@ public:
 		mGravity = g;
 	}
 
-	virtual bool calcRect(const Rect<int>& parentRect);
+	virtual bool calcRect(int parentWidth, int parentHeight);
+protected:
+	virtual bool calcWidthHeight(int parentWidth, int parentHeight);
+	virtual bool calcPos();
 	/*
 	width为matchparent,或者固定尺寸的时候的时候调用这个函数计算宽度
 	*/
@@ -209,7 +212,7 @@ public:
 	virtual void calcChildPos() {
 		return;
 	}
-	 
+public:	 
 	void alignLeftX(int x) {
 		mRect.x = x + mLayoutMarginLeft;
 	}
@@ -351,10 +354,9 @@ public:
 	int mLayoutMarginRight{ 0 };
 	int mWidthPercent{ 0 };		//宽度百分比
 	int mHeightPercent{ 0 };	//高度百分比
-	int mGravity{ LayoutParam::Center };			//控制view内部的元素或者子view如何居中对齐，水平居中，垂直居中，居中
+	int mGravity{ LayoutParam::Center };//控制view内部的元素或者子view如何居中对齐，水平居中，垂直居中，居中
 
 	Rect<int> mRect{ 0,0,0,0 };
-	Vec2i mTranslateVector;
 
 	std::list<std::shared_ptr<View>> mChildren;
 	weak_ptr<DirtyListener> mpDirtyListener;

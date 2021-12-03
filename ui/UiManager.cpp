@@ -31,7 +31,7 @@ void UiManager::loadAllShape() {
 		directory_iterator list(shapePath);
 		//directory_entry 是一个文件夹里的某一项，可以是path，也可以是文件
 		for (auto& it : list) {
-			auto filePath = it.path();
+			auto& filePath = it.path();
 			if (is_regular_file(filePath)) {
 				//是文件
 				auto filePathString = filePath.string();
@@ -74,9 +74,9 @@ void UiManager::parseRShape(const string& path) {
 	}
 	if (pfdoc && pfdoc->size() > 0) {
 		string shapeName = Utils::getFileName(path);
-		rapidxml::xml_document<> doc;// character type defaults to char
-		doc.parse<0>(pfdoc->data());// 0 means default parse flags
-		auto pResNode = doc.first_node("shape");
+		auto pDoc = make_unique< rapidxml::xml_document<> >();// character type defaults to char
+		pDoc->parse<0>(pfdoc->data());// 0 means default parse flags
+		auto pResNode = pDoc->first_node("shape");
 		if (pResNode != nullptr) {
 			auto shape = std::make_shared<Shape>();
 			auto attribute = pResNode->first_attribute("type");
@@ -234,19 +234,19 @@ void parseView(const shared_ptr<View>& parent, rapidxml::xml_node<char>* pnode, 
 shared_ptr<UiTree> UiManager::loadFromFile(const string& filepath) {
 	shared_ptr<UiTree> mpTree = make_shared<UiTree>();
 	//读取xml
-	shared_ptr<rapidxml::file<>> pfdoc;
+	unique_ptr<rapidxml::file<>> pfdoc;
 	try {
-		pfdoc = make_shared<rapidxml::file<>>(filepath.c_str());
+		pfdoc = make_unique<rapidxml::file<>>(filepath.c_str());
 	}
 	catch (std::exception e) {
 		LOGE("error to loadFromFile %s file,error %s", filepath.c_str(), e.what());
 		return mpTree;
 	}
 	if (pfdoc->size() > 0) {
-		rapidxml::xml_document<> doc;// character type defaults to char
-		doc.parse<0>(pfdoc->data());// 0 means default parse flags
+		auto pDoc = make_unique < rapidxml::xml_document<> >();// character type defaults to char
+		pDoc->parse<0>(pfdoc->data());// 0 means default parse flags
 
-		auto root = doc.first_node();
+		auto root = pDoc->first_node();
 		parseView(shared_ptr<View>(), root, mpTree);
 	}
 	return mpTree;

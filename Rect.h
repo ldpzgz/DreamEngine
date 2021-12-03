@@ -202,6 +202,10 @@ struct Vector2 {
 		return *this;
 	}
 
+	T& operator[](int index) {
+		return data[index];
+	}
+
 	T distance(const Vector2<T>& other) const{
 		return sqrt(pow(x - other.x, 2) + pow(y - other.y, 2));
 	}
@@ -370,6 +374,10 @@ public:
 		else {
 			return true;
 		}
+	}
+
+	T& operator[](int i) {
+		return rect[i];
 	}
 
 	template<typename U>

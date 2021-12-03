@@ -83,7 +83,7 @@ private:
 	//shared_ptr<Texture> mpTexture;
 	float mWindowWidth;
 	float mWindowHeight;
-	glm::mat4 mProjMatrix;
+	glm::mat4 mProjMatrix{1.0f};
 
 	static unique_ptr<UiManager> gInstance;
 	static unordered_map<string, string> gRStrings;//保存从material/strings.xml里面解析出来的字符串

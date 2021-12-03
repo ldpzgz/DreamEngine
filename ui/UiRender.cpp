@@ -865,12 +865,14 @@ void UiRender::drawScrollView(ScrollView* psv) {
 	auto rect = psv->getRect();
 	auto& children = psv->getChildren();
 	bool hasDrawAChild = false;
+
 	GLboolean bScissorTest;
 	glGetBooleanv(GL_SCISSOR_TEST, &bScissorTest);
-	if (!bScissorTest) {
-		glEnable(GL_SCISSOR_TEST);
-		glScissor(rect.x, mWindowHeight - rect.y - rect.height, rect.width, rect.height);
-	}
+	Rect<int> preScissorBox;
+	glGetIntegerv(GL_SCISSOR_BOX, (GLint*)&preScissorBox);
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(rect.x, mWindowHeight - rect.y - rect.height, rect.width, rect.height);
+
 	for (auto& pChild : children) {
 		if (pChild) {
 			auto childRect = pChild->getRect();
@@ -888,6 +890,56 @@ void UiRender::drawScrollView(ScrollView* psv) {
 	}
 	if (!bScissorTest) {
 		glDisable(GL_SCISSOR_TEST);
+	}
+	else {
+		glScissor(preScissorBox.x, preScissorBox.y, preScissorBox.width, preScissorBox.height);
+	}
+}
+
+void UiRender::drawListView(ListView* plv) {
+	drawBackground(plv);
+	auto& lvRect = plv->getRect();
+
+	GLboolean bScissorTest;
+	glGetBooleanv(GL_SCISSOR_TEST, &bScissorTest);
+	Rect<int> preScissorBox;
+	glGetIntegerv(GL_SCISSOR_BOX, (GLint*) &preScissorBox);
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(lvRect.x, mWindowHeight - lvRect.y - lvRect.height, lvRect.width, lvRect.height);
+	
+	auto& pAdapter = plv->getAdapter();
+	if (pAdapter) {
+		int firstItem;
+		int firstItemHideLength;
+		int lastItem;
+		int lastItemHideLength;
+		plv->getFirstVisibleItem(firstItem, firstItemHideLength);
+		plv->getLastVisibleItem(lastItem, lastItemHideLength);
+		bool isHorizontal = plv->isHorizontal();
+		int rectMoveIndex = 0;
+		int rectIncIndex = 2;
+		if (!isHorizontal) {
+			rectMoveIndex = 1;
+			rectIncIndex = 3;
+		}
+		int moveLength = -firstItemHideLength;
+		for (int i = firstItem; i <= lastItem; ++i) {
+			auto& pView = pAdapter->getView(i);
+			if (pView) {
+				auto& rect = pView->getRect();
+				rect.x = lvRect.x;
+				rect.y = lvRect.y;
+				rect[rectMoveIndex] += moveLength;
+				moveLength += rect[rectIncIndex];
+				pView->draw();
+			}
+		}
+	}
+	if (!bScissorTest) {
+		glDisable(GL_SCISSOR_TEST);
+	}
+	else {
+		glScissor(preScissorBox.x, preScissorBox.y, preScissorBox.width, preScissorBox.height);
 	}
 }
 
