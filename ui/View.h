@@ -85,6 +85,9 @@ public:
 	virtual void addDirtyView(const shared_ptr<View>& pView) = 0;
 };
 
+//如果父view要移动子view，而子view可能非常多的情况下，
+//可以继承这个类，让子view监听移动。子view共享同样的移动量。
+//例如ScrollView
 class MoveListener {
 public:
 	MoveListener() = default;
@@ -343,6 +346,19 @@ public:
 		}
 	}
 
+	void setMove(Vec2i v) {
+		mMoveVector = v;
+		for (auto& pChild : mChildren) {
+			if (pChild) {
+				pChild->setMove(v);
+			}
+		}
+	}
+
+	Vec2i& getMoveVector() {
+		return mMoveVector;
+	}
+
 	virtual void afterGetWidthHeight() {
 
 	}
@@ -366,7 +382,7 @@ public:
 	int mGravity{ LayoutParam::Center };//控制view内部的元素或者子view如何居中对齐，水平居中，垂直居中，居中
 
 	Rect<int> mRect{ 0,0,0,0 };
-
+	Vec2i mMoveVector;
 	std::list<std::shared_ptr<View>> mChildren;
 	weak_ptr<DirtyListener> mpDirtyListener;
 	weak_ptr<MoveListener> mpMoveListener;

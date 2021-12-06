@@ -41,7 +41,10 @@ public:
 	}
 
 	//从一个xml文件里面加载一棵ui树，准备模仿Android的ui系统
-	static shared_ptr<View> loadFromFile(const string& filepath);
+	shared_ptr<View> loadFromFile(const string& filepath);
+
+	//从一个xml文件里面加载一棵ui树，准备模仿Android的ui系统
+	static shared_ptr<View> loadFromFile(const string& filepath,int parentWidth,int parentHeight);
 
 	/*
 	功能：	初始化ui，初始化uirender，加载string.xml,color.xml等

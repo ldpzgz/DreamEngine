@@ -19,7 +19,7 @@ void ListView::getVisibleItems() {
 	if (mOrientation == LayoutParam::Vertical) {
 		rectIndex = 3;
 	}
-	//´ÓµÚÒ»¸ö¿ªÊ¼ÍùºóÊı
+	//ä»ç¬¬ä¸€ä¸ªå¼€å§‹å¾€åæ•°
 	auto i = mFirstVisibleItem;
 	mLastVisibleItem = mFirstVisibleItem;
 	auto pItem = mpAdapter->getView(i);
@@ -35,7 +35,7 @@ void ListView::getVisibleItems() {
 			mLastVisibleItem = i;
 		}
 		else {
-			//ÕÒµ½ÁË×îºóÒ»¸öitem¶¼»¹Ã»ÓĞÂú×ã£¬¾Í´ÓÖ®Ç°µÄfirstItem¿ªÊ¼ÍùÇ°È·¶¨µÚÒ»¸ö¿É¼ûitem
+			//æ‰¾åˆ°äº†æœ€åä¸€ä¸ªiteméƒ½è¿˜æ²¡æœ‰æ»¡è¶³ï¼Œå°±ä»ä¹‹å‰çš„firstItemå¼€å§‹å¾€å‰ç¡®å®šç¬¬ä¸€ä¸ªå¯è§item
 			int j = mFirstVisibleItem;
 			mLastItemHideLength = 0;
 			mVisibleItemTotalLength += mFirstItemHideLength;
@@ -56,50 +56,19 @@ void ListView::getVisibleItems() {
 			break;
 		}
 	} while (pItem);
-}
 
-//void ListView::getVisibleItems() {
-//	if (mpAdapter) {
-//		//ÕÒµ½×îºóÒ»¸ö¿É¼ûµÄitem
-//		mLastVisibleItem = mFirstVisibleItem;
-//		auto pView = mpAdapter->getView(mFirstVisibleItem);
-//		mVisibleItemTotalLength = 0;
-//		mLastItemHideLength = 0;
-//
-//		int rectIndex = 2;
-//		if (mOrientation == LayoutParam::Vertical) {
-//			rectIndex = 3;
-//		}
-//		while (pView) {
-//			mVisibleItemTotalLength += pView->getRect()[rectIndex];
-//			if (mVisibleItemTotalLength - mFirstItemHideLength < mRect[rectIndex]) {
-//				pView = mpAdapter->getView(++mLastVisibleItem);
-//			}
-//			else {
-//				break;
-//			}
-//		}
-//		auto delta = mVisibleItemTotalLength - mRect[rectIndex];
-//		if (delta >= 0) {
-//			mLastItemHideLength = delta - mFirstItemHideLength;
-//			mbMovable = true;
-//		}
-//		else {
-//			//È«Ìåitem¼ÓÆğÀ´µÄ³¤¶È¶¼Ã»ÓĞlistviewµÄ³¤¶È³¤
-//			mLastItemHideLength = 0;
-//			mbMovable = false;
-//		}
-//
-//	}
-//}
+	if (mVisibleItemTotalLength >= mRect[rectIndex]) {
+		mbMovable = true;
+	}
+}
 
 void ListView::draw() {
 	UiRender::getInstance()->drawListView(this);
 	View::draw();
 }
 
-bool ListView::move(int moveDistance) {
-	//ÔÚÕâÀï´¦ÀíÉÏÏÂ×óÓÒÍÏ¶¯µÄÂß¼­
+bool ListView::tryToMove(int moveDistance) {
+	//åœ¨è¿™é‡Œå¤„ç†ä¸Šä¸‹å·¦å³æ‹–åŠ¨çš„é€»è¾‘
 	int moveLength = moveDistance;
 	int rectIndex = 2;
 	if (mOrientation == LayoutParam::Vertical) {
@@ -111,13 +80,14 @@ bool ListView::move(int moveDistance) {
 		auto pFirstVisibleItem = mpAdapter->getView(mFirstVisibleItem);
 		auto pLastVisibleItem = mpAdapter->getView(mLastVisibleItem);
 		if (moveLength < 0) {
-			//ÍùÉÏÀ­£¬»òÕßÍù×óÀ­£¬ÄÜÀ­¶¯¶àÉÙ£¿
-			//È·¶¨×îºóÒ»¸ö¿É¼ûµÄitem
+			//å¾€ä¸Šæ‹‰ï¼Œæˆ–è€…å¾€å·¦æ‹‰ï¼Œèƒ½æ‹‰åŠ¨å¤šå°‘ï¼Ÿ
+			//ç¡®å®šæœ€åä¸€ä¸ªå¯è§çš„item
 			int tempLength = moveLength;
 			while (mLastItemHideLength + moveLength < 0) {
 				moveLength += mLastItemHideLength;
 				pLastVisibleItem = mpAdapter->getView(++mLastVisibleItem);
 				if (!pLastVisibleItem) {
+					--mLastVisibleItem;
 					break;
 				}
 				mLastItemHideLength = pLastVisibleItem->getRect()[rectIndex];
@@ -129,10 +99,10 @@ bool ListView::move(int moveDistance) {
 			else {
 				mLastItemHideLength += moveLength;
 			}
-			//È·¶¨µÚÒ»¸ö¿É¼ûµÄitem
+			//ç¡®å®šç¬¬ä¸€ä¸ªå¯è§çš„item
 			moveLength = tempLength;
 			if (moveLength == 0) {
-				//À­²»¶¯ÁË
+				//æ‹‰ä¸åŠ¨äº†
 				return false;
 			}
 			do {
@@ -150,8 +120,8 @@ bool ListView::move(int moveDistance) {
 			} while (true);
 		}
 		else if (moveLength > 0) {
-			//ÍùÏÂÀ­£¬»òÕßÍùÓÒÀ­£¬ÄÜÀ­¶àÉÙ£¿
-			//È·¶¨µÚÒ»¸ö¿É¼ûµÄitem
+			//å¾€ä¸‹æ‹‰ï¼Œæˆ–è€…å¾€å³æ‹‰ï¼Œèƒ½æ‹‰å¤šå°‘ï¼Ÿ
+			//ç¡®å®šç¬¬ä¸€ä¸ªå¯è§çš„item
 			int tempLength = moveLength;
 			while (moveLength - mFirstItemHideLength > 0) {
 				moveLength -= mFirstItemHideLength;
@@ -167,10 +137,10 @@ bool ListView::move(int moveDistance) {
 				}
 			}
 			mFirstItemHideLength -= moveLength;
-			//È·¶¨×îºóÒ»¸ö¿É¼ûµÄitem
+			//ç¡®å®šæœ€åä¸€ä¸ªå¯è§çš„item
 			moveLength = tempLength;
 			if (moveLength == 0) {
-				//À­²»¶¯ÁË
+				//æ‹‰ä¸åŠ¨äº†
 				return false;
 			}
 			do {
@@ -210,7 +180,7 @@ bool ListView::mouseMove(int x, int y) {
 		else {
 			moveDistance = x - mPrePos.x;
 		}
-		if (move(moveDistance)) {
+		if (tryToMove(moveDistance)) {
 			setDirty(true);
 			mPrePos.x = x;
 			mPrePos.y = y;

@@ -765,6 +765,7 @@ void UiRender::drawTextView(TextView* tv) {
 		}
 		auto tvRect = tv->getRect();
 		auto moveVec = tv->getTranslateVector();//view可能会被其他控件平移过，比如scrollview
+		moveVec += tv->getMoveVector();
 		tvRect.translate(moveVec);
 		auto& textPositions = tv->getCharPositionArray();
 
@@ -819,6 +820,7 @@ bool UiRender::drawBackground(View* v){
 			auto rect = v->getRect();
 			auto moveVec = v->getTranslateVector();//view可能会被其他控件平移过，比如scrollview
 			rect.translate(moveVec);
+			rect.translate(v->getMoveVector());
 			glm::mat4 model(1.0f);
 			model = glm::translate(model, glm::vec3(rect.x + paddingLeft, 
 				(mWindowHeight - rect.y - rect.height + paddingBottom), 0.0f));
@@ -848,13 +850,16 @@ bool UiRender::drawBackground(View* v){
 			}
 		}
 	}
+	return true;
 }
 
 void UiRender::drawLinearLayout(LinearLayout* pll) {
 	drawBackground(pll);
 	auto& children = pll->getChildren();
+	auto& moveVec = pll->getMoveVector();
 	for (auto& pChild : children) {
 		if (pChild) {
+			pChild->setMove(moveVec);
 			pChild->draw();
 		}
 	}
@@ -872,9 +877,10 @@ void UiRender::drawScrollView(ScrollView* psv) {
 	glGetIntegerv(GL_SCISSOR_BOX, (GLint*)&preScissorBox);
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(rect.x, mWindowHeight - rect.y - rect.height, rect.width, rect.height);
-
+	auto& moveVec = psv->getMoveVector();
 	for (auto& pChild : children) {
 		if (pChild) {
+			pChild->setMove(moveVec);
 			auto childRect = pChild->getRect();
 			auto childMove = pChild->getTranslateVector();
 			childRect.translate(childMove);
@@ -916,21 +922,23 @@ void UiRender::drawListView(ListView* plv) {
 		plv->getFirstVisibleItem(firstItem, firstItemHideLength);
 		plv->getLastVisibleItem(lastItem, lastItemHideLength);
 		bool isHorizontal = plv->isHorizontal();
-		int rectMoveIndex = 0;
-		int rectIncIndex = 2;
-		if (!isHorizontal) {
-			rectMoveIndex = 1;
-			rectIncIndex = 3;
-		}
+		
 		int moveLength = -firstItemHideLength;
+		
 		for (int i = firstItem; i <= lastItem; ++i) {
 			auto& pView = pAdapter->getView(i);
 			if (pView) {
-				auto& rect = pView->getRect();
-				rect.x = lvRect.x;
-				rect.y = lvRect.y;
-				rect[rectMoveIndex] += moveLength;
-				moveLength += rect[rectIncIndex];
+				Vec2i tempMove(lvRect.x, lvRect.y);
+				auto& rectInc = pView->getRect();
+				if (isHorizontal) {
+					tempMove.x += moveLength;
+					moveLength += pView->advanceX();
+				}
+				else {
+					tempMove.y += moveLength;
+					moveLength += pView->advanceY();
+				}
+				pView->setMove(tempMove);
 				pView->draw();
 			}
 		}

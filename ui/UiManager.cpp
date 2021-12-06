@@ -222,8 +222,8 @@ shared_ptr<View> parseView(shared_ptr<View>& parent, rapidxml::xml_node<char>* p
 	return pView;
 }
 
-//加载ui的布局文件
-shared_ptr<View> UiManager::loadFromFile(const string& filepath) {
+//从一个xml文件里面加载一棵ui树，准备模仿Android的ui系统
+shared_ptr<View> UiManager::loadFromFile(const string& filepath, int parentWidth, int parentHeight) {
 	shared_ptr<View> rootView;
 	//读取xml
 	unique_ptr<rapidxml::file<>> pfdoc;
@@ -242,8 +242,14 @@ shared_ptr<View> UiManager::loadFromFile(const string& filepath) {
 		rootView = parseView(rootView, rootNode);
 		//将有Id的控件搜集起来，以便查找
 		rootView->getId2View(std::unique_ptr < std::unordered_map<std::string, std::shared_ptr<View>> >());
+		rootView->calcRect(parentWidth, parentHeight);
 	}
 	return rootView;
+}
+
+//加载ui的布局文件
+shared_ptr<View> UiManager::loadFromFile(const string& filepath) {
+	return loadFromFile(filepath, mWindowWidth, mWindowHeight);
 }
 
 UiManager::UiManager() {

@@ -43,10 +43,10 @@ public:
 
 	void setText(const std::string& str) {
 		if (mText != str) {
+			mText = str;
 			setDirty(true);
 			calcTextPosition();
 		}
-		mText = str;
 	}
 
 	void setTextSize(int size) {

@@ -2,9 +2,12 @@
 #define _LIST_VIEW_H_
 #include "View.h"
 #include "ViewAdapter.h"
+/*
+* ListView å¿…é¡»è¦æœ‰ç¡®å®šçš„å®½åº¦å’Œé«˜åº¦ï¼Œä¸èƒ½æ˜¯wrapContent
+*/
 class ListView :public View{
 public:
-	using View::View;//¼Ì³Ğ»ùÀàµÄ¹¹Ôìº¯Êı
+	using View::View;//ç»§æ‰¿åŸºç±»çš„æ„é€ å‡½æ•°
 	
 	void setAdapter(const std::shared_ptr<ViewAdapter>& pAdapter);
 
@@ -37,18 +40,16 @@ public:
 	void orientationHandler(const string& content) override;
 private:
 	/*
-	* Ëã³öµÚÒ»¸öºÍ×îºóÒ»¸ö¿É¼ûµÄitem
+	* ç®—å‡ºç¬¬ä¸€ä¸ªå’Œæœ€åä¸€ä¸ªå¯è§çš„item
 	*/
 	void getVisibleItems();
 	/*
-	* ÒÆ¶¯listviewÀïÃæµÄitem
-	* ·Å»ØÖµ±íÊ¾ÊÇ·ñÕæµÄÒÆ¶¯ÁË
+	* å°è¯•ç§»åŠ¨moveDistanceçš„è·ç¦»ã€‚
+	* å¦‚æœç§»åŠ¨äº†ï¼Œè®¡ç®—å‡ºlistviewé‡Œé¢çš„ç¬¬ä¸€ä¸ªå’Œæœ€åä¸€ä¸ªå¯è§çš„item
+	* åå›å€¼è¡¨ç¤ºæ˜¯å¦æœ‰ç§»åŠ¨
 	*/
-	bool move(int moveDistance);
-	/*
-	* Ëã³öµÚÒ»¸öºÍ×îºóÒ»¸ö¿É¼ûµÄitem
-	*/
-	//void getFirstAndLastVisibleItem();
+	bool tryToMove(int moveDistance);
+
 	unsigned int mMouseState{ MouseState::MouseNone };
 	bool mbLButtonDown{ false };
 	Vec2i mPrePos;
@@ -57,7 +58,7 @@ private:
 	int mLastVisibleItem{ 0 };
 	int mLastItemHideLength{ 0 };
 	bool mbMovable{ false };
-	int mVisibleItemTotalLength{ 0 };//ËùÓĞ¿É¼ûµÄitem¼ÓÆğÀ´µÄlength¡£
+	int mVisibleItemTotalLength{ 0 };//æ‰€æœ‰å¯è§çš„itemåŠ èµ·æ¥çš„lengthã€‚
 	int mOrientation{ LayoutParam::Horizontal };
 	std::shared_ptr<ViewAdapter> mpAdapter;
 };

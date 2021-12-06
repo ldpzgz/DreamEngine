@@ -5,6 +5,11 @@
 class ViewAdapter
 {
 public:
+	ViewAdapter(std::shared_ptr<View>& pContainerView) :
+		mpParentView(pContainerView)
+	{
+
+	}
 	ViewAdapter() = default;
 	virtual ~ViewAdapter() {
 
@@ -15,5 +20,7 @@ public:
 	virtual int getItemCounts() {
 		return 0;
 	}
+protected:
+	std::weak_ptr<View> mpParentView;
 };
 #endif

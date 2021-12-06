@@ -511,6 +511,9 @@ shared_ptr<View> View::createView(const string& name, shared_ptr<View> parent) {
 	else if (name == "ScrollView") {
 		pView = make_shared<ScrollView>(parent);
 	}
+	else if (name == "ListView") {
+		pView = make_shared<ListView>(parent);
+	}
 	else {
 		LOGE("can not create %s view",name.c_str());
 	}
