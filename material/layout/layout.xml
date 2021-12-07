@@ -43,9 +43,12 @@
 			height="wrapContent"
 			marginLeft="10"
 			marginRight="0"
+			marginTop="10"
+			marginBottom="10"
 			gravity="center"
 			textSize="32"
-			textColor="#ffff00ff"
+			background="#19A719ff"
+			textColor="#000000ff"
 			charSpace="30"
 			text="确定">
 		</Button>

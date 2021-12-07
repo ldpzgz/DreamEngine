@@ -31,7 +31,7 @@ std::unordered_map < std::string, std::function<void(const shared_ptr<Shape>&, c
 	{ "strokeWidth",Shape::strokeWidthHandler },
 	{ "strokeColor",Shape::strokeColorHandler },
 	{ "dashWidth",Shape::strokeDashWidthHandler },
-	{ "gap",Shape::strokeDashGapHandler },
+	{ "dashGap",Shape::strokeDashGapHandler },
 };
 
 void Shape::cornerRadiusHandler(const shared_ptr<Shape>& shape, const std::string& value) {

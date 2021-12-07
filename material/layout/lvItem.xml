@@ -4,12 +4,20 @@
 	width="matchParent"
 	height="50"
 	gravity="center"
-	orientation="v">
+	background="#00ff00ff"
+	orientation="h">
+	<TextView
+		id="image"
+		width="40"
+		height="40"
+		gravity="center"
+		background="@image/plus"
+	/>
 	<TextView
 		id="tv"
-		width="matchParent"
+		width="60"
 		height="matchParent"
-		gravity="center"
+		gravity="leftCenter"
 		textSize="32"
 		textColor="#ff0000ff"
 	/>

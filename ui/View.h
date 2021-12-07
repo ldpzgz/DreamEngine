@@ -316,9 +316,7 @@ public:
 			mpBackground->mpShape = make_shared<Shape>();
 		}
 		
-		if (mpBackground->mpTexture) {
-			mpBackground->mpTexture = pTex;
-		}
+		mpBackground->mpTexture = pTex;
 		
 	}
 

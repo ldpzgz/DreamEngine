@@ -609,7 +609,7 @@ shared_ptr<Texture>& Material::getTexture(const std::string& name) {
 	return gpTextureNothing;
 }
 
-shared_ptr<Material> Material::getMaterial(const std::string& name) {
+shared_ptr<Material>& Material::getMaterial(const std::string& name) {
 	auto it = gMaterials.find(name);
 	if (it != gMaterials.end())
 		return it->second;
@@ -617,10 +617,17 @@ shared_ptr<Material> Material::getMaterial(const std::string& name) {
 }
 
 shared_ptr<Material> Material::clone(const Material& pMat) {
-	
-	MaterialP pMaterial = std::make_shared<Material>(pMat);
-	return pMaterial;
-	return gpMaterialNothing;
+	return std::make_shared<Material>(pMat);
+}
+
+shared_ptr<Material> Material::clone(const std::string& name) {
+	auto& pMaterial = getMaterial(name);
+	if (pMaterial) {
+		return std::make_shared<Material>(*pMaterial);
+	}
+	else {
+		return gpMaterialNothing;
+	}
 }
 
 shared_ptr<Shader>& Material::getShader(const std::string& name) {
@@ -649,7 +656,7 @@ std::shared_ptr<Texture> Material::createTexture(const std::string& name,int wid
 
 std::shared_ptr<Texture> Material::loadTextureFromFile(const std::string& path) {
 	auto texName = Utils::getFileName(path);
-	auto pTexture = Utils::loadImageFromFile(path);
+	std::shared_ptr<Texture> pTexture = Texture::loadImageFromFile(path);
 	if (pTexture) {
 		auto it = gTextures.try_emplace(texName, pTexture);
 		if (!it.second) {
@@ -691,9 +698,6 @@ bool Material::parseItem(const string& value, Umapss& umap) {
 
 bool Material::parseCubeTexture(const string& textureName, const string& texture) {
 	Umapss umap;
-	int width;
-	int height;
-	int depth;
 	if (parseItem(texture, umap)) {
 		const auto pPath = umap.find("path");
 		if (pPath != umap.cend()) {

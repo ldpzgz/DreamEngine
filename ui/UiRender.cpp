@@ -80,7 +80,7 @@ FontManager::~FontManager()
 
 shared_ptr<FontManager> FontManager::loadFromFile(const string& savePath, const string& ttfPath, const string& materialName) {
 
-	auto pMaterial = Material::getMaterial(materialName);
+	auto& pMaterial = Material::getMaterial(materialName);
 
 	if (!pMaterial) {
 		LOGE("error to parse font material");
@@ -414,7 +414,7 @@ void UiRender::initBackground(View* pView) {
 		}
 
 		if (pMesh && pTexture) {
-			auto pMaterial = Material::getMaterial("posTexture");
+			auto pMaterial = Material::clone("posTexture");
 			if (pMaterial) {
 				//pMaterial->setTextureForSampler("s_texture", pTexture);//这个每次渲染前都需要调用
 				pMesh->setMaterial(pMaterial);
@@ -425,7 +425,7 @@ void UiRender::initBackground(View* pView) {
 		}
 		else if (pMesh && hasGradient) {
 			if (gradientType == GradientType::Linear) {
-				auto pMaterial = Material::getMaterial("posColor");
+				auto pMaterial = Material::clone("posColor");
 				if (pMaterial) {
 					pMesh->setColorData(gradientAngle, startColor, endColor, centerColor);
 					pMesh->setMaterial(pMaterial);
@@ -436,9 +436,9 @@ void UiRender::initBackground(View* pView) {
 			}
 		}
 		else if (pMesh && !solidColor.isZero()) {
-			auto pMaterial = Material::getMaterial("posUniformColor");
+			auto pMaterial = Material::clone("posUniformColor");
 			if (pMaterial) {
-				//pMesh->setUniformColor(solidColor);//这个每次渲染前都需要调用
+				pMaterial->setUniformColor(solidColor);//这个每次渲染前都需要调用
 				pMesh->setMaterial(pMaterial);
 			}
 			else {
@@ -447,9 +447,9 @@ void UiRender::initBackground(View* pView) {
 		}
 
 		if (pStrokeMesh) {
-			auto pMaterial = Material::getMaterial("posUniformColor");
+			auto pMaterial = Material::clone("posUniformColor");
 			if (pMaterial) {
-				//pStrokeMesh->setUniformColor(solidColor);//这个每次渲染前都需要调用
+				pMaterial->setUniformColor(strokeColor);//这个每次渲染前都需要调用
 				pStrokeMesh->setMaterial(pMaterial);
 			}
 			else {
@@ -608,6 +608,10 @@ void UiRender::calcTextPosition(TextView* tv) {
 				}
 			}
 			else {
+				//要换行了,判断高度是否超出边界
+				if (-currentPosY - yAdvance > maxHeight) {
+					break;
+				}
 				//要换行了,增加一行
 				currentPosX = 0;
 				currentPosY += yAdvance;
@@ -756,9 +760,7 @@ void UiRender::calcTextPosition(TextView* tv) {
 extern void checkglerror();
 void UiRender::drawTextView(TextView* tv) {
 	if (tv != nullptr) {
-		checkglerror();
 		drawBackground(tv);
-		checkglerror();
 		if (tv->getUpdateTextPosition()) {
 			calcTextPosition(tv);
 			tv->setUpdateTextPosition(false);
