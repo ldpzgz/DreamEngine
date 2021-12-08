@@ -23,22 +23,36 @@ bool ScrollView::mouseMove(int x, int y) {
 					auto childRect = pEndChild->getRect();
 					auto& childMove = pEndChild->getTranslateVector();
 					childRect.translate(childMove);
-					if ((childRect.y+childRect.height) <= (mRect.y+mRect.height)) {
+					auto pBottom = mRect.y + mRect.height;
+					auto cBottom = childRect.y + childRect.height;
+					if (cBottom <= pBottom) {
 						/*
 						* 已经往上拖到底了
 						*/
 						return false;
 					}
+					else {
+						auto delta = pBottom - cBottom;
+						if (temp.y < delta) {
+							temp.y = delta;
+						}
+					}
 				}
 				else if (temp.y > 0) {
 					auto childRect = pFrontChild->getRect();
-					auto& childMove = pFrontChild->getTranslateVector();
+					auto childMove = pFrontChild->getTranslateVector();
 					childRect.translate(childMove);
 					if (childRect.y >= mRect.y) {
 						/*
 						* 已经往下拖到底了
 						*/
 						return false;
+					}
+					else {
+						auto delta = mRect.y - childRect.y;
+						if (temp.y > delta) {
+							temp.y = delta;
+						}
 					}
 				}
 				else {
@@ -55,11 +69,19 @@ bool ScrollView::mouseMove(int x, int y) {
 					auto childRect = pEndChild->getRect();
 					auto& childMove = pEndChild->getTranslateVector();
 					childRect.translate(childMove);
-					if ((childRect.x+childRect.width) <= (mRect.x+mRect.width)) {
+					auto cRight = childRect.x + childRect.width;
+					auto pRight = mRect.x + mRect.width;
+					if (cRight <= pRight) {
 						/*
 						* 已经往上拖到底了
 						*/
 						return false;
+					}
+					else {
+						auto delta = pRight - cRight;
+						if (temp.x < delta) {
+							temp.x = delta;
+						}
 					}
 				}
 				else if (temp.x > 0) {
@@ -71,6 +93,12 @@ bool ScrollView::mouseMove(int x, int y) {
 						* 已经往下拖到底了
 						*/
 						return false;
+					}
+					else {
+						auto delta = mRect.x - childRect.x;
+						if (temp.x > delta) {
+							temp.x = delta;
+						}
 					}
 				}
 				else {
