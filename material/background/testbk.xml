@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<background shape="test">
+	<normal 
+		texture=""
+		solidColor=""
+		startColor=""
+		centerColor=""
+		endColor=""
+	/>
+	<pushed 
+		texture=""
+		solidColor=""
+		startColor=""
+		centerColor=""
+		endColor=""
+	/>
+	<hover 
+		texture=""
+		solidColor=""
+		startColor=""
+		centerColor=""
+		endColor=""
+	/>
+	<disabled 
+		texture=""
+		solidColor=""
+		startColor=""
+		centerColor=""
+		endColor=""
+	/>
+</background>

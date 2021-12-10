@@ -1,4 +1,5 @@
 ﻿#include "UiManager.h"
+#include "Background.h"
 #include "../Log.h"
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>  //rapidxml::file
@@ -18,6 +19,7 @@ unique_ptr<UiManager> UiManager::gInstance = make_unique<UiManager>();
 unordered_map<string, string> UiManager::gRStrings;
 unordered_map<string, Color> UiManager::gRColors;
 unordered_map<string, std::shared_ptr<Shape>> UiManager::gRShapes;
+unordered_map<string, std::shared_ptr<Background>> UiManager::gRBackground;
 
 void UiManager::loadAllShape() {
 	//遍历UIimage目录
@@ -79,30 +81,61 @@ void UiManager::parseRShape(const string& path) {
 		auto pResNode = pDoc->first_node("shape");
 		if (pResNode != nullptr) {
 			auto shape = std::make_shared<Shape>();
-			auto attribute = pResNode->first_attribute("type");
-			if (attribute != nullptr && shape) {
-				shape->setType(attribute->value());
-			}
-			pResNode = pResNode->first_node();
-			while (pResNode != nullptr) {
-				auto attribute = pResNode->first_attribute();
-				while (attribute != nullptr) {
-					string key = attribute->name();
-					string value = attribute->value();
-					auto it = Shape::gShapeAttributeHandler.find(key);
-					if (it != Shape::gShapeAttributeHandler.end()) {
-						it->second(shape, value);
-					}
-					else {
-						LOGE("cannot recognize shape attribute %s",key.c_str());
-					}
-					attribute = attribute->next_attribute();
+			auto attribute = pResNode->first_attribute();
+			while (attribute != nullptr) {
+				string key = attribute->name();
+				string value = attribute->value();
+				auto it = Shape::gShapeAttributeHandler.find(key);
+				if (it != Shape::gShapeAttributeHandler.end()) {
+					it->second(shape, value);
 				}
-				pResNode = pResNode->next_sibling();
+				else {
+					LOGE("cannot recognize shape attribute %s", key.c_str());
+				}
+				attribute = attribute->next_attribute();
 			}
+			
 			if (gRShapes.emplace(shapeName, shape).second == false) {
 				LOGE("ERROR to emplace shape %s ,already exist", shapeName.c_str());
 				shape.reset();
+			}
+		}
+	}
+}
+
+void UiManager::parseRBackground(const string& path) {
+	shared_ptr<Background> pBack;
+	unique_ptr<rapidxml::file<>> pfdoc;
+	try {
+		pfdoc = make_unique<rapidxml::file<>>(path.c_str());
+	}
+	catch (std::exception e) {
+		LOGE("error to parseRBackground %s file,error %s", path.c_str(), e.what());
+		return ;
+	}
+	if (pfdoc && pfdoc->size() > 0) {
+		string bkName = Utils::getFileName(path);
+		auto pDoc = make_unique< rapidxml::xml_document<> >();// character type defaults to char
+		pDoc->parse<0>(pfdoc->data());// 0 means default parse flags
+		auto pNode = pDoc->first_node("background");
+		if (pNode != nullptr) {
+			pBack = make_shared<Background>();
+			auto shapeAttr = pNode->first_attribute("shape");
+			if (shapeAttr) {
+				string shapeName = shapeAttr->value();
+				auto it = gRShapes.find(shapeName);
+				if (it != gRShapes.end()) {
+					pBack->mpShape = it->second;
+				}
+				else {
+					LOGE("ERROR when parse background,can not find shape %s",shapeName.c_str());
+					return;
+				}
+			}
+			pNode = pNode->first_node();
+			while (pNode) {
+				pBack->nodeHandler(pNode);
+				pNode = pNode->next_sibling();
 			}
 		}
 	}
@@ -399,6 +432,17 @@ std::shared_ptr<Shape>& UiManager::getShape(const std::string& name) {
 
 std::shared_ptr<Texture>& UiManager::getTexture(const std::string& name) {
 	return Material::getTexture(name);
+}
+
+std::shared_ptr<Background> UiManager::getBackground(const std::string& name) {
+	auto it = gRBackground.find(name);
+	if (it != gRBackground.end()) {
+		return it->second;
+	}
+	else {
+		LOGE("cannot find %s background in string resource", name.c_str());
+		return std::shared_ptr<Background>();
+	}
 }
 
 std::string& UiManager::getString(const std::string& name) {

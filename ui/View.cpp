@@ -361,6 +361,7 @@ void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& valu
 			const string colorPrefix = "@color/";
 			const string imagePrefix = "@image/";
 			const string shapePrefix = "@shape/";
+			const string backgroundPrefix = "@bk/";
 			if (value[0] == '#' || value.find(colorPrefix)==0) {
 				Color c;
 				if (!Color::parseColor(value, c)) {
@@ -368,10 +369,6 @@ void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& valu
 				}
 				else {
 					pv->setBackgroundColor(c);
-					/*auto& pShape = pv->getBackgroundShape();
-					if (pShape) {
-						UiRender::getInstance()->initBackground(pShape);
-					}*/
 				}
 			}
 			else if (value.find(imagePrefix) == 0) {
@@ -393,6 +390,17 @@ void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& valu
 				auto& pShape = UiManager::getShape(shapeName);
 				if (pShape) {
 					pv->setBackgroundShape(pShape);
+					//UiRender::getInstance()->initBackground(pShape);
+				}
+				else {
+					LOGE("ERROR not found %s shape in layout file", shapeName.c_str());
+				}
+			}
+			else if (value.find(backgroundPrefix) == 0) {
+				string bkName = value.substr(backgroundPrefix.size());
+				auto& pBack = UiManager::getBackground(bkName);
+				if (pBack) {
+					pv->setBackground(pBack);
 					//UiRender::getInstance()->initBackground(pShape);
 				}
 				else {

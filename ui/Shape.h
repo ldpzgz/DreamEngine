@@ -6,6 +6,7 @@
 #include <functional>
 #include <unordered_map>
 #include <memory>
+#include "../Mesh.h"
 enum class ShapeType : int {
 	Rectangle,
 	RoundedRectangle,
@@ -243,6 +244,14 @@ public:
 		return mPaddingBottom;
 	}
 
+	void setTexture(const std::shared_ptr<Texture>& pTex) {
+		mpTexture = pTex;
+	}
+
+	std::shared_ptr<Texture>& getTexture() {
+		return mpTexture;
+	}
+
 	static std::unordered_map<std::string, std::function<void(const std::shared_ptr<Shape>&, const std::string&)>> gShapeAttributeHandler;
 public:
 	ShapeType mType{ ShapeType::Rectangle };
@@ -279,16 +288,19 @@ public:
 	float mOvalWidth{ 1.0f };
 	float mOvalHeight{ 1.0f };
 
-	//std::shared_ptr<void> mpTexture;
-	//std::shared_ptr<void> mpMesh;//承载shape的mesh
-	//std::shared_ptr<void> mpStrokeMesh;//承载边框的mesh
+	std::shared_ptr<Texture> mpTexture;
+	std::shared_ptr<Mesh> mpMesh;//承载shape的mesh
+	std::shared_ptr<Mesh> mpStrokeMesh;//承载边框的mesh
 
 private:
+	static void typeHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
 	static void cornerRadiusHandler(const std::shared_ptr<Shape>& shape,const std::string& value);
 	static void cornerLeftTopRadiusHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
 	static void cornerLeftBottomRadiusHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
 	static void cornerRightTopRadiusHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
 	static void cornerRightBottomRadiusHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
+
+	static void textureHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
 
 	static void gradientAngleHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
 	static void gradientCenterXHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
@@ -311,7 +323,7 @@ private:
 	static void solidColorHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
 	static void strokeWidthHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
 	static void strokeColorHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
-	static void strokeDashWidthHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
-	static void strokeDashGapHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
+	//static void strokeDashWidthHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
+	//static void strokeDashGapHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
 };
 #endif

@@ -302,6 +302,10 @@ public:
 		
 	}
 
+	void setBackground(const std::shared_ptr<Background>& bk) {
+		mpBackground = bk;
+	}
+
 	Color& getBackgroundColor() {
 		static Color temp{ 0.0f,0.0f,0.0f,0.0f };
 		if (mpBackground && mpBackground->mpShape) {
@@ -315,9 +319,7 @@ public:
 			mpBackground = make_shared<Background>();
 			mpBackground->mpShape = make_shared<Shape>();
 		}
-		
-		mpBackground->mpTexture = pTex;
-		
+		mpBackground->mpShape->mpTexture = pTex;
 	}
 
 	std::shared_ptr<Background>& getBackground() {

@@ -301,161 +301,166 @@ bool UiRender::initTextView(const string& savedPath, const string& ttfPath, cons
 	}
 }
 
+void UiRender::initShape(Rect<int>& rect, const shared_ptr<Shape>& pShape) {
+	if (!pShape) {
+		return;
+	}
+	auto width = rect.width;
+	auto height = rect.height;
+	auto paddingLeft = pShape->getPaddingLeft();
+	auto paddingRight = pShape->getPaddingRight();
+	auto paddingTop = pShape->getPaddingTop();
+	auto paddingBottom = pShape->getPaddingBottom();
+	auto padding = pShape->getPadding();
+	if (padding > 0) {
+		paddingLeft = paddingRight = paddingTop = paddingBottom = padding;
+	}
+	width -= (paddingLeft + paddingRight);
+	height -= (paddingTop + paddingBottom);
+	auto shapeType = pShape->getType();
+	auto& solidColor = pShape->getSolidColor();
+	GradientType gradientType = pShape->getGradientType();
+	bool hasGradient = (gradientType != GradientType::None);
+	auto cornerRadius = pShape->getCornerRadius();
+	auto rtRadius = pShape->getCornerRightTopRadius();
+	auto ltRadius = pShape->getCornerLeftTopRadius();
+	auto lbRadius = pShape->getCornerLeftBottomRadius();
+	auto rbRadius = pShape->getCornerRightBottomRadius();
+	auto ovalWidth = pShape->getOvalWidth();
+	auto ovalHeight = pShape->getOvalHeight();
+	auto centerX = pShape->getGradientCenterX();
+	auto centerY = pShape->getGradientCenterY();
+	centerX *= width;
+	centerY *= height;
+	auto gradientAngle = pShape->getGradientAngle();
+	auto& startColor = pShape->getGradientStartColor();
+	auto& endColor = pShape->getGradientEndColor();
+	auto& centerColor = pShape->getGradientCenterColor();
+	auto strokeWidth = pShape->getSrokeWidth();
+	auto& strokeColor = pShape->getSrokeColor();
+	auto& pTexture = pShape->mpTexture;
+
+	bool hasBackground = (!solidColor.isZero() || pTexture || gradientType != GradientType::None);
+	shared_ptr<MeshFilledRect> pMesh;
+	shared_ptr<MeshFilledRect> pStrokeMesh;
+	if (shapeType == ShapeType::Rectangle) {
+		if (hasBackground) {
+			pMesh = make_shared<MeshFilledRect>();
+			pMesh->loadMesh(width, height, centerX, centerY);
+			//pShape->setMesh(static_pointer_cast<void>(pMesh));
+			pShape->mpMesh = pMesh;
+		}
+		if (!strokeColor.isZero()) {
+			pStrokeMesh = make_shared<MeshFilledRect>();
+			pStrokeMesh->loadMesh(width, height, centerX, centerY);
+			pStrokeMesh->setFilled(false);
+			pStrokeMesh->setLineWidth(strokeWidth);
+			//pShape->setStrokeMesh(static_pointer_cast<void>(pStrokeMesh));
+			pShape->mpStrokeMesh = pStrokeMesh;
+		}
+	}
+	else if (shapeType == ShapeType::RoundedRectangle) {
+		if (hasBackground) {
+			pMesh = make_shared<MeshRoundedRectangle>();
+			//pShape->setMesh(static_pointer_cast<void>(pMesh));
+			pShape->mpMesh = pMesh;
+			if (cornerRadius > 0) {
+				//四个圆角是一样的半径
+				pMesh->loadMesh(cornerRadius, centerX, centerY, width, height);
+			}
+			else {
+				//四个圆角半径不一样
+				pMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, centerX, centerY, width, height);
+			}
+		}
+		if (!strokeColor.isZero()) {
+			pStrokeMesh = make_shared<MeshRoundedRectangle>();
+			if (cornerRadius > 0) {
+				//四个圆角是一样的半径
+				pMesh->loadMesh(cornerRadius, width, height, centerX, centerY);
+			}
+			else {
+				//四个圆角半径不一样
+				pMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, centerX, centerY, width, height);
+			}
+			pStrokeMesh->setFilled(false);
+			pStrokeMesh->setLineWidth(strokeWidth);
+			//pShape->setStrokeMesh(static_pointer_cast<void>(pStrokeMesh));
+			pShape->mpStrokeMesh = pStrokeMesh;
+		}
+	}
+	else if (shapeType == ShapeType::Oval) {
+		if (hasBackground) {
+			pMesh = make_shared<MeshCircle>();
+			pMesh->loadMesh(width, height, centerX, centerY);
+			//pShape->setMesh(static_pointer_cast<void>(pMesh));
+			pShape->mpMesh = pMesh;
+		}
+		if (!strokeColor.isZero()) {
+			pStrokeMesh = make_shared<MeshCircle>();
+			pStrokeMesh->loadMesh(width, height, centerX, centerY);
+			pStrokeMesh->setFilled(false);
+			pStrokeMesh->setLineWidth(strokeWidth);
+			//pShape->setStrokeMesh(static_pointer_cast<void>(pStrokeMesh));
+			pShape->mpStrokeMesh = pStrokeMesh;
+		}
+	}
+
+	if (pMesh && pTexture) {
+		auto pMaterial = Material::clone("posTexture");
+		if (pMaterial) {
+			//pMaterial->setTextureForSampler("s_texture", pTexture);//这个每次渲染前都需要调用
+			pMesh->setMaterial(pMaterial);
+		}
+		else {
+			LOGE("ERROR cannot found posTexture material");
+		}
+	}
+	else if (pMesh && hasGradient) {
+		if (gradientType == GradientType::Linear) {
+			auto pMaterial = Material::clone("posColor");
+			if (pMaterial) {
+				pMesh->setColorData(gradientAngle, startColor, endColor, centerColor);
+				pMesh->setMaterial(pMaterial);
+			}
+		}
+		else {
+			LOGD("warning only support linear gradient type now");
+		}
+	}
+	else if (pMesh && !solidColor.isZero()) {
+		auto pMaterial = Material::clone("posUniformColor");
+		if (pMaterial) {
+			pMaterial->setUniformColor(solidColor);//这个每次渲染前都需要调用
+			pMesh->setMaterial(pMaterial);
+		}
+		else {
+			LOGE("ERROR cannot found posUniformColor material");
+		}
+	}
+
+	if (pStrokeMesh) {
+		auto pMaterial = Material::clone("posUniformColor");
+		if (pMaterial) {
+			pMaterial->setUniformColor(strokeColor);//这个每次渲染前都需要调用
+			pStrokeMesh->setMaterial(pMaterial);
+		}
+		else {
+			LOGE("ERROR cannot found posUniformColor material");
+		}
+	}
+}
+
 void UiRender::initBackground(View* pView) {
 	if (pView) {
 		auto& pBack = pView->getBackground();
 		if (!pBack) {
 			return;
 		}
-		if (!pBack->mpShape) {
-			return;
-		}
-		auto& pShape = pBack->mpShape;
-		auto& rect = pView->getRect();
-		auto width = rect.width;
-		auto height = rect.height;
-		auto paddingLeft = pShape->getPaddingLeft();
-		auto paddingRight = pShape->getPaddingRight();
-		auto paddingTop = pShape->getPaddingTop();
-		auto paddingBottom = pShape->getPaddingBottom();
-		auto padding = pShape->getPadding();
-		if (padding > 0) {
-			paddingLeft = paddingRight = paddingTop = paddingBottom = padding;
-		}
-		width -= (paddingLeft + paddingRight);
-		height -= (paddingTop+ paddingBottom);
-		auto shapeType = pShape->getType();
-		auto& solidColor = pShape->getSolidColor();
-		GradientType gradientType = pShape->getGradientType();
-		bool hasGradient = (gradientType != GradientType::None);
-		auto cornerRadius = pShape->getCornerRadius();
-		auto rtRadius = pShape->getCornerRightTopRadius();
-		auto ltRadius = pShape->getCornerLeftTopRadius();
-		auto lbRadius = pShape->getCornerLeftBottomRadius();
-		auto rbRadius = pShape->getCornerRightBottomRadius();
-		auto ovalWidth = pShape->getOvalWidth();
-		auto ovalHeight = pShape->getOvalHeight();
-		auto centerX = pShape->getGradientCenterX();
-		auto centerY = pShape->getGradientCenterY();
-		centerX *= width;
-		centerY *= height;
-		auto gradientAngle = pShape->getGradientAngle();
-		auto& startColor = pShape->getGradientStartColor();
-		auto& endColor = pShape->getGradientEndColor();
-		auto& centerColor = pShape->getGradientCenterColor();
-		auto strokeWidth = pShape->getSrokeWidth();
-		auto& strokeColor = pShape->getSrokeColor();
-		auto& pTexture = pBack->mpTexture;
-
-		bool hasBackground = (!solidColor.isZero() || pTexture || gradientType != GradientType::None);
-		shared_ptr<MeshFilledRect> pMesh;
-		shared_ptr<MeshFilledRect> pStrokeMesh;
-		if (shapeType == ShapeType::Rectangle) {
-			if(hasBackground){
-				pMesh = make_shared<MeshFilledRect>();
-				pMesh->loadMesh(width, height, centerX, centerY);
-				//pShape->setMesh(static_pointer_cast<void>(pMesh));
-				pBack->mpMesh = pMesh;
-			}
-			if (!strokeColor.isZero()) {
-				pStrokeMesh = make_shared<MeshFilledRect>();
-				pStrokeMesh->loadMesh(width, height, centerX, centerY);
-				pStrokeMesh->setFilled(false);
-				pStrokeMesh->setLineWidth(strokeWidth);
-				//pShape->setStrokeMesh(static_pointer_cast<void>(pStrokeMesh));
-				pBack->mpStrokeMesh = pStrokeMesh;
-			}
-		}
-		else if (shapeType == ShapeType::RoundedRectangle) {
-			if (hasBackground) {
-				pMesh = make_shared<MeshRoundedRectangle>();
-				//pShape->setMesh(static_pointer_cast<void>(pMesh));
-				pBack->mpMesh = pMesh;
-				if (cornerRadius > 0) {
-					//四个圆角是一样的半径
-					pMesh->loadMesh(cornerRadius, centerX, centerY, width, height);
-				}
-				else {
-					//四个圆角半径不一样
-					pMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, centerX, centerY, width, height);
-				}
-			}
-			if (!strokeColor.isZero()) {
-				pStrokeMesh = make_shared<MeshRoundedRectangle>();
-				if (cornerRadius > 0) {
-					//四个圆角是一样的半径
-					pMesh->loadMesh(cornerRadius, width, height, centerX, centerY);
-				}
-				else {
-					//四个圆角半径不一样
-					pMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, centerX, centerY, width, height);
-				}
-				pStrokeMesh->setFilled(false);
-				pStrokeMesh->setLineWidth(strokeWidth);
-				//pShape->setStrokeMesh(static_pointer_cast<void>(pStrokeMesh));
-				pBack->mpStrokeMesh = pStrokeMesh;
-			}
-		}
-		else if (shapeType == ShapeType::Oval) {
-			if (hasBackground) {
-				pMesh = make_shared<MeshCircle>();
-				pMesh->loadMesh(width, height, centerX, centerY);
-				//pShape->setMesh(static_pointer_cast<void>(pMesh));
-				pBack->mpMesh = pMesh;
-			}
-			if (!strokeColor.isZero()) {
-				pStrokeMesh = make_shared<MeshCircle>();
-				pStrokeMesh->loadMesh(width, height, centerX, centerY);
-				pStrokeMesh->setFilled(false);
-				pStrokeMesh->setLineWidth(strokeWidth);
-				//pShape->setStrokeMesh(static_pointer_cast<void>(pStrokeMesh));
-				pBack->mpStrokeMesh = pStrokeMesh;
-			}
-		}
-
-		if (pMesh && pTexture) {
-			auto pMaterial = Material::clone("posTexture");
-			if (pMaterial) {
-				//pMaterial->setTextureForSampler("s_texture", pTexture);//这个每次渲染前都需要调用
-				pMesh->setMaterial(pMaterial);
-			}
-			else {
-				LOGE("ERROR cannot found posTexture material");
-			}
-		}
-		else if (pMesh && hasGradient) {
-			if (gradientType == GradientType::Linear) {
-				auto pMaterial = Material::clone("posColor");
-				if (pMaterial) {
-					pMesh->setColorData(gradientAngle, startColor, endColor, centerColor);
-					pMesh->setMaterial(pMaterial);
-				}
-			}
-			else {
-				LOGD("warning only support linear gradient type now");
-			}
-		}
-		else if (pMesh && !solidColor.isZero()) {
-			auto pMaterial = Material::clone("posUniformColor");
-			if (pMaterial) {
-				pMaterial->setUniformColor(solidColor);//这个每次渲染前都需要调用
-				pMesh->setMaterial(pMaterial);
-			}
-			else {
-				LOGE("ERROR cannot found posUniformColor material");
-			}
-		}
-
-		if (pStrokeMesh) {
-			auto pMaterial = Material::clone("posUniformColor");
-			if (pMaterial) {
-				pMaterial->setUniformColor(strokeColor);//这个每次渲染前都需要调用
-				pStrokeMesh->setMaterial(pMaterial);
-			}
-			else {
-				LOGE("ERROR cannot found posUniformColor material");
-			}
-		}
+		initShape(pView->getRect(),pBack->mpShape);
+		initShape(pView->getRect(), pBack->mpDisabledShape);
+		initShape(pView->getRect(), pBack->mpPushedShape);
+		initShape(pView->getRect(), pBack->mpSelectedShape);
 	}
 }
 
@@ -807,8 +812,8 @@ bool UiRender::drawBackground(View* v){
 			return false;
 		}
 		auto& pShape = pBack->mpShape;
-		auto& pBackMesh = pBack->mpMesh;
-		auto& pBackStrokeMesh = pBack->mpStrokeMesh;
+		auto& pBackMesh = pShape->mpMesh;
+		auto& pBackStrokeMesh = pShape->mpStrokeMesh;
 		if (pShape) {
 			auto paddingLeft = pShape->getPaddingLeft();
 			auto paddingRight = pShape->getPaddingRight();
@@ -830,7 +835,7 @@ bool UiRender::drawBackground(View* v){
 				glm::vec3(rect.width-(paddingLeft+ paddingRight), rect.height-(paddingTop+ paddingBottom), 1.0f));*/
 
 			if (pBackMesh) {
-				auto& pTexture = pBack->mpTexture;
+				auto& pTexture = pShape->mpTexture;
 				auto& pMat = pBackMesh->getMaterial();
 				if (pMat) {
 					pMat->setUniformColor(pShape->getSolidColor());

@@ -110,6 +110,8 @@ public:
 	//完成最后的ui绘制工作，先前已经将uitree绘制到纹理里面了
 	void drawUi();
 private:
+	//确定了shape的宽高和中心点之后才能调用这个函数
+	void initShape(Rect<int>& viewRect,const shared_ptr<Shape>& pShape);
 	static unique_ptr<UiRender> gInstance;
 
 	shared_ptr<FontManager> mpFontManager;

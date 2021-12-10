@@ -1,13 +1,18 @@
 #include <stdexcept>
 #include "Shape.h"
+#include "../Material.h"
 using namespace std;
 
 std::unordered_map < std::string, std::function<void(const shared_ptr<Shape>&, const std::string&)>> Shape::gShapeAttributeHandler{
+	{"type",Shape::typeHandler },
+
 	{"cornerRadius",Shape::cornerRadiusHandler },
 	{ "leftTopRadius",Shape::cornerLeftTopRadiusHandler },
 	{ "leftBottomRadius",Shape::cornerLeftBottomRadiusHandler },
 	{ "rightTopRadius",Shape::cornerRightTopRadiusHandler },
 	{ "rightBottomRadius",Shape::cornerRightBottomRadiusHandler },
+
+	{"texture",Shape::textureHandler},
 
 	{ "angle",Shape::gradientAngleHandler },
 	{ "centerX",Shape::gradientCenterXHandler },
@@ -17,6 +22,11 @@ std::unordered_map < std::string, std::function<void(const shared_ptr<Shape>&, c
 	{ "endColor",Shape::gradientEndColorHandler },
 	{ "gradientRadius",Shape::gradientRadiusHandler },
 	{ "gradientType",Shape::gradientTypeHandler },
+	
+	{"solidColor",Shape::solidColorHandler },
+
+	{ "strokeWidth",Shape::strokeWidthHandler },
+	{ "strokeColor",Shape::strokeColorHandler },
 
 	{ "paddingLeft",Shape::paddingLeftHandler },
 	{ "paddingRight",Shape::paddingRightHandler },
@@ -26,13 +36,16 @@ std::unordered_map < std::string, std::function<void(const shared_ptr<Shape>&, c
 	{ "ovalWidth",Shape::sizeWidthHandler },
 	{ "ovalHeight",Shape::sizeHeightHandler },
 
-	{"solidColor",Shape::solidColorHandler },
-
-	{ "strokeWidth",Shape::strokeWidthHandler },
-	{ "strokeColor",Shape::strokeColorHandler },
-	{ "dashWidth",Shape::strokeDashWidthHandler },
-	{ "dashGap",Shape::strokeDashGapHandler },
+	
+	//{ "dashWidth",Shape::strokeDashWidthHandler },
+	//{ "dashGap",Shape::strokeDashGapHandler },
 };
+
+void Shape::typeHandler(const std::shared_ptr<Shape>& shape, const std::string& value) {
+	if (shape) {
+		shape->setType(value);
+	}
+}
 
 void Shape::cornerRadiusHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	try {
@@ -231,6 +244,15 @@ void Shape::sizeHeightHandler(const shared_ptr<Shape>& shape, const std::string&
 	}
 }
 
+void Shape::textureHandler(const std::shared_ptr<Shape>& shape, const std::string& value) {
+	if (shape) {
+		auto& pTex = Material::getTexture(value);
+		if (pTex) {
+			shape->setTexture(pTex);
+		}
+	}
+}
+
 void Shape::solidColorHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	if (shape) {
 		auto& color = shape->getSolidColor();
@@ -260,24 +282,24 @@ void Shape::strokeColorHandler(const shared_ptr<Shape>& shape, const std::string
 	}
 }
 
-void Shape::strokeDashWidthHandler(const shared_ptr<Shape>& shape, const std::string& value) {
-	if (shape) {
-		try {
-			shape->setSrokeDashWidth(stoi(value));
-		}
-		catch (const logic_error& e) {
-			LOGE("error to parse strokeDashWidth value %s", value.c_str());
-		}
-	}
-}
-
-void Shape::strokeDashGapHandler(const shared_ptr<Shape>& shape, const std::string& value) {
-	if (shape) {
-		try {
-			shape->setSrokeDashGap(stoi(value));
-		}
-		catch (const logic_error& e) {
-			LOGE("error to parse strokeDashGap value %s", value.c_str());
-		}
-	}
-}
+//void Shape::strokeDashWidthHandler(const shared_ptr<Shape>& shape, const std::string& value) {
+//	if (shape) {
+//		try {
+//			shape->setSrokeDashWidth(stoi(value));
+//		}
+//		catch (const logic_error& e) {
+//			LOGE("error to parse strokeDashWidth value %s", value.c_str());
+//		}
+//	}
+//}
+//
+//void Shape::strokeDashGapHandler(const shared_ptr<Shape>& shape, const std::string& value) {
+//	if (shape) {
+//		try {
+//			shape->setSrokeDashGap(stoi(value));
+//		}
+//		catch (const logic_error& e) {
+//			LOGE("error to parse strokeDashGap value %s", value.c_str());
+//		}
+//	}
+//}

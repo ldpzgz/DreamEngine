@@ -77,6 +77,7 @@ public:
 	static std::shared_ptr<Shape>& getShape(const std::string& name);
 	static std::string& getString(const std::string& name);
 	static std::shared_ptr<Texture>& getTexture(const std::string& name);
+	static std::shared_ptr<Background> getBackground(const std::string& name);
 private:
 	shared_ptr<UiTree> mpUiTree;
 	//Fbo mFboForCopy;
@@ -92,9 +93,11 @@ private:
 	static unordered_map<string, string> gRStrings;//保存从material/strings.xml里面解析出来的字符串
 	static unordered_map<string, Color> gRColors;//保存从material/colors.xml里面解析出来的颜色值
 	static unordered_map<string, std::shared_ptr<Shape>> gRShapes;
+	static unordered_map<string, std::shared_ptr<Background>> gRBackground;
 	static void parseRStrings(const string& path);
 	static void parseRColors(const string& path);
 	static void parseRShape(const string& path);
+	static void parseRBackground(const string& path);
 	static void loadAllUiImage();
 	static void loadAllShape();
 };
