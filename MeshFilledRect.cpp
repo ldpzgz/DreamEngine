@@ -15,114 +15,82 @@ void MeshFilledRect::setColorData(float angle, const Color& startColor, const Co
 	Vec4 start(startColor.r, startColor.g, startColor.b, startColor.a);
 	Vec4 end(endColor.r, endColor.g, endColor.b, endColor.a);
 	Vec4 center(centerColor.r, centerColor.g, centerColor.b, centerColor.a);
-
+	if (centerColor.isZero()) {
+		center = 0.5f * start + 0.5f * end;
+	}
 	if (angle == 0) {
-		if (centerColor.isZero()) {
-			auto size = mPoints.size();
-			for (int i = 0; i < size; ++i) {
-				float endFactor = mPoints[i].x / mWidth;
+		colors.emplace_back(center);
+		auto size = mPoints.size();
+		for (int i = 1; i < size; ++i) {
+			int x = mPoints[i].x;
+			if (x > mCenterX) {
+				float endFactor = (x - mCenterX) / (mWidth - mCenterX);
 				float startFactor = 1 - endFactor;
-				colors.emplace_back(startFactor*start + endFactor*end);
+				colors.emplace_back(startFactor*center + endFactor*end);
 			}
-		}
-		else {
-			colors.emplace_back(center);
-			auto size = mPoints.size();
-			for (int i = 1; i < size; ++i) {
-				int x = mPoints[i].x;
-				if (x > mCenterX) {
-					float endFactor = (x - mCenterX) / (mWidth - mCenterX);
-					float startFactor = 1 - endFactor;
-					colors.emplace_back(startFactor*center + endFactor*end);
-				}
-				else {
-					float endFactor = x / mCenterX;
-					float startFactor = 1 - endFactor;
-					colors.emplace_back(startFactor*start + endFactor*center);
-				}
+			else {
+				float endFactor = x / mCenterX;
+				float startFactor = 1 - endFactor;
+				colors.emplace_back(startFactor*start + endFactor*center);
 			}
 		}
 	}
 	else if (angle == 90) {
-		if (centerColor.isZero()) {
-			auto size = mPoints.size();
-			for (int i = 0; i < size; ++i) {
-				float endFactor = mPoints[i].y / mHeight;
+		
+		colors.emplace_back(center);
+		auto size = mPoints.size();
+		for (int i = 1; i < size; ++i) {
+			int y = mPoints[i].y;
+			if (y > mCenterY) {
+				float endFactor = (y - mCenterY) / (mHeight - mCenterY);
 				float startFactor = 1 - endFactor;
-				colors.emplace_back(startFactor*start + endFactor*end);
+				colors.emplace_back(startFactor*center + endFactor*end);
+			}
+			else {
+				float endFactor = y / mCenterY;
+				float startFactor = 1 - endFactor;
+				colors.emplace_back(startFactor*start + endFactor*center);
 			}
 		}
-		else {
-			colors.emplace_back(center);
-			auto size = mPoints.size();
-			for (int i = 1; i < size; ++i) {
-				int y = mPoints[i].y;
-				if (y > mCenterY) {
-					float endFactor = (y - mCenterY) / (mHeight - mCenterY);
-					float startFactor = 1 - endFactor;
-					colors.emplace_back(startFactor*center + endFactor*end);
-				}
-				else {
-					float endFactor = y / mCenterY;
-					float startFactor = 1 - endFactor;
-					colors.emplace_back(startFactor*start + endFactor*center);
-				}
-			}
-		}
+		
 	}
 	else if (angle == 180) {
-		if (centerColor.isZero()) {
-			auto size = mPoints.size();
-			for (int i = 0; i < size; ++i) {
-				float endFactor = mPoints[i].x / mWidth;
+		
+		colors.emplace_back(center);
+		auto size = mPoints.size();
+		for (int i = 1; i < size; ++i) {
+			int x = mPoints[i].x;
+			if (x > mCenterX) {
+				float endFactor = (x - mCenterX) / (mWidth - mCenterX);
 				float startFactor = 1 - endFactor;
-				colors.emplace_back(endFactor*start + startFactor*end);
+				colors.emplace_back(endFactor*center + startFactor*end);
+			}
+			else {
+				float endFactor = x / mCenterX;
+				float startFactor = 1 - endFactor;
+				colors.emplace_back(endFactor*start + startFactor*center);
 			}
 		}
-		else {
-			colors.emplace_back(center);
-			auto size = mPoints.size();
-			for (int i = 1; i < size; ++i) {
-				int x = mPoints[i].x;
-				if (x > mCenterX) {
-					float endFactor = (x - mCenterX) / (mWidth - mCenterX);
-					float startFactor = 1 - endFactor;
-					colors.emplace_back(endFactor*center + startFactor*end);
-				}
-				else {
-					float endFactor = x / mCenterX;
-					float startFactor = 1 - endFactor;
-					colors.emplace_back(endFactor*start + startFactor*center);
-				}
-			}
-		}
+		
 	}
 	else if (angle == 270) {
-		if (centerColor.isZero()) {
-			auto size = mPoints.size();
-			for (int i = 0; i < size; ++i) {
-				float endFactor = mPoints[i].y / mHeight;
+		
+		colors.emplace_back(center);
+		auto size = mPoints.size();
+		for (int i = 1; i < size; ++i) {
+			int y = mPoints[i].y;
+			if (y > mCenterY) {
+				float endFactor = (y - mCenterY) / (mHeight - mCenterY);
 				float startFactor = 1 - endFactor;
-				colors.emplace_back(endFactor*start + startFactor*end);
+				colors.emplace_back(endFactor*center + startFactor*end);
+			}
+			else {
+				float endFactor = y / mCenterY;
+				float startFactor = 1 - endFactor;
+				colors.emplace_back(endFactor*start + startFactor*center);
 			}
 		}
-		else {
-			colors.emplace_back(center);
-			auto size = mPoints.size();
-			for (int i = 1; i < size; ++i) {
-				int y = mPoints[i].y;
-				if (y > mCenterY) {
-					float endFactor = (y - mCenterY) / (mHeight - mCenterY);
-					float startFactor = 1 - endFactor;
-					colors.emplace_back(endFactor*center + startFactor*end);
-				}
-				else {
-					float endFactor = y / mCenterY;
-					float startFactor = 1 - endFactor;
-					colors.emplace_back(endFactor*start + startFactor*center);
-				}
-			}
-		}
+		
 	}
 	else {
 		LOGD("ERROR not support gradient angle %f in shape",angle);
@@ -136,30 +104,39 @@ void MeshFilledRect::loadMesh(float width, float height, float centerX, float ce
 	mCenterY = centerY;
 	mWidth = width;
 	mHeight = height;
-	int numOfVertex = 6;
-	float tex[2 * 6];
-	tex[0] = mCenterX / mWidth;
-	tex[1] = mCenterY / mHeight;
+	int numOfVertex = 8;
+	float tex[2 * 8];
+	int index = 0;
+	tex[index++] = mCenterX / mWidth;
+	tex[index++] = mCenterY / mHeight;
 	mPoints.emplace_back(mCenterX, mCenterY, 0.0f);
 
-	tex[2] = 1.0f;
-	tex[3] = 1.0f;
+	tex[index++] = 1.0f;
+	tex[index++] = 1.0f;
 	mPoints.emplace_back(mWidth, mHeight, 0.0f);
 
-	tex[4] = 0.0f;
-	tex[5] = 1.0f;
+	tex[index++] = tex[0];
+	tex[index++] = 1.0f;
+	mPoints.emplace_back(mCenterX, mHeight, 0.0f);
+
+	tex[index++] = 0.0f;
+	tex[index++] = 1.0f;
 	mPoints.emplace_back(0.0f, mHeight, 0.0f);
 
-	tex[6] = 0.0f;
-	tex[7] = 0.0f;
+	tex[index++] = 0.0f;
+	tex[index++] = 0.0f;
 	mPoints.emplace_back(0.0f, 0.0f, 0.0f);
 
-	tex[8] = 1.0f;
-	tex[9] = 0.0f;
+	tex[index++] = tex[0];
+	tex[index++] = 0.0f;
+	mPoints.emplace_back(mCenterX, 0.0f, 0.0f);
+
+	tex[index++] = 1.0f;
+	tex[index++] = 0.0f;
 	mPoints.emplace_back(mWidth, 0.0f, 0.0f);
 
-	tex[10] = 1.0f;
-	tex[11] = 1.0f;
+	tex[index++] = 1.0f;
+	tex[index++] = 1.0f;
 	mPoints.emplace_back(mWidth, mHeight, 0.0f);
 	bool b = createBufferObject((float*)mPoints.data(), numOfVertex *sizeof(Vec3), 
 		numOfVertex,

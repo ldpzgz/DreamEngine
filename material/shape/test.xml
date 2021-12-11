@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape type="roundedRectangle"
-		cornerRadius="16"
 		gradientType="Linear"
-		startColor="#19A71988"
-		endColor="#FF525288"
-		borderColor="#aa000088"
+		cornerRadius="10"
+		startColor="#00ff00ff"
+		endColor="#00ffa0ff"
+		borderColor="#ff0000ff"
 		borderWidth="2">
 </shape>
