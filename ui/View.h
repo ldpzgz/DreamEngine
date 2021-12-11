@@ -45,7 +45,7 @@ using namespace std;
 
 enum MouseState : unsigned char {
 	MouseNone = 0x00,
-	MouseOver = 0x01,
+	MouseHover = 0x01,
 	MouseLButtonDown = 0x02,
 	MouseLButtonUp = 0x04,
 	MouseRButtonDown = 0x08,
@@ -138,11 +138,59 @@ public:
 
 	//virtual bool isMouseInside(int x, int y) { return false; }
 
-	virtual bool mouseMove(int x, int y) { return false; };
+	virtual bool mouseMove(int x, int y) { 
+		if (mRect.isInside(x, y)) {
+			for (auto& pChild : mChildren) {
+				pChild->mouseMove(x, y);
+			}
+			mMouseState |= MouseState::MouseHover;
+			if (mpBackground && mpBackground->getHoverStyle()) {
+				setDirty(true);
+			}
+			return true;
+		}
+		return false;
+	};
 
-	virtual bool mouseLButtonDown(int x, int y) { return false; };
+	virtual bool mouseLButtonDown(int x, int y) { 
+		if (mRect.isInside(x, y)) {
+			for (auto& pChild : mChildren) {
+				pChild->mouseLButtonDown(x, y);
+			}
+			mMouseState |= MouseState::MouseLButtonDown;
+			if (mpBackground && mpBackground->getPushedStyle()) {
+				setDirty(true);
+			}
+			return true;
+		}
+		return false;
+	};
 
-	virtual bool mouseLButtonUp(int x, int y) { return false; };
+	virtual bool mouseLButtonUp(int x, int y) { 
+		if (mRect.isInside(x, y)) {
+			for (auto& pChild : mChildren) {
+				pChild->mouseLButtonUp(x, y);
+			}
+			if ((mMouseState & MouseState::MouseLButtonDown) && mClickedListener) {
+				onClicked(this);
+			}
+			mMouseState = MouseState::MouseNone;
+			if (mpBackground && mpBackground->getPushedStyle()) {
+				setDirty(true);
+			}
+			return true;
+		}
+		else {
+			for (auto& pChild : mChildren) {
+				pChild->mouseLButtonUp(x, y);
+			}
+			mMouseState = MouseState::MouseNone;
+			if (mpBackground && mpBackground->getPushedStyle()) {
+				setDirty(true);
+			}
+			return false;
+		}
+	};
 
 	virtual void onClicked(View* pView) {
 		if (mClickedListener) {
@@ -293,11 +341,10 @@ public:
 	virtual void setBackgroundColor(const Color& c) {
 		if (!mpBackground) {
 			mpBackground = make_shared<Background>();
-			mpBackground->mpShape = make_shared<Shape>();
 		}
-		
-		if (mpBackground->mpShape) {
-			mpBackground->mpShape->setSolidColor(c);
+		auto& pStyle = mpBackground->getNormalStyle();
+		if (pStyle) {
+			pStyle->setSolidColor(c);
 		}
 		
 	}
@@ -306,20 +353,12 @@ public:
 		mpBackground = bk;
 	}
 
-	Color& getBackgroundColor() {
-		static Color temp{ 0.0f,0.0f,0.0f,0.0f };
-		if (mpBackground && mpBackground->mpShape) {
-			return mpBackground->mpShape->getSolidColor();
-		}
-		return temp;
-	}
-
 	void setBackgroundImg(shared_ptr<Texture>& pTex) {
 		if (!mpBackground) {
 			mpBackground = make_shared<Background>();
-			mpBackground->mpShape = make_shared<Shape>();
 		}
-		mpBackground->mpShape->mpTexture = pTex;
+		auto& pStyle = mpBackground->getNormalStyle();
+		pStyle->setTexture(pTex);
 	}
 
 	std::shared_ptr<Background>& getBackground() {
@@ -330,8 +369,14 @@ public:
 		if (!mpBackground) {
 			mpBackground = make_shared<Background>();
 		}
-
-		mpBackground->mpShape = pShape;
+		auto& pStyle = mpBackground->getNormalStyle();
+		pStyle->setShape( pShape );
+		pStyle->setTexture(pShape->getTexture());
+		pStyle->setSolidColor(pShape->getSolidColor());
+		pStyle->setStartColor(pShape->getGradientStartColor());
+		pStyle->setCenterColor(pShape->getGradientCenterColor());
+		pStyle->setEndColor(pShape->getGradientEndColor());
+		pStyle->setBorderColor(pShape->getBorderColor());
 	}
 
 	void initBackground();
@@ -363,8 +408,22 @@ public:
 
 	}
 
+	bool getEnabled() {
+		return mbEnabled;
+	}
+	void setEnable(bool b) {
+		mbEnabled = b;
+	}
+
+	unsigned int getMouseStatus() {
+		return mMouseState;
+	}
+
 	static shared_ptr<View> createView(const string& name, shared_ptr<View> parent);
 
+	bool mbIsDirty{ false };
+	bool mbEnabled{ true };
+	unsigned int mMouseState{ MouseState::MouseNone };
 	std::string mId;
 	std::function<void(View*)> mClickedListener;
 	weak_ptr<void> mpUserData;
@@ -380,13 +439,11 @@ public:
 	int mWidthPercent{ 0 };		//宽度百分比
 	int mHeightPercent{ 0 };	//高度百分比
 	int mGravity{ LayoutParam::Center };//控制view内部的元素或者子view如何居中对齐，水平居中，垂直居中，居中
-
 	Rect<int> mRect{ 0,0,0,0 };
 	Vec2i mMoveVector;
 	std::list<std::shared_ptr<View>> mChildren;
 	weak_ptr<DirtyListener> mpDirtyListener;
 	weak_ptr<MoveListener> mpMoveListener;
-	bool mbIsDirty{ false };
 	std::shared_ptr<Background> mpBackground;
 	std::shared_ptr<void> mpBackgroundMesh;
 	std::unique_ptr< std::unordered_map<std::string, std::shared_ptr<View>> > mpId2ViewMap;

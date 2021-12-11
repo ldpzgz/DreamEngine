@@ -25,8 +25,8 @@ std::unordered_map < std::string, std::function<void(const shared_ptr<Shape>&, c
 	
 	{"solidColor",Shape::solidColorHandler },
 
-	{ "strokeWidth",Shape::strokeWidthHandler },
-	{ "strokeColor",Shape::strokeColorHandler },
+	{ "borderWidth",Shape::strokeWidthHandler },
+	{ "borderColor",Shape::strokeColorHandler },
 
 	{ "paddingLeft",Shape::paddingLeftHandler },
 	{ "paddingRight",Shape::paddingRightHandler },
@@ -265,7 +265,7 @@ void Shape::solidColorHandler(const shared_ptr<Shape>& shape, const std::string&
 void Shape::strokeWidthHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	if (shape) {
 		try {
-			shape->setSrokeWidth(stoi(value));
+			shape->setBorderWidth(stoi(value));
 		}
 		catch (const logic_error& e) {
 			LOGE("error to parse strokeWidth value %s", value.c_str());
@@ -275,7 +275,7 @@ void Shape::strokeWidthHandler(const shared_ptr<Shape>& shape, const std::string
 
 void Shape::strokeColorHandler(const shared_ptr<Shape>& shape, const std::string& value) {
 	if (shape) {
-		auto& color = shape->getSrokeColor();
+		auto& color = shape->getBorderColor();
 		if (!Color::parseColor(value, color)) {
 			LOGE("error to parse strokeColor value %s", value.c_str());
 		}

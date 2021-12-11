@@ -305,6 +305,9 @@ void UiRender::initShape(Rect<int>& rect, const shared_ptr<Shape>& pShape) {
 	if (!pShape) {
 		return;
 	}
+	else if (pShape->getInitialized()) {
+		return;
+	}
 	auto width = rect.width;
 	auto height = rect.height;
 	auto paddingLeft = pShape->getPaddingLeft();
@@ -336,34 +339,34 @@ void UiRender::initShape(Rect<int>& rect, const shared_ptr<Shape>& pShape) {
 	auto& startColor = pShape->getGradientStartColor();
 	auto& endColor = pShape->getGradientEndColor();
 	auto& centerColor = pShape->getGradientCenterColor();
-	auto strokeWidth = pShape->getSrokeWidth();
-	auto& strokeColor = pShape->getSrokeColor();
+	auto borderWidth = pShape->getBorderWidth();
+	auto& borderColor = pShape->getBorderColor();
 	auto& pTexture = pShape->mpTexture;
 
 	bool hasBackground = (!solidColor.isZero() || pTexture || gradientType != GradientType::None);
 	shared_ptr<MeshFilledRect> pMesh;
-	shared_ptr<MeshFilledRect> pStrokeMesh;
+	shared_ptr<MeshFilledRect> pBorderMesh;
 	if (shapeType == ShapeType::Rectangle) {
 		if (hasBackground) {
 			pMesh = make_shared<MeshFilledRect>();
 			pMesh->loadMesh(width, height, centerX, centerY);
 			//pShape->setMesh(static_pointer_cast<void>(pMesh));
-			pShape->mpMesh = pMesh;
+			pShape->setMesh(pMesh);
 		}
-		if (!strokeColor.isZero()) {
-			pStrokeMesh = make_shared<MeshFilledRect>();
-			pStrokeMesh->loadMesh(width, height, centerX, centerY);
-			pStrokeMesh->setFilled(false);
-			pStrokeMesh->setLineWidth(strokeWidth);
-			//pShape->setStrokeMesh(static_pointer_cast<void>(pStrokeMesh));
-			pShape->mpStrokeMesh = pStrokeMesh;
+		if (!borderColor.isZero()) {
+			pBorderMesh = make_shared<MeshFilledRect>();
+			pBorderMesh->loadMesh(width, height, centerX, centerY);
+			pBorderMesh->setFilled(false);
+			pBorderMesh->setLineWidth(borderWidth);
+			//pShape->setStrokeMesh(static_pointer_cast<void>(pBorderMesh));
+			pShape->setBorderMesh( pBorderMesh );
 		}
 	}
 	else if (shapeType == ShapeType::RoundedRectangle) {
 		if (hasBackground) {
 			pMesh = make_shared<MeshRoundedRectangle>();
 			//pShape->setMesh(static_pointer_cast<void>(pMesh));
-			pShape->mpMesh = pMesh;
+			pShape->setMesh( pMesh );
 			if (cornerRadius > 0) {
 				//四个圆角是一样的半径
 				pMesh->loadMesh(cornerRadius, centerX, centerY, width, height);
@@ -373,20 +376,20 @@ void UiRender::initShape(Rect<int>& rect, const shared_ptr<Shape>& pShape) {
 				pMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, centerX, centerY, width, height);
 			}
 		}
-		if (!strokeColor.isZero()) {
-			pStrokeMesh = make_shared<MeshRoundedRectangle>();
+		if (!borderColor.isZero()) {
+			pBorderMesh = make_shared<MeshRoundedRectangle>();
 			if (cornerRadius > 0) {
 				//四个圆角是一样的半径
-				pMesh->loadMesh(cornerRadius, width, height, centerX, centerY);
+				pBorderMesh->loadMesh(cornerRadius, centerX, centerY,width, height );
 			}
 			else {
 				//四个圆角半径不一样
-				pMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, centerX, centerY, width, height);
+				pBorderMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, centerX, centerY, width, height);
 			}
-			pStrokeMesh->setFilled(false);
-			pStrokeMesh->setLineWidth(strokeWidth);
-			//pShape->setStrokeMesh(static_pointer_cast<void>(pStrokeMesh));
-			pShape->mpStrokeMesh = pStrokeMesh;
+			pBorderMesh->setFilled(false);
+			pBorderMesh->setLineWidth(borderWidth);
+			//pShape->setStrokeMesh(static_pointer_cast<void>(pBorderMesh));
+			pShape->setBorderMesh( pBorderMesh );
 		}
 	}
 	else if (shapeType == ShapeType::Oval) {
@@ -394,15 +397,15 @@ void UiRender::initShape(Rect<int>& rect, const shared_ptr<Shape>& pShape) {
 			pMesh = make_shared<MeshCircle>();
 			pMesh->loadMesh(width, height, centerX, centerY);
 			//pShape->setMesh(static_pointer_cast<void>(pMesh));
-			pShape->mpMesh = pMesh;
+			pShape->setMesh( pMesh );
 		}
-		if (!strokeColor.isZero()) {
-			pStrokeMesh = make_shared<MeshCircle>();
-			pStrokeMesh->loadMesh(width, height, centerX, centerY);
-			pStrokeMesh->setFilled(false);
-			pStrokeMesh->setLineWidth(strokeWidth);
-			//pShape->setStrokeMesh(static_pointer_cast<void>(pStrokeMesh));
-			pShape->mpStrokeMesh = pStrokeMesh;
+		if (!borderColor.isZero()) {
+			pBorderMesh = make_shared<MeshCircle>();
+			pBorderMesh->loadMesh(width, height, centerX, centerY);
+			pBorderMesh->setFilled(false);
+			pBorderMesh->setLineWidth(borderWidth);
+			//pShape->setStrokeMesh(static_pointer_cast<void>(pBorderMesh));
+			pShape->setBorderMesh( pBorderMesh );
 		}
 	}
 
@@ -439,15 +442,18 @@ void UiRender::initShape(Rect<int>& rect, const shared_ptr<Shape>& pShape) {
 		}
 	}
 
-	if (pStrokeMesh) {
+	if (pBorderMesh) {
 		auto pMaterial = Material::clone("posUniformColor");
 		if (pMaterial) {
-			pMaterial->setUniformColor(strokeColor);//这个每次渲染前都需要调用
-			pStrokeMesh->setMaterial(pMaterial);
+			pMaterial->setUniformColor(borderColor);//这个每次渲染前都需要调用
+			pBorderMesh->setMaterial(pMaterial);
 		}
 		else {
 			LOGE("ERROR cannot found posUniformColor material");
 		}
+	}
+	if (pShape) {
+		pShape->setInitialized(true);
 	}
 }
 
@@ -457,10 +463,23 @@ void UiRender::initBackground(View* pView) {
 		if (!pBack) {
 			return;
 		}
-		initShape(pView->getRect(),pBack->mpShape);
-		initShape(pView->getRect(), pBack->mpDisabledShape);
-		initShape(pView->getRect(), pBack->mpPushedShape);
-		initShape(pView->getRect(), pBack->mpSelectedShape);
+		auto& pStyle1 = pBack->getNormalStyle();
+		auto& pStyle2 = pBack->getPushedStyle();
+		auto& pStyle3 = pBack->getHoverStyle();
+		auto& pStyle4 = pBack->getDisabledStyle();
+
+		if (pStyle1) {
+			initShape(pView->getRect(), pStyle1->mpShape);
+		}
+		if (pStyle2) {
+			initShape(pView->getRect(), pStyle2->mpShape);
+		}
+		if (pStyle3) {
+			initShape(pView->getRect(), pStyle3->mpShape);
+		}
+		if (pStyle4) {
+			initShape(pView->getRect(), pStyle4->mpShape);
+		}
 	}
 }
 
@@ -811,9 +830,43 @@ bool UiRender::drawBackground(View* v){
 		if (!pBack) {
 			return false;
 		}
-		auto& pShape = pBack->mpShape;
-		auto& pBackMesh = pShape->mpMesh;
-		auto& pBackStrokeMesh = pShape->mpStrokeMesh;
+		std::shared_ptr<Shape> pShape;
+		auto mouseStatus = v->getMouseStatus();
+		if (!v->getEnabled()) {
+			auto& pStyle = pBack->getDisabledStyle();
+			if (pStyle) {
+				pStyle->setMyStyle();
+				pShape = pStyle->mpShape;
+			}
+		}
+		if (mouseStatus & MouseState::MouseLButtonDown) {
+			auto& pStyle = pBack->getPushedStyle();
+			if (pStyle) {
+				pStyle->setMyStyle();
+				pShape = pStyle->mpShape;
+			}
+		}
+		else if (mouseStatus & MouseState::MouseHover) {
+			auto& pStyle = pBack->getHoverStyle();
+			if (pStyle) {
+				pStyle->setMyStyle();
+				pShape = pStyle->mpShape;
+			}
+		}
+		else{
+			auto& pStyle = pBack->getNormalStyle();
+			if (pStyle) {
+				pStyle->setMyStyle();
+				pShape = pStyle->mpShape;
+			}
+		}
+
+		if (!pShape) {
+			return false;
+		}
+		
+		auto& pMesh = pShape->getMesh();
+		auto& pBorderMesh = pShape->getBorderMesh();
 		if (pShape) {
 			auto paddingLeft = pShape->getPaddingLeft();
 			auto paddingRight = pShape->getPaddingRight();
@@ -834,26 +887,24 @@ bool UiRender::drawBackground(View* v){
 			/*model = glm::scale(model, 
 				glm::vec3(rect.width-(paddingLeft+ paddingRight), rect.height-(paddingTop+ paddingBottom), 1.0f));*/
 
-			if (pBackMesh) {
+			if (pMesh) {
 				auto& pTexture = pShape->mpTexture;
-				auto& pMat = pBackMesh->getMaterial();
+				auto& pMat = pMesh->getMaterial();
 				if (pMat) {
 					pMat->setUniformColor(pShape->getSolidColor());
 					if (pTexture) {
 						pMat->setTextureForSampler("s_texture", pTexture);
 					}
 				}
-				pBackMesh->render(mProjMatrix * model);
-				
-				return true;
+				pMesh->render(mProjMatrix * model);
 			}
 			
-			if (pBackStrokeMesh) {
-				auto& pMat = pBackStrokeMesh->getMaterial();
+			if (pBorderMesh) {
+				auto& pMat = pBorderMesh->getMaterial();
 				if (pMat) {
-					pMat->setUniformColor(pShape->getSrokeColor());
+					pMat->setUniformColor(pShape->getBorderColor());
 				}
-				pBackStrokeMesh->render(mProjMatrix * model);
+				pBorderMesh->render(mProjMatrix * model);
 			}
 		}
 	}

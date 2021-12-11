@@ -301,6 +301,7 @@ void View::layoutHeightPercentHandler(const shared_ptr<View>& pv, const std::str
 		}
 	}
 }
+
 void View::layoutMarginTopHandler(const shared_ptr<View>& pv, const std::string& value) {
 	if (pv) {
 		try {
@@ -404,7 +405,7 @@ void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& valu
 					//UiRender::getInstance()->initBackground(pShape);
 				}
 				else {
-					LOGE("ERROR not found %s shape in layout file", shapeName.c_str());
+					LOGE("ERROR not found %s background in layout file", bkName.c_str());
 				}
 			}
 			else {

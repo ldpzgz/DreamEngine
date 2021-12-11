@@ -14,18 +14,6 @@ public:
 	}
 
 	void draw() override;
-
-	bool mouseMove(int x, int y) override;
-
-	bool mouseLButtonDown(int x, int y) override;
-
-	bool mouseLButtonUp(int x, int y) override;
-
-	void setBackgroundColor(const Color& c) override;
-private:
-	unsigned int mMouseState{ MouseState::MouseNone};
-	bool mbLButtonDown{ false };
-	Color mOriginBkColor;
 };
 
 #endif

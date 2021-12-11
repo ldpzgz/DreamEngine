@@ -12,6 +12,7 @@ using namespace std;
 static const string gStringFile("./opengles3/material/strings.xml");
 static const string gColorFile("./opengles3/material/colors.xml");
 static const string gShapePath("./opengles3/material/shape");
+static const string gBackgroundPath("./opengles3/material/background");
 static const string gUiImagePath("./opengles3/material/uiImage");
 static const string gUiLayoutPath("./opengles3/material/layout");
 
@@ -20,6 +21,27 @@ unordered_map<string, string> UiManager::gRStrings;
 unordered_map<string, Color> UiManager::gRColors;
 unordered_map<string, std::shared_ptr<Shape>> UiManager::gRShapes;
 unordered_map<string, std::shared_ptr<Background>> UiManager::gRBackground;
+
+void UiManager::loadAllBackground() {
+	path bkPath(gBackgroundPath);
+	if (!exists(bkPath)) {
+		LOGE("ERROR the ui shape path %s is not exist", gShapePath.c_str());
+	}
+
+	if (is_directory(bkPath)) {
+		//是目录
+		directory_iterator list(bkPath);
+		//directory_entry 是一个文件夹里的某一项，可以是path，也可以是文件
+		for (auto& it : list) {
+			auto& filePath = it.path();
+			if (is_regular_file(filePath)) {
+				//是文件
+				auto filePathString = filePath.string();
+				parseRBackground(filePathString);
+			}
+		}
+	}
+}
 
 void UiManager::loadAllShape() {
 	//遍历UIimage目录
@@ -102,7 +124,100 @@ void UiManager::parseRShape(const string& path) {
 		}
 	}
 }
+//处理background xml文件里面的属性
+void shapeHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+	if (pStyle) {
+		pStyle->mpShape = UiManager::getShape(value);
+	}
+}
 
+void textureHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+	if (pStyle) {
+		pStyle->mpTex = UiManager::getTexture(value);
+	}
+}
+
+void startColorHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+	if (pStyle) {
+		Color::parseColor(value, pStyle->mStartColor);
+	}
+}
+
+void centerColorHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+	if (pStyle) {
+		Color::parseColor(value, pStyle->mCenterColor);
+	}
+}
+
+void endColorHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+	if (pStyle) {
+		Color::parseColor(value, pStyle->mEndColor);
+	}
+}
+
+void solidColorHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+	if (pStyle) {
+		Color::parseColor(value, pStyle->mSolidColor);
+	}
+}
+
+void borderColorHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+	if (pStyle) {
+		Color::parseColor( value, pStyle->mBorderColor);
+	}
+}
+
+unordered_map<string, std::function<void(std::unique_ptr<Background::BackgroundStyle>&, const string&)>> gStyleHandlers{
+	{"shape",shapeHandler},
+	{"texture",textureHandler},
+	{"solidColor",solidColorHandler},
+	{"startColor",startColorHandler},
+	{"centerColor",centerColorHandler},
+	{"endColor",endColorHandler},
+	{"borderColor",borderColorHandler},
+};
+
+void backgroundAttributeHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, rapidxml::xml_attribute<char>* pAttribute) {
+	auto endIt = gStyleHandlers.end();
+	while (pAttribute) {
+		string name = pAttribute->name();
+		string value = pAttribute->value();
+		auto it = gStyleHandlers.find(name);
+		if (it != endIt) {
+			it->second(pStyle, value);
+		}
+		else {
+			LOGE("ERROR to parse background xml,the attribute %s is illeague", name.c_str());
+			return;
+		}
+		pAttribute = pAttribute->next_attribute();
+	}
+}
+void backgroundNodeHandler(shared_ptr<Background>& pBk,rapidxml::xml_node<char>* pNode) {
+	if (pNode) {
+		std::string name = pNode->name();
+		if (name == "normal") {
+			auto& pStyle = pBk->getNormalStyle();
+			pStyle = std::make_unique<Background::BackgroundStyle>();
+			backgroundAttributeHandler(pStyle, pNode->first_attribute());
+		}
+		else if (name == "pushed") {
+			auto& pStyle = pBk->getPushedStyle();
+			pStyle = std::make_unique<Background::BackgroundStyle>();
+			backgroundAttributeHandler(pStyle, pNode->first_attribute());
+		}
+		else if (name == "hover") {
+			auto& pStyle = pBk->getHoverStyle();
+			pStyle = std::make_unique<Background::BackgroundStyle>();
+			backgroundAttributeHandler(pStyle, pNode->first_attribute());
+		}
+		else if (name == "disabled") {
+			auto& pStyle = pBk->getDisabledStyle();
+			pStyle = std::make_unique<Background::BackgroundStyle>();
+			backgroundAttributeHandler(pStyle, pNode->first_attribute());
+		}
+	}
+}
 void UiManager::parseRBackground(const string& path) {
 	shared_ptr<Background> pBack;
 	unique_ptr<rapidxml::file<>> pfdoc;
@@ -120,23 +235,37 @@ void UiManager::parseRBackground(const string& path) {
 		auto pNode = pDoc->first_node("background");
 		if (pNode != nullptr) {
 			pBack = make_shared<Background>();
-			auto shapeAttr = pNode->first_attribute("shape");
-			if (shapeAttr) {
-				string shapeName = shapeAttr->value();
-				auto it = gRShapes.find(shapeName);
-				if (it != gRShapes.end()) {
-					pBack->mpShape = it->second;
-				}
-				else {
-					LOGE("ERROR when parse background,can not find shape %s",shapeName.c_str());
-					return;
-				}
-			}
 			pNode = pNode->first_node();
 			while (pNode) {
-				pBack->nodeHandler(pNode);
+				backgroundNodeHandler(pBack,pNode);
 				pNode = pNode->next_sibling();
 			}
+			//有可能和normalstyle 共享shape
+			auto& pNormalStyle = pBack->getNormalStyle();
+			if (pNormalStyle) {
+				auto& pShape = pNormalStyle->getShape();
+				if (pShape) {
+					auto& pPushedStyle = pBack->getPushedStyle();
+					if (pPushedStyle) {
+						if (!pPushedStyle->getShape()) {
+							pPushedStyle->setShape(pShape);
+						}
+					}
+					auto& pDisabledStyle = pBack->getDisabledStyle();
+					if (pDisabledStyle) {
+						if (!pDisabledStyle->getShape()) {
+							pDisabledStyle->setShape(pShape);
+						}
+					}
+					auto& pHoverStyle = pBack->getHoverStyle();
+					if (pHoverStyle) {
+						if (!pHoverStyle->getShape()) {
+							pHoverStyle->setShape(pShape);
+						}
+					}
+				}
+			}
+			gRBackground.emplace(bkName, pBack);
 		}
 	}
 }
@@ -323,12 +452,6 @@ void UiManager::mouseMove(int x, int y) {
 	if (mpUiTree) {
 		if (mpUiTree->mpRootView) {
 			mpUiTree->mpRootView->mouseMove( x, y);
-			auto children = mpUiTree->mpRootView->getChildren();
-			for (auto& child : children) {
-				if (child) {
-					child->mouseMove( x, y);
-				}
-			}
 		}
 	}
 }
@@ -337,12 +460,6 @@ void UiManager::mouseLButtonDown(int x, int y) {
 	if (mpUiTree) {
 		if (mpUiTree->mpRootView) {
 			mpUiTree->mpRootView->mouseLButtonDown( x, y);
-			auto children = mpUiTree->mpRootView->getChildren();
-			for (auto& child : children) {
-				if (child) {
-					child->mouseLButtonDown( x, y);
-				}
-			}
 		}
 	}
 }
@@ -351,12 +468,6 @@ void UiManager::mouseLButtonUp(int x, int y) {
 	if (mpUiTree) {
 		if (mpUiTree->mpRootView) {
 			mpUiTree->mpRootView->mouseLButtonUp( x, y);
-			auto children = mpUiTree->mpRootView->getChildren();
-			for (auto& child : children) {
-				if (child) {
-					child->mouseLButtonUp( x, y);
-				}
-			}
 		}
 	}
 }
@@ -464,6 +575,7 @@ bool UiManager::initUi(int w, int h) {
 	//加载ui中需要用到的图片
 	loadAllUiImage();
 	loadAllShape();
+	loadAllBackground();
 	//初始化uirender
 	UiRender::getInstance()->initUiRender();
 

@@ -172,7 +172,7 @@ bool ListView::mouseMove(int x, int y) {
 		return true;
 	}
 	if (mMouseState & MouseState::MouseLButtonDown) {
-		mMouseState |= MouseState::MouseOver;
+		mMouseState |= MouseState::MouseHover;
 		int moveDistance = 0;
 		if (mOrientation == LayoutParam::Vertical) {
 			moveDistance = y - mPrePos.y;

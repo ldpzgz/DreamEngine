@@ -100,6 +100,7 @@ private:
 	static void parseRBackground(const string& path);
 	static void loadAllUiImage();
 	static void loadAllShape();
+	static void loadAllBackground();
 };
 
 #endif

@@ -113,18 +113,18 @@ public:
 		return mSolidColor;
 	}
 
-	void setSrokeWidth(int width) {
-		mSrokeWidth = width;
+	void setBorderWidth(int width) {
+		mBorderWidth = width;
 	}
-	int getSrokeWidth() {
-		return mSrokeWidth;
+	int getBorderWidth() {
+		return mBorderWidth;
 	}
 
-	void setSrokeColor(const Color& color) {
-		mSrokeColor = color;
+	void setBorderColor(const Color& color) {
+		mBorderColor = color;
 	}
-	Color& getSrokeColor() {
-		return mSrokeColor;
+	Color& getBorderColor() {
+		return mBorderColor;
 	}
 
 	void setSrokeDashWidth(int width) {
@@ -252,6 +252,28 @@ public:
 		return mpTexture;
 	}
 
+	void setInitialized(bool b) {
+		mbInitilized = b;
+	}
+
+	bool getInitialized() {
+		return mbInitilized;
+	}
+	std::shared_ptr<Mesh>& getMesh() {
+		return mpMesh;
+	}
+	std::shared_ptr<Mesh>& getBorderMesh() {
+		return mpBorderMesh;
+	}
+
+	void setBorderMesh(const std::shared_ptr<Mesh>& pMesh) {
+		mpBorderMesh = pMesh;
+	}
+
+	void setMesh(const std::shared_ptr<Mesh>& pMesh) {
+		mpMesh = pMesh;
+	}
+
 	static std::unordered_map<std::string, std::function<void(const std::shared_ptr<Shape>&, const std::string&)>> gShapeAttributeHandler;
 public:
 	ShapeType mType{ ShapeType::Rectangle };
@@ -264,8 +286,8 @@ public:
 	//solid属性
 	Color mSolidColor{ 0.0f,0.0f,0.0f,1.0f };
 	//stroke属性
-	int mSrokeWidth{ 0 };
-	Color mSrokeColor{ 0.0f,0.0f,0.0f,1.0f };
+	int mBorderWidth{ 0 };
+	Color mBorderColor{ 0.0f,0.0f,0.0f,1.0f };
 	int mDashWidth{ 0 };//实线的长度
 	int mDashGap{ 0 };//虚线的长度
 	//padding属性,单位是像素
@@ -288,9 +310,11 @@ public:
 	float mOvalWidth{ 1.0f };
 	float mOvalHeight{ 1.0f };
 
+	bool mbInitilized{false};
+
 	std::shared_ptr<Texture> mpTexture;
 	std::shared_ptr<Mesh> mpMesh;//承载shape的mesh
-	std::shared_ptr<Mesh> mpStrokeMesh;//承载边框的mesh
+	std::shared_ptr<Mesh> mpBorderMesh;//承载边框的mesh
 
 private:
 	static void typeHandler(const std::shared_ptr<Shape>& shape, const std::string& value);

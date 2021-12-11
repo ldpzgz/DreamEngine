@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape type="roundedRectangle">
-	<corners cornerRadius="16"/> 
-    <solid solidColor="@color/maskColorbg2" />
+<shape type="roundedRectangle"
+		cornerRadius="16"
+		gradientType="Linear"
+		startColor="#19A71988"
+		endColor="#FF525288"
+		borderColor="#aa000088"
+		borderWidth="2">
 </shape>

@@ -8,7 +8,7 @@ void ScrollView::draw() {
 
 bool ScrollView::mouseMove(int x, int y) {
 	if ((mMouseState & MouseState::MouseLButtonDown) && mRect.isInside(x, y)) {
-		mMouseState |= MouseState::MouseOver;
+		mMouseState |= MouseState::MouseHover;
 		//在这里处理上下左右拖动的逻辑
 		/*
 		* 只看第一个和最后一个子view是否到了不可移动的位置，否则就translate相应的距离。

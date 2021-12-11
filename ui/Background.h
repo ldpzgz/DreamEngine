@@ -23,23 +23,92 @@
 class Background {
 public:
 	struct BackgroundStyle {
+		std::shared_ptr<Shape> mpShape;
 		std::shared_ptr<Texture> mpTex;
 		Color mStartColor;
 		Color mCenterColor;
 		Color mEndColor;
 		Color mSolidColor;
-		Color mSrockeColor;
+		Color mBorderColor;
+		std::shared_ptr<Shape>& getShape() {
+			return mpShape;
+		}
+		void setMyStyle() {
+			if (mpShape) {
+				mpShape->setTexture(mpTex);
+				mpShape->setGradientStartColor(mStartColor);
+				mpShape->setGradientCenterColor(mCenterColor);
+				mpShape->setGradientEndColor(mEndColor);
+				mpShape->setSolidColor(mSolidColor);
+				mpShape->setBorderColor(mBorderColor);
+			}
+		}
+		void setShape(const std::shared_ptr<Shape>& pShape) {
+			mpShape = pShape;
+		}
+		void setTexture(const std::shared_ptr<Texture>& pTex) {
+			mpTex = pTex;
+			if (mpShape) {
+				mpShape->setTexture(mpTex);
+			}
+		}
+		void setStartColor(const Color& c) {
+			mStartColor = c;
+			if (mpShape) {
+				mpShape->setGradientStartColor(c);
+			}
+		}
+		void setCenterColor(const Color& c) {
+			mCenterColor = c;
+			if (mpShape) {
+				mpShape->setGradientCenterColor(c);
+			}
+		}
+		void setEndColor(const Color& c) {
+			mEndColor = c;
+			if (mpShape) {
+				mpShape->setGradientEndColor(c);
+			}
+		}
+		void setBorderColor(const Color& c) {
+			mBorderColor = c;
+			if (mpShape) {
+				mpShape->setBorderColor(c);
+			}
+		}
+		void setSolidColor(const Color& c) {
+			mSolidColor = c;
+			if (mpShape) {
+				mpShape->setSolidColor(c);
+			}
+		}
 	};
-	std::shared_ptr<Shape> mpShape;//常规的样子
+
+	Background() {
+		mpNormalStyle = make_unique<BackgroundStyle>();
+		mpNormalStyle->mpShape = std::make_shared<Shape>();
+	}
+
+	std::unique_ptr<BackgroundStyle>& getNormalStyle () {
+		return mpNormalStyle;
+	}
+
+	std::unique_ptr<BackgroundStyle>& getPushedStyle() {
+		return mpPushedStyle;
+	}
+
+	std::unique_ptr<BackgroundStyle>& getHoverStyle() {
+		return mpHoverStyle;
+	}
+
+	std::unique_ptr<BackgroundStyle>& getDisabledStyle() {
+		return mpDisabledStyle;
+	}
 
 	std::unique_ptr<BackgroundStyle> mpNormalStyle;
 	std::unique_ptr<BackgroundStyle> mpPushedStyle;
 	std::unique_ptr<BackgroundStyle> mpHoverStyle;
 	std::unique_ptr<BackgroundStyle> mpDisabledStyle;
-	static void getBkFromFile(const string& path,
-		unordered_map<string, std::shared_ptr<Background>>& gBk);
-	void nodeHandler(rapidxml::xml_node<char>* pAttribute);
-	
 };
 
 #endif

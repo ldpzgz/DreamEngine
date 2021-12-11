@@ -189,7 +189,7 @@ void MeshFilledRect::drawLineStrip(int posloc) {
 			glEnableVertexAttribArray(posloc);
 			assert(mCountOfVertex != 0);
 			int componentOfPos = mPosByteSize / (sizeof(GLfloat) * mCountOfVertex);
-			glVertexAttribPointer(posloc, componentOfPos, GL_FLOAT, GL_FALSE, 0,(void*)(3*sizeof(GLfloat)));
+			glVertexAttribPointer(posloc, componentOfPos, GL_FLOAT, GL_FALSE, 0,0);
 		}
 		else {
 
