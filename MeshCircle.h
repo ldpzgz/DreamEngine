@@ -15,7 +15,7 @@ public:
 	centerX	圆的中心点x的坐标
 	centerY	圆的中心点y的坐标
 	*/
-	void loadMesh(float width, float height, float centerX, float centerY) override;
+	void loadMesh(float width, float height, int gradientAngle,float centerX, float centerY) override;
 protected:
 };
 

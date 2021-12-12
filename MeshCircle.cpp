@@ -10,7 +10,7 @@ MeshCircle::~MeshCircle() {
 
 }
 
-void MeshCircle::loadMesh(float width, float height, float centerX, float centerY) {
+void MeshCircle::loadMesh(float width, float height, int gradientAngle, float centerX, float centerY) {
 	mCenterX = centerX;
 	mCenterY = centerY;
 	mWidth = width;

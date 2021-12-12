@@ -20,7 +20,7 @@ MeshRoundedRectangle::~MeshRoundedRectangle() {
 }
 
 void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,float leftDownRadius,
-		float rightDownRadius,float centerX,float centerY,float width, float height){
+		float rightDownRadius, int gradientAngle, float centerX,float centerY,float width, float height){
 	mCenterX = centerX;
 	mCenterY = centerY;
 	mWidth = width;
@@ -31,15 +31,15 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 	float halfHeight = height / 2.0f;
 	int maxRadius = std::min<float>(halfWidth, halfHeight);
 	mPoints.clear();
-	mPoints.reserve(STEP * 4 + 2);
-	texcoord.reserve(STEP * 4 + 2);
-	//ÖĞĞÄµãµÄ´¦Àí
+	mPoints.reserve(STEP * 4 + 4);
+	texcoord.reserve(STEP * 4 + 4);
+	//ä¸­å¿ƒç‚¹çš„å¤„ç†
 	mPoints.emplace_back(centerX, centerY, 0.0f);
 	texcoord.emplace_back(centerX / mWidth, centerY / mHeight);
 	Vec3 lastPoint;
 	Vec2 lastTex;
 	float PI_1_2 = 3.1415926535897932f / 2.0f;
-	//ÏÈ´ÓÓÒÉÏ½Ç¿ªÊ¼
+	//å…ˆä»å³ä¸Šè§’å¼€å§‹
 	if (rightTopRadius <= 0.0f) {
 		mPoints.emplace_back(width, height, 0.0f);
 		texcoord.emplace_back(1.0f, 1.0f);
@@ -64,6 +64,11 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 		lastTex = texTranslate + Vec2(texX, 0.0f);
 	}
 
+	if (gradientAngle == 0 || gradientAngle == 180) {
+		mPoints.emplace_back(Vec3(mCenterX, mHeight, 0.0f));
+		texcoord.emplace_back(Vec2(mCenterX / mWidth,1.0f));
+	}
+
 	if (leftTopRadius <= 0.0f) {
 		mPoints.emplace_back(0.0f, height, 0.0f);
 		texcoord.emplace_back(0.0f, 1.0f);
@@ -82,6 +87,11 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 			tempAngle = angle + i* PI_1_2 / (STEP - 1);
 		}
 		angle += PI_1_2;
+	}
+
+	if (gradientAngle == 90 || gradientAngle == 270) {
+		mPoints.emplace_back(Vec3(0.0f, mCenterY, 0.0f));
+		texcoord.emplace_back(Vec2(0.0f, mCenterY/mHeight));
 	}
 
 	if (leftDownRadius <= 0.0f) {
@@ -104,6 +114,11 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 		angle += PI_1_2;
 	}
 
+	if (gradientAngle == 0 || gradientAngle == 180) {
+		mPoints.emplace_back(Vec3(mCenterX, 0.0f, 0.0f));
+		texcoord.emplace_back(Vec2(mCenterX/mWidth,0.0f));
+	}
+
 	if (rightDownRadius <= 0.0f) {
 		mPoints.emplace_back(width, 0.0f, 0.0f);
 		texcoord.emplace_back(1.0f, 0.0f);
@@ -124,6 +139,13 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 		angle += PI_1_2;
 	}
 
+	if (gradientAngle == 90 || gradientAngle == 270) {
+		if (gradientAngle == 0 || gradientAngle == 180) {
+			mPoints.emplace_back(Vec3(mWidth, mCenterY, 0.0f));
+			texcoord.emplace_back(Vec2(1.0f, mCenterY/mHeight));
+		}
+	}
+
 	mPoints.emplace_back(lastPoint);
 	texcoord.emplace_back(lastTex);
 	int numOfVertex = mPoints.size();
@@ -137,6 +159,6 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 	}
 }
 		
-void MeshRoundedRectangle::loadMesh(float radius,float centerX,float centerY,float width, float height){
-	loadMesh(radius, radius, radius, radius, centerX,centerY,width,height);
+void MeshRoundedRectangle::loadMesh(float radius, int gradientAngle, float centerX,float centerY,float width, float height){
+	loadMesh(radius, radius, radius, radius, gradientAngle,centerX,centerY,width,height);
 }

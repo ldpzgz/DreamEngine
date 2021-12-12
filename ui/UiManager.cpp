@@ -127,7 +127,21 @@ void UiManager::parseRShape(const string& path) {
 //处理background xml文件里面的属性
 void shapeHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
 	if (pStyle) {
-		pStyle->mpShape = UiManager::getShape(value);
+		auto& pShape = UiManager::getShape(value);
+		if (pShape) {
+			//shape 属性必须放在background属性里面的第一个位置
+			pStyle->setShape(pShape);
+			pStyle->setTexture(pShape->getTexture());
+			pStyle->setSolidColor(pShape->getSolidColor());
+			pStyle->setStartColor(pShape->getGradientStartColor());
+			pStyle->setCenterColor(pShape->getGradientCenterColor());
+			pStyle->setEndColor(pShape->getGradientEndColor());
+			pStyle->setBorderColor(pShape->getBorderColor());
+		}
+		else {
+			LOGE("error when parse background xml,shape %s not found",value.c_str());
+		}
+		
 	}
 }
 

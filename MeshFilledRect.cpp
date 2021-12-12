@@ -99,7 +99,7 @@ void MeshFilledRect::setColorData(float angle, const Color& startColor, const Co
 	Mesh::setColorData((float*)colors.data(), 4 * sizeof(float)*colors.size());
 }
 
-void MeshFilledRect::loadMesh(float width, float height, float centerX, float centerY) {
+void MeshFilledRect::loadMesh(float width, float height, int gradientAngle, float centerX, float centerY) {
 	mCenterX = centerX;
 	mCenterY = centerY;
 	mWidth = width;
@@ -114,26 +114,41 @@ void MeshFilledRect::loadMesh(float width, float height, float centerX, float ce
 	tex[index++] = 1.0f;
 	tex[index++] = 1.0f;
 	mPoints.emplace_back(mWidth, mHeight, 0.0f);
-
-	tex[index++] = tex[0];
-	tex[index++] = 1.0f;
-	mPoints.emplace_back(mCenterX, mHeight, 0.0f);
+	if (gradientAngle == 0 || gradientAngle == 180) {
+		tex[index++] = tex[0];
+		tex[index++] = 1.0f;
+		mPoints.emplace_back(mCenterX, mHeight, 0.0f);
+	}
 
 	tex[index++] = 0.0f;
 	tex[index++] = 1.0f;
 	mPoints.emplace_back(0.0f, mHeight, 0.0f);
 
+	if (gradientAngle == 90 || gradientAngle == 270) {
+		tex[index++] = 0;
+		tex[index++] = tex[1];
+		mPoints.emplace_back(0.0f, mCenterY, 0.0f);
+	}
+
 	tex[index++] = 0.0f;
 	tex[index++] = 0.0f;
 	mPoints.emplace_back(0.0f, 0.0f, 0.0f);
 
-	tex[index++] = tex[0];
-	tex[index++] = 0.0f;
-	mPoints.emplace_back(mCenterX, 0.0f, 0.0f);
+	if (gradientAngle == 0 || gradientAngle == 180) {
+		tex[index++] = tex[0];
+		tex[index++] = 0.0f;
+		mPoints.emplace_back(mCenterX, 0.0f, 0.0f);
+	}
 
 	tex[index++] = 1.0f;
 	tex[index++] = 0.0f;
 	mPoints.emplace_back(mWidth, 0.0f, 0.0f);
+
+	if (gradientAngle == 90 || gradientAngle == 270) {
+		tex[index++] = 1.0f;
+		tex[index++] = tex[1];
+		mPoints.emplace_back(mWidth, mCenterY, 0.0f);
+	}
 
 	tex[index++] = 1.0f;
 	tex[index++] = 1.0f;

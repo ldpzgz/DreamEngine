@@ -341,7 +341,8 @@ void UiRender::initShape(Rect<int>& rect, const shared_ptr<Shape>& pShape) {
 	auto& centerColor = pShape->getGradientCenterColor();
 	auto borderWidth = pShape->getBorderWidth();
 	auto& borderColor = pShape->getBorderColor();
-	auto& pTexture = pShape->mpTexture;
+	auto& pTexture = pShape->getTexture();
+	auto angle = pShape->getGradientAngle();
 
 	bool hasBackground = (!solidColor.isZero() || pTexture || gradientType != GradientType::None);
 	shared_ptr<MeshFilledRect> pMesh;
@@ -349,13 +350,13 @@ void UiRender::initShape(Rect<int>& rect, const shared_ptr<Shape>& pShape) {
 	if (shapeType == ShapeType::Rectangle) {
 		if (hasBackground) {
 			pMesh = make_shared<MeshFilledRect>();
-			pMesh->loadMesh(width, height, centerX, centerY);
+			pMesh->loadMesh(width, height, gradientAngle,centerX, centerY);
 			//pShape->setMesh(static_pointer_cast<void>(pMesh));
 			pShape->setMesh(pMesh);
 		}
 		if (!borderColor.isZero()) {
 			pBorderMesh = make_shared<MeshFilledRect>();
-			pBorderMesh->loadMesh(width, height, centerX, centerY);
+			pBorderMesh->loadMesh(width, height, gradientAngle, centerX, centerY);
 			pBorderMesh->setFilled(false);
 			pBorderMesh->setLineWidth(borderWidth);
 			//pShape->setStrokeMesh(static_pointer_cast<void>(pBorderMesh));
@@ -369,22 +370,22 @@ void UiRender::initShape(Rect<int>& rect, const shared_ptr<Shape>& pShape) {
 			pShape->setMesh( pMesh );
 			if (cornerRadius > 0) {
 				//四个圆角是一样的半径
-				pMesh->loadMesh(cornerRadius, centerX, centerY, width, height);
+				pMesh->loadMesh(cornerRadius, gradientAngle, centerX, centerY, width, height);
 			}
 			else {
 				//四个圆角半径不一样
-				pMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, centerX, centerY, width, height);
+				pMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, gradientAngle, centerX, centerY, width, height);
 			}
 		}
 		if (!borderColor.isZero()) {
 			pBorderMesh = make_shared<MeshRoundedRectangle>();
 			if (cornerRadius > 0) {
 				//四个圆角是一样的半径
-				pBorderMesh->loadMesh(cornerRadius, centerX, centerY,width, height );
+				pBorderMesh->loadMesh(cornerRadius, gradientAngle, centerX, centerY,width, height );
 			}
 			else {
 				//四个圆角半径不一样
-				pBorderMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, centerX, centerY, width, height);
+				pBorderMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, gradientAngle, centerX, centerY, width, height);
 			}
 			pBorderMesh->setFilled(false);
 			pBorderMesh->setLineWidth(borderWidth);
@@ -395,13 +396,13 @@ void UiRender::initShape(Rect<int>& rect, const shared_ptr<Shape>& pShape) {
 	else if (shapeType == ShapeType::Oval) {
 		if (hasBackground) {
 			pMesh = make_shared<MeshCircle>();
-			pMesh->loadMesh(width, height, centerX, centerY);
+			pMesh->loadMesh(width, height, gradientAngle, centerX, centerY);
 			//pShape->setMesh(static_pointer_cast<void>(pMesh));
 			pShape->setMesh( pMesh );
 		}
 		if (!borderColor.isZero()) {
 			pBorderMesh = make_shared<MeshCircle>();
-			pBorderMesh->loadMesh(width, height, centerX, centerY);
+			pBorderMesh->loadMesh(width, height, gradientAngle, centerX, centerY);
 			pBorderMesh->setFilled(false);
 			pBorderMesh->setLineWidth(borderWidth);
 			//pShape->setStrokeMesh(static_pointer_cast<void>(pBorderMesh));

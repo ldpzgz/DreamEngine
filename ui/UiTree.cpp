@@ -55,7 +55,7 @@ void UiTree::updateWidthHeight(float width, float height) {
 	mFboForRender.attachColorTextureMS(mpTexture);
 	mFboForRender.setDepthTest(false);
 	mFboForRender.setBlend(true);
-	mFboForRender.setBlendValue(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE, GL_FUNC_ADD, GL_MAX);
+	mFboForRender.setBlendValue(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO, GL_FUNC_ADD, GL_FUNC_ADD);
 
 	//ui重绘
 	mbRedraw = true;

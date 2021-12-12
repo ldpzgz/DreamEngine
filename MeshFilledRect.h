@@ -13,14 +13,14 @@ public:
 	~MeshFilledRect();
 	
 	virtual void loadMesh(float rightTopRadius, float leftTopRadius, float leftDownRadius,
-		float rightDownRadius, float centerX, float centerY, float width, float height) {
+		float rightDownRadius, int gradientAngle, float centerX, float centerY, float width, float height) {
 
 	}
 
-	virtual void loadMesh(float radius, float centerX, float centerY, float width, float height) {
+	virtual void loadMesh(float radius, int gradientAngle,float centerX, float centerY, float width, float height) {
 
 	}
-	virtual void loadMesh(float width, float height, float centerX, float centerY);
+	virtual void loadMesh(float width, float height, int gradientAngle, float centerX, float centerY);
 	void setColorData(float angle, const Color& startColor, const Color& endColor, const Color& centerColor);
 	//设置为一个填充的圆还是一个圆圈
 	void setFilled(bool b) {

@@ -286,7 +286,7 @@ public:
 	//solid属性
 	Color mSolidColor{ 0.0f,0.0f,0.0f,1.0f };
 	//stroke属性
-	int mBorderWidth{ 0 };
+	int mBorderWidth{ 2 };
 	Color mBorderColor{ 0.0f,0.0f,0.0f,1.0f };
 	int mDashWidth{ 0 };//实线的长度
 	int mDashGap{ 0 };//虚线的长度
