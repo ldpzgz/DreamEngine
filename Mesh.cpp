@@ -501,12 +501,7 @@ void Mesh::drawTriangleFan(int posloc, int texloc,int norloc,int colorloc, int t
 			glVertexAttribPointer(tangentloc, componentOfTangent, GL_FLOAT, GL_FALSE, 0, 0);
 		}
 
-		if (colorloc >= 0) {
-			glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
-			glEnableVertexAttribArray(colorloc);
-			int componentOfColor = mColorByteSize / (sizeof(GLfloat) * mCountOfVertex);
-			glVertexAttribPointer(colorloc, componentOfColor, GL_FLOAT, GL_FALSE, 0, 0);
-		}
+		
 		//这个好像不用绑定了？
 		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
 
@@ -514,8 +509,13 @@ void Mesh::drawTriangleFan(int posloc, int texloc,int norloc,int colorloc, int t
 	}
 
 	glBindVertexArray(mVAO);
+	if (colorloc >= 0) {
+		glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
+		glEnableVertexAttribArray(colorloc);
+		int componentOfColor = mColorByteSize / (sizeof(GLfloat) * mCountOfVertex);
+		glVertexAttribPointer(colorloc, componentOfColor, GL_FLOAT, GL_FALSE, 0, 0);
+	}
 	glDrawArrays(GL_TRIANGLE_FAN, 0, mCountOfVertex);
-	checkglerror();
 	glBindVertexArray(0);
 	//glFrontFace(GL_CCW);
 	//glDrawElements(GL_TRIANGLE_FAN, mNumOfIndex, GL_UNSIGNED_SHORT, (const void*)0);

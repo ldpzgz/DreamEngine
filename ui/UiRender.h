@@ -111,7 +111,7 @@ public:
 	void drawUi();
 private:
 	//确定了shape的宽高和中心点之后才能调用这个函数
-	void initShape(Rect<int>& viewRect,const shared_ptr<Shape>& pShape);
+	void initShape(Rect<int>& viewRect, const unique_ptr<Background::BackgroundStyle>& pStyle);
 	static unique_ptr<UiRender> gInstance;
 
 	shared_ptr<FontManager> mpFontManager;

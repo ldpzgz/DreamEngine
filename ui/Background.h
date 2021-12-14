@@ -22,14 +22,40 @@
 */
 class Background {
 public:
+	/*
+	* style有三种填充模式1 纹理，2渐变色，3纯色
+	* 对于同一种填充模式的style，可以共享同一个shape
+	*/
 	struct BackgroundStyle {
 		std::shared_ptr<Shape> mpShape;
-		std::shared_ptr<Texture> mpTex;
-		Color mStartColor;
+		std::shared_ptr<Texture> mpTex;//如果不为空，就表示用纹理填充，优先级最高
+		Color mStartColor;//如果不为空，就表示用渐变色填充，优先级次之
 		Color mCenterColor;
 		Color mEndColor;
-		Color mSolidColor;
+		Color mSolidColor;//如果不为空就表示用纯色填充，最低优先级
 		Color mBorderColor;
+		unsigned int mColorVbo{0};
+		void setColorVbo(unsigned int vbo) {
+			mColorVbo = vbo;
+		}
+		unsigned int getColorVbo() {
+			return mColorVbo;
+		}
+		Color& getStartColor() {
+			return mStartColor;
+		}
+		Color& getCenterColor() {
+			return mCenterColor;
+		}
+		Color& getEndColor() {
+			return mEndColor;
+		}
+		Color& getSolidColor() {
+			return mSolidColor;
+		}
+		Color& getBorderColor() {
+			return mBorderColor;
+		}
 		std::shared_ptr<Shape>& getShape() {
 			return mpShape;
 		}

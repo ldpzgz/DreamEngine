@@ -12,11 +12,11 @@ public:
 	
 	void draw() override;
 
-	bool mouseMove(int x, int y) override;
+	bool mouseMove(int x, int y,bool notInside) override;
 
-	bool mouseLButtonDown(int x, int y) override;
+	bool mouseLButtonDown(int x, int y, bool notInside) override;
 
-	bool mouseLButtonUp(int x, int y) override;
+	bool mouseLButtonUp(int x, int y, bool notInside) override;
 
 	void afterGetWidthHeight() override;
 private:

@@ -21,10 +21,16 @@ public:
 
 	}
 	virtual void loadMesh(float width, float height, int gradientAngle, float centerX, float centerY);
-	void setColorData(float angle, const Color& startColor, const Color& endColor, const Color& centerColor);
-	//设置为一个填充的圆还是一个圆圈
+
+	//创建一份color数据，
+	unsigned int createAColorData(float angle, const Color& startColor, const Color& endColor, const Color& centerColor);
+	//设置为一个填充的还是一个边框
 	void setFilled(bool b) {
 		mbFilled = b;
+	}
+	void setColorVbo(unsigned int vbo);
+	unsigned int getColorVbo() {
+		return mColorVbo;
 	}
 protected:
 	void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1) override;
@@ -35,6 +41,7 @@ protected:
 	float mWidth{ 0.0f };
 	float mHeight{ 0.0f };
 	vector<Vec3> mPoints;
+	vector<GLuint> mExtraColorVbos;
 };
 
 #endif

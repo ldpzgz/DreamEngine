@@ -138,24 +138,37 @@ public:
 
 	//virtual bool isMouseInside(int x, int y) { return false; }
 
-	virtual bool mouseMove(int x, int y) { 
-		if (mRect.isInside(x, y)) {
+	virtual bool mouseMove(int x, int y,bool notInside) { 
+		if (!notInside && mRect.isInside(x, y)) {
 			for (auto& pChild : mChildren) {
-				pChild->mouseMove(x, y);
+				pChild->mouseMove(x, y,false);
 			}
-			mMouseState |= MouseState::MouseHover;
-			if (mpBackground && mpBackground->getHoverStyle()) {
-				setDirty(true);
+			if ((mMouseState & MouseState::MouseHover)==0) {
+				mMouseState |= MouseState::MouseHover;
+				if (mpBackground && mpBackground->getHoverStyle()) {
+					setDirty(true);
+				}
 			}
 			return true;
+		}
+		else {
+			for (auto& pChild : mChildren) {
+				pChild->mouseMove(x, y, true);
+			}
+			if (mMouseState & MouseState::MouseHover) {
+				mMouseState &= ~MouseState::MouseHover;
+				if (mpBackground && mpBackground->getHoverStyle()) {
+					setDirty(true);
+				}
+			}
 		}
 		return false;
 	};
 
-	virtual bool mouseLButtonDown(int x, int y) { 
-		if (mRect.isInside(x, y)) {
+	virtual bool mouseLButtonDown(int x, int y,bool notInside) { 
+		if (!notInside && mRect.isInside(x, y)) {
 			for (auto& pChild : mChildren) {
-				pChild->mouseLButtonDown(x, y);
+				pChild->mouseLButtonDown(x, y,false);
 			}
 			mMouseState |= MouseState::MouseLButtonDown;
 			if (mpBackground && mpBackground->getPushedStyle()) {
@@ -163,18 +176,23 @@ public:
 			}
 			return true;
 		}
+		else {
+			for (auto& pChild : mChildren) {
+				pChild->mouseLButtonDown(x, y, true);
+			}
+		}
 		return false;
 	};
 
-	virtual bool mouseLButtonUp(int x, int y) { 
-		if (mRect.isInside(x, y)) {
+	virtual bool mouseLButtonUp(int x, int y,bool notInside) { 
+		if (!notInside && mRect.isInside(x, y)) {
 			for (auto& pChild : mChildren) {
-				pChild->mouseLButtonUp(x, y);
+				pChild->mouseLButtonUp(x, y,false);
 			}
 			if ((mMouseState & MouseState::MouseLButtonDown) && mClickedListener) {
 				onClicked(this);
 			}
-			mMouseState = MouseState::MouseNone;
+			mMouseState &= ~MouseState::MouseLButtonDown;
 			if (mpBackground && mpBackground->getPushedStyle()) {
 				setDirty(true);
 			}
@@ -182,7 +200,7 @@ public:
 		}
 		else {
 			for (auto& pChild : mChildren) {
-				pChild->mouseLButtonUp(x, y);
+				pChild->mouseLButtonUp(x, y,true);
 			}
 			mMouseState = MouseState::MouseNone;
 			if (mpBackground && mpBackground->getPushedStyle()) {

@@ -6,7 +6,7 @@
 #include <functional>
 #include <unordered_map>
 #include <memory>
-#include "../Mesh.h"
+#include "../MeshFilledRect.h"
 enum class ShapeType : int {
 	Rectangle,
 	RoundedRectangle,
@@ -259,18 +259,18 @@ public:
 	bool getInitialized() {
 		return mbInitilized;
 	}
-	std::shared_ptr<Mesh>& getMesh() {
+	std::shared_ptr<MeshFilledRect>& getMesh() {
 		return mpMesh;
 	}
-	std::shared_ptr<Mesh>& getBorderMesh() {
+	std::shared_ptr<MeshFilledRect>& getBorderMesh() {
 		return mpBorderMesh;
 	}
 
-	void setBorderMesh(const std::shared_ptr<Mesh>& pMesh) {
+	void setBorderMesh(const std::shared_ptr<MeshFilledRect>& pMesh) {
 		mpBorderMesh = pMesh;
 	}
 
-	void setMesh(const std::shared_ptr<Mesh>& pMesh) {
+	void setMesh(const std::shared_ptr<MeshFilledRect>& pMesh) {
 		mpMesh = pMesh;
 	}
 
@@ -286,7 +286,7 @@ public:
 	//solid属性
 	Color mSolidColor{ 0.0f,0.0f,0.0f,1.0f };
 	//stroke属性
-	int mBorderWidth{ 2 };
+	int mBorderWidth{ 1 };
 	Color mBorderColor{ 0.0f,0.0f,0.0f,1.0f };
 	int mDashWidth{ 0 };//实线的长度
 	int mDashGap{ 0 };//虚线的长度
@@ -313,8 +313,8 @@ public:
 	bool mbInitilized{false};
 
 	std::shared_ptr<Texture> mpTexture;
-	std::shared_ptr<Mesh> mpMesh;//承载shape的mesh
-	std::shared_ptr<Mesh> mpBorderMesh;//承载边框的mesh
+	std::shared_ptr<MeshFilledRect> mpMesh;//承载shape的mesh
+	std::shared_ptr<MeshFilledRect> mpBorderMesh;//承载边框的mesh
 
 private:
 	static void typeHandler(const std::shared_ptr<Shape>& shape, const std::string& value);

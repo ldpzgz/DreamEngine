@@ -167,7 +167,7 @@ bool ListView::tryToMove(int moveDistance) {
 	return true;
 }
 
-bool ListView::mouseMove(int x, int y) {
+bool ListView::mouseMove(int x, int y, bool notInside) {
 	if (!mpAdapter || !mbMovable) {
 		return true;
 	}
@@ -193,8 +193,8 @@ bool ListView::mouseMove(int x, int y) {
 	return false;
 }
 
-bool ListView::mouseLButtonDown(int x, int y) {
-	if (mRect.isInside(x, y)) {
+bool ListView::mouseLButtonDown(int x, int y, bool notInside) {
+	if (!notInside && mRect.isInside(x, y)) {
 		mMouseState |= MouseState::MouseLButtonDown;
 		mbLButtonDown = true;
 		mPrePos.x = x;
@@ -204,7 +204,7 @@ bool ListView::mouseLButtonDown(int x, int y) {
 	return false;
 }
 
-bool ListView::mouseLButtonUp(int x, int y) {
+bool ListView::mouseLButtonUp(int x, int y,bool notInside) {
 	if (mMouseState & MouseState::MouseLButtonDown) {
 		mMouseState = MouseState::MouseNone;
 		//setDirty(true);

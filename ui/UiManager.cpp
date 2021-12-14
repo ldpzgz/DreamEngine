@@ -147,7 +147,7 @@ void shapeHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const st
 
 void textureHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
 	if (pStyle) {
-		pStyle->mpTex = UiManager::getTexture(value);
+		pStyle->setTexture(UiManager::getTexture(value));
 	}
 }
 
@@ -465,7 +465,7 @@ void UiManager::updateWidthHeight(float width, float height) {
 void UiManager::mouseMove(int x, int y) {
 	if (mpUiTree) {
 		if (mpUiTree->mpRootView) {
-			mpUiTree->mpRootView->mouseMove( x, y);
+			mpUiTree->mpRootView->mouseMove( x, y,false);
 		}
 	}
 }
@@ -473,7 +473,7 @@ void UiManager::mouseMove(int x, int y) {
 void UiManager::mouseLButtonDown(int x, int y) {
 	if (mpUiTree) {
 		if (mpUiTree->mpRootView) {
-			mpUiTree->mpRootView->mouseLButtonDown( x, y);
+			mpUiTree->mpRootView->mouseLButtonDown( x, y,false);
 		}
 	}
 }
@@ -481,7 +481,7 @@ void UiManager::mouseLButtonDown(int x, int y) {
 void UiManager::mouseLButtonUp(int x, int y) {
 	if (mpUiTree) {
 		if (mpUiTree->mpRootView) {
-			mpUiTree->mpRootView->mouseLButtonUp( x, y);
+			mpUiTree->mpRootView->mouseLButtonUp( x, y,false);
 		}
 	}
 }

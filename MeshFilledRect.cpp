@@ -8,9 +8,12 @@ MeshFilledRect::MeshFilledRect():
 
 MeshFilledRect::~MeshFilledRect() {
 	mPoints.clear();
+	if (!mExtraColorVbos.empty()) {
+		glDeleteBuffers(mExtraColorVbos.size(), mExtraColorVbos.data());
+	}
 }
 
-void MeshFilledRect::setColorData(float angle, const Color& startColor, const Color& endColor, const Color& centerColor) {
+unsigned int MeshFilledRect::createAColorData(float angle, const Color& startColor, const Color& endColor, const Color& centerColor) {
 	vector<Vec4> colors;
 	Vec4 start(startColor.r, startColor.g, startColor.b, startColor.a);
 	Vec4 end(endColor.r, endColor.g, endColor.b, endColor.a);
@@ -96,7 +99,24 @@ void MeshFilledRect::setColorData(float angle, const Color& startColor, const Co
 		LOGD("ERROR not support gradient angle %f in shape",angle);
 	}
 
-	Mesh::setColorData((float*)colors.data(), 4 * sizeof(float)*colors.size());
+	
+	GLuint colorVbo=0;
+	int colorSize = 4 * sizeof(float) * colors.size();
+	glGenBuffers(1, &colorVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, colorVbo);
+	glBufferData(GL_ARRAY_BUFFER, colorSize, (float*)colors.data(), GL_STATIC_DRAW);
+	if (mColorVbo == 0) {
+		mColorVbo = colorVbo;
+		mColorByteSize = colorSize;
+	}
+	else {
+		mExtraColorVbos.emplace_back(colorVbo);
+	}
+	return colorVbo;
+}
+
+void MeshFilledRect::setColorVbo(unsigned int vbo) {
+	mColorVbo = vbo;
 }
 
 void MeshFilledRect::loadMesh(float width, float height, int gradientAngle, float centerX, float centerY) {

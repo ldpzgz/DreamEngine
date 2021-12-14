@@ -6,8 +6,8 @@ void ScrollView::draw() {
 	View::draw();
 }
 
-bool ScrollView::mouseMove(int x, int y) {
-	if ((mMouseState & MouseState::MouseLButtonDown) && mRect.isInside(x, y)) {
+bool ScrollView::mouseMove(int x, int y,bool notInside) {
+	if (!notInside && (mMouseState & MouseState::MouseLButtonDown) && mRect.isInside(x, y)) {
 		mMouseState |= MouseState::MouseHover;
 		//在这里处理上下左右拖动的逻辑
 		/*
@@ -115,8 +115,8 @@ bool ScrollView::mouseMove(int x, int y) {
 	return false;
 }
 
-bool ScrollView::mouseLButtonDown(int x, int y) {
-	if (mRect.isInside(x, y)) {
+bool ScrollView::mouseLButtonDown(int x, int y, bool notInside) {
+	if (!notInside && mRect.isInside(x, y)) {
 		mMouseState |= MouseState::MouseLButtonDown;
 		mbLButtonDown = true;
 		mPrePos.x = x;
@@ -126,7 +126,7 @@ bool ScrollView::mouseLButtonDown(int x, int y) {
 	return false;
 }
 
-bool ScrollView::mouseLButtonUp(int x, int y) {
+bool ScrollView::mouseLButtonUp(int x, int y,bool notInside) {
 	if (mMouseState & MouseState::MouseLButtonDown) {
 		mMouseState = MouseState::MouseNone;
 		//setDirty(true);
