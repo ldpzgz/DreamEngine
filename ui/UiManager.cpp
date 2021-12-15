@@ -212,7 +212,6 @@ void backgroundNodeHandler(shared_ptr<Background>& pBk,rapidxml::xml_node<char>*
 		std::string name = pNode->name();
 		if (name == "normal") {
 			auto& pStyle = pBk->getNormalStyle();
-			pStyle = std::make_unique<Background::BackgroundStyle>();
 			backgroundAttributeHandler(pStyle, pNode->first_attribute());
 		}
 		else if (name == "pushed") {
@@ -232,6 +231,9 @@ void backgroundNodeHandler(shared_ptr<Background>& pBk,rapidxml::xml_node<char>*
 		}
 	}
 }
+/*
+* 分析bk配置文件，根据配置，给bk里面的各种style的变量赋上相应的值
+*/
 void UiManager::parseRBackground(const string& path) {
 	shared_ptr<Background> pBack;
 	unique_ptr<rapidxml::file<>> pfdoc;

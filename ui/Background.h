@@ -78,6 +78,9 @@ public:
 				mpShape->setTexture(mpTex);
 			}
 		}
+		std::shared_ptr<Texture>& getTexture() {
+			return mpTex;
+		}
 		void setStartColor(const Color& c) {
 			mStartColor = c;
 			if (mpShape) {

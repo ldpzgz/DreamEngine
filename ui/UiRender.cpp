@@ -306,7 +306,10 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 		return;
 	}
 	auto& pShape = pStyle->getShape();
-	if (pShape && pShape->getInitialized()) {
+	if (!pShape) {
+		return;
+	}
+	if (pShape->getInitialized()) {
 		//shape 可以在多个style之间共享，如果已经初始化过了，就不用再初始化了
 		//但是对于渐变色，不同的style可能有不同的渐变色
 		//渐变色是使用colorVbo来实现的
@@ -330,6 +333,25 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 			}
 		}
 		return;
+	}
+	else {
+		auto& pTex = pStyle->getTexture();
+		if (pTex) {
+			pShape->setTexture(pTex);
+		}
+		auto& startC = pStyle->getStartColor();
+		auto& centerC = pStyle->getCenterColor();
+		auto& endC = pStyle->getEndColor();
+		if (!startC.isZero() || !centerC.isZero() || !endC.isZero()) {
+			pShape->setGradientStartColor(startC);
+			pShape->setGradientCenterColor(centerC);
+			pShape->setGradientEndColor(endC);
+			pShape->setGradientType("Linear");
+		}
+		auto& solidC = pStyle->getSolidColor();
+		if (!solidC.isZero()) {
+			pShape->setSolidColor(solidC);
+		}
 	}
 	auto width = rect.width;
 	auto height = rect.height;
