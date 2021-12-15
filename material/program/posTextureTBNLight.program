@@ -76,7 +76,7 @@ fs{
 	}
 }
 
-program:tbnlightP{
+program:posTextureTbnLight{
 	posLoc=0
 	texcoordLoc=1
 	normalLoc=2
@@ -91,15 +91,4 @@ program:tbnlightP{
 		s_normal=none
 	}
 }
-texture:carDiffuse{
-	path=./opengles3/material/drawable/carDiffuse.png
-}
-texture:carNormal{
-	path=./opengles3/material/drawable/carNormal.png
-}
-material:car{
-	sampler{
-		s_texture=carDiffuse
-		s_normal=carNormal
-	}
-}
+

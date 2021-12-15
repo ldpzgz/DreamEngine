@@ -19,7 +19,7 @@ fs{
 	}
 }
 
-program:rectangle{
+program:posUniformColor{
 	posLoc=0
 	mvpMatrix=mvp_matrix
 	uniformColor=color

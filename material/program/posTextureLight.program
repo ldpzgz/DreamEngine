@@ -56,7 +56,7 @@ fs{
 	}
 }
 
-program:posTextureLightp{
+program:posTextureLight{
 	posLoc=0
 	normalLoc=1
 	texcoordLoc=2
@@ -67,13 +67,5 @@ program:posTextureLightp{
 	lightColor=lightColor
 	sampler{
 		s_texture=none
-	}
-}
-texture:car2Diffuse{
-	path=./opengles3/material/drawable/car2.BMP
-}
-material:car2{
-	sampler{
-		s_texture=car2Diffuse
 	}
 }

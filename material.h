@@ -28,7 +28,9 @@ public:
 	//改变shader里面sampler对应的纹理
 	void setTextureForSampler(const string& samplerName, const shared_ptr<Texture>& pTex);
 
-
+	void setShader(const std::shared_ptr<Shader>& ps) {
+		mShader = ps;
+	}
 	std::shared_ptr<Shader>& getShader() {
 		return mShader;
 	}
@@ -132,6 +134,7 @@ private:
 	void setCullWhichFace(bool b, int fontface);
 	void setBlend(bool b, unsigned int srcFactor, unsigned int destFactor, unsigned int blendOp);
 
+	static bool programHandler(const std::shared_ptr<Material>&, const std::string& programName);
 	static bool samplerHandler(const std::shared_ptr<Material>&, const std::string& samplerContent);
 	static bool opHandler(const std::shared_ptr<Material>&, const std::string&);
 	static bool opDepthHandler(const std::shared_ptr<Material>&, const std::string&);

@@ -1,0 +1,38 @@
+texture:car2Diffuse{
+	path=./opengles3/material/drawable/car2.BMP
+}
+texture:carDiffuse{
+	path=./opengles3/material/drawable/carDiffuse.png
+}
+texture:carNormal{
+	path=./opengles3/material/drawable/carNormal.png
+}
+cubeTexture:skyboxT{
+	path=./opengles3/material/drawable/skybox
+}
+
+material:car2{
+	program=posTextureLight
+	sampler{
+		s_texture=car2Diffuse
+	}
+}
+
+material:car{
+	program=posTextureTbnLight
+	sampler{
+		s_texture=carDiffuse
+		s_normal=carNormal
+	}
+}
+
+material:skyboxM{
+	program=skybox
+	sampler{
+		skybox=skyboxT
+	}
+	op{
+		depthTest=true
+		cullFace=true,front
+	}
+}

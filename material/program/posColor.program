@@ -22,7 +22,7 @@ fs{
 	}
 }
 
-program:rectangleColor{
+program:posColor{
 	posLoc=0
 	colorLoc=1
 	mvpMatrix=mvp_matrix

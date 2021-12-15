@@ -23,22 +23,10 @@ fs{
 	}
 }
 
-program:cubemap{
+program:skybox{
 	posLoc=0
 	mvpMatrix=mvp_matrix
 	sampler{
 		skybox=none
-	}
-}
-cubeTexture:skyboxT{
-	path=./opengles3/material/drawable/skybox
-}
-material:skyboxM{
-	sampler{
-		skybox=skyboxT
-	}
-	op{
-		depthTest=true
-		cullFace=true,front
 	}
 }

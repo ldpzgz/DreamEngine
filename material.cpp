@@ -11,12 +11,14 @@ using namespace std::filesystem;
 MaterialP gpMaterialNothing;
 
 static const string gMaterialPath = "./opengles3/material/material";
+static const string gProgramPath = "./opengles3/material/program";
 
 std::unordered_map<std::string, std::shared_ptr<Material>> Material::gMaterials;
 std::unordered_map<std::string, std::shared_ptr<Texture>> Material::gTextures;
 std::unordered_map<std::string, std::shared_ptr<Shader>> Material::gShaders;
 
 std::unordered_map<std::string, std::function<bool(const std::shared_ptr<Material>&, const std::string&)>> Material::gMaterialHandlers{
+	{"program",Material::programHandler},
 	{"sampler",Material::samplerHandler},
 	{"op",Material::opHandler},
 	{"depthTest",Material::opDepthHandler},
@@ -44,6 +46,14 @@ static std::unordered_map<std::string, unsigned int> gBlendEquationMap{
 	{"max",GL_MAX}
 };
 
+bool Material::programHandler(const std::shared_ptr<Material>& pMaterial, const std::string& programName) {
+	auto it = gShaders.find(programName);
+	if (it != gShaders.end()) {
+		pMaterial->setShader(it->second);
+		return true;
+	}
+	return false;
+}
 bool Material::samplerHandler(const std::shared_ptr<Material>& pMaterial, const std::string& samplerContent) {
 	Umapss contents;
 	if (pMaterial->parseItem(samplerContent, contents)) {
@@ -262,7 +272,25 @@ void Material::setBlend(bool b, unsigned int srcFactor, unsigned int destFactor,
 
 
 void Material::loadAllMaterial() {
-	//遍历UIimage目录
+	path programPath(gProgramPath);
+	if (!exists(gProgramPath)) {
+		LOGE("ERROR the ui image path %s is not exist", gMaterialPath.c_str());
+	}
+
+	if (is_directory(gProgramPath)) {
+		//是目录
+		directory_iterator list(gProgramPath);
+		//directory_entry 是一个文件夹里的某一项，可以是path，也可以是文件
+		for (auto& it : list) {
+			auto filePath = it.path();
+			if (is_regular_file(filePath)) {
+				//是文件
+				auto filePathString = filePath.string();
+				Material::loadFromFile(filePathString);
+			}
+		}
+	}
+	
 	path materialPath(gMaterialPath);
 	if (!exists(materialPath)) {
 		LOGE("ERROR the ui image path %s is not exist", gMaterialPath.c_str());
@@ -511,7 +539,7 @@ bool Material::parseMaterial(const string& matName, const string& material) {
 	Umapss umap;
 	bool bParseSuccess = true;
 	if (parseItem(material, umap)) {
-		auto pMaterial = clone(*this);
+		auto pMaterial = std::make_shared<Material>();
 		for (auto& pair : umap) {
 			auto it = gMaterialHandlers.find(pair.first);
 			if (it != gMaterialHandlers.end()) {
