@@ -13,7 +13,7 @@ static const string gStringFile("./opengles3/material/strings.xml");
 static const string gColorFile("./opengles3/material/colors.xml");
 static const string gShapePath("./opengles3/material/shape");
 static const string gBackgroundPath("./opengles3/material/background");
-static const string gUiImagePath("./opengles3/material/uiImage");
+static const string gUiImagePath("./opengles3/material/drawable/uiImage");
 static const string gUiLayoutPath("./opengles3/material/layout");
 
 unique_ptr<UiManager> UiManager::gInstance = make_unique<UiManager>();
@@ -81,7 +81,7 @@ void UiManager::loadAllUiImage() {
 			if (is_regular_file(filePath)) {
 				//是文件
 				auto filePathString = filePath.string();
-				Material::loadTextureFromFile(filePathString);
+				Material::loadImageFromFile(filePathString);
 			}
 		}
 	}

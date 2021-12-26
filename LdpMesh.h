@@ -28,6 +28,13 @@ struct LdpMesh {
 
 	int indexPos{ 0 };
 	int indexLength{ 0 };
+	float xmin{ 0 };
+	float xmax{ 0 };
+	float ymin{ 0 };
+	float ymax{ 0 };
+	float zmin{ 0 };
+	float zmax{ 0 };
+	int materialNameSize{ 0 };
 };
 
 #endif

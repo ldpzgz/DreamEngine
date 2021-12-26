@@ -275,7 +275,7 @@ unique_ptr<UiRender> UiRender::gInstance = make_unique<UiRender>();
 
 void UiRender::initUiRender() {
 	initTextView(gSavedFontFile, gFontFile, gFontMaterialName);
-	mpLastMaterial = Material::getMaterial("posTextureMS");
+	mpLastMaterial = Material::getMaterial("posDiffMS");
 	mpLastMesh = make_shared<Mesh>(MeshType::MESH_Rectangle);
 	if (mpLastMesh) {
 		mpLastMesh->loadMesh();
@@ -456,13 +456,13 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 	}
 
 	if (pMesh && pTexture) {
-		auto pMaterial = Material::clone("posTexture");
+		auto pMaterial = Material::clone("posDiff");
 		if (pMaterial) {
 			//pMaterial->setTextureForSampler("s_texture", pTexture);//这个每次渲染前都需要调用
 			pMesh->setMaterial(pMaterial);
 		}
 		else {
-			LOGE("ERROR cannot found posTexture material");
+			LOGE("ERROR cannot found posDiff material");
 		}
 	}
 	else if (pMesh && hasGradient) {

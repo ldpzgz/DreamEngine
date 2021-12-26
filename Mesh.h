@@ -21,6 +21,7 @@
 #include "Attachable.h"
 #include "Rect.h"
 #include <memory>
+#include "aabb.h"
 enum class MeshType //枚举类型定义加了class就是强类型枚举，不能隐式转换为其他类型，
 {
 	MESH_None,
@@ -93,7 +94,7 @@ public:
 
 	virtual void loadMesh(const std::vector<Vec3>& pos, const std::vector<Vec3ui>& index);
 
-	virtual void loadMesh(const std::string meshFilePath);
+	virtual bool loadMesh(const std::string meshFilePath);
 
 	//uniform b spline
 	//void loadUBS(const std::vector<float>& points);
@@ -142,6 +143,12 @@ public:
 		return mpMaterial;
 	}
 
+	std::unique_ptr<AABB>& getAabb() {
+		return mpAabb;
+	}
+	std::string& getMaterialName() {
+		return mMaterialName;
+	}
 	//void setTexture(const shared_ptr<Texture>& pTex,const string& samplerName="s_texture") {
 	//	if (mpMaterial) {
 	//		mpMaterial->setTextureForSampler(samplerName, pTex);
@@ -206,12 +213,13 @@ protected:
 	unsigned int mBiNormalByteSize{ 0 };
 	unsigned int mColorByteSize{ 0 };
 	unsigned int mIndexByteSize{ 0 };
+	std::string mMaterialName;
 	MeshType mMeshType{ MeshType::MESH_None };
 	DrawType mDrawType{ DrawType::Triangles };
 	int mCountOfVertex{ 0 };//vertex的个数，这里默认pos，texcoord，normal，color等属性的顶点个数都是一样的;
 	unsigned int mId{ 0 };
 	std::shared_ptr<Material> mpMaterial;
-	
+	std::unique_ptr<AABB> mpAabb;
 	//如果函数内部创建了vao就返回true
 	bool createVaoIfNeed(int posloc=-1, int texloc=-1, int norloc=-1);
 };

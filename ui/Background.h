@@ -16,7 +16,7 @@
 *	height -= (paddingTop+ paddingBottom);  //height是view的高度
 * 
 * mpMesh有三种填充模式：纹理、渐变色、纯色
-*	1 如果mpTexture不为空，则mpMesh使用posTexture material来渲染
+*	1 如果mpTexture不为空，则mpMesh使用posDiff material来渲染
 *	2 如果shape设置了渐变属性，则mpMesh使用posColor material来渲染
 *	3 如果shape设置了纯色属性，则mpMesh使用posUniformColor material来渲染
 */

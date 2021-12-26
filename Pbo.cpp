@@ -1,13 +1,14 @@
+#include <iostream>
+#include <fstream>
 #include "Pbo.h"
-#include <GLES3/gl3.h>
-#include <GLES3/gl31.h>
-#include <GLES3/gl32.h>
 #include "Log.h"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/imgproc/types_c.h"
-
-using namespace std::chrono;
-using namespace cv;
+//#include <opencv2/core/core.hpp>  
+//#include <opencv2/highgui/highgui.hpp> 
+//#include "opencv2/imgproc/imgproc.hpp"
+//#include "opencv2/imgproc/types_c.h"
+using namespace std;
+//using namespace std::chrono;
+//using namespace cv;
 
 int Pbo::gPerfectFormat = GL_RGB;
 int Pbo::gPerfectType = GL_UNSIGNED_BYTE;
@@ -121,104 +122,127 @@ void Pbo::getBytesPerPixel(int readFormat,int readType, unsigned int& bytesPerPi
 	}
 }
 
-Pbo::Pbo(const std::string& pathToSave, int width, int height):
-	mWidth(width),
-	mHeight(height),
-	mFormat(GL_RGB),
-	mType(GL_UNSIGNED_BYTE)
+bool Pbo::initPbo(int width, int height)
 {
+	mWidth = width;
+	mHeight = height;
 	getBytesPerPixel(mFormat, mType, mBytesPerPixel);
-	glGenBuffers(2, mPbo);
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo[0]);
-	glBufferData(GL_PIXEL_PACK_BUFFER, mWidth*mHeight*mBytesPerPixel, 0, GL_DYNAMIC_READ);
-
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo[1]);
-	glBufferData(GL_PIXEL_PACK_BUFFER, mWidth*mHeight*mBytesPerPixel, 0, GL_DYNAMIC_READ);
-
-	mpVideo = std::make_shared<VideoWriter>(pathToSave, VideoWriter::fourcc('M', 'J', 'P', 'G'), mFrameRate, Size(width, height));//
-	if (mpVideo->isOpened()) {
-		LOGD("success open videowriter");
+	glGenBuffers(1, &mPbo);
+	if (mPbo > 0) {
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo);
+		glBufferData(GL_PIXEL_PACK_BUFFER, mWidth*mHeight*mBytesPerPixel, 0, GL_STREAM_READ);
+		//getPerfectParam();
+		return true;
+	}
+	else {
+		LOGE("ERROR to create pbo");
+		return false;
 	}
 
-	mpData = std::make_shared<std::vector<unsigned char>>(mWidth*mHeight*mBytesPerPixel);
-	//mPreTime = time_point_cast<milliseconds>(steady_clock::now());
+	//mpVideo = std::make_shared<VideoWriter>(pathToSave, VideoWriter::fourcc('M', 'J', 'P', 'G'), mFrameRate, Size(width, height));//
+	//if (mpVideo->isOpened()) {
+	//	LOGD("success open videowriter");
+	//}
+
+	//mpData = std::make_shared<std::vector<unsigned char>>(mWidth*mHeight*mBytesPerPixel);
 }
 
 Pbo::~Pbo() {
-	if (mPbo[0] >= 0) {
-		glDeleteBuffers(1, &mPbo[0]);
-	}
-	if (mPbo[1] >= 0) {
-		glDeleteBuffers(1, &mPbo[1]);
+	if (mPbo > 0) {
+		glDeleteBuffers(1, &mPbo);
 	}
 
-	if (mWritThread) {
+	/*if (mWritThread) {
 		mbExit = true;
 		mCondition.notify_all();
 		mWritThread->join();
-	}
+	}*/
 }
 
-//TimeCounter<std::chrono::microseconds> tempTimeCounter;
-void Pbo::pullColorBufferToMemory(int x,int y,int width,int height) {
-	//auto curTime = time_point_cast<milliseconds>(steady_clock::now());
-	if ( mTimeCounter.elapse(1000.0f / mFrameRate).first) {
-		std::cout << "Pbo::pullColorBufferToMemory " << Utils::nowTime()<<std::endl;
-		if (mWriteIndex < 0) {
-			mWriteIndex = 0;
-		}
-		glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo[mWriteIndex]);
-		glReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE,nullptr);
-		if (mReadIndex >= 0) {
-			glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo[mReadIndex]); //指定pbo
-			//tempTimeCounter.start();
-			void*   data = glMapBufferRange(GL_PIXEL_PACK_BUFFER,0, mWidth*mHeight*mBytesPerPixel,GL_MAP_READ_BIT); //做一个map映射把PBO的数据和内存的data指针进行关联
-			//std::cout << "glMapBufferRange cost time " << tempTimeCounter.elapseFromeReset() << " micro" << std::endl;
-			if (data) {
-				//save(WIDTH, HEIGHT, (char*)data, WIDTH * HEIGHT * 4);
-				auto pPic = std::make_shared<cv::Mat>();
-				pPic->create(mHeight, mWidth, CV_8UC3);
-				memcpy((void*)pPic->data, data, mWidth*mHeight*mBytesPerPixel);
-				mMutex.lock();
-				mPics.emplace_back(std::move(pPic));
-				mMutex.unlock();
-				mCondition.notify_all();
-				if (!mWritThread) {
-					mWritThread = std::make_shared<std::thread>([this]() {
-						while (!mbExit) {
-							std::unique_lock<std::mutex> l(mMutex);
-							if (!mPics.empty()) {
-								auto it = mPics.begin();
-								auto pPic = *it;
-								mPics.erase(it);
-								l.unlock();
-								cv::cvtColor(*pPic, *pPic, CV_BGR2RGB);
-								cv::flip(*pPic, *pPic, 0);
-								mpVideo->write(*pPic);
-								cv::waitKey(5);
-							}
-							else {
-								mCondition.wait(l);
-							}
-						}
-					});
+void Pbo::saveToPPMFile(GLuint colorBuffer, const std::string& pathToSave) {
+	glReadBuffer(colorBuffer);
+	if (mPbo > 0) {
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo);
+		//dma 灏嗗綋鍓峜olorBuffer璇诲彇鍒皃bo
+		glReadPixels(0, 0, mWidth, mHeight, mFormat, mType, nullptr);
+		//_sleep(3000);
+		void* pData = glMapBufferRange(GL_PIXEL_PACK_BUFFER, 
+			0, mWidth * mHeight * mBytesPerPixel, GL_MAP_READ_BIT);
+		if (pData) {
+			//鍐欏叆鍒皃pm鏂囦欢閲岄潰
+			auto pColor = static_cast<unsigned char*>(pData);
+			pColor += mWidth * (mHeight-1) * mBytesPerPixel;
+			ofstream out(pathToSave, ios::out);
+			out << "P3\n" << mWidth << ' ' << mHeight << "\n255\n";
+			for (int j = mHeight - 1; j >= 0; --j) {
+				std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
+				for (int i = 0; i < mWidth; ++i) {
+					out << static_cast<int>(*pColor++) << " " 
+						<< static_cast<int>(*pColor++) << " " 
+						<< static_cast<int>(*pColor++) << std::endl;
+					++pColor;
 				}
+				pColor -= 2*mWidth * mBytesPerPixel;
 			}
-			else {
-				LOGE("ERROR to map pbo to memory");
-			}
-			glUnmapBuffer(GL_PIXEL_PACK_BUFFER); //取消映射
-			std::swap(mReadIndex, mWriteIndex);
+			out.close();
 		}
-		else {
-			mReadIndex = 0;
-			mWriteIndex = 1;
-		}
-
-		/*
+		glUnmapBuffer(GL_PIXEL_PACK_BUFFER); //鍙栨秷鏄犲皠
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-		tempTimeCounter.start();
-		glReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, (void*)mpData->data());
-		std::cout << "glReadPixels cost time " << tempTimeCounter.elapseFromeReset() << " micro" << std::endl;*/
 	}
+	glReadBuffer(GL_NONE);
 }
+
+//void Pbo::pullColorBufferToMemory(int x,int y,int width,int height) {
+//	if ( mTimeCounter.elapse(1000.0f / mFrameRate).first) {
+//		std::cout << "Pbo::pullColorBufferToMemory " << Utils::nowTime()<<std::endl;
+//		if (mWriteIndex < 0) {
+//			mWriteIndex = 0;
+//		}
+//		glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo[mWriteIndex]);
+//		glReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE,nullptr);
+//		if (mReadIndex >= 0) {
+//			glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo[mReadIndex]); //鎸囧畾pbo
+//			
+//			void*   data = glMapBufferRange(GL_PIXEL_PACK_BUFFER,0, mWidth*mHeight*mBytesPerPixel,GL_MAP_READ_BIT); //鍋氫竴涓猰ap鏄犲皠鎶奝BO鐨勬暟鎹拰鍐呭瓨鐨刣ata鎸囬拡杩涜鍏宠仈
+//
+//			if (data) {
+//				auto pPic = std::make_shared<cv::Mat>();
+//				pPic->create(mHeight, mWidth, CV_8UC3);
+//				memcpy((void*)pPic->data, data, mWidth*mHeight*mBytesPerPixel);
+//				mMutex.lock();
+//				mPics.emplace_back(std::move(pPic));
+//				mMutex.unlock();
+//				mCondition.notify_all();
+//				if (!mWritThread) {
+//					mWritThread = std::make_shared<std::thread>([this]() {
+//						while (!mbExit) {
+//							std::unique_lock<std::mutex> l(mMutex);
+//							if (!mPics.empty()) {
+//								auto it = mPics.begin();
+//								auto pPic = *it;
+//								mPics.erase(it);
+//								l.unlock();
+//								cv::cvtColor(*pPic, *pPic, CV_BGR2RGB);
+//								cv::flip(*pPic, *pPic, 0);
+//								mpVideo->write(*pPic);
+//								cv::waitKey(5);
+//							}
+//							else {
+//								mCondition.wait(l);
+//							}
+//						}
+//					});
+//				}
+//			}
+//			else {
+//				LOGE("ERROR to map pbo to memory");
+//			}
+//			glUnmapBuffer(GL_PIXEL_PACK_BUFFER); //鍙栨秷鏄犲皠
+//			std::swap(mReadIndex, mWriteIndex);
+//		}
+//		else {
+//			mReadIndex = 0;
+//			mWriteIndex = 1;
+//		}
+//	}
+//}

@@ -46,7 +46,7 @@ public:
 	bool createMStexture(int width, int height, int samples=4, unsigned int internalformat= GL_RGBA8);
 	//format:GL_RGB,GL_RGBA,GL_DEPTH_COMPONENT
 	//type:GL_UNSIGNED_BYTE,GL_UNSIGNED_SHORT,GL_UNSIGNED_SHORT_5_6_5
-	bool load(int width,int height,unsigned char* pdata,GLint format=GL_RGB,GLenum type=GL_UNSIGNED_BYTE, int aligment = 4,bool autoMipmap=false);
+	bool load(int width,int height,unsigned char* pdata,GLint format=GL_RGB,GLenum type=GL_UNSIGNED_BYTE, int aligment = 1,bool autoMipmap=false);
 	
 	/*
 	* path:指定了六个cubemap文件所在的路径，这个路径里面有"right.jpg","left.jpg","top.jpg","bottom.jpg","front.jpg","back.jpg"
@@ -67,7 +67,7 @@ public:
 	void update(int xoffset,int yoffset,int width,int height,void* data,
 		int aligment = 1,int mimmapLevel = 0);
 
-
+	void saveToFile(const std::string& path);
 	//支持的最大的纹理单元
 	static int maxTexunit();
 	//支持几种压缩纹理格式：
@@ -75,7 +75,7 @@ public:
 	//传入一个数组，用于获取支持的压缩纹理格式
 	static void getCompressFormat(GLint* formats);
 
-	static std::unique_ptr<Texture> loadImageFromFile(const std::string& path);
+	static std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
 protected:
 	//unsigned char* loadImage(const char* mPath);
 

@@ -226,31 +226,45 @@ void Mesh::loadMesh(const std::vector<Vec3>& pos, const std::vector<Vec3ui>& ind
 	createBufferObject((float*)pos.data(), pos.size() * sizeof(Vec3), pos.size(), (GLuint*)index.data() , index.size()*sizeof(Vec3ui));
 }
 
-void Mesh::loadMesh(const std::string meshFilePath) {
+bool Mesh::loadMesh(const std::string meshFilePath) {
 	std::ifstream infile;
 	infile.open(meshFilePath, std::ifstream::in | std::ifstream::binary);
 	if (infile.good()) {
 		LdpMesh mesh;
 		infile.read((char*)&mesh, sizeof(mesh));
 		if (infile.gcount() == sizeof(mesh)) {
+			//创建mesh的aabb
+			mpAabb = make_unique<AABB>(mesh.xmin,mesh.xmax,mesh.ymin,mesh.ymax,mesh.zmin,mesh.zmax);
+			//获取mesh的材质的名字
+			if (mesh.materialNameSize > 0) {
+				mMaterialName.resize(mesh.materialNameSize);
+				infile.read(mMaterialName.data(), mesh.materialNameSize);
+				assert(infile.gcount() == mesh.materialNameSize);
+				mpMaterial = Material::getMaterial(mMaterialName);
+				if (!mpMaterial) {
+					LOGE("ERROR to find material %s,when load mesh from file", mMaterialName.c_str());
+				}
+			}
 			std::vector<float> pos;
 			std::vector<float> texcoord;
 			std::vector<float> normal;
 			std::vector<float> tangent;
-			std::vector<float> bitangent;
+			//std::vector<float> bitangent;
 			std::vector<unsigned int> index;
+
+			//读取顶点数据
 			if (mesh.vertexCount > 0) {
 				pos.reserve(mesh.vertexCount*3);
 				infile.read((char*)pos.data(), mesh.vertexLength);
 				assert(infile.gcount() == mesh.vertexLength);
 			}
-
+			//读取纹理坐标数据
 			if (mesh.texcoordLength > 0) {
 				texcoord.reserve(mesh.vertexCount * 2);
 				infile.read((char*)texcoord.data(), mesh.texcoordLength);
 				assert(infile.gcount() == mesh.texcoordLength);
 			}
-
+			//读取法线数据
 			if (mesh.normalLength > 0) {
 				normal.reserve(mesh.vertexCount * 3);
 				infile.read((char*)normal.data(), mesh.normalLength);
@@ -268,7 +282,7 @@ void Mesh::loadMesh(const std::string meshFilePath) {
 				infile.read((char*)bitangent.data(), mesh.bitangentsLength);
 				assert(infile.gcount() == mesh.bitangentsLength);
 			}*/
-
+			//读取索引数据
 			if (mesh.indexLength > 0) {
 				index.reserve(mesh.indexLength/sizeof(unsigned int));
 				infile.read((char*)index.data(), mesh.indexLength);
@@ -282,7 +296,9 @@ void Mesh::loadMesh(const std::string meshFilePath) {
 				nullptr,0,
 				tangent.data(),mesh.tangentsLength);
 		}
+		return true;
 	}
+	return false;
 }
 
 bool Mesh::createBufferObject(GLfloat* pos,int posByteSize, int countOfVertex, 
@@ -642,7 +658,7 @@ void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat, const Vec3& l
 		
 	}
 	else {
-		LOGE("mesh has no material,can't render");
+		//LOGE("mesh has no material,can't render");
 	}
 }
 

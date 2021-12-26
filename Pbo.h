@@ -4,68 +4,80 @@
 #include <memory>
 #include <thread>
 #include <chrono>
-#include <opencv2/core/core.hpp>  
-#include <opencv2/highgui/highgui.hpp> 
 #include <list>
+#include <GLES3/gl3.h>
+#include <GLES3/gl31.h>
+#include <GLES3/gl32.h>
 #include "Utils.h"
-
-//¾­¹ı²âÊÔÖ¤Ã÷pboÊÇÓĞÓÃµÄ£¬pbo±¾ÉíÊÇÊ¹ÓÃdma½«color bufferÖĞµÄÊı¾İ¶ÁÈ¡µ½pbo£¬
-//ÔÙÊ¹ÓÃglMapBufferRange£¬°ÑpboÏÔ´æÓ³Éäµ½ÄÚ´æ£¬Õâ¸ö¹ı³ÌÔÚÎÒµÄ±Ê¼Ç±¾ÉÏ´ó¸Å¾Í100Î¢Ãë
-//¶øÈç¹ûÖ±½ÓÊ¹ÓÃglReadPixel½«color bufferÖĞµÄÊı¾İ¶ÁÈ¡µ½ÄÚ´æ£¬ºÄÊ±´ó¸ÅÊÇ2000¶àÎ¢Ãë
+//pbo å°±æ˜¯ä¸€å—æ˜¾å­˜ï¼Œ
+//ç»è¿‡æµ‹è¯•è¯æ˜pboæ˜¯æœ‰ç”¨çš„ï¼Œpboæœ¬èº«æ˜¯ä½¿ç”¨dmaå°†GL_READ_BUFFER(ä½¿ç”¨glReadBufferå‡½æ•°æŒ‡å®š)ä¸­çš„æ•°æ®è¯»å–åˆ°pboï¼Œ
+//å†ä½¿ç”¨glMapBufferRangeï¼ŒæŠŠpboæ˜¾å­˜æ˜ å°„åˆ°ä¸»å†…å­˜ï¼Œè¿™ä¸ªè¿‡ç¨‹åœ¨æˆ‘çš„ç¬”è®°æœ¬ä¸Šå¤§æ¦‚å°±100å¾®ç§’
+//è€Œå¦‚æœç›´æ¥ä½¿ç”¨glReadPixelå°†color bufferä¸­çš„æ•°æ®è¯»å–åˆ°å†…å­˜ï¼Œè€—æ—¶å¤§æ¦‚æ˜¯2000å¤šå¾®ç§’
 
 /*
 glReadBuffer:
 	void glReadBuffer(	GLenum src); Accepted values are GL_BACK, GL_NONE, and GL_COLOR_ATTACHMENTi
 
-	Õâ¸öº¯ÊıµÄ×÷ÓÃÊÇÎªÕâËÄ¸öº¯ÊıÖ¸¶¨source£ºglReadPixels, , glCopyTexImage2D, glCopyTexSubImage2D, and glCopyTexSubImage3D
+	è¿™ä¸ªå‡½æ•°çš„ä½œç”¨æ˜¯ä¸ºè¿™å››ä¸ªå‡½æ•°æŒ‡å®šsourceï¼šglReadPixels, , glCopyTexImage2D, glCopyTexSubImage2D, and glCopyTexSubImage3D
 		
-glReadPixel:Èç¹ûµ±Ç°°ó¶¨ÁËpbo£¬Ôò½«Ö¸¶¨µÄsource£¨Ä¬ÈÏÊÇÈ±Ê¡µÄback color buffer) Í¨¹ıdma¸³Öµµ½pbo
+glReadPixel:å¦‚æœå½“å‰ç»‘å®šäº†pboï¼Œåˆ™å°†æŒ‡å®šçš„sourceï¼ˆé»˜è®¤æ˜¯ç¼ºçœçš„back color buffer) é€šè¿‡dma copyåˆ°pbo
 
-¸ßĞ§¸´ÖÆÎÆÀíÊı¾İµ½ÄÚ´æµÄË¼Â·£º
-1¡¢	new Ò»¸öfbo£¬°ó¶¨ Ä¿±êÎÆÀí£¬×÷ÎªäÖÈ¾Ä¿±ê
-2¡¢	µ÷ÓÃglReadBufferÖ¸¶¨sourceÎªGL_COLOR_ATTACHMENTi
-3¡¢	new Ò»¸öpbo£¬²¢°ó¶¨
-4¡¢	µ÷ÓÃglReadPixel½«ÎÆÀí¶ÁÈ¡µ½pbo£¬
-5¡¢	µ÷ÓÃglMapBufferRange,Ö¸¶¨targetÎªGL_PIXEL_PACK_BUFFER£¬½«µ±Ç°°ó¶¨µÄpboÓ³Éäµ½ÄÚ´æ¡£
+é«˜æ•ˆå¤åˆ¶çº¹ç†æ•°æ®åˆ°å†…å­˜çš„æ€è·¯ï¼š
+1ã€	new ä¸€ä¸ªfboï¼Œç»‘å®š ç›®æ ‡çº¹ç†ï¼Œä½œä¸ºæ¸²æŸ“ç›®æ ‡
+2ã€	è°ƒç”¨glReadBufferæŒ‡å®šsourceä¸ºGL_COLOR_ATTACHMENTi
+3ã€	new ä¸€ä¸ªpboï¼Œå¹¶ç»‘å®š
+4ã€	è°ƒç”¨glReadPixelå°†çº¹ç†è¯»å–åˆ°pboï¼Œ
+5ã€	è°ƒç”¨glMapBufferRange,æŒ‡å®štargetä¸ºGL_PIXEL_PACK_BUFFERï¼Œå°†å½“å‰ç»‘å®šçš„pboæ˜ å°„åˆ°å†…å­˜ã€‚
 */
 
 /*
-ÏÂÃæÕâ¸öpbo£¬ÊµÏÖÁË½«È±Ê¡µÄcolorbuffer ÒÔÃ¿Ãë25Ö¡µÄËÙ¶ÈÂ¼ÖÆµ½Ò»¸öÊÓÆµÀïÃæ
-¿ªÁËÁ½¸öpbo£¬¿ìËÙµÄ½«color buffer¸´ÖÆµ½pbo£¬È»ºó½«pbo mapµ½ÄÚ´æ£¬¸´ÖÆÊı¾İ ¶ª¸øÂ¼ÖÆÏß³Ì¡£
+ä¸‹é¢è¿™ä¸ªpboï¼Œå®ç°äº†å°†ç¼ºçœçš„colorbuffer ä»¥æ¯ç§’25å¸§çš„é€Ÿåº¦å½•åˆ¶åˆ°ä¸€ä¸ªè§†é¢‘é‡Œé¢
+å¼€äº†ä¸¤ä¸ªpboï¼Œå¿«é€Ÿçš„å°†color bufferå¤åˆ¶åˆ°pboï¼Œç„¶åå°†pbo mapåˆ°å†…å­˜ï¼Œå¤åˆ¶æ•°æ® ä¸¢ç»™å½•åˆ¶çº¿ç¨‹ã€‚
 */
 class Pbo {
 public:
-	Pbo(const std::string& pathToSave, int width, int height);
+	Pbo() = default;
 	~Pbo();
-	void pullColorBufferToMemory(int x, int y, int width, int height);
-	static void getPerfectParam();
+	
+	bool initPbo(int width, int height);
+	//å°†æŒ‡å®šçš„readbufferï¼Œä¿å­˜åˆ°ppmå›¾åƒæ–‡ä»¶
+	//colorBuffer: GL_BACK, GL_NONE, and GL_COLOR_ATTACHMENTi
+	void saveToPPMFile(GLuint colorBuffer, const std::string& pathToSave);
+
+	//void pullColorBufferToMemory(int x, int y, int width, int height);
 private:
-	unsigned int mPbo[2]{ 0,0 };
-	int mIndex{ 0 };
+	unsigned int mPbo{ 0 };
+	
 	int mWidth{ 0 };
 	int mHeight{ 0 };
-	int mFormat;
-	int mType;
-	static int gPerfectFormat;
-	static int gPerfectType;
+	int mFormat{ GL_RGBA };
+	int mType{ GL_UNSIGNED_BYTE };
+	unsigned int mBytesPerPixel{ 0 };
+	
 	void getBytesPerPixel(int readFormat, int readType, unsigned int& bytesPerPixel);
 
-	//±£´æÊÓÆµÏà¹ØµÄÊı¾İ
+	
+	//ä¿å­˜è§†é¢‘ç›¸å…³çš„æ•°æ®
+	/*int mIndex{ 0 };
 	std::shared_ptr<cv::VideoWriter> mpVideo;
 	std::shared_ptr<std::thread> mWritThread;
 	std::mutex mMutex;
 	std::condition_variable mCondition;
-	std::list<std::shared_ptr<cv::Mat>> mPics;
+	std::list<std::shared_ptr<cv::Mat>> mPics;*/
 
 	/*using TimePoint = std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds>;
 	TimePoint mPreTime;*/
-	TimeCounter<std::chrono::milliseconds> mTimeCounter;
+	/*TimeCounter<std::chrono::milliseconds> mTimeCounter;
 	int mFrameRate{ 25 };
 	int mReadIndex{ -1 };
 	int mWriteIndex{ -1 };
-	unsigned int mBytesPerPixel{ 0 };
+	
 	bool mbExit{ false };
-	std::shared_ptr<std::vector<unsigned char>> mpData;
+	std::shared_ptr<std::vector<unsigned char>> mpData;*/
+
+	static int gPerfectFormat;
+	static int gPerfectType;
+	static void getPerfectParam();
 };
 
 #endif

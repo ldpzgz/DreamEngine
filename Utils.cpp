@@ -36,7 +36,7 @@ namespace Utils {
 
 
 			retTex = make_shared<Texture>();
-			if (!retTex->load(width, height, pdata, internalFormat)) {
+			if (!retTex->load(width, height, pdata, internalFormat,GL_UNSIGNED_BYTE,1,true)) {
 				retTex.reset();
 			}
 		}

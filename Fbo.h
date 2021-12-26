@@ -72,7 +72,12 @@ public:
 	void detachColorTextureMS(int attachment_n = 0);
 	void detachDepthTexture(GLint level = 0);
 	void detachDepthTextureMS();
-	bool attachColorTexture(const std::shared_ptr<Texture>& texture,int attachment_n = 0, GLint level=0);
+	/*
+	* 指定fbo渲染到纹理，只能atach到texture2d 或者cubicmap，
+	* attachment_n：GL_COLOR_ATTACHMENT0 + attachment_n
+	* cubicFace：0，1，2，3，4，5，分别代表cubicmap的x,-x,y,-y,z,-z面
+	*/
+	bool attachColorTexture(const std::shared_ptr<Texture>& texture,int attachment_n = 0, int cubicFace = 0,GLint level=0);
 	bool attachColorTextureMS(const std::shared_ptr<Texture>& texture, int attachment_n = 0);
 	bool attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level=0);
 	bool attachDepthTextureMS(const std::shared_ptr<Texture>& texture);

@@ -12,14 +12,14 @@ cubeTexture:skyboxT{
 }
 
 material:car2{
-	program=posTextureLight
+	program=posDiffLight
 	sampler{
 		s_texture=car2Diffuse
 	}
 }
 
 material:car{
-	program=posTextureTbnLight
+	program=posDiffNormalLight
 	sampler{
 		s_texture=carDiffuse
 		s_normal=carNormal

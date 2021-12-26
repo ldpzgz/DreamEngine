@@ -2,84 +2,18 @@
 <LinearLayout
 	id="llayout"
 	width="wrapContent"
-	height="wrapContent"
-	gravity="topCenter"
+	height="matchParent"
+	gravity="center"
 	orientation="v">
-	<ScrollView
-		id = "scroll1"
-		width="wrapContent"
-		height="200"
-		gravity="leftBottom"
-		orientation="v">
-	
-		<TextView
-			id="tv"
-			width="220"
-			height="40"
-			marginLeft="10"
-			marginRight="10"
-			gravity="leftCenter"
-			textSize="32"
-			textColor="#ff0000ff"
-			text="我是刘子萱">
-		</TextView>
-		<TextView
-			id="tv1"
-			width="220"
-			height="wrapContent"
-			marginLeft="10"
-			marginRight="10"
-			gravity="leftCenter"
-			textSize="32"
-			textColor="#00ff00ff"
-			text="刘子萱abcdefghijklmnopqrstuvwxyz"
-			background="@shape/test"
-			lineSpace="10"
-			maxLine="4">
-		</TextView>
-		<Button
-			id="bt"
-			width="wrapContent"
-			height="wrapContent"
-			marginLeft="10"
-			marginRight="0"
-			marginTop="10"
-			marginBottom="10"
-			gravity="center"
-			textSize="32"
-			background="#19A719ff"
-			textColor="#000000ff"
-			charSpace="30"
-			text="确定">
-		</Button>
-		<TextView
-			id="tv2"
-			width="220"
-			height="40"
-			marginLeft="10"
-			marginRight="10"
-			gravity="leftCenter"
-			textSize="32"
-			textColor="#ff0000ff"
-			text="我是刘东平">
-		</TextView>
-		<TextView
-			id="tv3"
-			width="220"
-			height="40"
-			marginLeft="10"
-			marginRight="10"
-			gravity="leftCenter"
-			textSize="32"
-			textColor="#ff0000ff"
-			text="我是陈云丽">
-		</TextView>
-	</ScrollView>
-	<ListView
-		id="listv"
-		width = "200"
-		height="300"
-		orientation="v"
-	>
-	</ListView>
+	<TextView
+		id="tv"
+		width="200"
+		height="50"
+		gravity="center"
+		textSize="32"
+		textColor="#ff0000ff"
+		background="@bk/firstbk"
+		text="我">
+	</TextView>
+		
 </LinearLayout>

@@ -118,8 +118,8 @@ bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum
 	// Set-up texture properties.
 	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 	// Loads image data into OpenGL.
 	
 	int internalformat = mFormat;//only 1,2,3,4
@@ -136,8 +136,6 @@ bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum
 	glTexImage2D(mTarget, 0, internalformat, mWidth, mHeight, 0,
 		mFormat, type, pdata);
 
-	checkglerror();
-
 	if(autoMipmap)
 	{
 		glGenerateMipmap(mTarget);
@@ -153,18 +151,18 @@ bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum
 }
 
 bool Texture::loadFromeFile(const std::string& path) {
-	mTarget = GL_TEXTURE_2D;
-	glGenTextures(1, &mTextureId);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(mTarget, mTextureId);
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	int nrChannels;
 	unsigned char* data = stbi_load(path.c_str(), &mWidth, &mHeight, &nrChannels, 0);
 	if (data)
 	{
+		mTarget = GL_TEXTURE_2D;
+		glGenTextures(1, &mTextureId);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(mTarget, mTextureId);
+		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 		if (nrChannels == 3) {
 			mFormat = GL_RGB;
 		}
@@ -175,9 +173,10 @@ bool Texture::loadFromeFile(const std::string& path) {
 			mFormat = GL_LUMINANCE;
 		}
 		else {
-			LOGE("Cubemap texture %s,unknow channels: d", path.c_str(), nrChannels);
+			LOGE("Cubemap texture %s,unknow channels: %d", path.c_str(), nrChannels);
 		}
 		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(mTarget);
 		stbi_image_free(data);
 		return true;
 	}
@@ -185,7 +184,6 @@ bool Texture::loadFromeFile(const std::string& path) {
 	{
 		LOGE("Cubemap tex failed to load at path: %s", path.c_str());
 		stbi_image_free(data);
-		unload();
 		return false;
 	}
 
@@ -217,7 +215,7 @@ bool Texture::loadCubemap(const std::string& path) {
 				mFormat = GL_LUMINANCE;
 			}
 			else {
-				LOGE("Cubemap texture %s,unknow channels: d", filePath.c_str(), nrChannels);
+				LOGE("Cubemap texture %s,unknow channels: %d", filePath.c_str(), nrChannels);
 			}
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
@@ -232,12 +230,12 @@ bool Texture::loadCubemap(const std::string& path) {
 		}
 		++i;
 	}
-
+	glGenerateMipmap(mTarget);
 	//int align = 0;
 	//glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);//默认是4，the alignment requirements for the start of each pixel row in memory
 
 	// Set-up texture properties.
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
 	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
@@ -303,10 +301,16 @@ void Texture::getCompressFormat(GLint* formats)
 	glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS,formats);
 }
 
-std::unique_ptr<Texture> Texture::loadImageFromFile(const std::string& path) {
-	auto pTex = std::make_unique<Texture>();
+std::shared_ptr<Texture> Texture::loadImageFromFile(const std::string& path) {
+	auto pTex = std::make_shared<Texture>();
 	if (pTex) {
-		pTex->loadFromeFile(path);
+		if (!pTex->loadFromeFile(path)) {
+			pTex.reset();
+		}
 	}
 	return pTex;
+}
+
+void Texture::saveToFile(const std::string& path) {
+
 }

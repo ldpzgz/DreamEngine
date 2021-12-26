@@ -12,6 +12,7 @@ MaterialP gpMaterialNothing;
 
 static const string gMaterialPath = "./opengles3/material/material";
 static const string gProgramPath = "./opengles3/material/program";
+static const string gDrawablePath = "./opengles3/material/drawable";
 
 std::unordered_map<std::string, std::shared_ptr<Material>> Material::gMaterials;
 std::unordered_map<std::string, std::shared_ptr<Texture>> Material::gTextures;
@@ -63,8 +64,18 @@ bool Material::samplerHandler(const std::shared_ptr<Material>& pMaterial, const 
 				pMaterial->setTextureForSampler(pairs.first, pTexture->second);
 			}
 			else {
-				LOGE("parse material's sampler property error,cannot find texture %s", pairs.second.c_str());
-				return true;
+				//如果写的是drawable文件夹里面的某个文件
+				auto filePath = gDrawablePath + "/" + pairs.second;
+				auto pTex = Texture::loadImageFromFile(filePath);
+				if (pTex) {
+					pMaterial->setTextureForSampler(pairs.first, pTex);
+					gTextures.emplace(pairs.second, pTex);
+					return true;
+				}
+				else {
+					LOGE("parse material's sampler property error,cannot find texture %s", pairs.second.c_str());
+					return false;
+				}
 			}
 		}
 	}
@@ -276,17 +287,18 @@ void Material::loadAllMaterial() {
 	if (!exists(gProgramPath)) {
 		LOGE("ERROR the ui image path %s is not exist", gMaterialPath.c_str());
 	}
-
-	if (is_directory(gProgramPath)) {
-		//是目录
-		directory_iterator list(gProgramPath);
-		//directory_entry 是一个文件夹里的某一项，可以是path，也可以是文件
-		for (auto& it : list) {
-			auto filePath = it.path();
-			if (is_regular_file(filePath)) {
-				//是文件
-				auto filePathString = filePath.string();
-				Material::loadFromFile(filePathString);
+	else {
+		if (is_directory(gProgramPath)) {
+			//是目录
+			directory_iterator list(gProgramPath);
+			//directory_entry 是一个文件夹里的某一项，可以是path，也可以是文件
+			for (auto& it : list) {
+				auto filePath = it.path();
+				if (is_regular_file(filePath)) {
+					//是文件
+					auto filePathString = filePath.string();
+					Material::loadFromFile(filePathString);
+				}
 			}
 		}
 	}
@@ -294,18 +306,18 @@ void Material::loadAllMaterial() {
 	path materialPath(gMaterialPath);
 	if (!exists(materialPath)) {
 		LOGE("ERROR the ui image path %s is not exist", gMaterialPath.c_str());
-	}
-
-	if (is_directory(materialPath)) {
-		//是目录
-		directory_iterator list(materialPath);
-		//directory_entry 是一个文件夹里的某一项，可以是path，也可以是文件
-		for (auto& it : list) {
-			auto filePath = it.path();
-			if (is_regular_file(filePath)) {
-				//是文件
-				auto filePathString = filePath.string();
-				Material::loadFromFile(filePathString);
+	}else{
+		if (is_directory(materialPath)) {
+			//是目录
+			directory_iterator list(materialPath);
+			//directory_entry 是一个文件夹里的某一项，可以是path，也可以是文件
+			for (auto& it : list) {
+				auto filePath = it.path();
+				if (is_regular_file(filePath)) {
+					//是文件
+					auto filePathString = filePath.string();
+					Material::loadFromFile(filePathString);
+				}
 			}
 		}
 	}
@@ -473,7 +485,7 @@ bool Material::parseMaterialFile(const string& path) {
 				value = value.substr(tempPos);
 			}
 			if (!mpContents->try_emplace(key, value).second) {
-				LOGE("%s:%s:%s error to emplace key %s", __FILE__,__func__, __LINE__,key);
+				LOGE("%s:%s: error to emplace key %s", __FILE__,__func__,key.c_str());
 			}
 			else if (key.find("texture") != string::npos) {
 				auto textureName = getItemName(key);
@@ -510,9 +522,6 @@ bool Material::parseMaterialFile(const string& path) {
 			}
 		}
 	}
-	else {
-		LOGE("ERROR! %s material has no program", path.c_str());
-	}
 
 	if (bParseSuccess) {
 		if (gMaterials.try_emplace(filename, shared_from_this()).second) {
@@ -521,14 +530,13 @@ bool Material::parseMaterialFile(const string& path) {
 		else {
 			LOGD("failed to parse material %s", filename.c_str());
 		}
-
-		//parse Material
-		for (auto& key : materialKeys) {
-			auto it = mpContents->find(key);
-			if (it != mpContents->end()) {
-				auto matName = getItemName(key);
-				parseMaterial(matName, it->second);
-			}
+	}
+	//parse Material
+	for (auto& key : materialKeys) {
+		auto it = mpContents->find(key);
+		if (it != mpContents->end()) {
+			auto matName = getItemName(key);
+			bParseSuccess = parseMaterial(matName, it->second);
 		}
 	}
 	//mpContents->clear();
@@ -682,7 +690,7 @@ std::shared_ptr<Texture> Material::createTexture(const std::string& name,int wid
 	return pTex;
 }
 
-std::shared_ptr<Texture> Material::loadTextureFromFile(const std::string& path) {
+std::shared_ptr<Texture> Material::loadImageFromFile(const std::string& path) {
 	auto texName = Utils::getFileName(path);
 	std::shared_ptr<Texture> pTexture = Texture::loadImageFromFile(path);
 	if (pTexture) {
@@ -753,7 +761,7 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 	if (parseItem(texture, umap)) {
 		const auto pPath = umap.find("path");
 		if (pPath != umap.cend()) {
-			auto pTex = Utils::loadImageFromFile(pPath->second);
+			auto pTex = Texture::loadImageFromFile(pPath->second);
 			if (pTex && gTextures.try_emplace(textureName,pTex).second) {
 				LOGD("success to parse texture %s from path",textureName.c_str());
 			}

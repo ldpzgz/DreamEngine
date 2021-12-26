@@ -79,7 +79,7 @@ public:
 
 	static shared_ptr<Material> loadFromFile(const string& filename);
 	static std::shared_ptr<Texture> createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint format = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, bool autoMipmap = false);
-	static std::shared_ptr<Texture> loadTextureFromFile(const std::string& name);
+	static std::shared_ptr<Texture> loadImageFromFile(const std::string& name);
 	static void loadAllMaterial();
 	static shared_ptr<Material> clone(const std::string&);
 private:
