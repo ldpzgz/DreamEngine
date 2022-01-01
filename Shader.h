@@ -50,11 +50,25 @@ public:
 
 	bool initShader(const std::string& vs, const std::string& ps);
 
-	bool initShader(const char* vs,const char* ps);
+	bool initShader(const char* vs, const char* ps);
 
-	bool initShaderFromFile(const char* vsFile,const char* psFile);
-
-	void setLocation(int pos, int tex=-1, int color=-1, int nor=-1,int tangent=-1) {
+	bool initShaderFromFile(const char* vsFile, const char* psFile);
+	void setPosLoc(int pos) {
+		mPosLoc = pos;
+	}
+	void setTexLoc(int tex) {
+		mTexcoordLoc = tex;
+	}
+	void setColorLoc(int color) {
+		mColorLoc = color;
+	}
+	void setNormalLoc(int nor) {
+		mNormalLoc = nor;
+	}
+	void setTangentLoc(int tangent) {
+		mTangentLoc = tangent;
+	}
+	void setLocation(int pos, int tex = -1, int color = -1, int nor = -1, int tangent = -1) {
 		mPosLoc = pos;
 		mTexcoordLoc = tex;
 		mColorLoc = color;
@@ -62,7 +76,7 @@ public:
 		mTangentLoc = tangent;
 	}
 
-	void getLocation(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc,int& tangentLoc) {
+	void getLocation(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc, int& tangentLoc) {
 		posLoc = mPosLoc;
 		texcoordLoc = mTexcoordLoc;
 		colorLoc = mColorLoc;
@@ -111,21 +125,26 @@ public:
 	//	}
 	//}
 
-	void setUniform1i(const char* uniformName,int value);
-	void setUniform1f(const char* uniformName,float x);
-	void setUniform2f(const char* uniformName,float x,float y);
-	void setUniform3f(const char* uniformName,float x,float y,float z);
-	void setUniform4f(const char* uniformName,float x,float y,float z,float w);
+	void setUniform1i(const char* uniformName, int value);
+	void setUniform1f(const char* uniformName, float x);
+	void setUniform2f(const char* uniformName, float x, float y);
+	void setUniform3f(const char* uniformName, float x, float y, float z);
+	void setUniform4f(const char* uniformName, float x, float y, float z, float w);
 	void setMvpMatrix(const glm::mat4&);
 	void setTextureMatrix(const glm::mat4&);
 	void setMvMatrix(const glm::mat4&);
 	void setViewMatrix(const glm::mat4&);
 	void setUniformColor(float r, float g, float b, float a);
 	void setUniformColor(Color color);
-	void setLightPos(const Vec3& lightPos);
+	void setLightPos(const std::vector<Vec3>& lightPos);
 	void setViewPos(const Vec3& viewPos);
-	void setLightColor(const Vec3& lightColor);
-	
+	void setLightColor(const std::vector<Vec3>& lightColor);
+	void setMetallic(float m) {
+		mMetallic = m;
+	}
+	void setRoughness(float r) {
+		mRoughness = r;
+	}
 
 	void enable();
 
@@ -137,8 +156,10 @@ public:
 	void getLightColorLoc(const std::string& lightColorNameInShader);
 	void getTextureMatrixLoc(const std::string& textureMatrixNameInShader);
 	void getUniformColorLoc(const std::string& uniformColorNameInShader);
-	void getDiffuseTextureLoc(const std::string& diffuseSamplerInShader);
-	void getNormalTextureLoc(const std::string& normalSamplerInShader);
+	void getMetallicLoc(const std::string& value);
+	void getRoughnessLoc(const std::string& value);
+	//void getDiffuseTextureLoc(const std::string& diffuseSamplerInShader);
+	//void getNormalTextureLoc(const std::string& normalSamplerInShader);
 
 	std::vector<std::string>& getSamplerNames() {
 		return mSamplerNames;
@@ -175,22 +196,24 @@ private:
 	int mViewPosLoc{ -1 };
 	int mLightColorLoc{ -1 };
 	int mUniformColorLoc{ -1 }; //在fs里面可以有个uniform vec4 color，用于设置输出固定颜色
-	int mDiffuseTextureLoc{ -1 };
-	int mNormalTextureLoc{ -1 };
+	int mMetallicLoc{ -1 };
+	int mRoughnessLoc{ -1 };
 	std::string mName;	//只是用来输出日志
 	std::unique_ptr<glm::mat4> mpMvpMatrix;
 	std::unique_ptr<glm::mat4> mpMvMatrix;
 	std::unique_ptr<glm::mat4> mpViewMatrix;
 	std::unique_ptr<glm::mat4> mpTextureMatrix;
 	//int mSamplerCount;
-	std::map<std::string,int> mAttributeLocMap;
-	std::map<std::string,int> mUniformLocMap;
+	std::map<std::string, int> mAttributeLocMap;
+	std::map<std::string, int> mUniformLocMap;
 	std::vector<std::string> mSamplerNames;
 	//std::unordered_map<int, std::shared_ptr<Texture>> mSamplerToTex;//Sampler in shader to Texture;
 	Color mUniformColor{ 0.0f,0.0f,0.0f,0.0f };
-	Vec3 mLightPos{ 0.0f,100.0f,0.0f };
 	Vec3 mViewPos{ 0.0f,100.0f,0.0f };
-	Vec3 mLightColor{ 1.0f,1.0f,1.0f };
+	std::vector<Vec3> mLightPositions{ {0.0f,100.0f,0.0f} };
+	std::vector<Vec3> mLightColors{ {1.0f,1.0f,1.0f} };
+	float mMetallic{ 0.5f };
+	float mRoughness{ 0.5f };
 protected:
 	//GL_VERTEX_SHADER,GL_FRAGMENT_SHADER
 	GLuint loadShader ( GLenum type, const char *shaderSrc );

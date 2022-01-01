@@ -30,8 +30,10 @@ public:
 	Vec3& getPosition() {
 		return mPosition;
 	}
+
+	std::shared_ptr<Scene> getScene();
 private:
-	void renderNode(const shared_ptr<Node<glm::mat4>>& node) const;
+	void renderNode(const shared_ptr<Node<glm::mat4>>& node,const std::shared_ptr<Scene>& pScene) const;
 	void geometryPass(const shared_ptr<Node<glm::mat4>>& node) const;
 	void lightingPass(const shared_ptr<Scene>& pScene);
 	float aspect{ 4.0f / 3.0f };//屏幕宽高比

@@ -1,0 +1,178 @@
+vs{
+	#version 300 es
+	precision mediump float;
+    layout (location = 0) in vec3 aPos;
+	layout (location = 1) in vec3 aNormal;
+	layout (location = 2) in vec2 aTexCoord;
+	layout (location = 3) in vec3 aTangent;
+	uniform mat4 mvpMatrix;
+	uniform mat4 mvMat;
+    out vec2 TexCoords;
+	out vec3 Normal;
+	out vec3 Tangent;
+	out vec3 WorldPos;
+    void main()
+    {
+       gl_Position = mvpMatrix * vec4(aPos,1.0f);
+       TexCoords = aTexCoord;
+	   WorldPos = vec3(mvMat * vec4(aPos, 1.0f));
+	   Normal = mat3(mvMat) * aNormal;
+	   Tangent = mat3(mvMat) * aTangent;
+    }
+}
+fs{
+	#version 300 es
+	precision mediump float;
+	out vec4 FragColor;
+	in vec2 TexCoords;
+	in vec3 WorldPos;
+	in vec3 Normal;
+	in vec3 Tangent;
+	uniform sampler2D albedoMap;
+	uniform sampler2D normalMap;
+	
+	// lights
+	uniform vec3 lightPositions[4];
+	uniform vec3 lightColors[4];
+
+	uniform vec3 camPos;
+	uniform float metallic;
+	uniform float roughness;
+
+	const float PI = 3.14159265359f;
+	  
+	float DistributionGGX(vec3 N, vec3 H, float roughness);
+	float GeometrySchlickGGX(float NdotV, float roughness);
+	float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
+	vec3 fresnelSchlick(float cosTheta, vec3 F0);
+	
+	void main()
+	{
+		vec3 albedo     = pow(texture(albedoMap, TexCoords).rgb, vec3(2.2f));
+		//float metallic  = texture(metallicMap, TexCoords).r;
+		//float roughness = texture(roughnessMap, TexCoords).r;
+		//float ao        = texture(aoMap, TexCoords).r;
+		
+		vec3 T = normalize(Tangent);
+		vec3 nor = normalize(Normal);
+		T = normalize(T - dot(T, nor) * nor);
+		vec3 B = cross(nor, T);
+		mat3 TBN = mat3(T, B, nor);
+		vec3 N = texture( normalMap, TexCoords ).rgb;
+		N = normalize(N * 2.0f - 1.0f);
+		N = normalize(TBN*N);
+		vec3 V = normalize(camPos - WorldPos);
+
+		vec3 F0 = vec3(0.04f); 
+		F0 = mix(F0, albedo, metallic);
+		
+		// reflectance equation
+		vec3 Lo = vec3(0.0f);
+		for(int i = 0; i < 4; ++i) 
+		{
+			// calculate per-light radiance
+			vec3 L = normalize(lightPositions[i] - WorldPos);
+			vec3 H = normalize(V + L);
+			float distance    = length(lightPositions[i] - WorldPos);
+			float attenuation = 1.0f / (distance * distance);
+			vec3 radiance     = lightColors[i] * attenuation;        
+			
+			// cook-torrance brdf
+			float NDF = DistributionGGX(N, H, roughness);        
+			float G   = GeometrySmith(N, V, L, roughness);      
+			vec3 F    = fresnelSchlick(max(dot(H, V), 0.0f), F0);       
+			
+			vec3 kS = F;
+			vec3 kD = vec3(1.0f) - kS;
+			kD *= 1.0f - metallic;	  
+			
+			vec3 numerator    = NDF * G * F;
+			float denominator = 4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0f) + 0.0001f;
+			vec3 specular     = numerator / denominator;  
+				
+			// add to outgoing radiance Lo
+			float NdotL = max(dot(N, L), 0.0f);                
+			Lo += (kD * albedo / PI + specular) * radiance * NdotL; 
+		}   
+	  
+		vec3 ambient = vec3(0.03f) * albedo;// *ao
+		vec3 color = ambient + Lo;
+		
+		color = color / (color + vec3(1.0f));
+		color = pow(color, vec3(1.0f/2.2f));  
+	   
+		FragColor = vec4(color, 1.0f);
+	}
+
+	/*Trowbridge-Reitz GGX normal distribution function
+	*	N is normal,
+	*	H is half vector
+	*	
+	*/
+	float DistributionGGX(vec3 N, vec3 H, float roughness)
+	{
+		float a 	 = roughness*roughness;
+		float a2     = a*a;
+		float NdotH  = max(dot(N, H), 0.0f);
+		float NdotH2 = NdotH*NdotH;
+		
+		float nom    = a2;
+		float denom  = (NdotH2 * (a2 - 1.0f) + 1.0f);
+		denom        = PI * denom * denom;
+		
+		return nom / denom;
+	}
+	
+	/*Geometry function Schlick-GGX 
+	*	k is remaping of roughness ,
+	*	for direct lighting k=(a+1)2 / 8
+	*	or IBL lighting k = a2 / 2
+	*/
+	float GeometrySchlickGGX(float NdotV, float roughness)
+	{
+		float r = (roughness + 1.0);
+		float k = (r*r) / 8.0f;
+
+		float num   = NdotV;
+		float denom = NdotV * (1.0f - k) + k;
+		
+		return num / denom;
+	}
+	  
+	float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+	{
+		float NdotV = max(dot(N, V), 0.0f);
+		float NdotL = max(dot(N, L), 0.0f);
+		float ggx1 = GeometrySchlickGGX(NdotV, roughness);
+		float ggx2 = GeometrySchlickGGX(NdotL, roughness);
+		
+		return ggx1 * ggx2;
+	}
+	
+	/*Fresnel-Schlick approximation
+	*	cosTheta being the dot product result between the surface's normal n and the halfway h (or view v) direction
+	* 	vec3 F0 = vec3(0.04);
+	*	F0 = mix(F0, surfaceColor.rgb, metalness);
+	*/
+	vec3 fresnelSchlick(float cosTheta, vec3 F0)
+	{
+		return F0 + (1.0f - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
+	}
+}
+program:pbr1{
+	posLoc=0
+	normalLoc=1
+	texcoordLoc=2
+	tangentLoc=3
+	mvpMatrix=mvpMatrix
+	mvMatrix=mvMat
+	viewPos=camPos
+	lightPos=lightPositions
+	lightColor=lightColors
+	metallic=metallic
+	roughness=roughness
+	sampler{
+		albedoMap=none
+		normalMap=none
+	}
+}

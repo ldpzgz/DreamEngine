@@ -1,6 +1,6 @@
 #ifndef _LIGHT_H_
 #define _LIGHT_H_
-#include "Node.h"
+#include "Attachable.h"
 #include "Rect.h"
 enum class LightType {
 	Directional,
@@ -8,11 +8,10 @@ enum class LightType {
 	SpotLight
 };
 
-class Light :public Node<glm::mat4> {
+class Light :public Attachable {
 public:
 	explicit Light(LightType type);
-	Light();
-	~Light();
+	Light() = default;
 	void setPosOrDir(const Vec3& pd) {
 		mPosOrDir = pd;
 	}
@@ -29,7 +28,7 @@ public:
 		return mLightColor;
 	}
 private:
-	LightType mType{ LightType::Directional };
+	LightType mType{ LightType::Point };
 	Vec3 mPosOrDir{-1.0f,-1.0f,0.0f};
 	Vec3 mLightColor{1.0f,1.0f,1.0f};
 };

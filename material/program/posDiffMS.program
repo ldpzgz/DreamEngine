@@ -1,0 +1,43 @@
+vs{
+	#version 310 es
+    layout(location = 0) in vec4 a_position;
+    layout(location = 1) in vec2 a_texCoord;
+	uniform mat4 mvp_matrix;
+    out vec2 v_texCoord;
+    void main()
+    {
+       gl_Position = mvp_matrix * a_position;
+       v_texCoord = a_texCoord;
+    }
+}
+
+fs{
+	#version 310 es
+	precision mediump float;
+	in vec2 v_texCoord;
+	layout(location = 0) out vec4 outColor;
+	uniform mediump sampler2DMS s_texture;
+	//uniform int numOfSamples;
+	void main()
+	{
+	  vec4 color = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	  ivec2 texcd = textureSize(s_texture);
+	  for(int i=0;i<4;++i){
+		float x = v_texCoord.x*float(texcd.x);
+		int ix = int(x);
+		float y = v_texCoord.y*float(texcd.y);
+		int iy = int(y);
+		color += texelFetch(s_texture, ivec2(ix,iy), i);
+	  }
+	  outColor = color / 4.0f;
+	}
+}
+
+program:posDiffMS{
+	posLoc=0
+	texcoordLoc=1
+	mvpMatrix=mvp_matrix
+	sampler{
+		s_texture=none
+	}
+}

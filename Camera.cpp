@@ -1,5 +1,6 @@
 #include "Camera.h"
 #include "Scene.h"
+#include "Light.h"
 #include <glm/gtc/matrix_transform.hpp>
 Camera::Camera(const shared_ptr<Scene>& ps):
 	Node<glm::mat4>(),
@@ -36,27 +37,41 @@ void Camera::ortho(float left, float right, float bottom, float top, float zNear
 }
 
 void Camera::renderScene() {
-	auto scene = mpScene.lock();
-	if (scene) {
-		const auto& rootNode = scene->getRoot();
-		renderNode(rootNode);
+	auto pScene = mpScene.lock();
+	if (pScene) {
+		const auto& rootNode = pScene->getRoot();
+		renderNode(rootNode, pScene);
 	}
 }
 
-void Camera::renderNode(const shared_ptr<Node<glm::mat4>>& node) const
+void Camera::renderNode(const shared_ptr<Node<glm::mat4>>& node, const std::shared_ptr<Scene>& pScene) const
 {
 	if (node) {
-		const auto& pMeshes = node->getAttachments();
+		const auto& pAttaches = node->getAttachments();
 		glm::mat4 modelViewMatrix = mMat * node->getWorldMatrix();
 		glm::mat4 mvpMatrix = mProjMatrix * modelViewMatrix;
-		
-		for (const auto& pMesh : pMeshes) {
-			std::dynamic_pointer_cast<Mesh>(pMesh.second)->render(mvpMatrix, modelViewMatrix,Vec3(200.0f,500.0f,0.0f),mPosition);
+		std::vector<Vec3> lightPos;
+		std::vector<Vec3> lightColor;
+		if (pScene) {
+			auto& lights = pScene->getLights();
+			for (auto& pl : lights) {
+				if (pl) {
+					lightPos.emplace_back(pl->getPosOrDir());
+					lightColor.emplace_back(pl->getLightColor());
+				}
+			}
+		}
+
+		for (const auto& pAttach : pAttaches) {
+			std::shared_ptr<Mesh> pMesh = std::dynamic_pointer_cast<Mesh>(pAttach.second);
+			if (pMesh) {
+				pMesh->render(mvpMatrix, modelViewMatrix, lightPos, lightColor, mPosition);
+			}
 		}
 		
 		const auto& pChildNodes = node->getChildren();
 		for (const auto& pNode : pChildNodes) {
-			renderNode(pNode.second);
+			renderNode(pNode.second,pScene);
 		}
 	}
 }
@@ -92,4 +107,8 @@ void Camera::translate(float x, float y, float z) {
 
 void Camera::rotate(float angle, const glm::vec3& vec) {
 	Node<glm::mat4>::rotate(-angle, vec);
+}
+
+std::shared_ptr<Scene> Camera::getScene() {
+	return mpScene.lock();
 }

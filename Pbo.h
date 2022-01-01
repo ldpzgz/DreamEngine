@@ -42,7 +42,7 @@ public:
 	bool initPbo(int width, int height);
 	//将指定的readbuffer，保存到ppm图像文件
 	//colorBuffer: GL_BACK, GL_NONE, and GL_COLOR_ATTACHMENTi
-	void saveToPPMFile(GLuint colorBuffer, const std::string& pathToSave);
+	void saveToFile(GLuint colorBuffer, const std::string& pathToSave);
 
 	//void pullColorBufferToMemory(int x, int y, int width, int height);
 private:

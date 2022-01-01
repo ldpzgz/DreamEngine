@@ -14,19 +14,7 @@ static const string gMaterialPath = "./opengles3/material/material";
 static const string gProgramPath = "./opengles3/material/program";
 static const string gDrawablePath = "./opengles3/material/drawable";
 
-std::unordered_map<std::string, std::shared_ptr<Material>> Material::gMaterials;
-std::unordered_map<std::string, std::shared_ptr<Texture>> Material::gTextures;
-std::unordered_map<std::string, std::shared_ptr<Shader>> Material::gShaders;
-
-std::unordered_map<std::string, std::function<bool(const std::shared_ptr<Material>&, const std::string&)>> Material::gMaterialHandlers{
-	{"program",Material::programHandler},
-	{"sampler",Material::samplerHandler},
-	{"op",Material::opHandler},
-	{"depthTest",Material::opDepthHandler},
-	{"blend",Material::opBlendHandler},
-	{"cullFace",Material::opCullfaceHandler}
-};
-static std::unordered_map<std::string,unsigned int> gBlendFuncMap{
+static std::unordered_map<std::string, unsigned int> gBlendFuncMap{
 	{"one",GL_ONE},
 	{"zero",GL_ZERO},
 	{"sc",GL_SRC_COLOR},
@@ -47,6 +35,201 @@ static std::unordered_map<std::string, unsigned int> gBlendEquationMap{
 	{"max",GL_MAX}
 };
 
+std::unordered_map<std::string, std::shared_ptr<Material>> Material::gMaterials;
+std::unordered_map<std::string, std::shared_ptr<Texture>> Material::gTextures;
+std::unordered_map<std::string, std::shared_ptr<Shader>> Material::gShaders;
+
+std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> Material::gProgramKeyValueHandlers{
+	{"posLoc",Material::posLocHandler},
+	{"texcoordLoc",Material::texcoordLocHandler},
+	{"colorLoc",Material::colorLocHandler},
+	{"normalLoc",Material::normalLocHandler},
+	{"tangentLoc",Material::tangentLocHandler},
+	{"mvpMatrix",Material::mvpMatrixHandler},
+	{"mvMatrix",Material::mvMatrixHandler},
+	{"viewMatrix",Material::vMatrixHandler},
+	{"textureMatrix",Material::texMatrixHandler},
+	{"lightPos",Material::lightPosHandler},
+	{"lightColor",Material::lightColorHandler},
+	{"viewPos",Material::viewPosHandler},
+	{"uniformColor",Material::uniformColorHandler},
+	{"sampler",Material::programSamplerHandler}
+};
+
+std::unordered_map<std::string, std::function<bool(const std::shared_ptr<Material>&, const std::string&)>> Material::gMaterialHandlers{
+	{"program",Material::programHandler},
+	{"sampler",Material::samplerHandler},
+	{"op",Material::opHandler},
+	{"depthTest",Material::opDepthHandler},
+	{"blend",Material::opBlendHandler},
+	{"cullFace",Material::opCullfaceHandler}
+};
+
+bool Material::posLocHandler(Material* pMat, const std::string& value) {
+	try {
+		int posLoc = std::stoi(value);
+		pMat->getShader()->setPosLoc(posLoc);
+	}
+	catch (exception e) {
+		LOGE("posLocHandler error to stoi posLoc");
+	}
+	return true;
+}
+
+bool Material::colorLocHandler(Material* pMat, const std::string& value) {
+	try {
+		int posLoc = std::stoi(value);
+		pMat->getShader()->setColorLoc(posLoc);
+	}
+	catch (exception e) {
+		LOGE("posLocHandler error to stoi posLoc");
+	}
+	return true;
+}
+
+bool Material::normalLocHandler(Material* pMat, const std::string& value) {
+	try {
+		int norLoc = std::stoi(value);
+		pMat->getShader()->setNormalLoc(norLoc);
+	}
+	catch (exception e) {
+		LOGE("posLocHandler error to stoi posLoc");
+	}
+	return true;
+}
+
+bool Material::texcoordLocHandler(Material* pMat, const std::string& value) {
+	try {
+		int norLoc = std::stoi(value);
+		pMat->getShader()->setTexLoc(norLoc);
+	}
+	catch (exception e) {
+		LOGE("posLocHandler error to stoi posLoc");
+	}
+	return true;
+}
+
+bool Material::tangentLocHandler(Material* pMat, const std::string& value) {
+	try {
+		int norLoc = std::stoi(value);
+		pMat->getShader()->setTangentLoc(norLoc);
+	}
+	catch (exception e) {
+		LOGE("tangentLocHandler error to stoi posLoc");
+	}
+	return true;
+}
+
+bool Material::mvpMatrixHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getMvpMatrixLoc(value);
+	}
+	return true;
+}
+
+bool Material::mvMatrixHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getMvMatrixLoc(value);
+	}
+	return true;
+}
+
+bool Material::vMatrixHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getViewMatrixLoc(value);
+	}
+	return true;
+}
+
+bool Material::texMatrixHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getTextureMatrixLoc(value);
+	}
+	return true;
+}
+
+bool Material::uniformColorHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getUniformColorLoc(value);
+	}
+	return true;
+}
+
+bool Material::viewPosHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getViewPosLoc(value);
+	}
+	return true;
+}
+
+bool Material::lightPosHandler(Material* pMat, const std::string& value){
+	if (!value.empty()) {
+		pMat->getShader()->getLightPosLoc(value);
+	}
+	return true;
+}
+
+bool Material::lightColorHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getLightColorLoc(value);
+	}
+	return true;
+}
+
+bool Material::metallicHandler(Material* pMat, const std::string& value){
+	if (!value.empty()) {
+		pMat->getShader()->getMetallicLoc(value);
+	}
+	return true;
+}
+
+bool Material::roughnessHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getRoughnessLoc(value);
+	}
+	return true;
+}
+
+bool Material::programSamplerHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		Umapss umapSampler;
+		//找到program里面列出来的sampler名字
+		if (parseItem(value, umapSampler)) {
+			if (!umapSampler.empty()) {
+				auto& samplers = pMat->getShader()->getSamplerNames();
+				auto& uniforms = pMat->getShader()->getUniforms();
+				for (auto& item : umapSampler) {
+					//program脚本里面列出来的sampler，看看shader的uniform里面有没有
+					if (uniforms.find(item.first) != uniforms.end()) {
+						samplers.emplace_back(item.first);
+					}
+					else {
+						LOGE("error in material file sampler2D has no %s", item.first.c_str());
+					}
+
+					const auto pTex = gTextures.find(item.second);
+					int loc = pMat->getShader()->getUniformLoc(item.first.c_str()); //
+					if (loc != -1) {
+						if (pTex != gTextures.end()) {
+							pMat->mSamplerName2Texture.emplace(loc, pTex->second);
+						}
+						else {
+							pMat->mSamplerName2Texture.emplace(loc, shared_ptr<Texture>()); //
+						}
+					}
+					else {
+						LOGD("can't to find texture %s", item.second.c_str());
+					}
+				}
+			}
+		}
+		else {
+			LOGE("error to parse sampler in program %s", value.c_str());
+		}
+	}
+	return true;
+}
+
 bool Material::programHandler(const std::shared_ptr<Material>& pMaterial, const std::string& programName) {
 	auto it = gShaders.find(programName);
 	if (it != gShaders.end()) {
@@ -55,10 +238,11 @@ bool Material::programHandler(const std::shared_ptr<Material>& pMaterial, const 
 	}
 	return false;
 }
+
 bool Material::samplerHandler(const std::shared_ptr<Material>& pMaterial, const std::string& samplerContent) {
 	Umapss contents;
-	if (pMaterial->parseItem(samplerContent, contents)) {
-		for (auto pairs : contents) {
+	if (parseItem(samplerContent, contents)) {
+		for (auto& pairs : contents) {
 			auto pTexture = gTextures.find(pairs.second);
 			if (pTexture != gTextures.end()) {
 				pMaterial->setTextureForSampler(pairs.first, pTexture->second);
@@ -85,9 +269,10 @@ bool Material::samplerHandler(const std::shared_ptr<Material>& pMaterial, const 
 	}
 	return true;
 }
+
 bool Material::opHandler(const std::shared_ptr<Material>& pMaterial, const std::string& opContent) {
 	Umapss contents;
-	if (pMaterial->parseItem(opContent, contents)) {
+	if (parseItem(opContent, contents)) {
 		for (auto pairs : contents) {
 			auto it = gMaterialHandlers.find(pairs.first);
 			if (it != gMaterialHandlers.end()) {
@@ -118,6 +303,7 @@ bool Material::opDepthHandler(const std::shared_ptr<Material>& pMaterial, const 
 	}
 	return true;
 }
+
 bool Material::opBlendHandler(const std::shared_ptr<Material>& pMaterial, const std::string& value) {
 	bool bEnable = false;
 	unsigned int srcFactor = GL_SRC_ALPHA;
@@ -263,6 +449,7 @@ void Material::setDepthTest(bool b) {
 	}
 	mMyOpData->mbDepthTest = b;
 }
+
 void Material::setCullWhichFace(bool b, int whichFace) {
 	if (!mMyOpData) {
 		mMyOpData = std::make_unique< OpData >();
@@ -270,6 +457,7 @@ void Material::setCullWhichFace(bool b, int whichFace) {
 	mMyOpData->mbCullFace = b;
 	mMyOpData->mCullWhichFace = whichFace;
 }
+
 void Material::setBlend(bool b, unsigned int srcFactor, unsigned int destFactor,unsigned int blendOp) {
 	if (!mMyOpData) {
 		mMyOpData = std::make_unique< OpData >();
@@ -327,6 +515,7 @@ Material::Material()
 {
 	mpContents = std::make_shared<std::unordered_map<std::string, std::string>>();
 }
+
 Material::~Material() {
 	mpContents->clear();
 }
@@ -443,6 +632,8 @@ void Material::enable() {
 		if (mpUniformColor) {
 			mShader->setUniformColor(*mpUniformColor);
 		}
+		mShader->setMetallic(mMetallical);
+		mShader->setRoughness(mRoughness);
 		mShader->enable();
 		int texNum = 0;
 		for (auto it = mSamplerName2Texture.begin(); it != mSamplerName2Texture.end(); it++) {
@@ -811,224 +1002,37 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 	return true;
 }
 
-bool Material::parseProgram(const string& programName,const string& program) {
+bool Material::parseProgram(const string& programName,const string& programContent) {
 	Umapss umap;
 	string vs_key{ "vs" };
 	string fs_key{ "fs" };
-	int posLoc = -1;
-	int texcoordLoc = -1;
-	int normalLoc = -1;
-	int tangentLoc = -1;
-	int colorLoc = -1;
-	std::string mvpMatrixName;
-	std::string mvMatrixName;
-	std::string viewMatrixName;
-	std::string lightPosName;
-	std::string lightColorName;
-	std::string viewPosName;
-	std::string textureMatrixName;
-	std::string uniformColor;
-	Umapss umapSampler;
-			
-	if (parseItem(program, umap)) {
-		const auto pPosLoc = umap.find("posLoc");
-		if (pPosLoc != umap.cend()) {
-			try {
-				posLoc = std::stoi(pPosLoc->second);
-			}
-			catch (exception e) {
-				LOGE("parseProgram error to stoi posLoc");
-				posLoc = -1;
-			}
-			
-		}
-
-		const auto pTexcoordLoc = umap.find("texcoordLoc");
-		if (pTexcoordLoc != umap.cend()) {
-			try {
-				texcoordLoc = std::stoi(pTexcoordLoc->second);
-			}
-			catch (exception e) {
-				LOGE("parseProgram error to stoi texcoordLoc");
-				texcoordLoc = -1;
-			}
-
-		}
-		
-		const auto pColorLoc = umap.find("colorLoc");
-		if (pColorLoc != umap.cend()) {
-			try {
-				colorLoc = std::stoi(pColorLoc->second);
-			}
-			catch (exception e) {
-				LOGE("parseProgram error to stoi colorLoc");
-				colorLoc = -1;
-			}
-
-		}
-
-		const auto pNormalLoc = umap.find("normalLoc");
-		if (pNormalLoc != umap.cend()) {
-			try {
-				normalLoc = std::stoi(pNormalLoc->second);
-			}
-			catch (exception e) {
-				LOGE("parseProgram error to stoi normalLoc");
-				normalLoc = -1;
-			}
-
-		}
-
-		const auto pTangentLoc = umap.find("tangentLoc");
-		if (pTangentLoc != umap.cend()) {
-			try {
-				tangentLoc = std::stoi(pTangentLoc->second);
-			}
-			catch (exception e) {
-				LOGE("parseProgram error to stoi normalLoc");
-				tangentLoc = -1;
-			}
-
-		}
-
-		const auto pMvp = umap.find("mvpMatrix");
-		if (pMvp != umap.cend()) {
-			mvpMatrixName = pMvp->second;
-		}
-
-		const auto pModelMatrix = umap.find("mvMatrix");
-		if (pModelMatrix != umap.cend()) {
-			mvMatrixName = pModelMatrix->second;
-		}
-
-		const auto pViewMatrix = umap.find("viewMatrix");
-		if (pViewMatrix != umap.cend()) {
-			viewMatrixName = pViewMatrix->second;
-		}
-
-		const auto pTextureMatrix = umap.find("textureMatrix");
-		if (pTextureMatrix != umap.cend()) {
-			textureMatrixName = pTextureMatrix->second;
-		}
-
-		const auto pLightPos = umap.find("lightPos");
-		if (pLightPos != umap.cend()) {
-			lightPosName = pLightPos->second;
-		}
-
-		const auto pLightColor = umap.find("lightColor");
-		if (pLightColor != umap.cend()) {
-			lightColorName = pLightColor->second;
-		}
-
-		const auto pViewPos = umap.find("viewPos");
-		if (pViewPos != umap.cend()) {
-			viewPosName = pViewPos->second;
-		}
-
-		//由于在fs里面经常需要设置一个颜色值，所以把这个抽出来，下面的代码会拿到这个uniform的loc，
-		//外部程序调用了material的updateUniformColor，设置了颜色值，每次enable的时候都会把这个颜色值设置上去。
-		const auto pUColor = umap.find("uniformColor");
-		if (pUColor != umap.cend()) {
-			uniformColor = pUColor->second;
-		}
-
-		//为shader里面的sampler指定Texture（通过texture的名字）
-		const auto pSampler = umap.find("sampler");
-		
-		if (pSampler != umap.cend()) {
-			if (parseItem(pSampler->second, umapSampler)) {
-
-			}
-			else {
-				LOGE("error to parse sampler in program %s", programName.c_str());
-			}
-		}
-		
-	}
-	else {
-		LOGE("ERROR TO PARSE PROGRAM");
-		return false;
-	}
-
-	const auto ptrVs = mpContents->find(vs_key);
-	const auto ptrFs = mpContents->find(fs_key);
 	bool bsuccess = false;
-	do {
+	if (parseItem(programContent, umap)) {
+		const auto ptrVs = mpContents->find(vs_key);
+		const auto ptrFs = mpContents->find(fs_key);
 		if (ptrVs != mpContents->cend() && ptrFs != mpContents->cend()) {
 			mShader = std::make_shared<Shader>(programName);
 			if (mShader->initShader(ptrVs->second, ptrFs->second)) {
 				LOGD("initShader %s success", programName.c_str());
-				
 				if (gShaders.try_emplace(programName, mShader).second) {
 					bsuccess = true;
-					mShader->setLocation(posLoc, texcoordLoc, colorLoc, normalLoc, tangentLoc);
-					if (!mvpMatrixName.empty()) {
-						mShader->getMvpMatrixLoc(mvpMatrixName);
-					}
-					if (!mvMatrixName.empty()) {
-						mShader->getMvMatrixLoc(mvMatrixName);
-					}
-					if (!viewMatrixName.empty()) {
-						mShader->getViewMatrixLoc(viewMatrixName);
-					}
-					if (!lightPosName.empty()) {
-						mShader->getLightPosLoc(lightPosName);
-					}
-					if (!lightColorName.empty()) {
-						mShader->getLightColorLoc(lightColorName);
-					}
-					if (!viewPosName.empty()) {
-						mShader->getViewPosLoc(viewPosName);
-					}
-					if (!textureMatrixName.empty()) {
-						mShader->getTextureMatrixLoc(textureMatrixName);
-					}
-					if (!uniformColor.empty()) {
-						mShader->getUniformColorLoc(uniformColor);
-					}
-					if (!umapSampler.empty()) {
-						auto& samplers = mShader->getSamplerNames();
-						auto& uniforms = mShader->getUniforms();
-						for (auto& item : umapSampler) {
-							if (uniforms.find(item.first) != uniforms.end()) {
-								samplers.emplace_back(item.first);
-							}
-							else {
-								LOGE("error in material file sampler2D has no %s",item.first.c_str());
-							}
-
-							const auto pTex = gTextures.find(item.second);
-							int loc = mShader->getUniformLoc(item.first.c_str()); //
-							if (loc != -1) {
-								if (pTex != gTextures.end()) {
-									mSamplerName2Texture.emplace(loc, pTex->second);
-								}
-								else {
-									mSamplerName2Texture.emplace(loc, shared_ptr<Texture>()); //
-								}
-							}
-							else {
-								LOGD("can't to find texture %s", item.second.c_str());
-							}
-						}
-					}
 				}
-				else {
-					LOGE("insert program %s to container failed，maybe the program name has conflict ", programName.c_str());
+				for (auto& pair : umap) {
+					auto it = gProgramKeyValueHandlers.find(pair.first);
+					if (it != gProgramKeyValueHandlers.end()) {
+						it->second(this, pair.second);
+					}
 				}
 			}
 			else {
 				LOGE("initShader %s failed", programName.c_str());
 				mShader.reset();
 			}
-			break;
 		}
 		else {
 			LOGE("can't find program's vs shader or fs shader %s", programName.c_str());
 		}
-	} while (false);
-	
+	}
 	return bsuccess;
 }
 

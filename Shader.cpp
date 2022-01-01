@@ -228,7 +228,7 @@ void Shader::enable()
 	}
 
 	if (mLightPosLoc >= 0) {
-		glUniform3f(mLightPosLoc, mLightPos.x, mLightPos.y, mLightPos.z);
+		glUniform3fv(mLightPosLoc, mLightPositions.size(), (const float*)mLightPositions.data());
 	}
 
 	if (mViewPosLoc >= 0) {
@@ -236,7 +236,15 @@ void Shader::enable()
 	}
 
 	if (mLightColorLoc >= 0) {
-		glUniform3f(mLightColorLoc, mLightColor.x, mLightColor.y, mLightColor.z);
+		glUniform3fv(mLightColorLoc, mLightColors.size(),(const float*)mLightColors.data());
+	}
+
+	if (mMetallicLoc >= 0) {
+		glUniform1f(mMetallicLoc, mMetallic);
+	}
+
+	if (mRoughnessLoc >= 0) {
+		glUniform1f(mRoughnessLoc, mRoughness);
 	}
 }
 
@@ -338,14 +346,18 @@ void Shader::setUniformColor(Color color) {
 	mUniformColor = color;
 }
 
-void Shader::setLightPos(const Vec3& lightPos) {
-	mLightPos = lightPos;
+void Shader::setLightPos(const std::vector<Vec3>& lightPos) {
+	if (mLightPosLoc >= 0) {
+		mLightPositions = lightPos;
+	}
 }
 void Shader::setViewPos(const Vec3& viewPos) {
 	mViewPos = viewPos;
 }
-void Shader::setLightColor(const Vec3& lightColor) {
-	mLightColor = lightColor;
+void Shader::setLightColor(const std::vector<Vec3>& lightColor) {
+	if (mLightColorLoc >= 0) {
+		mLightColors = lightColor;
+	}
 }
 void Shader::setMvMatrix(const glm::mat4& m) {
 	if (mMvMatrixLoc >= 0) {
@@ -421,18 +433,32 @@ void Shader::getUniformColorLoc(const std::string& uniformColorNameInShader) {
 	}
 }
 
-void Shader::getDiffuseTextureLoc(const std::string& diffuseSamplerInShader) {
-	mDiffuseTextureLoc = glGetUniformLocation(mProgram, diffuseSamplerInShader.c_str());
-	if (mDiffuseTextureLoc < 0) {
-		LOGE("the shader %s  has no %s sampler", mName.c_str(), diffuseSamplerInShader.c_str());
+void Shader::getMetallicLoc(const std::string& value) {
+	mMetallicLoc = glGetUniformLocation(mProgram, value.c_str());
+	if (mMetallicLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), value.c_str());
 	}
 }
-void Shader::getNormalTextureLoc(const std::string& normalSamplerInShader) {
-	mNormalTextureLoc = glGetUniformLocation(mProgram, normalSamplerInShader.c_str());
-	if (mNormalTextureLoc < 0) {
-		LOGE("the shader %s  has no %s sampler", mName.c_str(), normalSamplerInShader.c_str());
+
+void Shader::getRoughnessLoc(const std::string& value) {
+	mRoughnessLoc = glGetUniformLocation(mProgram, value.c_str());
+	if (mRoughnessLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), value.c_str());
 	}
 }
+
+//void Shader::getDiffuseTextureLoc(const std::string& diffuseSamplerInShader) {
+//	mDiffuseTextureLoc = glGetUniformLocation(mProgram, diffuseSamplerInShader.c_str());
+//	if (mDiffuseTextureLoc < 0) {
+//		LOGE("the shader %s  has no %s sampler", mName.c_str(), diffuseSamplerInShader.c_str());
+//	}
+//}
+//void Shader::getNormalTextureLoc(const std::string& normalSamplerInShader) {
+//	mNormalTextureLoc = glGetUniformLocation(mProgram, normalSamplerInShader.c_str());
+//	if (mNormalTextureLoc < 0) {
+//		LOGE("the shader %s  has no %s sampler", mName.c_str(), normalSamplerInShader.c_str());
+//	}
+//}
 
 //std::shared_ptr<Texture>& Shader::getTexture(const std::string& samplerName) {
 //	

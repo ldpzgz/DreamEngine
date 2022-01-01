@@ -116,7 +116,8 @@ public:
 
 	bool updateTangent(float* normal, int byteOffset, int size);
 
-	void render(const glm::mat4& projviewMat, const glm::mat4& modelMat, const Vec3& lightPos,const Vec3& viewPos);
+	void render(const glm::mat4& projviewMat, const glm::mat4& modelMat, 
+		std::vector<Vec3>& lightPos, std::vector<Vec3>& lightColor, const Vec3& viewPos);
 
 	void render(const glm::mat4& mvpMat, const glm::mat4& texMat);
 

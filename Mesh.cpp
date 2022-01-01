@@ -630,7 +630,8 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc
 	}
 }
 
-void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat, const Vec3& lightPos, const Vec3& viewPos) {
+void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat, 
+	std::vector<Vec3>& lightPos, std::vector<Vec3>& lightColor, const Vec3& viewPos) {
 	if (mpMaterial) {
 		auto& pShader = mpMaterial->getShader();
 		if (pShader) {
@@ -639,6 +640,7 @@ void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat, const Vec3& l
 			//pShader->setViewMatrix(viewMat);
 			//pShader->setTextureMatrix();
 			pShader->setLightPos(lightPos);
+			pShader->setLightColor(lightColor);
 			pShader->setViewPos(viewPos);
 
 			mpMaterial->enable();

@@ -58,6 +58,18 @@ public:
 			*mpUniformColor = Color(r, g, b, a);
 		}
 	}
+	/*
+	*	m: 0.0f-1.0f 1.0f表示纯金属，0.0f表示非金属
+	*/
+	void setMetallical(float m) {
+		mMetallical = m;
+	}
+	/*
+	*  r: 0.0f-1.0f 表面粗糙度
+	*/
+	void setRoughness(float r) {
+		mRoughness = r;
+	}
 
 	void setName(const std::string name) {
 		mName = name;
@@ -83,16 +95,26 @@ public:
 	static void loadAllMaterial();
 	static shared_ptr<Material> clone(const std::string&);
 private:
+	using Umapss = std::unordered_map<std::string, std::string>;
 	static shared_ptr<Material> clone(const Material&);
 	//find key value from startPos at str,
 	//if success set the start position of the key,the pos of '{', the pos of '}' into pos seprately and return true,
 	//else return false
-	bool findkeyValue(const string& str, const string& mid, const string& end, std::string::size_type startPos, std::string::size_type* pos);
+	static bool findkeyValue(const string& str, const string& mid, const string& end, std::string::size_type startPos, std::string::size_type* pos);
+	/*
+	* 分析配置文件里面的：material:matName{material}，内容
+	* 根据里面的内容生成名字为matName的material对象，保存到gMaterial里面。
+	*/
+	static bool parseMaterial(const string& matName, const string& material);
+	/*
+	* 将value字符串里面形如key=value、或者key{value}格式的，key和value字符串解析出来，存储到umap里面
+	*/
+	static bool parseItem(const string& value, Umapss& umap);
 	/*
 	* 获得:后面的名字
 	* key 形如：program:rectangleTex
 	*/
-	string getItemName(const string& key);
+	static string getItemName(const string& key);
 
 	/*
 	* programName,program:后面跟的名字
@@ -118,35 +140,38 @@ private:
 	* 这个函数分析texture的内容，创建一个纹理，将纹理保存到gTexture全局变量里面
 	*/
 	bool parseCubeTexture(const string& textureName, const string& texture);
-	using Umapss = std::unordered_map<std::string, std::string>;
-
-	/*
-	* 分析配置文件里面的：material:matName{material}，内容
-	* 根据里面的内容生成名字为matName的material对象，保存到gMaterial里面。
-	*/
-	bool parseMaterial(const string& matName, const string& material);
-	/*
-	* 将value字符串里面形如key=value、或者key{value}格式的，key和value字符串解析出来，存储到umap里面
-	*/
-	bool parseItem(const string& value, Umapss& umap);
-
 	void setDepthTest(bool b);
 	void setCullWhichFace(bool b, int fontface);
 	void setBlend(bool b, unsigned int srcFactor, unsigned int destFactor, unsigned int blendOp);
-
 	static bool programHandler(const std::shared_ptr<Material>&, const std::string& programName);
 	static bool samplerHandler(const std::shared_ptr<Material>&, const std::string& samplerContent);
 	static bool opHandler(const std::shared_ptr<Material>&, const std::string&);
 	static bool opDepthHandler(const std::shared_ptr<Material>&, const std::string&);
 	static bool opBlendHandler(const std::shared_ptr<Material>&, const std::string&);
 	static bool opCullfaceHandler(const std::shared_ptr<Material>&, const std::string&);
-	static std::unordered_map<std::string, std::function<bool(const std::shared_ptr<Material>&, const std::string&)>> gMaterialHandlers;
-	
-	std::shared_ptr < std::unordered_map<std::string, std::string>> mpContents;//保存的是材质文件里面形如key{value}的key-value对
-	
-	std::shared_ptr<Shader> mShader;
+	//program key value handler
+	static bool posLocHandler(Material* pMat, const std::string&);
+	static bool colorLocHandler(Material* pMat, const std::string&);
+	static bool normalLocHandler(Material* pMat, const std::string&);
+	static bool texcoordLocHandler(Material* pMat, const std::string&);
+	static bool tangentLocHandler(Material* pMat, const std::string&);
+	static bool mvpMatrixHandler(Material* pMat, const std::string&);
+	static bool mvMatrixHandler(Material* pMat, const std::string&);
+	static bool vMatrixHandler(Material* pMat, const std::string&);
+	static bool texMatrixHandler(Material* pMat, const std::string&);
+	static bool uniformColorHandler(Material* pMat, const std::string&);
+	static bool viewPosHandler(Material* pMat, const std::string&);
+	static bool lightPosHandler(Material* pMat, const std::string&);
+	static bool lightColorHandler(Material* pMat, const std::string&);
+	static bool metallicHandler(Material* pMat, const std::string&);
+	static bool roughnessHandler(Material* pMat, const std::string&);
+	static bool programSamplerHandler(Material* pMat, const std::string&);
 
-	std::unique_ptr<Color> mpUniformColor;
+	std::shared_ptr < std::unordered_map<std::string, std::string>> mpContents;//保存的是材质文件里面形如key{value}的key-value对
+	std::shared_ptr<Shader> mShader;
+	std::unique_ptr<Color> mpUniformColor;//纯色物体设置这个
+	float mMetallical{ 0.5f }; //金属还是非金属（0.0f-1.0f);
+	float mRoughness{ 0.5f };	//粗糙程度（0.0f-1.0f);
 
 	std::unordered_map<int, std::shared_ptr<Texture>> mSamplerName2Texture;
 
@@ -158,6 +183,9 @@ private:
 	static std::unordered_map<std::string, std::shared_ptr<Material>> gMaterials;
 	static std::unordered_map<std::string, std::shared_ptr<Texture>> gTextures;
 	static std::unordered_map<std::string, std::shared_ptr<Shader>> gShaders;
+	static std::unordered_map<std::string, std::function<bool(const std::shared_ptr<Material>&, const std::string&)>> gMaterialHandlers;
+	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gProgramKeyValueHandlers;
+
 };
 
 using MaterialP = std::shared_ptr<Material>;

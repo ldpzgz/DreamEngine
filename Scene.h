@@ -17,6 +17,10 @@ public:
 	shared_ptr<Camera> createACamera();
 
 	shared_ptr<Light> createALight();
+
+	vector<shared_ptr<Light>>& getLights() {
+		return mLights;
+	}
 private:
 	shared_ptr<Node<glm::mat4>> mpRootNode;
 	vector<shared_ptr<Camera>> mCameras;

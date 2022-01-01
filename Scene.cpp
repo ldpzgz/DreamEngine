@@ -17,7 +17,6 @@ shared_ptr<Camera> Scene::createACamera() {
 
 shared_ptr<Light> Scene::createALight() {
 	auto light = make_shared<Light>();
-	mLights.push_back(light);
-	mpRootNode->addChild(static_pointer_cast<Node<glm::mat4>>(light));
+	mLights.emplace_back(light);
 	return light;
 }
