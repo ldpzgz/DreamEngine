@@ -1,0 +1,14 @@
+material:cil_l_0{
+	program=pbr1
+	sampler{
+		albedoMap=carDiffuse.png
+		normalMap=carNormal.png
+	}
+}
+material:ceil{
+	program=pbr1
+	sampler{
+		albedoMap=ceilDiff.tga
+		normalMap=ceilNormal.tga
+	}
+}
