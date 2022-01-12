@@ -53,7 +53,9 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"lightColor",Material::lightColorHandler},
 	{"viewPos",Material::viewPosHandler},
 	{"uniformColor",Material::uniformColorHandler},
-	{"sampler",Material::programSamplerHandler}
+	{"sampler",Material::programSamplerHandler},
+	{"metallic",Material::metallicHandler},
+	{"roughness",Material::roughnessHandler}
 };
 
 std::unordered_map<std::string, std::function<bool(const std::shared_ptr<Material>&, const std::string&)>> Material::gMaterialHandlers{
@@ -250,11 +252,10 @@ bool Material::samplerHandler(const std::shared_ptr<Material>& pMaterial, const 
 			else {
 				//如果写的是drawable文件夹里面的某个文件
 				auto filePath = gDrawablePath + "/" + pairs.second;
-				auto pTex = Texture::loadImageFromFile(filePath);
+				auto pTex = Material::loadImageFromFile(filePath);
 				if (pTex) {
 					pMaterial->setTextureForSampler(pairs.first, pTex);
 					gTextures.emplace(pairs.second, pTex);
-					return true;
 				}
 				else {
 					LOGE("parse material's sampler property error,cannot find texture %s", pairs.second.c_str());

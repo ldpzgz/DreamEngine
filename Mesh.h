@@ -31,6 +31,7 @@ enum class MeshType //枚举类型定义加了class就是强类型枚举，不�
 	MESH_Rounded_Rectangle,//带center color的rounded rectangle
 	MESH_Cuboid,//立方体
 	MESH_Circle,//填充的圆，或者圆圈
+	Mesh_Shpere,
 	MESH_Line_strip,
 	MESH_Cubic_Spline,
 	MESH_Cubic_Hermiter_Curves,//hermiter曲线，后面的贝塞尔曲线，cr_spline都可以由这个曲线实现
@@ -53,6 +54,7 @@ enum class MeshType //枚举类型定义加了class就是强类型枚举，不�
 enum class DrawType {
 	Triangles,
 	TriangleFan,
+	TriangleStrip,
 	Lines,
 	LineStrip,
 	Points,
@@ -182,11 +184,14 @@ protected:
 	//当做三角形绘制GL_TRIANGLES
 	void drawTriangles(int posloc = -1, int texloc = -1, int norloc = -1,int colorloc = -1, int tangentloc = -1);
 
+	//当做三角形绘制GL_TRIANGLE_strip
+	//void drawTriangleStrip(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1);
+
 	//当做直线绘制GL_LINE_LOOP
 	virtual void drawLineStrip(int posloc);
 
 	//当做三角形扇绘制GL_TRIANGLE_FAN
-	virtual void drawTriangleFan(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1);
+	//virtual void drawTriangleFan(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1);
 
 	virtual void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc=-1);
 protected:

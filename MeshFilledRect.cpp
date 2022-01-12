@@ -1,9 +1,10 @@
 #include "MeshFilledRect.h"
-
+#include <cassert>
 MeshFilledRect::MeshFilledRect():
 	Mesh()
 {
 	mMeshType = MeshType::MESH_FilledRect;
+	mDrawType = DrawType::TriangleFan;
 }
 
 MeshFilledRect::~MeshFilledRect() {
@@ -183,14 +184,15 @@ void MeshFilledRect::loadMesh(float width, float height, int gradientAngle, floa
 	}
 }
 
-void MeshFilledRect::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc) {
-	if (mbFilled) {
-		drawTriangleFan(posloc, texloc, norloc, colorloc, tangentloc);
-	}
-	else {
-		drawLineStrip(posloc);
-	}
-}
+//void MeshFilledRect::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc) {
+//	if (mbFilled) {
+//		mDrawType = DrawType::TriangleFan;
+//		drawTriangleFan(posloc, texloc, norloc, colorloc, tangentloc);
+//	}
+//	else {
+//		drawLineStrip(posloc);
+//	}
+//}
 
 void MeshFilledRect::drawLineStrip(int posloc) {
 	if (createVaoIfNeed(posloc)) {

@@ -79,12 +79,33 @@ namespace Utils {
 		return temp;
 	}
 
-	std::string getFileSuffix(const std::string& path) {
+	string getFileSuffix(const string& path) {
 		string temp;
 		auto startpos = path.find_last_of(".");
 		if (startpos != string::npos) {
 			return path.substr(startpos+1);
 		}
 		return temp;
+	}
+
+	void forEachFile(const std::string pathName, const std::string suffix, std::function<void(const std::string& path)> func) {
+		path upPath(pathName);
+		if (!exists(upPath)) {
+			return;
+		}
+		if (is_directory(upPath)) {
+			//是目录
+			std::filesystem::directory_iterator list(upPath);
+			for (auto& it : list) {
+				auto& filePath = it.path();
+				if (is_regular_file(filePath)) {
+					//是文件
+					auto filename = filePath.string();
+					if (getFileSuffix(filename) == suffix) {
+						func(filename);
+					}
+				}
+			}
+		}
 	}
 }

@@ -8,11 +8,14 @@
 #include <iostream>
 #include <iomanip>
 #include <ctime>
+#include <string>
+#include <functional>
+#include <filesystem>
 #include "Log.h"
 #ifndef Texture
 class Texture;
 #endif
-
+using namespace std::filesystem;
 namespace Utils {
 	std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
 
@@ -20,6 +23,8 @@ namespace Utils {
 
 	std::string getFileName(const std::string& path);
 	std::string getFileSuffix(const std::string& path);
+
+	void forEachFile(const std::string pathName, const std::string suffix, std::function<void(const std::string& path)> func);
 }
 
 /*

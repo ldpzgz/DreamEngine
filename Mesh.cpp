@@ -158,9 +158,17 @@ void Mesh::loadMesh()
 			{0.0f,0.0f,0.0f},
 			{1.0f,0.0f,0.0f},
 			 };
+		std::vector<Vec3> nor{
+			{0.0f,1.0f,0.0f},
+			{0.0f,1.0f,0.0f},
+			{0.0f,1.0f,0.0f},
+			{0.0f,1.0f,0.0f},
+		};
 		GLuint indexes[] = { 0,1,2,0,2,3 };
 		GLfloat tex[] = { 1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,1.0f,0.0f };
-		createBufferObject((GLfloat*)pos.data(), pos.size()*sizeof(Vec3),4, indexes, sizeof(indexes), tex, sizeof(tex));
+		createBufferObject((GLfloat*)pos.data(), pos.size()*sizeof(Vec3),4, 
+			indexes, sizeof(indexes), 
+			tex, sizeof(tex),(GLfloat*)nor.data(), nor.size() * sizeof(Vec3));
 	}
 	else if (mMeshType == MeshType::MESH_Triangle) {
 		GLfloat pos[] = { 0.0f,1.0f,0.0f,
@@ -219,6 +227,58 @@ void Mesh::loadMesh()
 			0.0f,0.0f,1.0f,0.0f,1.0f,1.0f,0.0f,1.0f
 		};
 		createBufferObject(pos, sizeof(pos), 24,indexes, sizeof(indexes), tex, sizeof(tex));
+	}
+	else if (mMeshType == MeshType::Mesh_Shpere) {
+		mDrawType = DrawType::TriangleStrip;
+		std::vector<Vec3> positions;
+		std::vector<Vec2> uv;
+		std::vector<Vec3> normals;
+		std::vector<unsigned int> indices;
+
+		const unsigned int X_SEGMENTS = 64;
+		const unsigned int Y_SEGMENTS = 64;
+		const float PI = 3.14159265359;
+		for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+		{
+			for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+			{
+				float xSegment = (float)x / (float)X_SEGMENTS;
+				float ySegment = (float)y / (float)Y_SEGMENTS;
+				float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+				float yPos = std::cos(ySegment * PI);
+				float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+				positions.push_back(Vec3(xPos, yPos, zPos));
+				uv.push_back(Vec2(xSegment, ySegment));
+				normals.push_back(Vec3(xPos, yPos, zPos));
+			}
+		}
+
+		bool oddRow = false;
+		for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
+		{
+			if (!oddRow) // even rows: y == 0, y == 2; and so on
+			{
+				for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+				{
+					indices.push_back(y * (X_SEGMENTS + 1) + x);
+					indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+				}
+			}
+			else
+			{
+				for (int x = X_SEGMENTS; x >= 0; --x)
+				{
+					indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+					indices.push_back(y * (X_SEGMENTS + 1) + x);
+				}
+			}
+			oddRow = !oddRow;
+		}
+		createBufferObject((GLfloat*)positions.data(), positions.size() * sizeof(Vec3), 
+			positions.size(), indices.data(), indices.size() * sizeof(unsigned int), 
+			(GLfloat*)uv.data(), uv.size()*sizeof(Vec2),
+			(GLfloat*)normals.data(),normals.size() * sizeof(Vec3));
 	}
 }
 
@@ -478,65 +538,119 @@ void Mesh::drawLineStrip(int posloc)
 	//glDrawElements(GL_LINE_LOOP, mNumOfIndex, GL_UNSIGNED_INT, (const void*)0);
 }
 
-void Mesh::drawTriangleFan(int posloc, int texloc,int norloc,int colorloc, int tangentloc)
-{
-	//glFrontFace(GL_CW);
-	if (createVaoIfNeed(posloc)){
-		glBindVertexArray(mVAO);
-		if (posloc >= 0)
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
-			glEnableVertexAttribArray(posloc);
-			assert(mCountOfVertex != 0);
-			int componentOfPos = mPosByteSize / (sizeof(GLfloat) * mCountOfVertex);
-			glVertexAttribPointer(posloc, componentOfPos, GL_FLOAT, GL_FALSE, 0, 0);
-		}
-		if (texloc >= 0)
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
-			//indicate a vertexAttrib space 2*float,in mTexVbo
-			glEnableVertexAttribArray(texloc);
-			int componentOfTexcoord = mTexByteSize / (sizeof(GLfloat) * mCountOfVertex);
-			glVertexAttribPointer(texloc, componentOfTexcoord, GL_FLOAT, GL_FALSE, 0, 0);
-
-		}
-
-		if (norloc >= 0)
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
-			glEnableVertexAttribArray(norloc);
-			int componentOfNormal = mNorByteSize / (sizeof(GLfloat) * mCountOfVertex);
-			glVertexAttribPointer(norloc, componentOfNormal, GL_FLOAT, GL_FALSE, 0, 0);
-
-		}
-
-		if (tangentloc > 0) {
-			glBindBuffer(GL_ARRAY_BUFFER, mTangentVbo);
-			glEnableVertexAttribArray(tangentloc);
-			int componentOfTangent = mTangentByteSize / (sizeof(GLfloat) * mCountOfVertex);
-			glVertexAttribPointer(tangentloc, componentOfTangent, GL_FLOAT, GL_FALSE, 0, 0);
-		}
-
-		
-		//这个好像不用绑定了？
-		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
-
-		glBindVertexArray(0);
-	}
-
-	glBindVertexArray(mVAO);
-	if (colorloc >= 0) {
-		glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
-		glEnableVertexAttribArray(colorloc);
-		int componentOfColor = mColorByteSize / (sizeof(GLfloat) * mCountOfVertex);
-		glVertexAttribPointer(colorloc, componentOfColor, GL_FLOAT, GL_FALSE, 0, 0);
-	}
-	glDrawArrays(GL_TRIANGLE_FAN, 0, mCountOfVertex);
-	glBindVertexArray(0);
-	//glFrontFace(GL_CCW);
-	//glDrawElements(GL_TRIANGLE_FAN, mNumOfIndex, GL_UNSIGNED_SHORT, (const void*)0);
-}
-
+//void Mesh::drawTriangleFan(int posloc, int texloc,int norloc,int colorloc, int tangentloc)
+//{
+//	//glFrontFace(GL_CW);
+//	if (createVaoIfNeed(posloc)){
+//		glBindVertexArray(mVAO);
+//		if (posloc >= 0)
+//		{
+//			glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
+//			glEnableVertexAttribArray(posloc);
+//			assert(mCountOfVertex != 0);
+//			int componentOfPos = mPosByteSize / (sizeof(GLfloat) * mCountOfVertex);
+//			glVertexAttribPointer(posloc, componentOfPos, GL_FLOAT, GL_FALSE, 0, 0);
+//		}
+//		if (texloc >= 0)
+//		{
+//			glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
+//			//indicate a vertexAttrib space 2*float,in mTexVbo
+//			glEnableVertexAttribArray(texloc);
+//			int componentOfTexcoord = mTexByteSize / (sizeof(GLfloat) * mCountOfVertex);
+//			glVertexAttribPointer(texloc, componentOfTexcoord, GL_FLOAT, GL_FALSE, 0, 0);
+//
+//		}
+//
+//		if (norloc >= 0)
+//		{
+//			glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
+//			glEnableVertexAttribArray(norloc);
+//			int componentOfNormal = mNorByteSize / (sizeof(GLfloat) * mCountOfVertex);
+//			glVertexAttribPointer(norloc, componentOfNormal, GL_FLOAT, GL_FALSE, 0, 0);
+//
+//		}
+//
+//		if (tangentloc > 0) {
+//			glBindBuffer(GL_ARRAY_BUFFER, mTangentVbo);
+//			glEnableVertexAttribArray(tangentloc);
+//			int componentOfTangent = mTangentByteSize / (sizeof(GLfloat) * mCountOfVertex);
+//			glVertexAttribPointer(tangentloc, componentOfTangent, GL_FLOAT, GL_FALSE, 0, 0);
+//		}
+//
+//		
+//		//这个好像不用绑定了？
+//		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
+//
+//		glBindVertexArray(0);
+//	}
+//
+//	glBindVertexArray(mVAO);
+//	if (colorloc >= 0) {
+//		glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
+//		glEnableVertexAttribArray(colorloc);
+//		int componentOfColor = mColorByteSize / (sizeof(GLfloat) * mCountOfVertex);
+//		glVertexAttribPointer(colorloc, componentOfColor, GL_FLOAT, GL_FALSE, 0, 0);
+//	}
+//	glDrawArrays(GL_TRIANGLE_FAN, 0, mCountOfVertex);
+//	glBindVertexArray(0);
+//	//glFrontFace(GL_CCW);
+//	//glDrawElements(GL_TRIANGLE_FAN, mNumOfIndex, GL_UNSIGNED_SHORT, (const void*)0);
+//}
+//
+//void Mesh::drawTriangleStrip(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1) {
+//	if (createVaoIfNeed(posloc)) {
+//		glBindVertexArray(mVAO);
+//		if (posloc >= 0)
+//		{
+//			glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
+//			glEnableVertexAttribArray(posloc);
+//			assert(mCountOfVertex != 0);
+//			int componentOfPos = mPosByteSize / (sizeof(GLfloat) * mCountOfVertex);
+//			glVertexAttribPointer(posloc, componentOfPos, GL_FLOAT, GL_FALSE, 0, 0);
+//			//glVertexAttribDivisor(posloc, 1);//这个函数一调用，shader 里面posloc这个位置的顶点属性，就会变成uniform属性了，
+//			//渲染一个instance，只取一个值出来，渲染下一个instance的时候再取下一个值出来。
+//		}
+//
+//		if (texloc >= 0)
+//		{
+//			glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
+//			glEnableVertexAttribArray(texloc);
+//			int componentOfTexcoord = mTexByteSize / (sizeof(GLfloat) * mCountOfVertex);
+//			//indicate a vertexAttrib space 2*float,in mTexVbo
+//			glVertexAttribPointer(texloc, componentOfTexcoord, GL_FLOAT, GL_FALSE, 0, 0);
+//
+//		}
+//		if (norloc >= 0)
+//		{
+//			glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
+//			glEnableVertexAttribArray(norloc);
+//			int componentOfNormal = mNorByteSize / (sizeof(GLfloat) * mCountOfVertex);
+//			glVertexAttribPointer(norloc, componentOfNormal, GL_FLOAT, GL_FALSE, 0, 0);
+//
+//		}
+//
+//		if (tangentloc > 0) {
+//			glBindBuffer(GL_ARRAY_BUFFER, mTangentVbo);
+//			glEnableVertexAttribArray(tangentloc);
+//			int componentOfTangent = mTangentByteSize / (sizeof(GLfloat) * mCountOfVertex);
+//			glVertexAttribPointer(tangentloc, componentOfTangent, GL_FLOAT, GL_FALSE, 0, 0);
+//		}
+//
+//		if (colorloc >= 0) {
+//			glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
+//			glEnableVertexAttribArray(colorloc);
+//			int componentOfColor = mColorByteSize / (sizeof(GLfloat) * mCountOfVertex);
+//			glVertexAttribPointer(colorloc, componentOfColor, GL_FLOAT, GL_FALSE, 0, 0);
+//		}
+//
+//		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);//glDrawElements会用到这个
+//		glBindVertexArray(0);
+//	}
+//
+//	glBindVertexArray(mVAO);
+//	glDrawElements(GL_TRIANGLE_STRIP, mIndexByteSize / sizeof(GLuint), GL_UNSIGNED_INT, (const void*)0);
+//	glBindVertexArray(0);
+//}
 
 void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc, int tangentloc)
 {
@@ -577,20 +691,28 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc, int tang
 			int componentOfTangent = mTangentByteSize / (sizeof(GLfloat) * mCountOfVertex);
 			glVertexAttribPointer(tangentloc, componentOfTangent, GL_FLOAT, GL_FALSE, 0, 0);
 		}
-
-		if (colorloc >= 0) {
-			glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
-			glEnableVertexAttribArray(colorloc);
-			int componentOfColor = mColorByteSize / (sizeof(GLfloat) * mCountOfVertex);
-			glVertexAttribPointer(colorloc, componentOfColor, GL_FLOAT, GL_FALSE, 0, 0);
+		if (mDrawType == DrawType::Triangles || mDrawType == DrawType::TriangleStrip) {
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);//glDrawElements会用到这个
 		}
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);//glDrawElements会用到这个
 		glBindVertexArray(0);
 	}
 	
 	glBindVertexArray(mVAO);
-	glDrawElements(GL_TRIANGLES, mIndexByteSize/sizeof(GLuint), GL_UNSIGNED_INT, (const void*)0);
+	if (colorloc >= 0) {
+		glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
+		glEnableVertexAttribArray(colorloc);
+		int componentOfColor = mColorByteSize / (sizeof(GLfloat) * mCountOfVertex);
+		glVertexAttribPointer(colorloc, componentOfColor, GL_FLOAT, GL_FALSE, 0, 0);
+	}
+	if (mDrawType == DrawType::Triangles) {
+		glDrawElements(GL_TRIANGLES, mIndexByteSize / sizeof(GLuint), GL_UNSIGNED_INT, (const void*)0);
+	}
+	else if (mDrawType == DrawType::TriangleStrip) {
+		glDrawElements(GL_TRIANGLE_STRIP, mIndexByteSize / sizeof(GLuint), GL_UNSIGNED_INT, (const void*)0);
+	}
+	else {
+		glDrawArrays(GL_TRIANGLE_FAN, 0, mCountOfVertex);
+	}
 	glBindVertexArray(0);
 }
 
@@ -616,17 +738,17 @@ void Mesh::getPointSizeRange() {
 
 void Mesh::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc)
 {
-	if (mDrawType == DrawType::Triangles)
-	{
-		drawTriangles(posloc, texloc, norloc,colorloc, tangentloc);
-	}
-	else if (mDrawType == DrawType::TriangleFan)
-	{
-		drawTriangleFan(posloc, texloc, norloc, colorloc, tangentloc);
-	}
-	else if (mDrawType == DrawType::LineStrip)
-	{
+	switch (mDrawType) {
+	case DrawType::Triangles:
+	case DrawType::TriangleFan:
+	case DrawType::TriangleStrip:
+		drawTriangles(posloc, texloc, norloc, colorloc, tangentloc);
+		break;
+	case DrawType::LineStrip:
 		drawLineStrip(posloc);
+		break;
+	default:
+		break;
 	}
 }
 
