@@ -1,12 +1,3 @@
-texture:car2Diffuse{
-	path=./opengles3/material/drawable/car2.BMP
-}
-texture:carDiffuse{
-	path=./opengles3/material/drawable/carDiffuse.png
-}
-texture:carNormal{
-	path=./opengles3/material/drawable/carNormal.png
-}
 cubeTexture:skyboxT{
 	path=./opengles3/material/drawable/skybox
 }
@@ -14,15 +5,7 @@ cubeTexture:skyboxT{
 material:car2{
 	program=posDiffLight
 	sampler{
-		s_texture=car2Diffuse
-	}
-}
-
-material:car{
-	program=posDiffNormalLight
-	sampler{
-		s_texture=carDiffuse
-		s_normal=carNormal
+		s_texture=car2.BMP
 	}
 }
 

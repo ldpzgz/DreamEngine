@@ -39,8 +39,19 @@ void Camera::ortho(float left, float right, float bottom, float top, float zNear
 void Camera::renderScene() {
 	auto pScene = mpScene.lock();
 	if (pScene) {
+		//获取场景中的灯光
+		std::vector<Vec3> lightPos;
+		std::vector<Vec3> lightColor;
+		auto& lights = pScene->getLights();
+		for (auto& pl : lights) {
+			if (pl) {
+				lightPos.emplace_back(mMat*pl->getPosOrDir());
+				lightColor.emplace_back(pl->getLightColor());
+			}
+		}
+
 		const auto& rootNode = pScene->getRoot();
-		renderNode(rootNode, pScene);
+		renderNode(rootNode, pScene, lightPos, lightColor);
 	}
 }
 
