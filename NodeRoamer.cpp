@@ -25,13 +25,10 @@ void NodeRoamer::rotate(int x, int y) {
 			return;
 		float a = float(x - mStartRotateX);
 		float b = float(y - mStartRotateY);
-		glm::mat4 tempM{ 1.0f };
-		if (fabs(a) > fabs(b)) {
-			tempM = glm::rotate(tempM, a / 100.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-			mpNode->setMatrix(tempM * mOriginMat);
-		}
-		else {
-			tempM = glm::rotate(tempM, b / 100.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+		float len = sqrtf(a * a + b * b);
+		if (len > 0.001f) {
+			glm::mat4 tempM{ 1.0f };
+			tempM = glm::rotate(tempM, len / 100.0f, glm::vec3(b, a, 0.0f));
 			mpNode->setMatrix(tempM * mOriginMat);
 		}
 	}

@@ -12,3 +12,11 @@ material:ceil{
 		normalMap=ceilNormal.tga
 	}
 }
+
+material:floorTest{
+	program=posDiffNormalLight
+	sampler{
+		s_texture=ceilDiff.tga
+		s_normal=ceilNormal.tga
+	}
+}

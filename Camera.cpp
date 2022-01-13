@@ -45,7 +45,9 @@ void Camera::renderScene() {
 		auto& lights = pScene->getLights();
 		for (auto& pl : lights) {
 			if (pl) {
-				lightPos.emplace_back(mMat*pl->getPosOrDir());
+				auto& pos = pl->getPosOrDir();
+				auto tpos = mMat * glm::vec4(pos.x, pos.y, pos.z,1.0f);
+				lightPos.emplace_back(Vec3(tpos.x,tpos.y,tpos.z));
 				lightColor.emplace_back(pl->getLightColor());
 			}
 		}
@@ -55,23 +57,14 @@ void Camera::renderScene() {
 	}
 }
 
-void Camera::renderNode(const shared_ptr<Node<glm::mat4>>& node, const std::shared_ptr<Scene>& pScene) const
+void Camera::renderNode(const shared_ptr<Node<glm::mat4>>& node, 
+	const std::shared_ptr<Scene>& pScene,
+	std::vector<Vec3> lightPos, std::vector<Vec3> lightColor) const
 {
 	if (node) {
 		const auto& pAttaches = node->getAttachments();
 		glm::mat4 modelViewMatrix = mMat * node->getWorldMatrix();
 		glm::mat4 mvpMatrix = mProjMatrix * modelViewMatrix;
-		std::vector<Vec3> lightPos;
-		std::vector<Vec3> lightColor;
-		if (pScene) {
-			auto& lights = pScene->getLights();
-			for (auto& pl : lights) {
-				if (pl) {
-					lightPos.emplace_back(pl->getPosOrDir());
-					lightColor.emplace_back(pl->getLightColor());
-				}
-			}
-		}
 
 		for (const auto& pAttach : pAttaches) {
 			std::shared_ptr<Mesh> pMesh = std::dynamic_pointer_cast<Mesh>(pAttach.second);
@@ -82,7 +75,7 @@ void Camera::renderNode(const shared_ptr<Node<glm::mat4>>& node, const std::shar
 		
 		const auto& pChildNodes = node->getChildren();
 		for (const auto& pNode : pChildNodes) {
-			renderNode(pNode.second,pScene);
+			renderNode(pNode.second,pScene, lightPos, lightColor);
 		}
 	}
 }
