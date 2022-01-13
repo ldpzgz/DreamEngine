@@ -9,13 +9,11 @@ void NodeRoamer::setTarget(std::shared_ptr<Node<glm::mat4>>& pNode) {
 	mStartRotateX = 0;
 	mStartRotateY = 0;
 	mIsStartRotate = false;
-	mOriginMat = glm::identity<glm::mat4>();
 }
 void NodeRoamer::startRotate(int x, int y) {
 	if (mpNode) {
 		mStartRotateX = x;
 		mStartRotateY = y;
-		mOriginMat = mpNode->getMatrix();
 		mIsStartRotate = true;
 	}
 }
@@ -29,12 +27,15 @@ void NodeRoamer::rotate(int x, int y) {
 		if (len > 0.001f) {
 			glm::mat4 tempM{ 1.0f };
 			tempM = glm::rotate(tempM, len / 100.0f, glm::vec3(b, a, 0.0f));
-			mpNode->setMatrix(tempM * mOriginMat);
+			auto& oMat = mpNode->getMatrix();
+			oMat = tempM * oMat;
+			//mpNode->setMatrix(tempM * mOriginMat);
+			mStartRotateX = x;
+			mStartRotateY = y;
 		}
 	}
 }
 void NodeRoamer::endRotate(int x, int y) {
-	mOriginMat = glm::identity<glm::mat4>();
 	mIsStartRotate = false;
 }
 void NodeRoamer::move(bool front) {
@@ -46,6 +47,7 @@ void NodeRoamer::move(bool front) {
 		else {
 			tempM = glm::translate(tempM, glm::vec3(0.0f, 0.0f, 5.0f));
 		}
-		mpNode->setMatrix(tempM*mpNode->getMatrix());
+		auto& oMat = mpNode->getMatrix();
+		oMat = tempM * oMat;
 	}
 }

@@ -15,7 +15,6 @@ protected:
 	int mStartRotateX{ 0 };
 	int mStartRotateY{ 0 };
 	bool mIsStartRotate{ false };
-	glm::mat4 mOriginMat{ 1.0f };
 	std::shared_ptr<Node<glm::mat4>> mpNode;
 };
 #endif
