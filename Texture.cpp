@@ -2,6 +2,7 @@
 #include "Texture.h"
 #include "Log.h"
 #include <vector>
+#include "Utils.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 TextureP gpTextureNothing;
@@ -112,6 +113,7 @@ bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum
 	mWidth = width;
 	mHeight = height;
 	mTarget = GL_TEXTURE_2D;
+	mComponentFormat = type;
 	glGenTextures(1, &mTextureId);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(mTarget, mTextureId);//mTarget是GL_TEXTURE_CUBE_MAP的时候要注意，
@@ -134,7 +136,7 @@ bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum
 	//也就是说这个函数不会进行数据格式转换。
 	//第二个参数是mipmap等级。0最大，第六个参数是指边框的宽度，必须为0。
 	glTexImage2D(mTarget, 0, internalformat, mWidth, mHeight, 0,
-		mFormat, type, pdata);
+		mFormat, mComponentFormat, pdata);
 
 	if(autoMipmap)
 	{
@@ -150,8 +152,51 @@ bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum
 	return true;
 }
 
+bool Texture::loadHdrFile(const std::string& path) {
+	stbi_set_flip_vertically_on_load(true);
+	int nrComponents;
+	float* data = stbi_loadf(path.c_str(), &mWidth, &mHeight, &nrComponents, 0);
+	if (data)
+	{
+		mTarget = GL_TEXTURE_2D;
+		if (nrComponents == 3) {
+			mInternalFormat = GL_RGB16F;
+			mFormat = GL_RGB;
+		}
+		else if (nrComponents == 4) {
+			mInternalFormat = GL_RGBA16F;
+			mFormat = GL_RGBA;
+		}
+		else {
+			LOGE("ERROR to load hdr image file,the components is unknow");
+			stbi_image_free(data);
+			return false;
+		}
+		mComponentFormat = GL_FLOAT;
+
+		glGenTextures(1, &mTextureId);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(mTarget, mTextureId);
+		glTexImage2D(GL_TEXTURE_2D, 0, mInternalFormat, mWidth, mHeight, 0, mFormat, mComponentFormat, data);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+		return true;
+	}
+	else
+	{
+		LOGE("Cubemap tex failed to load at path: %s", path.c_str());
+		return false;
+	}
+}
+
 bool Texture::loadFromeFile(const std::string& path) {
 	int nrChannels;
+	stbi_set_flip_vertically_on_load(true);
 	unsigned char* data = stbi_load(path.c_str(), &mWidth, &mHeight, &nrChannels, 0);
 	if (data)
 	{
@@ -175,7 +220,7 @@ bool Texture::loadFromeFile(const std::string& path) {
 		else {
 			LOGE("Cubemap texture %s,unknow channels: %d", path.c_str(), nrChannels);
 		}
-		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, mComponentFormat, data);
 		glGenerateMipmap(mTarget);
 		stbi_image_free(data);
 		return true;
@@ -183,7 +228,6 @@ bool Texture::loadFromeFile(const std::string& path) {
 	else
 	{
 		LOGE("Cubemap tex failed to load at path: %s", path.c_str());
-		stbi_image_free(data);
 		return false;
 	}
 
@@ -196,7 +240,7 @@ bool Texture::loadCubemap(const std::string& path) {
 	glBindTexture(mTarget, mTextureId);
 
 	std::vector<std::string> filename{ "/right.jpg","/left.jpg","/top.jpg","/bottom.jpg","/front.jpg","/back.jpg" };
-
+	stbi_set_flip_vertically_on_load(true);
 	int nrChannels;
 	int i = 0;
 	for (auto& afile:filename)
@@ -219,7 +263,7 @@ bool Texture::loadCubemap(const std::string& path) {
 			}
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-				0, mFormat, mWidth, mHeight, 0, mFormat, GL_UNSIGNED_BYTE, data
+				0, mFormat, mWidth, mHeight, 0, mFormat, mComponentFormat, data
 			);
 			stbi_image_free(data);
 		}
@@ -260,6 +304,7 @@ void Texture::unload()
 	mWidth = 0;
 	mHeight = 0;
 	mFormat = GL_RGB;
+	mComponentFormat = GL_UNSIGNED_BYTE;
 }
 
 void Texture::active(GLint textPoint)
@@ -278,7 +323,7 @@ void Texture::update(int xoffset,int yoffset,int width,int height,void* data,
 	}
 	glBindTexture(mTarget, mTextureId);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, aligment);
-	glTexSubImage2D(mTarget, mipmapLevel,xoffset,yoffset,width,height,mFormat,GL_UNSIGNED_BYTE,data);
+	glTexSubImage2D(mTarget, mipmapLevel,xoffset,yoffset,width,height,mFormat, mComponentFormat,data);
 	checkglerror();
 }
 
@@ -304,7 +349,12 @@ void Texture::getCompressFormat(GLint* formats)
 std::shared_ptr<Texture> Texture::loadImageFromFile(const std::string& path) {
 	auto pTex = std::make_shared<Texture>();
 	if (pTex) {
-		if (!pTex->loadFromeFile(path)) {
+		bool b = false;
+		if (Utils::getFileSuffix(path) == "hdr") {
+			b = pTex->loadHdrFile(path);
+		}
+		b = pTex->loadFromeFile(path);
+		if (!b) {
 			pTex.reset();
 		}
 	}

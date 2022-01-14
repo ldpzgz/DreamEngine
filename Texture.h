@@ -55,6 +55,8 @@ public:
 
 	bool loadFromeFile(const std::string& path);
 
+	bool loadHdrFile(const std::string& path);
+
 	void unload();
 
 	////参数为是否自动为这个纹理生存mipmap
@@ -84,6 +86,7 @@ protected:
 	int32_t mHeight{ 0 };
 	GLint mInternalFormat{ GL_RGB };
 	GLint mFormat{ GL_RGB };
+	GLint mComponentFormat{ GL_UNSIGNED_BYTE };
 	int mNumOfSamples{ 0 };
 	int mTarget{ GL_TEXTURE_2D };//GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_2D_ARRAY, or GL_TEXTURE_CUBE_MAP
 };
