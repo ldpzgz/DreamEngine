@@ -1,0 +1,66 @@
+vs{
+	#version 300 es
+	precision mediump float;
+    layout (location = 0) in vec3 aPos;
+	out vec3 WorldPos;
+	uniform mat4 mvp;
+
+	void main()
+	{
+		WorldPos = aPos;
+		gl_Position =  mvp * vec4(WorldPos, 1.0f);
+	}
+}
+
+fs{
+	#version 300 es
+	precision mediump float;
+	layout(location=0) out vec4 FragColor1;
+	layout(location=1) out vec4 FragColor2;
+	layout(location=2) out vec4 FragColor3;
+	in vec3 WorldPos;
+
+	uniform sampler2D equirectangularMap;
+	const float scaleBy = 0.01f;
+	const vec2 invAtan = vec2(0.1591f, 0.3183f);
+	const vec4 scale1 = vec4(1.0f, 255.0f, 65025.0f, 16581375.0f);
+	const vec4 scale2 = vec4(1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f, 0);
+	vec2 SampleSphericalMap(vec3 v)
+	{
+		vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+		uv *= invAtan;
+		uv += 0.5f;
+		return uv;
+	}
+	
+	vec4 EncodeFloatRGBA(float v)
+	{
+	   vec4 enc = scale1 * v;
+	   enc = fract(enc);
+	   enc -= enc.yzww * scale2;
+	   return enc;
+	}
+
+	float DecodeFloatRGBA(vec4 rgba)
+	{
+	   return dot(rgba, vec4(1.0f, 1.0f / 255.0f, 1.0f / 65025.0f, 1.0f / 16581375.0f));
+	}
+
+	void main()
+	{		
+		vec2 uv = SampleSphericalMap(normalize(WorldPos));
+		vec3 color = texture(equirectangularMap, uv).rgb;
+		
+		FragColor1 = EncodeFloatRGBA(color.r*scaleBy);
+		FragColor2 = EncodeFloatRGBA(color.g*scaleBy);
+		FragColor3 = EncodeFloatRGBA(color.b*scaleBy);
+	}
+}
+
+program:hdrToCubicMap{
+	posLoc=0
+	mvpMatrix=mvp
+	sampler{
+		equirectangularMap=none
+	}
+}

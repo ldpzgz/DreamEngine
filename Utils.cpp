@@ -4,7 +4,7 @@
 #include "opencv2/imgproc/types_c.h"
 using namespace std;
 namespace Utils {
-	std::shared_ptr<Texture> loadImageFromFile(const std::string& path) {
+	/*std::shared_ptr<Texture> loadImageFromFile(const std::string& path) {
 		shared_ptr<Texture> retTex;
 		cv::Mat inImage;
 		int internalFormat = GL_RGB;
@@ -36,12 +36,12 @@ namespace Utils {
 
 
 			retTex = make_shared<Texture>();
-			if (!retTex->load(width, height, pdata, internalFormat,GL_UNSIGNED_BYTE,1,true)) {
+			if (!retTex->create2DMap(width, height, pdata, internalFormat,GL_UNSIGNED_BYTE,1,true)) {
 				retTex.reset();
 			}
 		}
 		return retTex;
-	}
+	}*/
 
 	std::string nowTime()
 	{

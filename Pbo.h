@@ -9,6 +9,7 @@
 #include <GLES3/gl31.h>
 #include <GLES3/gl32.h>
 #include "Utils.h"
+#include "Texture.h"
 //pbo 就是一块显存，
 //经过测试证明pbo是有用的，pbo本身是使用dma将GL_READ_BUFFER(使用glReadBuffer函数指定)中的数据读取到pbo，
 //再使用glMapBufferRange，把pbo显存映射到主内存，这个过程在我的笔记本上大概就100微秒
@@ -38,21 +39,24 @@ class Pbo {
 public:
 	Pbo() = default;
 	~Pbo();
-	
-	bool initPbo(int width, int height);
+
+	void initPbo(int width,int height,unsigned int format= GL_RGBA,unsigned int type= GL_UNSIGNED_BYTE);
 	//将指定的readbuffer，保存到ppm图像文件
 	//colorBuffer: GL_BACK, GL_NONE, and GL_COLOR_ATTACHMENTi
-	void saveToFile(GLuint colorBuffer, const std::string& pathToSave);
+	void saveToFile(unsigned int buffer, const std::string& pathToSave);
+	void saveToFile(const std::shared_ptr<Texture>& pTex, const std::string& pathToSave);
 
+	void pullToMem(const std::shared_ptr<Texture>& pTex, std::function<void(void*)> func);
+	void pullToMem(GLuint colorBuffer, std::function<void(void*)> func);
 	//void pullColorBufferToMemory(int x, int y, int width, int height);
 private:
 	unsigned int mPbo{ 0 };
 	
 	int mWidth{ 0 };
 	int mHeight{ 0 };
-	int mFormat{ GL_RGBA };
-	int mType{ GL_UNSIGNED_BYTE };
-	unsigned int mBytesPerPixel{ 0 };
+	unsigned int mFormat{ GL_RGBA };
+	unsigned int mType{ GL_UNSIGNED_BYTE };
+	unsigned int mBytesPerPixel{ 4 };
 	
 	void getBytesPerPixel(int readFormat, int readType, unsigned int& bytesPerPixel);
 

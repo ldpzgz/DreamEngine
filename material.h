@@ -28,6 +28,8 @@ public:
 	//改变shader里面sampler对应的纹理
 	void setTextureForSampler(const string& samplerName, const shared_ptr<Texture>& pTex);
 
+	shared_ptr<Texture>& getTextureOfSampler(const string& samplerName);
+
 	void setShader(const std::shared_ptr<Shader>& ps) {
 		mShader = ps;
 	}
@@ -90,7 +92,7 @@ public:
 	static shared_ptr<Shader>& getShader(const std::string&);
 
 	static shared_ptr<Material> loadFromFile(const string& filename);
-	static std::shared_ptr<Texture> createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint format = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, bool autoMipmap = false);
+	static std::shared_ptr<Texture> createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint internalFormat = GL_RGB, GLint format = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, bool autoMipmap = false);
 	static std::shared_ptr<Texture> loadImageFromFile(const std::string& name);
 	static void loadAllMaterial();
 	static shared_ptr<Material> clone(const std::string&);

@@ -273,6 +273,18 @@ struct Vector4 {
 		return *this;
 	}
 
+	float dot(const Vector4& o) {
+		return x * o.x + y * o.y + z * o.z + w * o.w;
+	}
+
+	Vector4 operator*(const Vector4& other) {
+		return Vector4(x*other.x,y*other.y,z*other.z,w*other.w);
+	}
+
+	Vector4 operator*(float a) {
+		return Vector4(x * a, y * a, z * a, w * a);
+	}
+
 	Vector4 operator-=(const Vector4& other) {
 		x -= other.x;
 		y -= other.y;

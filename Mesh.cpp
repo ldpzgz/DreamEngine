@@ -786,11 +786,12 @@ void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat,
 	}
 }
 
-void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& texMat) {
+void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat,const glm::mat4& texMat) {
 	if (mpMaterial) {
 		auto& pShader = mpMaterial->getShader();
 		if (pShader) {
 			pShader->setMvpMatrix(mvpMat);
+			pShader->setMvMatrix(mvMat);
 			pShader->setTextureMatrix(texMat);
 			mpMaterial->enable();
 			mpMaterial->setMyRenderOperation();
@@ -812,11 +813,12 @@ void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& texMat) {
 	}
 }
 
-void Mesh::render(const glm::mat4& mvpMat) {
+void Mesh::render(const glm::mat4& mvpMat,const glm::mat4& mvMat) {
 	if (mpMaterial) {
 		auto& pShader = mpMaterial->getShader();
 		if (pShader) {
 			pShader->setMvpMatrix(mvpMat);
+			pShader->setMvMatrix(mvMat);
 			mpMaterial->enable();
 			mpMaterial->setMyRenderOperation();
 			int posloc = -1;

@@ -1,5 +1,5 @@
 cubeTexture:skyboxT{
-	path=./opengles3/material/drawable/skybox
+	path=skybox
 }
 
 material:car2{
@@ -13,6 +13,16 @@ material:skyboxM{
 	program=skybox
 	sampler{
 		skybox=skyboxT
+	}
+	op{
+		depthTest=true
+		cullFace=true,front
+	}
+}
+material:skyboxHdr1{
+	program=skyboxHdr
+	sampler{
+		skybox=hdr/Mans_Outside_2k.hdr
 	}
 	op{
 		depthTest=true

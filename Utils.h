@@ -17,7 +17,7 @@ class Texture;
 #endif
 using namespace std::filesystem;
 namespace Utils {
-	std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
+	//std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
 
 	std::string nowTime();
 

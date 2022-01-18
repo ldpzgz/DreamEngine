@@ -866,9 +866,9 @@ shared_ptr<Shader>& Material::getShader(const std::string& name) {
 	return gpShaderNothing;
 }
 
-std::shared_ptr<Texture> Material::createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint format, GLenum type, bool autoMipmap) {
+std::shared_ptr<Texture> Material::createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint internalFormat,GLint format, GLenum type, bool autoMipmap) {
 	auto pTex = make_shared<Texture>();
-	if (!pTex->load(width, height, pdata, format, type, 1,autoMipmap)) {
+	if (!pTex->create2DMap(width, height, pdata, internalFormat,format, type, 1,autoMipmap)) {
 		LOGE("ERROR to create a texture");
 		pTex.reset();
 	}
@@ -930,7 +930,7 @@ bool Material::parseCubeTexture(const string& textureName, const string& texture
 		const auto pPath = umap.find("path");
 		if (pPath != umap.cend()) {
 			auto pTex = std::make_shared<Texture>();
-			if (pTex->loadCubemap(pPath->second) && gTextures.try_emplace(textureName, pTex).second) {
+			if (pTex->loadCubemap(gDrawablePath + "/" + pPath->second) && gTextures.try_emplace(textureName, pTex).second) {
 				LOGD("success to parse texture %s from path", textureName.c_str());
 			}
 			else {
@@ -953,7 +953,7 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 	if (parseItem(texture, umap)) {
 		const auto pPath = umap.find("path");
 		if (pPath != umap.cend()) {
-			auto pTex = Texture::loadImageFromFile(pPath->second);
+			auto pTex = Texture::loadImageFromFile(gDrawablePath + "/"+ pPath->second);
 			if (pTex && gTextures.try_emplace(textureName,pTex).second) {
 				LOGD("success to parse texture %s from path",textureName.c_str());
 			}
@@ -971,17 +971,20 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 					height = std::stoi(pHeight->second);
 					depth = std::stoi(pDepth->second);
 					int internalFormat = GL_RGB;
+					int format = GL_RGB;
 					if (depth == 4) {
 						internalFormat = GL_RGBA;
+						format = GL_RGBA;
 					}else if (depth == 1) {
 						internalFormat = GL_LUMINANCE;
+						format = GL_LUMINANCE;
 					}else if (depth != 3) {
 						LOGE("not support texture %s depth %d", textureName.c_str(), depth);
 						return false;
 					}
 
 					auto pTex = std::make_shared<Texture>();
-					if (pTex->load(width, height, nullptr, internalFormat) &&
+					if (pTex->create2DMap(width, height, nullptr, internalFormat,format) &&
 						gTextures.try_emplace(textureName, pTex).second) {
 						LOGD("success to create texture %s", textureName.c_str());
 					}
@@ -1050,6 +1053,19 @@ int Material::getKeyAsInt(const string& key) {
 		}
 	}
 	return ret;
+}
+
+shared_ptr<Texture>& Material::getTextureOfSampler(const string& samplerName) {
+	if (mShader) {
+		int samplerLoc = mShader->getUniformLoc(samplerName.c_str());
+		if (samplerLoc != -1) {
+			auto it = mSamplerName2Texture.find(samplerLoc);
+			if (it != mSamplerName2Texture.end()) {
+				return it->second;
+			}
+		}
+	}
+	return gpTextureNothing;
 }
 
 void Material::setTextureForSampler(const string& samplerName, const shared_ptr<Texture>& pTex) {

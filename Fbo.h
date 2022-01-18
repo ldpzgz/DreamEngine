@@ -11,6 +11,7 @@
 #include "Texture.h"
 #include "Rect.h"
 #include <functional>
+#include <vector>
 /*fbo主要用于渲染到纹理，这样子是比较高效的。
 	一个fbo有三个attachment：n个color attachment，一个depth attachment，一个stencil attachment。
 	color Attachment 能attach rbo，纹理，纹理数组中的一个，立方体纹理中的一个面，3D纹理中的一个切片
@@ -68,8 +69,8 @@ public:
 	}
 
 	//GL_COLOR_ATTACHMENT0 + attachment_n
-	void detachColorTexture(int attachment_n=0, GLint level=0);
-	void detachColorTextureMS(int attachment_n = 0);
+	void detachColorTexture(unsigned int attachment_n=0, GLint level=0);
+	void detachColorTextureMS(unsigned int attachment_n = 0);
 	void detachDepthTexture(GLint level = 0);
 	void detachDepthTextureMS();
 	/*
@@ -83,7 +84,9 @@ public:
 	bool attachDepthTextureMS(const std::shared_ptr<Texture>& texture);
 
 	bool attachColorRbo(int attachment_n, int width, int height);
+	bool attachDepthRbo(int width, int height);
 	void detachColorRbo(int attachment_n = 0);
+	void detachDepthRbo();
 	
 	void render(std::function<void()> func);
 
@@ -110,11 +113,12 @@ private:
 	int mdFactorRgb{ GL_ONE };
 	int msFactorAlpha{ GL_ONE };
 	int mdFactorAlpha{ GL_ONE };
-	int mModelRgb;
-	int	mModelAlpha;
+	int mModelRgb{ GL_FUNC_ADD };
+	int	mModelAlpha{ GL_FUNC_ADD };
 	GLboolean mbCullFace{ false };
 	int mFrontFace{ GL_CCW };
 	int mCullFaceMode{ GL_BACK };
+	std::vector<unsigned int> mAttachments;
 };
 
 #endif /* GRAPHICSFBO_H_ */

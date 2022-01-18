@@ -24,7 +24,7 @@ fs{
 }
 
 texture:buti{
-	path=./opengles3/material/drawable/buti.jpg
+	path=buti.jpg
 }
 
 program:lineBasic{

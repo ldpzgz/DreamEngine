@@ -27,10 +27,32 @@ void glTexImage2D(	GLenum target,
 
 */
 
-class Texture
+class Texture : public std::enable_shared_from_this<Texture>
 {
 public:
 	Texture();
+	Texture(Texture&& o) noexcept {
+		mTextureId = o.mTextureId;
+		mWidth = o.mWidth;
+		mHeight = o.mHeight;
+		mInternalFormat = o.mInternalFormat;
+		mFormat = o.mFormat;
+		mType = o.mType;
+		mNumOfSamples = o.mNumOfSamples;
+		mTarget = o.mTarget;
+		o.mTextureId = 0;
+	}
+	void operator=(Texture&& o) noexcept{
+		mTextureId = o.mTextureId;
+		mWidth = o.mWidth;
+		mHeight = o.mHeight;
+		mInternalFormat = o.mInternalFormat;
+		mFormat = o.mFormat;
+		mType = o.mType;
+		mNumOfSamples = o.mNumOfSamples;
+		mTarget = o.mTarget;
+		o.mTextureId = 0;
+	}
 	virtual ~Texture();
 
 	int32_t getHeight();
@@ -44,16 +66,26 @@ public:
 	}
 	//创建一个多重采样纹理，用于添加到fbo，
 	bool createMStexture(int width, int height, int samples=4, unsigned int internalformat= GL_RGBA8);
-	//format:GL_RGB,GL_RGBA,GL_DEPTH_COMPONENT
-	//type:GL_UNSIGNED_BYTE,GL_UNSIGNED_SHORT,GL_UNSIGNED_SHORT_5_6_5
-	bool load(int width,int height,unsigned char* pdata,GLint format=GL_RGB,GLenum type=GL_UNSIGNED_BYTE, int aligment = 1,bool autoMipmap=false);
+	
+	/*
+	* 创建一个空的cubicmap
+	* internalFormat:该纹理在显存中的格式，GL_RGB,GL_RGBA
+	* format:pdata指向的内存数据的格式，GL_RGB,GL_RGBA
+	* type:pdata指向的内存，比如rgb中的r的类型，GL_UNSIGNED_BYTE
+	*/
+	bool createCubicMap(int width,int height, GLint internalFormat = GL_RGB,GLenum format= GL_RGB,GLenum type= GL_UNSIGNED_BYTE);
+	
+	//internalFormat:该纹理在显存中的格式，GL_RGB,GL_RGBA
+	//format:pdata指向的内存数据的格式，GL_RGB,GL_RGBA
+	//type:pdata指向的内存，比如rgb中的r的类型，GL_UNSIGNED_BYTE
+	bool create2DMap(int width,int height,unsigned char* pdata, GLint internalFormat = GL_RGB, GLint format=GL_RGB,GLenum type =GL_UNSIGNED_BYTE, int aligment = 1,bool autoMipmap=false);
 	
 	/*
 	* path:指定了六个cubemap文件所在的路径，这个路径里面有"right.jpg","left.jpg","top.jpg","bottom.jpg","front.jpg","back.jpg"
 	*/
 	bool loadCubemap(const std::string& path);
 
-	bool loadFromeFile(const std::string& path);
+	bool loadFromFile(const std::string& path);
 
 	bool loadHdrFile(const std::string& path);
 
@@ -65,11 +97,16 @@ public:
 	//GL_TEXTURE0
 	void active(GLint texPoint);
 
-
-	void update(int xoffset,int yoffset,int width,int height,void* data,
-		int aligment = 1,int mimmapLevel = 0);
+	/*
+	* face: 只针对cubemap，对于2dmap设置为0
+	*/
+	void update(int xoffset, int yoffset, int width, int height, void* data,
+		int face = 0, int aligment = 1, int mimmapLevel = 0);
 
 	void saveToFile(const std::string& path);
+
+	void convertHdrToCubicmap();
+
 	//支持的最大的纹理单元
 	static int maxTexunit();
 	//支持几种压缩纹理格式：
@@ -80,13 +117,13 @@ public:
 	static std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
 protected:
 	//unsigned char* loadImage(const char* mPath);
-
+	
 	GLuint mTextureId{ 0 };
-	int32_t mWidth{ 0 };
-	int32_t mHeight{ 0 };
-	GLint mInternalFormat{ GL_RGB };
-	GLint mFormat{ GL_RGB };
-	GLint mComponentFormat{ GL_UNSIGNED_BYTE };
+	int mWidth{ 0 };
+	int mHeight{ 0 };
+	GLint mInternalFormat{ GL_RGB };//纹理数据上传到显存后的格式
+	GLint mFormat{ GL_RGB };//纹理数据在内存中的格式
+	GLint mType{ GL_UNSIGNED_BYTE };//纹理数据在内存中的格式
 	int mNumOfSamples{ 0 };
 	int mTarget{ GL_TEXTURE_2D };//GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_2D_ARRAY, or GL_TEXTURE_CUBE_MAP
 };

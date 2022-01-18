@@ -10,9 +10,7 @@
 #include "Log.h"
 
 extern void checkglerror();
-Fbo::Fbo():
-	mWidth(0),
-	mHeight(0)
+Fbo::Fbo()
 {
 	// TODO Auto-generated constructor stub
 }
@@ -37,7 +35,7 @@ void Fbo::enable()
 	glBindFramebuffer(GL_FRAMEBUFFER,mFboId);
 }
 
-void Fbo::detachColorTextureMS(int attachment_n) {
+void Fbo::detachColorTextureMS(unsigned int attachment_n) {
 	enable();
 	glFramebufferTexture2D(
 		GL_FRAMEBUFFER,
@@ -48,7 +46,7 @@ void Fbo::detachColorTextureMS(int attachment_n) {
 	disable();
 }
 
-void Fbo::detachColorTexture(int attachment_n, GLint level) {
+void Fbo::detachColorTexture(unsigned int attachment_n, GLint level) {
 	enable();
 	glFramebufferTexture2D(
 		GL_FRAMEBUFFER,
@@ -56,6 +54,8 @@ void Fbo::detachColorTexture(int attachment_n, GLint level) {
 		GL_TEXTURE_2D,
 		0,
 		level);
+
+	mAttachments.erase(mAttachments.begin()+attachment_n);
 	disable();
 }
 
@@ -79,6 +79,28 @@ void Fbo::detachDepthTexture(GLint level) {
 		0,
 		level);
 	disable();
+}
+
+bool Fbo::attachDepthRbo(int width, int height) {
+	if (mWidth != 0 && mWidth != width) {
+		LOGE("ERROR to attach depth rbo,the width error");
+		return false;
+	}
+	else {
+		mWidth = width;
+		mHeight = height;
+	}
+	if (mRbo != 0) {
+		glDeleteRenderbuffers(1, &mRbo);
+	}
+	glGenRenderbuffers(1, &mRbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, mRbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+	enable();
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, mRbo);
+	bool ret = checkFrameBuffer();
+	disable();
+	return ret;
 }
 
 bool Fbo::attachColorRbo(int attachment_n, int width, int height) {
@@ -109,6 +131,16 @@ bool Fbo::attachColorRbo(int attachment_n, int width, int height) {
 	bool ret = checkFrameBuffer();
 	disable();
 	return ret;
+}
+
+void Fbo::detachDepthRbo() {
+	enable();
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
+	if (mRbo > 0) {
+		glDeleteRenderbuffers(1, &mRbo);
+		mRbo = 0;
+	}
+	disable();
 }
 
 void Fbo::detachColorRbo(int attachment_n) {
@@ -210,6 +242,10 @@ bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attach
 			level);
 
 	ret = checkFrameBuffer();
+	if (ret) {
+		unsigned int s = mAttachments.size();
+		mAttachments.emplace_back(GL_COLOR_ATTACHMENT0 + s);
+	}
 	disable();
 	return ret;
 }
@@ -326,6 +362,8 @@ void Fbo::render(std::function<void()> func) {
 		glBlendFuncSeparate(msFactorRgb, mdFactorRgb, msFactorAlpha, mdFactorAlpha);
 		glBlendEquationSeparate(mModelRgb, mModelAlpha);
 	}
+
+	glDrawBuffers(mAttachments.size(), mAttachments.data());
 
 	if (func) {
 		func();

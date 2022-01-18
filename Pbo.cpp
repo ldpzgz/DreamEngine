@@ -5,17 +5,12 @@
 #include <future>
 #include "Pbo.h"
 #include "Log.h"
+#include "Fbo.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-//#include <opencv2/core/core.hpp>  
-//#include <opencv2/highgui/highgui.hpp> 
-//#include "opencv2/imgproc/imgproc.hpp"
-//#include "opencv2/imgproc/types_c.h"
 using namespace std;
-//using namespace std::chrono;
-//using namespace cv;
 static std::vector<std::future<void>> gPboFutures;
-int Pbo::gPerfectFormat = GL_RGB;
+int Pbo::gPerfectFormat = GL_RGBA;
 int Pbo::gPerfectType = GL_UNSIGNED_BYTE;
 
 void Pbo::getPerfectParam() {
@@ -127,72 +122,83 @@ void Pbo::getBytesPerPixel(int readFormat,int readType, unsigned int& bytesPerPi
 	}
 }
 
-bool Pbo::initPbo(int width, int height)
-{
-	mWidth = width;
-	mHeight = height;
-	getBytesPerPixel(mFormat, mType, mBytesPerPixel);
-	glGenBuffers(1, &mPbo);
-	if (mPbo > 0) {
-		glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo);
-		glBufferData(GL_PIXEL_PACK_BUFFER, mWidth*mHeight*mBytesPerPixel, 0, GL_STREAM_READ);
-		//getPerfectParam();
-		return true;
-	}
-	else {
-		LOGE("ERROR to create pbo");
-		return false;
-	}
-
-	//mpVideo = std::make_shared<VideoWriter>(pathToSave, VideoWriter::fourcc('M', 'J', 'P', 'G'), mFrameRate, Size(width, height));//
-	//if (mpVideo->isOpened()) {
-	//	LOGD("success open videowriter");
-	//}
-
-	//mpData = std::make_shared<std::vector<unsigned char>>(mWidth*mHeight*mBytesPerPixel);
-}
-
 Pbo::~Pbo() {
 	if (mPbo > 0) {
 		glDeleteBuffers(1, &mPbo);
 	}
-
-	/*if (mWritThread) {
-		mbExit = true;
-		mCondition.notify_all();
-		mWritThread->join();
-	}*/
+}
+void Pbo::saveToFile(unsigned int buffer, const std::string& pathToSave) {
+	pullToMem(buffer, [this, pathToSave](void* pData) {
+		if (pData) {
+			auto pSData = make_unique<std::vector<unsigned char>>();
+			pSData->assign(static_cast<unsigned char*>(pData),
+				static_cast<unsigned char*>(pData) + mWidth * mHeight * mBytesPerPixel);
+			int w = mWidth;
+			int h = mHeight;
+			int bpp = mBytesPerPixel;
+			auto fut = std::async(std::launch::async, [imageData = std::move(pSData), w, h, bpp, savePath = pathToSave]{
+				//写入到ppm文件里面
+				auto pColor = imageData->data();
+				auto ret = stbi_write_tga(savePath.c_str(), w, h, bpp, pColor);
+				if (ret == 0) {
+					LOGE("error to write file %s", savePath.c_str());
+				}
+				else if (ret > 0) {
+					LOGD("success to write pbo to file %s", savePath.c_str());
+				}
+				});
+			gPboFutures.emplace_back(std::move(fut));
+		}
+		});
+}
+void Pbo::saveToFile(const std::shared_ptr<Texture>& pTex,const std::string& pathToSave) {
+	Fbo fbo;
+	fbo.attachColorTexture(pTex);
+	fbo.enable();
+	saveToFile(GL_COLOR_ATTACHMENT0, pathToSave);
+	fbo.disable();
 }
 
-void Pbo::saveToFile(GLuint colorBuffer, const std::string& pathToSave) {
+void Pbo::pullToMem(const std::shared_ptr<Texture>& pTex, std::function<void(void*)> func) {
+	Fbo fbo;
+	fbo.attachColorTexture(pTex);
+	fbo.enable();
+	pullToMem(GL_COLOR_ATTACHMENT0, func);
+	fbo.disable();
+}
+
+void Pbo::initPbo(int w,int h,unsigned int format, unsigned int type) {
+	if (mPbo > 0) {
+		glDeleteBuffers(1, &mPbo);
+	}
+	mWidth = w;
+	mHeight = h;
+	mFormat = format;
+	mType = type;
+	getBytesPerPixel(mFormat, mType, mBytesPerPixel);
+	glGenBuffers(1, &mPbo);
+	if (mPbo > 0) {
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo);
+		glBufferData(GL_PIXEL_PACK_BUFFER, mWidth * mHeight * mBytesPerPixel, 0, GL_STREAM_READ);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+	}
+	else {
+		LOGE("ERROR to create pbo");
+		return;
+	}
+}
+
+void Pbo::pullToMem(GLuint colorBuffer,std::function<void(void*)> func) {
 	glReadBuffer(colorBuffer);
 	if (mPbo > 0) {
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo);
 		//dma 将当前colorBuffer读取到pbo
 		glReadPixels(0, 0, mWidth, mHeight, mFormat, mType, nullptr);
 		//_sleep(3000);
-		void* pData = glMapBufferRange(GL_PIXEL_PACK_BUFFER, 
+		void* pData = glMapBufferRange(GL_PIXEL_PACK_BUFFER,
 			0, mWidth * mHeight * mBytesPerPixel, GL_MAP_READ_BIT);
-		if (pData) {
-			auto pSData = make_shared<std::vector<unsigned char>>();
-			pSData->assign(static_cast<unsigned char*>(pData), 
-				static_cast<unsigned char*>(pData) + mWidth * mHeight * mBytesPerPixel);
-			int w = mWidth;
-			int h = mHeight;
-			int bpp = mBytesPerPixel;
-			auto fut = std::async(std::launch::async,[pSData,w,h,bpp,pathToSave] {
-					//写入到ppm文件里面
-					auto pColor = pSData->data();
-					auto ret = stbi_write_tga(pathToSave.c_str(), w, h, bpp, pColor);
-					if (ret == 0) {
-						LOGE("error to write file %s", pathToSave.c_str());
-					}
-					else if (ret > 0) {
-						LOGD("success to write pbo to file %s", pathToSave.c_str());
-					}
-				});
-			gPboFutures.emplace_back(std::move(fut));
-			
+		if (func) {
+			func(pData);
 		}
 		glUnmapBuffer(GL_PIXEL_PACK_BUFFER); //取消映射
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);

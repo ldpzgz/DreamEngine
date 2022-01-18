@@ -858,7 +858,7 @@ void UiRender::drawTextView(TextView* tv) {
 				glm::mat4 tempMat(1.0f);
 				tempMat = glm::translate(tempMat, glm::vec3(moveVec.x, -moveVec.y, 0.0f));
 				tempMat = tempMat * charPos.matrix;
-				mpFontManager->mpCharMesh->render(mProjMatrix * tempMat, charPos.texMatrix);
+				mpFontManager->mpCharMesh->render(mProjMatrix * tempMat, glm::mat4(1.0f),charPos.texMatrix);
 			}
 		}
 		if (!bScissorTest) {
@@ -949,7 +949,7 @@ bool UiRender::drawBackground(View* v){
 						pMat->setTextureForSampler("s_texture", pTexture);
 					}
 				}
-				pMesh->render(mProjMatrix * model);
+				pMesh->render(mProjMatrix * model,glm::mat4(1.0f));
 			}
 			
 			if (pBorderMesh && !borderColor.isZero()) {
@@ -958,7 +958,7 @@ bool UiRender::drawBackground(View* v){
 				if (pMat) {
 					pMat->setUniformColor(borderColor);
 				}
-				pBorderMesh->render(mProjMatrix * model);
+				pBorderMesh->render(mProjMatrix * model,glm::mat4(1.0f));
 			}
 		}
 	}
@@ -1070,7 +1070,7 @@ void UiRender::drawUi() {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glBlendEquation(GL_FUNC_ADD);
-		mpLastMesh->render(mProjMatrix*mLastMeshModelMatrix);
+		mpLastMesh->render(mProjMatrix*mLastMeshModelMatrix,glm::mat4(1.0f));
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 	}

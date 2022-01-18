@@ -5,6 +5,13 @@
 #include "Utils.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+#include "Fbo.h"
+#include "Mesh.h"
+#include "Material.h"
+#include "Pbo.h"
+#include <iostream>
+
 TextureP gpTextureNothing;
 extern void checkglerror();
 
@@ -18,11 +25,11 @@ Texture::~Texture()
 }
 
 
-int32_t Texture::getHeight() {
+int Texture::getHeight() {
 	return mHeight;
 }
 
-int32_t Texture::getWidth() {
+int Texture::getWidth() {
 	return mWidth;
 }
 
@@ -107,13 +114,35 @@ bool Texture::createMStexture(int width,int height,int samples,unsigned int inte
 	return true;
 }
 
-bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum type, int aligment,bool autoMipmap)
+bool Texture::createCubicMap(int width, int height, GLint internalFormat, GLenum format, GLenum type) {
+	mTarget = GL_TEXTURE_CUBE_MAP;
+	mInternalFormat = internalFormat;
+	mFormat = format;
+	mType = type;
+	mWidth = width;
+	mHeight = height;
+	glGenTextures(1, &mTextureId);
+	glBindTexture(mTarget, mTextureId);
+	for (unsigned int i = 0; i < 6; ++i)
+	{
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, mInternalFormat, mWidth, mHeight, 0, mFormat, mType, nullptr);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	return true;
+}
+
+bool Texture::create2DMap(int width,int height,unsigned char* pdata, GLint internalFormat,GLint format,GLenum type, int aligment,bool autoMipmap)
 {
 	mFormat = format;
+	mInternalFormat = internalFormat;
 	mWidth = width;
 	mHeight = height;
 	mTarget = GL_TEXTURE_2D;
-	mComponentFormat = type;
+	mType = type;
 	glGenTextures(1, &mTextureId);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(mTarget, mTextureId);//mTarget是GL_TEXTURE_CUBE_MAP的时候要注意，
@@ -123,20 +152,17 @@ bool Texture::load(int width,int height,unsigned char* pdata,GLint format,GLenum
 	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
 	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 	// Loads image data into OpenGL.
-	
-	int internalformat = mFormat;//only 1,2,3,4
 
 	//int align = 0;
 	//glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);//默认是4，the alignment requirements for the start of each pixel row in memory
-
+	//这个函数设置图像在内存中，每一行开头的对齐方式，按几个字节对齐1，2，4，8，16，32...
 	glPixelStorei(GL_UNPACK_ALIGNMENT, aligment);
 	//这个函数后面三个参数指定了纹理数据在内存中的组织方式。
 	//internalformat是指opengl在显存中创建的这张纹理，是什么格式的，这个格式必须与内存中的format匹配，
 	// 与mForamt，type是一对参数
-	//也就是说这个函数不会进行数据格式转换。
 	//第二个参数是mipmap等级。0最大，第六个参数是指边框的宽度，必须为0。
-	glTexImage2D(mTarget, 0, internalformat, mWidth, mHeight, 0,
-		mFormat, mComponentFormat, pdata);
+	glTexImage2D(mTarget, 0, mInternalFormat, mWidth, mHeight, 0,
+		mFormat, mType, pdata);
 
 	if(autoMipmap)
 	{
@@ -156,8 +182,22 @@ bool Texture::loadHdrFile(const std::string& path) {
 	stbi_set_flip_vertically_on_load(true);
 	int nrComponents;
 	float* data = stbi_loadf(path.c_str(), &mWidth, &mHeight, &nrComponents, 0);
+	/*float minest = 11111110.0f;
+	float maxest = 0.0f;*/
 	if (data)
 	{
+		/*for (int i = 0; i < mHeight; ++i) {
+			for (int j = 0; j < nrComponents * mWidth; ++j) {
+				float temp = data[i * nrComponents * mWidth + j];
+				if (minest > temp) {
+					minest = temp;
+				}
+				if (maxest < temp) {
+					maxest = temp;
+				}
+			}
+		}
+		std::cout << "hdr image min max is :" << minest << "," << maxest << std::endl;*/
 		mTarget = GL_TEXTURE_2D;
 		if (nrComponents == 3) {
 			mInternalFormat = GL_RGB16F;
@@ -172,12 +212,12 @@ bool Texture::loadHdrFile(const std::string& path) {
 			stbi_image_free(data);
 			return false;
 		}
-		mComponentFormat = GL_FLOAT;
+		mType = GL_FLOAT;
 
 		glGenTextures(1, &mTextureId);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(mTarget, mTextureId);
-		glTexImage2D(GL_TEXTURE_2D, 0, mInternalFormat, mWidth, mHeight, 0, mFormat, mComponentFormat, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, mInternalFormat, mWidth, mHeight, 0, mFormat, mType, data);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -194,7 +234,7 @@ bool Texture::loadHdrFile(const std::string& path) {
 	}
 }
 
-bool Texture::loadFromeFile(const std::string& path) {
+bool Texture::loadFromFile(const std::string& path) {
 	int nrChannels;
 	stbi_set_flip_vertically_on_load(true);
 	unsigned char* data = stbi_load(path.c_str(), &mWidth, &mHeight, &nrChannels, 0);
@@ -220,7 +260,7 @@ bool Texture::loadFromeFile(const std::string& path) {
 		else {
 			LOGE("Cubemap texture %s,unknow channels: %d", path.c_str(), nrChannels);
 		}
-		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, mComponentFormat, data);
+		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, mType, data);
 		glGenerateMipmap(mTarget);
 		stbi_image_free(data);
 		return true;
@@ -263,7 +303,7 @@ bool Texture::loadCubemap(const std::string& path) {
 			}
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-				0, mFormat, mWidth, mHeight, 0, mFormat, mComponentFormat, data
+				0, mFormat, mWidth, mHeight, 0, mFormat, mType, data
 			);
 			stbi_image_free(data);
 		}
@@ -301,10 +341,6 @@ void Texture::unload()
 		glDeleteTextures(1, &mTextureId);
 		mTextureId = 0;
 	}
-	mWidth = 0;
-	mHeight = 0;
-	mFormat = GL_RGB;
-	mComponentFormat = GL_UNSIGNED_BYTE;
 }
 
 void Texture::active(GLint textPoint)
@@ -315,15 +351,20 @@ void Texture::active(GLint textPoint)
 }
 
 void Texture::update(int xoffset,int yoffset,int width,int height,void* data,
-	int aligment,int mipmapLevel)
+	int face,int aligment,int mipmapLevel)
 {
 	if (mTarget == GL_TEXTURE_2D_MULTISAMPLE || mTarget == GL_TEXTURE_2D_MULTISAMPLE_ARRAY) {
 		LOGE("ERROR 2D_MULTISAMPLE cannot update");
 		return;
 	}
+	
 	glBindTexture(mTarget, mTextureId);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, aligment);
-	glTexSubImage2D(mTarget, mipmapLevel,xoffset,yoffset,width,height,mFormat, mComponentFormat,data);
+	unsigned int target = mTarget;
+	if (mTarget == GL_TEXTURE_CUBE_MAP) {
+		target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
+	}
+	glTexSubImage2D(target, mipmapLevel,xoffset,yoffset,width,height,mFormat, mType,data);
 	checkglerror();
 }
 
@@ -352,8 +393,13 @@ std::shared_ptr<Texture> Texture::loadImageFromFile(const std::string& path) {
 		bool b = false;
 		if (Utils::getFileSuffix(path) == "hdr") {
 			b = pTex->loadHdrFile(path);
+			/*if (b) {
+				pTex->convertHdrToCubicmap();
+			}*/
 		}
-		b = pTex->loadFromeFile(path);
+		else {
+			b = pTex->loadFromFile(path);
+		}
 		if (!b) {
 			pTex.reset();
 		}
@@ -363,4 +409,90 @@ std::shared_ptr<Texture> Texture::loadImageFromFile(const std::string& path) {
 
 void Texture::saveToFile(const std::string& path) {
 
+}
+
+void Texture::convertHdrToCubicmap() {
+	constexpr int width = 1024;
+	Fbo fbo;
+	TextureP floatR = std::make_shared<Texture>();
+	TextureP floatG = std::make_shared<Texture>();
+	TextureP floatB = std::make_shared<Texture>();
+	TextureP floatCube = std::make_shared<Texture>();
+	
+	Mesh mesh(MeshType::MESH_Cuboid);
+	mesh.loadMesh();
+	auto& pMaterial = Material::getMaterial("hdrToCubicMap");
+	pMaterial->setTextureForSampler("equirectangularMap", shared_from_this());
+	mesh.setMaterial(pMaterial);
+	//由于opengles3.0不能渲染到浮点纹理，所以创建三张rgba来存储一个rgbf32
+	//TextureP cubicTex = std::make_shared<Texture>();
+	//cubicTex->createCubicMap(width, width, GL_RGB16F, GL_RGB, GL_FLOAT);
+	//fbo.attachDepthRbo(width, width);
+
+	floatR->create2DMap(width, width, nullptr, GL_RGBA, GL_RGBA);
+	floatG->create2DMap(width, width, nullptr, GL_RGBA, GL_RGBA);
+	floatB->create2DMap(width, width, nullptr, GL_RGBA, GL_RGBA);
+	floatCube->createCubicMap(width, width, GL_RGB16F, GL_RGB, GL_FLOAT);
+	fbo.attachColorTexture(floatR, 0);
+	fbo.attachColorTexture(floatG, 1);
+	fbo.attachColorTexture(floatB, 2);
+
+	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	glm::mat4 captureViews[] =
+	{
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+	};
+	Pbo pbo;
+	pbo.initPbo(width, width);
+	for (int i = 0; i < 6; ++i) {
+		fbo.render([&mesh, &captureProjection, &captureViews, &floatCube, &pbo, width, i]{
+			mesh.render(captureProjection * captureViews[i], captureViews[i]);
+			//将渲染得到的三张rgba转换成一张rgb32f
+			std::vector<unsigned char> pRGB[3];
+			std::vector<float> resultRGB;
+			int index = 0;
+			std::function<void(void*)> func = [&index,width, &pRGB](void* pdata) {
+				pRGB[index++].assign((unsigned char*)pdata, (unsigned char*)pdata+width*width*4);
+			};
+			pbo.pullToMem(GL_COLOR_ATTACHMENT0, func);
+			pbo.pullToMem(GL_COLOR_ATTACHMENT1, func);
+			pbo.pullToMem(GL_COLOR_ATTACHMENT2, func);
+			//转换成rgb32f
+			resultRGB.resize(3 * width * width);
+			constexpr float scaleTo = 100.0f; //shader里面float值先除了100.0f
+			constexpr float scale = 1.0f / 255.0f;
+			constexpr float scale2 = 1.0f / 65025.0f;
+			constexpr float scale3 = 1.0f / 16581375.0f;
+			for (int i = 0; i < width; ++i) {
+				for (int j = 0; j < width; ++j) {
+					int i1 = 4 * (i * width + j);
+					int r1 = 3 * (i * width + j);
+					resultRGB[r1] = pRGB[0][i1] * scale +
+						pRGB[0][i1 + 1] * scale2 +
+						pRGB[0][i1 + 2] * scale3 +
+						pRGB[0][i1 + 3] * scale * scale3;
+					resultRGB[r1+1] = pRGB[1][i1] * scale +
+						pRGB[1][i1 + 1] * scale2 +
+						pRGB[1][i1 + 2] * scale3 +
+						pRGB[1][i1 + 3] * scale * scale3;
+					resultRGB[r1 + 2] = pRGB[2][i1] * scale +
+						pRGB[2][i1 + 1] * scale2 +
+						pRGB[2][i1 + 2] * scale3 +
+						pRGB[2][i1 + 3] * scale * scale3;
+					resultRGB[r1] *= scaleTo;
+					resultRGB[r1+1] *= scaleTo;
+					resultRGB[r1+2] *= scaleTo;
+				}
+			}
+			//update到cubemap
+			floatCube->update(0, 0, width, width, resultRGB.data(), i);
+		});
+	}
+	//pbo.saveToFile(floatB, "floatB.tga");
+	*this = std::move(*floatCube);
 }

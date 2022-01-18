@@ -455,7 +455,7 @@ void UiManager::updateWidthHeight(float width, float height) {
 		mpTexture = make_shared<Texture>();
 	}
 	mpTexture->unload();
-	mpTexture->load(width, height, nullptr, GL_RGBA);
+	mpTexture->create2DMap(width, height, nullptr, GL_RGBA);
 	mFboForCopy.attachColorTexture(mpTexture, 0);
 	UiRender::getInstance()->setTexture(mpTexture);*/
 	UiRender::getInstance()->updateWidthHeight(width, height);
