@@ -137,8 +137,8 @@ void Pbo::saveToFile(unsigned int buffer, const std::string& pathToSave) {
 			int h = mHeight;
 			int bpp = mBytesPerPixel;
 			auto fut = std::async(std::launch::async, [imageData = std::move(pSData), w, h, bpp, savePath = pathToSave]{
-				//写入到ppm文件里面
 				auto pColor = imageData->data();
+				stbi_flip_vertically_on_write(1);
 				auto ret = stbi_write_tga(savePath.c_str(), w, h, bpp, pColor);
 				if (ret == 0) {
 					LOGE("error to write file %s", savePath.c_str());
