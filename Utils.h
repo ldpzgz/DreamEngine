@@ -22,6 +22,7 @@ namespace Utils {
 	std::string nowTime();
 
 	std::string getFileName(const std::string& path);
+	std::string getFileNameWithPath(const std::string& path);
 	std::string getFileSuffix(const std::string& path);
 
 	void forEachFile(const std::string pathName, const std::string suffix, std::function<void(const std::string& path)> func);

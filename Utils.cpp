@@ -55,6 +55,16 @@ namespace Utils {
 		return ss.str();
 	}
 
+	std::string getFileNameWithPath(const std::string& path) {
+		auto endpos = path.find_last_of(".");
+		if (endpos > 0 && endpos != string::npos) {
+			return path.substr(0, endpos);
+		}
+		else {
+			return path;
+		}
+	}
+
 	string getFileName(const string& path) {
 		string temp;
 		auto startpos = path.find_last_of("/\\");

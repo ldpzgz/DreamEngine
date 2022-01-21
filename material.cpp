@@ -255,7 +255,8 @@ bool Material::samplerHandler(const std::shared_ptr<Material>& pMaterial, const 
 				auto pTex = Material::loadImageFromFile(filePath);
 				if (pTex) {
 					pMaterial->setTextureForSampler(pairs.first, pTex);
-					gTextures.emplace(pairs.second, pTex);
+					auto texname = Utils::getFileNameWithPath(pairs.second);
+					gTextures.emplace(texname, pTex);
 				}
 				else {
 					LOGE("parse material's sampler property error,cannot find texture %s", pairs.second.c_str());

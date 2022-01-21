@@ -414,9 +414,12 @@ void Texture::saveToFile(const std::string& path) {
 void Texture::convertHdrToCubicmap() {
 	constexpr int width = 1024;
 	Fbo fbo;
+	//由于不能渲染到浮点纹理，搞三种rgba接收一个浮点的rgb纹理
 	TextureP floatR = std::make_shared<Texture>();
 	TextureP floatG = std::make_shared<Texture>();
 	TextureP floatB = std::make_shared<Texture>();
+
+	//保存hdr到cubemap
 	TextureP floatCube = std::make_shared<Texture>();
 	
 	Mesh mesh(MeshType::MESH_Cuboid);
@@ -493,6 +496,73 @@ void Texture::convertHdrToCubicmap() {
 			floatCube->update(0, 0, width, width, resultRGB.data(), i);
 		});
 	}
-	//pbo.saveToFile(floatB, "floatB.tga");
 	*this = std::move(*floatCube);
+	constexpr int irrWidth=128;
+	floatR->unload();
+	floatG->unload();
+	floatB->unload();
+	//用于临时接收irradiance convolution的结果
+	floatR->create2DMap(irrWidth, irrWidth, nullptr, GL_RGBA, GL_RGBA);
+	floatG->create2DMap(irrWidth, irrWidth, nullptr, GL_RGBA, GL_RGBA);
+	floatB->create2DMap(irrWidth, irrWidth, nullptr, GL_RGBA, GL_RGBA);
+
+	fbo.detachColorTexture(2);
+	fbo.detachColorTexture(1);
+	fbo.detachColorTexture(0);
+	fbo.attachColorTexture(floatR, 0);
+	fbo.attachColorTexture(floatG, 1);
+	fbo.attachColorTexture(floatB, 2);
+	//用于保存irradiance convolution的结果
+	TextureP floatCubeIrr = std::make_shared<Texture>();
+	floatCubeIrr->createCubicMap(irrWidth, irrWidth, GL_RGB16F, GL_RGB, GL_FLOAT);
+	pbo.initPbo(irrWidth, irrWidth);
+	auto& pMaterial2 = Material::getMaterial("irradianceConvolution");
+	pMaterial2->setTextureForSampler("skybox", shared_from_this());
+	mesh.setMaterial(pMaterial2);
+	for (int i = 0; i < 6; ++i) {
+		fbo.render([&mesh, &captureProjection, &captureViews, &floatCubeIrr, &pbo, irrWidth, i] {
+			mesh.render(captureProjection * captureViews[i], captureViews[i]);
+			//将渲染得到的三张rgba转换成一张rgb32f
+			std::vector<unsigned char> pRGB[3];
+			std::vector<float> resultRGB;
+			int index = 0;
+			std::function<void(void*)> func = [&index, irrWidth, &pRGB](void* pdata) {
+				pRGB[index++].assign((unsigned char*)pdata, (unsigned char*)pdata + irrWidth * irrWidth * 4);
+			};
+			pbo.pullToMem(GL_COLOR_ATTACHMENT0, func);
+			pbo.pullToMem(GL_COLOR_ATTACHMENT1, func);
+			pbo.pullToMem(GL_COLOR_ATTACHMENT2, func);
+			//转换成rgb32f
+			resultRGB.resize(3 * irrWidth * irrWidth);
+			constexpr float scaleTo = 1000.0f; //shader里面float值先除了1000.0f
+			constexpr float scale = 1.0f / 255.0f;
+			constexpr float scale2 = 1.0f / 65025.0f;
+			constexpr float scale3 = 1.0f / 16581375.0f;
+			for (int i = 0; i < irrWidth; ++i) {
+				for (int j = 0; j < irrWidth; ++j) {
+					int i1 = 4 * (i * irrWidth + j);
+					int r1 = 3 * (i * irrWidth + j);
+					resultRGB[r1] = pRGB[0][i1] * scale +
+						pRGB[0][i1 + 1] * scale2 +
+						pRGB[0][i1 + 2] * scale3 +
+						pRGB[0][i1 + 3] * scale * scale3;
+					resultRGB[r1 + 1] = pRGB[1][i1] * scale +
+						pRGB[1][i1 + 1] * scale2 +
+						pRGB[1][i1 + 2] * scale3 +
+						pRGB[1][i1 + 3] * scale * scale3;
+					resultRGB[r1 + 2] = pRGB[2][i1] * scale +
+						pRGB[2][i1 + 1] * scale2 +
+						pRGB[2][i1 + 2] * scale3 +
+						pRGB[2][i1 + 3] * scale * scale3;
+					resultRGB[r1] *= scaleTo;
+					resultRGB[r1 + 1] *= scaleTo;
+					resultRGB[r1 + 2] *= scaleTo;
+				}
+			}
+			//update到cubemap
+			floatCubeIrr->update(0, 0, irrWidth, irrWidth, resultRGB.data(), i);
+			});
+	}
+
+	*this = std::move(*floatCubeIrr);
 }
