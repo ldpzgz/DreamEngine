@@ -447,31 +447,6 @@ void Shader::getRoughnessLoc(const std::string& value) {
 	}
 }
 
-//void Shader::getDiffuseTextureLoc(const std::string& diffuseSamplerInShader) {
-//	mDiffuseTextureLoc = glGetUniformLocation(mProgram, diffuseSamplerInShader.c_str());
-//	if (mDiffuseTextureLoc < 0) {
-//		LOGE("the shader %s  has no %s sampler", mName.c_str(), diffuseSamplerInShader.c_str());
-//	}
-//}
-//void Shader::getNormalTextureLoc(const std::string& normalSamplerInShader) {
-//	mNormalTextureLoc = glGetUniformLocation(mProgram, normalSamplerInShader.c_str());
-//	if (mNormalTextureLoc < 0) {
-//		LOGE("the shader %s  has no %s sampler", mName.c_str(), normalSamplerInShader.c_str());
-//	}
-//}
-
-//std::shared_ptr<Texture>& Shader::getTexture(const std::string& samplerName) {
-//	
-//	auto loc = getUniformLoc(samplerName);
-//	if (loc >= 0) {
-//		auto p = mSamplerToTex.find(loc);
-//		if (p != mSamplerToTex.end()) {
-//			return p->second;
-//		}
-//	}
-//	return gpTextureNothing;
-//}
-
 void Shader::deleteShader()
 {
 	if(mProgram>0)

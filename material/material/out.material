@@ -16,7 +16,7 @@ material:ceil{
 material:floorTest{
 	program=posDiffNormalLight
 	sampler{
-		s_texture=ceilDiff.tga
-		s_normal=ceilNormal.tga
+		s_texture=ceilDiff
+		s_normal=ceilNormal
 	}
 }

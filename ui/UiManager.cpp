@@ -81,7 +81,8 @@ void UiManager::loadAllUiImage() {
 			if (is_regular_file(filePath)) {
 				//是文件
 				auto filePathString = filePath.string();
-				Material::loadImageFromFile(filePathString);
+				auto texName = "ui"+Utils::getFileName(filePathString);
+				Material::loadImageFromFile(filePathString,texName);
 			}
 		}
 	}

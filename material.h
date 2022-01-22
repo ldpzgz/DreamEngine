@@ -5,14 +5,22 @@
 #include <memory>
 #include <functional>
 #include <unordered_map>
+#include <any>
 #include "Shader.h"
 #include "Texture.h"
 using namespace std;
 class Material : public enable_shared_from_this<Material> {
 public:
+	explicit Material(const std::string name):mName(name) {
+
+	}
 	Material();
 	~Material();
 	Material(const Material& mat);
+	/*
+	* 分析.material / .program文件
+	* 每个.material / .program文件都会自动生成一个Material对象
+	*/
 	bool parseMaterialFile(const string&);
 	void enable();
 
@@ -42,7 +50,7 @@ public:
 	*/
 	void setUniformColor(const Color& color) {
 		if (!mpUniformColor) {
-			mpUniformColor = make_unique<Color>(color);
+			mpUniformColor = make_shared<Color>(color);
 		}
 		else {
 			*mpUniformColor = color;
@@ -78,6 +86,18 @@ public:
 	}
 
 	struct OpData {
+		OpData() = default;
+		OpData(const OpData& o) = default;
+		void operator=(const OpData& o) {
+			mbDepthTest = o.mbDepthTest;
+			mbBlendTest = o.mbBlendTest;
+			mbCullFace = o.mbCullFace;
+			mCullWhichFace = o.mCullWhichFace;
+			mBlendSrcFactor = o.mBlendSrcFactor;
+			mBlendDstFactor = o.mBlendDstFactor;
+			mBlendEquation = o.mBlendEquation;
+
+		}
 		int mbDepthTest{-1};//0 关闭，1 开启
 		int mbBlendTest{ -1 };//0 关闭，1 开启
 		int mbCullFace{ -1 }; //0 关闭，1开启
@@ -88,12 +108,13 @@ public:
 	};
 
 	static shared_ptr<Texture>& getTexture(const std::string&);
+	static void emplaceTexture(const std::string&, shared_ptr<Texture>&);
 	static shared_ptr<Material>& getMaterial(const std::string&);
 	static shared_ptr<Shader>& getShader(const std::string&);
 
 	static shared_ptr<Material> loadFromFile(const string& filename);
 	static std::shared_ptr<Texture> createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint internalFormat = GL_RGB, GLint format = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, bool autoMipmap = false);
-	static std::shared_ptr<Texture> loadImageFromFile(const std::string& name);
+	static std::shared_ptr<Texture> loadImageFromFile(const std::string& path, std::string texName="");
 	static void loadAllMaterial();
 	static shared_ptr<Material> clone(const std::string&);
 private:
@@ -116,7 +137,7 @@ private:
 	* 获得:后面的名字
 	* key 形如：program:rectangleTex
 	*/
-	static string getItemName(const string& key);
+	static void splitKeyAndName(const string& key,string& realKey,string& keyName);
 
 	/*
 	* programName,program:后面跟的名字
@@ -133,6 +154,11 @@ private:
 	* 这个函数分析texture的内容，创建一个纹理，将纹理保存到gTexture全局变量里面
 	*/
 	bool parseTexture(const string& textureName, const string& texture);
+
+	/*
+	* 分析.material,.program程序里面的config配置项，只支持number与string
+	*/
+	bool parseConfig(const string& cfgName, const string& value);
 
 	/*
 	* textureName  material文件里面texture：后面跟的纹理的名字
@@ -169,9 +195,9 @@ private:
 	static bool roughnessHandler(Material* pMat, const std::string&);
 	static bool programSamplerHandler(Material* pMat, const std::string&);
 
-	std::shared_ptr < std::unordered_map<std::string, std::string>> mpContents;//保存的是材质文件里面形如key{value}的key-value对
+	std::unordered_map<std::string, std::string> mContents;//保存的是材质文件里面形如key{value}的key-value对
 	std::shared_ptr<Shader> mShader;
-	std::unique_ptr<Color> mpUniformColor;//纯色物体设置这个
+	std::shared_ptr<Color> mpUniformColor;//纯色物体设置这个
 	float mMetallical{ 0.5f }; //金属还是非金属（0.0f-1.0f);
 	float mRoughness{ 0.5f };	//粗糙程度（0.0f-1.0f);
 
@@ -179,15 +205,16 @@ private:
 
 	std::string mName;
 
-	std::unique_ptr <OpData> mOthersOpData;
-	std::unique_ptr <OpData> mMyOpData;
+	std::shared_ptr <OpData> mOthersOpData;
+	std::shared_ptr <OpData> mMyOpData;
+	std::unordered_map<std::string, std::any> mConfigValues;
 
 	static std::unordered_map<std::string, std::shared_ptr<Material>> gMaterials;
 	static std::unordered_map<std::string, std::shared_ptr<Texture>> gTextures;
 	static std::unordered_map<std::string, std::shared_ptr<Shader>> gShaders;
 	static std::unordered_map<std::string, std::function<bool(const std::shared_ptr<Material>&, const std::string&)>> gMaterialHandlers;
-	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gProgramKeyValueHandlers;
-
+	static std::unordered_map<std::string, std::function<bool(Material* pMat,const std::string&)>> gProgramKeyValueHandlers;
+	//static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gMatFileHandlers;
 };
 
 using MaterialP = std::shared_ptr<Material>;

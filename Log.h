@@ -95,7 +95,7 @@ void OutputDebugPrintf(const char* strOutputString, ...);
 	#endif
 
 	#if KPLAYERLOGLEVEL <= LOG_ERROR
-#define LOGE( ... ) printf( __VA_ARGS__ );printf("\n");
+#define LOGE( ... ) printf("ERROR ");printf( __VA_ARGS__ );printf("\n");
 	#else
 	#define LOGE( ... )
 	#endif

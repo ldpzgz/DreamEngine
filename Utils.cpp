@@ -66,7 +66,6 @@ namespace Utils {
 	}
 
 	string getFileName(const string& path) {
-		string temp;
 		auto startpos = path.find_last_of("/\\");
 		if (startpos != string::npos) {
 			auto endpos = path.find_last_of(".");
@@ -86,7 +85,6 @@ namespace Utils {
 				return path;
 			}
 		}
-		return temp;
 	}
 
 	string getFileSuffix(const string& path) {

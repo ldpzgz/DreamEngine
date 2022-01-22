@@ -39,6 +39,17 @@ std::unordered_map<std::string, std::shared_ptr<Material>> Material::gMaterials;
 std::unordered_map<std::string, std::shared_ptr<Texture>> Material::gTextures;
 std::unordered_map<std::string, std::shared_ptr<Shader>> Material::gShaders;
 
+//std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> Material::gMatFileHandlers{
+//	{"material",},
+//	{"texture",},
+//	{"cubeTexture",},
+//	{"program",},
+//	{"config",},
+//}
+
+/*
+* program文件里面：program:testM{...}的处理函数
+*/
 std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> Material::gProgramKeyValueHandlers{
 	{"posLoc",Material::posLocHandler},
 	{"texcoordLoc",Material::texcoordLocHandler},
@@ -57,7 +68,9 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"metallic",Material::metallicHandler},
 	{"roughness",Material::roughnessHandler}
 };
-
+/*
+* material文件里面：material:testM{...}的处理函数
+*/
 std::unordered_map<std::string, std::function<bool(const std::shared_ptr<Material>&, const std::string&)>> Material::gMaterialHandlers{
 	{"program",Material::programHandler},
 	{"sampler",Material::samplerHandler},
@@ -73,7 +86,7 @@ bool Material::posLocHandler(Material* pMat, const std::string& value) {
 		pMat->getShader()->setPosLoc(posLoc);
 	}
 	catch (exception e) {
-		LOGE("posLocHandler error to stoi posLoc");
+		LOGE("error to stoi posLoc,in material %s",pMat->mName.c_str());
 	}
 	return true;
 }
@@ -84,7 +97,7 @@ bool Material::colorLocHandler(Material* pMat, const std::string& value) {
 		pMat->getShader()->setColorLoc(posLoc);
 	}
 	catch (exception e) {
-		LOGE("posLocHandler error to stoi posLoc");
+		LOGE("error to stoi colorLoc,in material %s", pMat->mName.c_str());
 	}
 	return true;
 }
@@ -95,7 +108,7 @@ bool Material::normalLocHandler(Material* pMat, const std::string& value) {
 		pMat->getShader()->setNormalLoc(norLoc);
 	}
 	catch (exception e) {
-		LOGE("posLocHandler error to stoi posLoc");
+		LOGE("error to stoi normalLoc,in material %s", pMat->mName.c_str());
 	}
 	return true;
 }
@@ -106,7 +119,7 @@ bool Material::texcoordLocHandler(Material* pMat, const std::string& value) {
 		pMat->getShader()->setTexLoc(norLoc);
 	}
 	catch (exception e) {
-		LOGE("posLocHandler error to stoi posLoc");
+		LOGE("error to stoi texcoordLoc,in material %s", pMat->mName.c_str());
 	}
 	return true;
 }
@@ -117,7 +130,7 @@ bool Material::tangentLocHandler(Material* pMat, const std::string& value) {
 		pMat->getShader()->setTangentLoc(norLoc);
 	}
 	catch (exception e) {
-		LOGE("tangentLocHandler error to stoi posLoc");
+		LOGE("error to stoi tangentLoc,in material %s", pMat->mName.c_str());
 	}
 	return true;
 }
@@ -252,11 +265,10 @@ bool Material::samplerHandler(const std::shared_ptr<Material>& pMaterial, const 
 			else {
 				//如果写的是drawable文件夹里面的某个文件
 				auto filePath = gDrawablePath + "/" + pairs.second;
-				auto pTex = Material::loadImageFromFile(filePath);
+				auto texname = Utils::getFileNameWithPath(pairs.second);
+				auto pTex = Material::loadImageFromFile(filePath, texname);
 				if (pTex) {
 					pMaterial->setTextureForSampler(pairs.first, pTex);
-					auto texname = Utils::getFileNameWithPath(pairs.second);
-					gTextures.emplace(texname, pTex);
 				}
 				else {
 					LOGE("parse material's sampler property error,cannot find texture %s", pairs.second.c_str());
@@ -447,14 +459,14 @@ bool Material::opCullfaceHandler(const std::shared_ptr<Material>& pMaterial, con
 
 void Material::setDepthTest(bool b) {
 	if (!mMyOpData) {
-		mMyOpData = std::make_unique< OpData >();
+		mMyOpData = std::make_shared< OpData >();
 	}
 	mMyOpData->mbDepthTest = b;
 }
 
 void Material::setCullWhichFace(bool b, int whichFace) {
 	if (!mMyOpData) {
-		mMyOpData = std::make_unique< OpData >();
+		mMyOpData = std::make_shared< OpData >();
 	}
 	mMyOpData->mbCullFace = b;
 	mMyOpData->mCullWhichFace = whichFace;
@@ -515,18 +527,22 @@ void Material::loadAllMaterial() {
 
 Material::Material()
 {
-	mpContents = std::make_shared<std::unordered_map<std::string, std::string>>();
 }
 
 Material::~Material() {
-	mpContents->clear();
 }
 
 Material::Material(const Material& pMat) {
 	mName = pMat.mName;
-	mpContents = pMat.mpContents;
+	mConfigValues = pMat.mConfigValues;
 	mShader = pMat.mShader;
 	mSamplerName2Texture = pMat.mSamplerName2Texture;
+	mMyOpData = pMat.mMyOpData;
+	mContents = pMat.mContents;
+	mMetallical = pMat.mMetallical;
+	mRoughness = pMat.mRoughness;
+	if(pMat.mpUniformColor)
+		mpUniformColor = std::make_shared<Color>(*pMat.mpUniformColor);
 }
 
 shared_ptr<Material> Material::loadFromFile(const string& filename) {
@@ -537,20 +553,22 @@ shared_ptr<Material> Material::loadFromFile(const string& filename) {
 	return pMaterial;
 }
 
-string Material::getItemName(const string& key) {
-	string temp;
-	auto startPos = key.find(':');
-	if (startPos != string::npos) {
-		temp = key.substr(startPos + 1);
+void Material::splitKeyAndName(const string& key,string& realKey, string& keyName) {
+	auto pos = key.find(':');
+	if (pos != string::npos) {
+		realKey = key.substr(0,pos);
+		keyName = key.substr(pos + 1);
 	}
-	return temp;
+	else {
+		realKey = key;
+	}
 }
 
 //深度测试，blend，cullface等操作
 void Material::setMyRenderOperation() {
 	if (mMyOpData) {
 		if (!mOthersOpData) {
-			mOthersOpData = std::make_unique<Material::OpData>();
+			mOthersOpData = std::make_shared<Material::OpData>();
 		}
 		if (mMyOpData->mbDepthTest >= 0) {
 			GLboolean bDepthTest = true;
@@ -655,16 +673,23 @@ void Material::enable() {
 
 bool Material::parseMaterialFile(const string& path) {
 	bool bParseSuccess = false;
-	ifstream matFile(path);
-	string material((std::istreambuf_iterator<char>(matFile)), std::istreambuf_iterator<char>());
-	string filename = Utils::getFileName(path);
-	if (filename.empty()) {
-		LOGE("error to parse material file path,can't get filename %s",path.c_str());
+	if (path.empty()) {
 		return false;
 	}
+
+	mName = Utils::getFileName(path);
+	if (mName.empty()) {
+		LOGE("error to parse material file path,can't get filename %s", path.c_str());
+		return false;
+	}
+
+	ifstream matFile(path);
+	string material((std::istreambuf_iterator<char>(matFile)), std::istreambuf_iterator<char>());
+	
 	std::string::size_type startPos = 0;
 	std::string::size_type keyValuePos[3];
 	std::string programKey;
+	std::string programName;
 	std::vector<std::string> materialKeys;
 	while (findkeyValue(material, "{","}",startPos, keyValuePos)) {
 		//analsys，store key-value to mpContents;
@@ -677,62 +702,72 @@ bool Material::parseMaterialFile(const string& path) {
 			if (tempPos != string::npos && tempPos>0) {
 				value = value.substr(tempPos);
 			}
-			if (!mpContents->try_emplace(key, value).second) {
-				LOGE("%s:%s: error to emplace key %s", __FILE__,__func__,key.c_str());
+
+			string realKey, keyName;
+			splitKeyAndName(key, realKey, keyName);
+
+			if (!mContents.try_emplace(key, value).second) {
+				LOGE("double key %s,in %s material file", key.c_str(),mName.c_str());
 			}
-			else if (key.find("texture") != string::npos) {
-				auto textureName = getItemName(key);
-				if (!textureName.empty()) {
-					bParseSuccess = parseTexture(textureName, value);
+			else if (realKey=="texture") {
+				if (!keyName.empty()) {
+					bParseSuccess = parseTexture(keyName, value);
+				}
+				else {
+					LOGE("the texture in material file %s must has a name",mName.c_str());
 				}
 			}
-			else if (key.find("cubeTexture") != string::npos) {
-				auto textureName = getItemName(key);
-				if (!textureName.empty()) {
-					bParseSuccess = parseCubeTexture(textureName, value);
+			else if (realKey == "cubeTexture") {
+				if (!keyName.empty()) {
+					bParseSuccess = parseCubeTexture(keyName, value);
+				}else {
+					LOGE("the cubetexture in material file %s must has a name", mName.c_str());
 				}
 			}
-			else if (key.find("program") != string::npos) {
+			else if (realKey == "program") {
 				programKey = key;
+				programName = keyName;
 			}
-			else if (key.find("material") != string::npos) {
+			else if (realKey == "material") {
 				materialKeys.emplace_back(key);
 			}
+			else if (realKey == "config") {
+				parseConfig(keyName, value);
+			}
 		}
-
 		startPos = keyValuePos[2]+1;
 	}
 
 	if (!programKey.empty()) {
-		auto it = mpContents->find(programKey);
-		if (it != mpContents->end()) {
-			auto programName = getItemName(programKey);
+		auto it = mContents.find(programKey);
+		if (it != mContents.end()) {
 			if (!programName.empty()) {
 				bParseSuccess = parseProgram(programName, it->second);
 			}
 			else {
-				LOGE("program has no name in %s", path.c_str());
+				LOGE("program has no name in %s material", mName.c_str());
 			}
 		}
 	}
 
 	if (bParseSuccess) {
-		if (gMaterials.try_emplace(filename, shared_from_this()).second) {
-			LOGD("success to parse material %s",filename.c_str());
+		if (gMaterials.try_emplace(mName, shared_from_this()).second) {
+			LOGD("success to parse material %s", mName.c_str());
 		}
 		else {
-			LOGD("failed to parse material %s", filename.c_str());
+			LOGD("failed to parse material %s", mName.c_str());
 		}
 	}
 	//parse Material
 	for (auto& key : materialKeys) {
-		auto it = mpContents->find(key);
-		if (it != mpContents->end()) {
-			auto matName = getItemName(key);
+		auto it = mContents.find(key);
+		if (it != mContents.end()) {
+			string material,matName;
+			splitKeyAndName(key, material, matName);
 			bParseSuccess = parseMaterial(matName, it->second);
 		}
 	}
-	//mpContents->clear();
+	mContents.clear();//
 	return bParseSuccess;
 }
 
@@ -740,7 +775,7 @@ bool Material::parseMaterial(const string& matName, const string& material) {
 	Umapss umap;
 	bool bParseSuccess = true;
 	if (parseItem(material, umap)) {
-		auto pMaterial = std::make_shared<Material>();
+		auto pMaterial = std::make_shared<Material>(matName);
 		for (auto& pair : umap) {
 			auto it = gMaterialHandlers.find(pair.first);
 			if (it != gMaterialHandlers.end()) {
@@ -761,7 +796,7 @@ bool Material::parseMaterial(const string& matName, const string& material) {
 		}
 	}
 	else {
-		LOGE("parse material script error,syntax error");
+		LOGE("parse %s material script error,syntax error", matName.c_str());
 		bParseSuccess = false;
 	}
 	
@@ -769,7 +804,7 @@ bool Material::parseMaterial(const string& matName, const string& material) {
 }
 
 /*
-在字符串str里面冲startPos开始，查找第一个形如：key{value}
+在字符串str里面从startPos开始，查找第一个形如：key{value}
 str		where to find key-value;
 mid		the str between key and value;
 end		the end of value;
@@ -779,11 +814,16 @@ pos[1]	the pos of mid
 pos[2]	the pos of end
 */
 bool Material::findkeyValue(const string& str, const string& mid,const string& end, std::string::size_type startPos, std::string::size_type* pos) {
+	auto len = str.length();
+	if (startPos >= len) {
+		return false;
+	}
 	int countOfStart = 0;
 	int countOfEnd = 0;
 	std::string::size_type nextPos = startPos;
 	pos[0] = pos[1] = pos[2] = -1;
 	pos[0] = str.find_first_not_of(mid+end+"\x20\r\n\t", nextPos);
+	
 	if (pos[0] == string::npos) {
 		return false;
 	}
@@ -823,13 +863,17 @@ bool Material::findkeyValue(const string& str, const string& mid,const string& e
 	}
 	else {
 		if (countOfStart > 0 || countOfEnd > 0) {
-			LOGE("findkeyValue error to parse material file");
+			LOGE("findkeyValue ,syntax error");
 		}
 		return false;
 	}
 }
 
-
+void Material::emplaceTexture(const std::string& name, shared_ptr<Texture>& pTex) {
+	if (!name.empty() && pTex) {
+		gTextures.emplace(name, pTex);
+	}
+}
 
 shared_ptr<Texture>& Material::getTexture(const std::string& name) {
 	auto it = gTextures.find(name);
@@ -870,26 +914,28 @@ shared_ptr<Shader>& Material::getShader(const std::string& name) {
 std::shared_ptr<Texture> Material::createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint internalFormat,GLint format, GLenum type, bool autoMipmap) {
 	auto pTex = make_shared<Texture>();
 	if (!pTex->create2DMap(width, height, pdata, internalFormat,format, type, 1,autoMipmap)) {
-		LOGE("ERROR to create a texture");
+		LOGE("create a texture failed %s ",__func__);
 		pTex.reset();
 	}
 	else {
 		auto it = gTextures.try_emplace(name, pTex);
 		if (!it.second) {
-			LOGE("ERROR to add texture %s to gTexture,exist already", name.c_str());
+			LOGE("failed to add texture %s to gTexture,exist already", name.c_str());
 			pTex.reset();
 		}
 	}
 	return pTex;
 }
 
-std::shared_ptr<Texture> Material::loadImageFromFile(const std::string& path) {
-	auto texName = Utils::getFileName(path);
+std::shared_ptr<Texture> Material::loadImageFromFile(const std::string& path, std::string texName) {
+	if (texName.empty()) {
+		texName = Utils::getFileName(path);
+	}
 	std::shared_ptr<Texture> pTexture = Texture::loadImageFromFile(path);
 	if (pTexture) {
 		auto it = gTextures.try_emplace(texName, pTexture);
 		if (!it.second) {
-			LOGE("ERROR to add texture %s to gTexture,exist already", path.c_str());
+			LOGE("to add texture %s to gTexture,exist already", path.c_str());
 			pTexture.reset();
 		}
 	}
@@ -900,20 +946,35 @@ bool Material::parseItem(const string& value, Umapss& umap) {
 	std::string::size_type pos[3]{ 0,0,0 };
 	std::string::size_type startPos = 0;
 	do {
-		if (findkeyValue(value, "=", "\x20\r\n\t", startPos, pos) || findkeyValue(value, "{", "}", startPos, pos)) {
+		bool findKV = false;
+		auto tpos = value.find_first_of("={", startPos);
+		if (tpos != string::npos) {
+			if (value[tpos] == '=') {
+				findKV = findkeyValue(value, "=", "\r\n", startPos, pos);//"\x20\r\n\t"
+			}
+			else {
+				findKV = findkeyValue(value, "{", "}", startPos, pos);
+			}
+		}
+		if (findKV) {
 			auto temp = value.substr(pos[0], pos[1] - pos[0]);
-			auto keyendpos = temp.find_last_not_of('\x20');
+			auto keyendpos = temp.find_last_not_of("\x20\t");
+			if (keyendpos == string::npos) {
+				LOGE("find a empty key!!!");
+				return false;
+			}
 			auto realKey = temp.substr(0, keyendpos+1);
 			auto tempValue = value.substr(pos[1]+1, pos[2]-pos[1]-1);
 			auto valueStartPos = tempValue.find_first_not_of("\x20\r\n\t", 0);
 			if (valueStartPos != string::npos) {
 				auto valueEndPos = tempValue.find_last_not_of("\x20\r\n\t");//becarful ,see http://www.cplusplus.com/reference/string/string/find_last_not_of/
 				auto realValue = tempValue.substr(valueStartPos, valueEndPos-valueStartPos+1);
-				if (!umap.try_emplace(std::move(realKey), std::move(realValue)).second) {
+				if (!umap.try_emplace(realKey, std::move(realValue)).second) {
 					LOGE("failed to insert material key %s into unordermap", realKey.c_str());
 				}
 			}
 			else {
+				LOGE("find a empty value!!!");
 				return false;
 			}
 			startPos = pos[2] + 1;
@@ -935,13 +996,37 @@ bool Material::parseCubeTexture(const string& textureName, const string& texture
 				LOGD("success to parse texture %s from path", textureName.c_str());
 			}
 			else {
-				LOGE("failed to load cubetexture %s from path", textureName.c_str());
+				LOGE("failed to load cubetexture %s from path,in material %s", textureName.c_str(),mName.c_str());
 			}
 		}
 	}
 	else {
-		LOGE("parseCubeTexture parse error %s",textureName.c_str());
+		LOGE("parseCubeTexture parse error %s,in material %s",textureName.c_str(), mName.c_str());
 		return false;
+	}
+	return true;
+}
+
+bool Material::parseConfig(const string& cfgName, const string& value) {
+	Umapss umap;
+	if (parseItem(value, umap)) {
+		for (auto& it : umap) {
+			auto pos = it.second.find_first_of('\"');
+			if (pos != string::npos) {
+				auto endPos = it.second.find_last_of('\"');
+				if (endPos != string::npos && pos<endPos) {
+					mConfigValues.emplace(it.first, it.second.substr(pos + 1, endPos - pos - 1));
+				}
+			}
+			else {
+				try {
+					float temp = std::stof(it.second);
+					mConfigValues.emplace(it.first, temp);
+				}
+				catch (exception e) {
+				}
+			}
+		}
 	}
 	return true;
 }
@@ -955,11 +1040,11 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 		const auto pPath = umap.find("path");
 		if (pPath != umap.cend()) {
 			auto pTex = Texture::loadImageFromFile(gDrawablePath + "/"+ pPath->second);
-			if (pTex && gTextures.try_emplace(textureName,pTex).second) {
-				LOGD("success to parse texture %s from path",textureName.c_str());
+			if (!pTex) {
+				LOGE("failed to load texture from path %s,in material %s", pPath->second.c_str(),mName.c_str());
 			}
-			else {
-				LOGE("failed to parse texture %s from path", textureName.c_str());
+			if (!gTextures.emplace(textureName, pTex).second) {
+				LOGE("there already has %s in gTextures,in material %s", textureName.c_str(),mName.c_str());
 			}
 		}
 		else {
@@ -971,31 +1056,31 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 					width = std::stoi(pWidth->second);
 					height = std::stoi(pHeight->second);
 					depth = std::stoi(pDepth->second);
-					int internalFormat = GL_RGB;
-					int format = GL_RGB;
-					if (depth == 4) {
-						internalFormat = GL_RGBA;
-						format = GL_RGBA;
-					}else if (depth == 1) {
-						internalFormat = GL_LUMINANCE;
-						format = GL_LUMINANCE;
-					}else if (depth != 3) {
-						LOGE("not support texture %s depth %d", textureName.c_str(), depth);
-						return false;
-					}
-
-					auto pTex = std::make_shared<Texture>();
-					if (pTex->create2DMap(width, height, nullptr, internalFormat,format) &&
-						gTextures.try_emplace(textureName, pTex).second) {
-						LOGD("success to create texture %s", textureName.c_str());
-					}
-					else {
-						LOGE("error to create texture %s", textureName.c_str());
-					}
 				}
 				catch (const logic_error& e) {
-					LOGE("parseTexture throw exception %s from stoi() width height depth",e.what());
+					LOGE("parseTexture throw exception %s from stoi() width height depth", e.what());
 					return false;
+				}
+				int internalFormat = GL_RGB;
+				int format = GL_RGB;
+				if (depth == 4) {
+					internalFormat = GL_RGBA;
+					format = GL_RGBA;
+				}else if (depth == 1) {
+					internalFormat = GL_LUMINANCE;
+					format = GL_LUMINANCE;
+				}else if (depth != 3) {
+					LOGE("not support texture %s depth %d,,in material %s", textureName.c_str(), depth,mName.c_str());
+					return false;
+				}
+
+				auto pTex = std::make_shared<Texture>();
+				if (pTex->create2DMap(width, height, nullptr, internalFormat,format) &&
+					gTextures.try_emplace(textureName, pTex).second) {
+					LOGD("success to create texture %s", textureName.c_str());
+				}
+				else {
+					LOGE("error to create texture %s,in material %s", textureName.c_str(),mName.c_str());
 				}
 			}
 		}
@@ -1013,9 +1098,9 @@ bool Material::parseProgram(const string& programName,const string& programConte
 	string fs_key{ "fs" };
 	bool bsuccess = false;
 	if (parseItem(programContent, umap)) {
-		const auto ptrVs = mpContents->find(vs_key);
-		const auto ptrFs = mpContents->find(fs_key);
-		if (ptrVs != mpContents->cend() && ptrFs != mpContents->cend()) {
+		const auto ptrVs = mContents.find(vs_key);
+		const auto ptrFs = mContents.find(fs_key);
+		if (ptrVs != mContents.cend() && ptrFs != mContents.cend()) {
 			mShader = std::make_shared<Shader>(programName);
 			if (mShader->initShader(ptrVs->second, ptrFs->second)) {
 				LOGD("initShader %s success", programName.c_str());
@@ -1042,14 +1127,14 @@ bool Material::parseProgram(const string& programName,const string& programConte
 }
 
 int Material::getKeyAsInt(const string& key) {
-	auto it = mpContents->find(key);
+	auto it = mConfigValues.find(key);
 	int ret = -1;
-	if (it != mpContents->end()) {
+	if (it != mConfigValues.end()) {
 		try {
-			ret = std::stoi(it->second);
+			ret = std::any_cast<float>(it->second);
 		}
 		catch (exception e) {
-			LOGE("parseProgram error to stoi posLoc");
+			LOGE("Material::getKeyAsInt error to conver %s",key.c_str());
 			ret = -1;
 		}
 	}
@@ -1077,7 +1162,7 @@ void Material::setTextureForSampler(const string& samplerName, const shared_ptr<
 			mSamplerName2Texture[samplerLoc] = pTex;
 		}
 		else {
-			LOGD("Material::setTextureForSampler no sampler %s",samplerName.c_str());
+			LOGD("no sampler %s,in material %s",samplerName.c_str(),mName.c_str());
 		}
 	}
 }

@@ -43,5 +43,6 @@ program:fontsBasic{
 		s_texture=fontsTexture
 	}
 }
-
-charSize{32}
+config:fontcfg{
+	charSize=32
+}

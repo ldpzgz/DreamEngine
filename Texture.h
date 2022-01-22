@@ -30,6 +30,9 @@ void glTexImage2D(	GLenum target,
 class Texture : public std::enable_shared_from_this<Texture>
 {
 public:
+	explicit Texture(const std::string name) {
+		mName = name;
+	}
 	Texture();
 	Texture(Texture&& o) noexcept {
 		mTextureId = o.mTextureId;
@@ -41,6 +44,7 @@ public:
 		mNumOfSamples = o.mNumOfSamples;
 		mTarget = o.mTarget;
 		o.mTextureId = 0;
+		mName = std::move(o.mName);
 	}
 	void operator=(Texture&& o) noexcept{
 		mTextureId = o.mTextureId;
@@ -52,6 +56,7 @@ public:
 		mNumOfSamples = o.mNumOfSamples;
 		mTarget = o.mTarget;
 		o.mTextureId = 0;
+		mName = o.mName;
 	}
 	virtual ~Texture();
 
@@ -105,7 +110,19 @@ public:
 
 	void saveToFile(const std::string& path);
 
+	/*
+	* 将hdr的texture，转换为cubemap
+	*/
 	void convertHdrToCubicmap();
+	
+	/*
+	* 从hdr的cubemap生成diffuse irradiance map,默认纹理宽高都为128
+	*/
+	std::shared_ptr<Texture> genDiffuseIrrMap();
+
+	const std::string& getName() {
+		return mName;
+	}
 
 	//支持的最大的纹理单元
 	static int maxTexunit();
@@ -116,8 +133,6 @@ public:
 
 	static std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
 protected:
-	//unsigned char* loadImage(const char* mPath);
-	
 	GLuint mTextureId{ 0 };
 	int mWidth{ 0 };
 	int mHeight{ 0 };
@@ -126,87 +141,10 @@ protected:
 	GLint mType{ GL_UNSIGNED_BYTE };//纹理数据在内存中的格式
 	int mNumOfSamples{ 0 };
 	int mTarget{ GL_TEXTURE_2D };//GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_2D_ARRAY, or GL_TEXTURE_CUBE_MAP
+	std::string mName;
 };
 
 using TextureP = std::shared_ptr<Texture>;
 extern TextureP gpTextureNothing;
-
-//class GraphicsImage
-//{
-//public:
-//	GraphicsImage();
-//	~GraphicsImage();
-//	void initImage(Texture* pTex,int left,int bottom,int width,int height);
-//	//GL_TEXTURE0
-//	void active(GLint texPoint);
-//	void update(void* data);
-//	//根据image的位置获得纹理坐标
-//	void getTexCoord(float* pTexpos);
-//
-//	Texture* getTexture()
-//	{
-//		return mpTex;
-//	}
-//protected:
-//	Texture* mpTex;
-//
-//	int mx;
-//	int my;
-//	int mHeight;
-//	int mWidth;
-//};
-//
-//class UITexture:public Texture
-//{
-//public:
-//	UITexture();
-//	~UITexture();
-//
-//	void addImage(const std::string name,int x,int y,int width,int height);
-//private:
-//	std::map<std::string, GraphicsImage> mImageMap;
-//};
-//
-//class TextTexture :public Texture
-//{
-//public:
-//	TextTexture();
-//	~TextTexture();
-//	void addImage(wchar_t text, int x, int y, int width, int height);
-//private:
-//	std::map<wchar_t, GraphicsImage> mImageMap;
-//};
-////
-////
-//class GraphicsImageManager
-//{
-//public:
-//	typedef std::map<std::string,GraphicsImage*> Mmap;
-//	typedef std::map<std::string,GraphicsImage*>::iterator MmapIt;
-//	typedef std::pair< std::map<std::string,GraphicsImage*>::iterator,bool > TMapInsertRet;//用于判断插入是否成功
-//
-//	typedef std::map<std::string,Texture*> MTextureMap;
-//	typedef std::map<std::string,Texture*>::iterator MTextureMapIt;
-//	typedef std::pair< std::map<std::string,Texture*>::iterator,bool > IMapInsertRet;
-//
-//	GraphicsImageManager();
-//	~GraphicsImageManager();
-//
-//	//从配置文件加载纹理和image
-//	bool loadFromFile(const char* fname);
-//	//根据image的名字获取image
-//	GraphicsImage* findImage(const char* imageName);
-//	//根据texture的名字获取texture
-//	Texture* findTexture(const char* texName);
-//
-//	//创建一个texture和对应名字的image。
-//	//format:GL_RGB,GL_RGBA,GL_DEPTH_COMPONENT
-//	GraphicsImage* createImage(const char* name,int32_t width,int32_t height,GLint format);
-//	static GraphicsImageManager* getInstance();
-//private:
-//	Mmap mImageMap;
-//	MTextureMap mTextureMap;
-//	static GraphicsImageManager* gImageManagerInstance;
-//};
 
 #endif
