@@ -73,6 +73,9 @@ public:
 
 	void mouseLButtonUp(int x, int y);
 
+	//在程序退出的时候，opengl环境销毁之前，需要做一些事情
+	void onDestroy();
+
 	static Color& getColor(const std::string& name);
 	static std::shared_ptr<Shape>& getShape(const std::string& name);
 	static std::string& getString(const std::string& name);

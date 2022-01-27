@@ -10,10 +10,10 @@
 		width="200"
 		height="50"
 		gravity="center"
-		textSize="32"
-		textColor="#ff0000ff"
+		textSize="40"
+		textColor="#000000ff"
 		background="@bk/firstbk"
-		text="我">
+		text="我们oklg哈">
 	</TextView>
 		
 </LinearLayout>

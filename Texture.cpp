@@ -456,7 +456,7 @@ TextureP Texture::genDiffuseIrrMap() {
 			std::vector<unsigned char> pRGB[3];
 			std::vector<float> resultRGB;
 			int index = 0;
-			std::function<void(void*)> func = [&index, irrWidth, &pRGB](void* pdata) {
+			std::function<void(Pbo* pbo, void*)> func = [&index, irrWidth, &pRGB](Pbo* pbo, void* pdata) {
 				pRGB[index++].assign((unsigned char*)pdata, (unsigned char*)pdata + irrWidth * irrWidth * 4);
 			};
 			pbo.pullToMem(GL_COLOR_ATTACHMENT0, func);
@@ -541,7 +541,7 @@ void Texture::convertHdrToCubicmap() {
 			std::vector<unsigned char> pRGB[3];
 			std::vector<float> resultRGB;
 			int index = 0;
-			std::function<void(void*)> func = [&index,width, &pRGB](void* pdata) {
+			std::function<void(Pbo* pbo, void*)> func = [&index,width, &pRGB](Pbo* pbo, void* pdata) {
 				pRGB[index++].assign((unsigned char*)pdata, (unsigned char*)pdata+width*width*4);
 			};
 			pbo.pullToMem(GL_COLOR_ATTACHMENT0, func);

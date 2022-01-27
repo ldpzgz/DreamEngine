@@ -60,8 +60,8 @@ public:
 	}
 	virtual ~Texture();
 
-	int32_t getHeight();
-	int32_t getWidth();
+	int getHeight();
+	int getWidth();
 	GLuint getId()
 	{
 		return mTextureId;
@@ -69,6 +69,16 @@ public:
 	int getTexTarget() {
 		return mTarget;
 	}
+	int getInternalFormat() {
+		return mInternalFormat;
+	}
+	int getFormat() {
+		return mFormat;
+	}
+	int getType() {
+		return mType;
+	}
+
 	//创建一个多重采样纹理，用于添加到fbo，
 	bool createMStexture(int width, int height, int samples=4, unsigned int internalformat= GL_RGBA8);
 	

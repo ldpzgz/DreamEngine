@@ -23,7 +23,7 @@ fs{
 	void main()
 	{
 	  vec4 fl = texture( s_texture, v_texCoord );
-	  outColor = vec4(color.r*fl.r,color.g*fl.r,color.b*fl.r,color.a*fl.r);
+	  outColor = vec4(color.r,color.g,color.b,color.a*fl.r);
 	}
 }
 
@@ -42,7 +42,10 @@ program:fontsBasic{
 	sampler{
 		s_texture=fontsTexture
 	}
+	op{
+		blend=true,sa,1-sa,add,0,1,add
+	}
 }
 config:fontcfg{
-	charSize=32
+	charSize=42
 }

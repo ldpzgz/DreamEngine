@@ -1,7 +1,7 @@
 ﻿#ifndef _UI_TREE_H_
 #define _UI_TREE_H_
-#include <ft2build.h>
-#include FT_FREETYPE_H
+//#include <ft2build.h>
+//#include FT_FREETYPE_H
 #include <iostream>
 #include <string>
 #include <unordered_map>

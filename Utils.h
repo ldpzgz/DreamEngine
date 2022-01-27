@@ -5,11 +5,11 @@
 #include <iostream>
 #include <memory>
 #include <chrono>
-#include <iostream>
 #include <iomanip>
 #include <ctime>
 #include <string>
 #include <functional>
+#include <vector>
 #include <filesystem>
 #include "Log.h"
 #ifndef Texture
@@ -24,12 +24,17 @@ namespace Utils {
 	std::string getFileName(const std::string& path);
 	std::string getFileNameWithPath(const std::string& path);
 	std::string getFileSuffix(const std::string& path);
+	/*
+	* ä»¥separatorä¸ºåˆ†ç•Œåˆ†å‰²å­—ç¬¦ä¸²ï¼Œ
+	* è¿”å›æ‰¾åˆ°çš„å­ä¸²çš„ä¸ªæ•°
+	*/
+	int splitStr(const std::string& str, const std::string& Separator, std::vector<std::string>& result);
 
 	void forEachFile(const std::string pathName, const std::string suffix, std::function<void(const std::string& path)> func);
 }
 
 /*
-T	std::chrono::milliseconds,std::chrono::microseconds,..µÈÊ±¼äµ¥Î»¡£
+T	std::chrono::milliseconds,std::chrono::microseconds,..ç­‰æ—¶é—´å•ä½ã€‚
 */
 template<typename T>
 class TimeCounter {
@@ -37,9 +42,9 @@ public:
 	using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock, T>;
 	
 	/*
-	¹¦ÄÜ£º±¾´Îµ÷ÓÃelapseÓëÉÏ´Îµ÷ÓÃelapseµÄÊ±¼ä²îÊÇ·ñ³¬¹ıÁËdeltaCount£¬
-	deltaCountµÄÊ±¼äµ¥Î»ÊÇT
-	·µ»ØÖµ£ºÈç¹û³¬¹ıÁËdeltaCount£¬·µ»Ø<true,±¾´ÎÓëÉÏ´ÎµÄÊ±¼ä¼ä¸ô>,·ñÔò<false,±¾´ÎÓëÉÏ´ÎµÄÊ±¼ä¼ä¸ô>
+	åŠŸèƒ½ï¼šæœ¬æ¬¡è°ƒç”¨elapseä¸ä¸Šæ¬¡è°ƒç”¨elapseçš„æ—¶é—´å·®æ˜¯å¦è¶…è¿‡äº†deltaCountï¼Œ
+	deltaCountçš„æ—¶é—´å•ä½æ˜¯T
+	è¿”å›å€¼ï¼šå¦‚æœè¶…è¿‡äº†deltaCountï¼Œè¿”å›<true,æœ¬æ¬¡ä¸ä¸Šæ¬¡çš„æ—¶é—´é—´éš”>,å¦åˆ™<false,æœ¬æ¬¡ä¸ä¸Šæ¬¡çš„æ—¶é—´é—´éš”>
 	*/
 	std::pair<bool,int64_t> elapse(int deltaCount) {
 		if (!mbStart) {
@@ -58,7 +63,7 @@ public:
 			}
 		}
 	}
-	//×ÔstartÒÔÀ´£¬¹ıÁË¶àÉÙÊ±¼ä£¬Èç¹û»¹Ã»ÓĞµ÷ÓÃ¹ıstart£¬·µ»Ø0
+	//è‡ªstartä»¥æ¥ï¼Œè¿‡äº†å¤šå°‘æ—¶é—´ï¼Œå¦‚æœè¿˜æ²¡æœ‰è°ƒç”¨è¿‡startï¼Œè¿”å›0
 	int64_t elapse() {
 		if (mbStart) {
 			if (mbPause) {

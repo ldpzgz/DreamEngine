@@ -32,23 +32,60 @@ glReadPixel:如果当前绑定了pbo，则将指定的source（默认是缺省�
 */
 
 /*
-下面这个pbo，实现了将缺省的colorbuffer 以每秒25帧的速度录制到一个视频里面
-开了两个pbo，快速的将color buffer复制到pbo，然后将pbo map到内存，复制数据 丢给录制线程。
+首先创建一个pbo，需要指定fomat，type，
+指定要copy的colorBuffer，
+然后bind pbo，调用glReadPixel将colorBuffer读取到pbo，这个过程可能会发生数据类型的转换
+把colorbuffer中的internalformat指定的格式转换为pbo的format type指定的格式。
+但是这个readpixel的过程是dma的，所以最好colorBuffer中的格式与pbo中的格式一样。
+*/
+
+/*
+* 这个类经常与fbo联合使用，fbo绑定纹理到color attachment，
+* 然后创建一个pbo，将colorbuffer pull到pbo，然后map pbo到内存。
+* 这个过程中，不是什么纹理格式都能绑定到fbo的,请参考opengles3.0编程向导
+* 还有经过测试pbo的format 只能是GL_RGBA,type为GL_UNSIGNED_BYTE,
+* 最后的结论是fbo可以绑定internalFormat为GL_RED等他支持的格式，但是
+* pbo的format只能是GL_RGBA,最后取出来的数据有4个通道！！！
 */
 class Pbo {
 public:
 	Pbo() = default;
 	~Pbo();
 
+	/*
+	*  format:glGet and GL_IMPLEMENTATION_COLOR_READ_FORMAT
+	*		and GL_RED, GL_RED_INTEGER, GL_RG, GL_RG_INTEGER, GL_RGB, 
+		GL_RGB_INTEGER, GL_RGBA, GL_RGBA_INTEGER, GL_LUMINANCE_ALPHA, 
+		GL_LUMINANCE, and GL_ALPHA is supported
+		但是经过测试只支持GL_RGBA
+
+		type: GL_UNSIGNED_BYTE, GL_UNSIGNED_INT, GL_INT, or GL_FLOAT
+			glGet and GL_IMPLEMENTATION_COLOR_READ_TYPE is supported
+	*/
 	void initPbo(int width,int height,unsigned int format= GL_RGBA,unsigned int type= GL_UNSIGNED_BYTE);
 	//将指定的readbuffer，保存到ppm图像文件
 	//colorBuffer: GL_BACK, GL_NONE, and GL_COLOR_ATTACHMENTi
 	void saveToFile(unsigned int buffer, const std::string& pathToSave);
 	void saveToFile(const std::shared_ptr<Texture>& pTex, const std::string& pathToSave);
 
-	void pullToMem(const std::shared_ptr<Texture>& pTex, std::function<void(void*)> func);
-	void pullToMem(GLuint colorBuffer, std::function<void(void*)> func);
-	//void pullColorBufferToMemory(int x, int y, int width, int height);
+	void pullToMem(const std::shared_ptr<Texture>& pTex, std::function<void(Pbo* pbo, void*)> func);
+	void pullToMem(GLuint colorBuffer, std::function<void(Pbo* pbo, void*)> func);
+	
+	int getBpp() {
+		return mBytesPerPixel;
+	}
+	int getWidth() {
+		return mWidth;
+	}
+	int getHeight() {
+		return mHeight;
+	}
+	unsigned int getFormat() {
+		return mFormat;
+	}
+	unsigned int getType() {
+		return mType;
+	}
 private:
 	unsigned int mPbo{ 0 };
 	

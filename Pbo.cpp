@@ -128,14 +128,14 @@ Pbo::~Pbo() {
 	}
 }
 void Pbo::saveToFile(unsigned int buffer, const std::string& pathToSave) {
-	pullToMem(buffer, [this, pathToSave](void* pData) {
+	pullToMem(buffer, [pathToSave](Pbo* pbo, void* pData) {
 		if (pData) {
 			auto pSData = make_unique<std::vector<unsigned char>>();
 			pSData->assign(static_cast<unsigned char*>(pData),
-				static_cast<unsigned char*>(pData) + mWidth * mHeight * mBytesPerPixel);
-			int w = mWidth;
-			int h = mHeight;
-			int bpp = mBytesPerPixel;
+				static_cast<unsigned char*>(pData) + pbo->mWidth * pbo->mHeight * pbo->mBytesPerPixel);
+			int w = pbo->mWidth;
+			int h = pbo->mHeight;
+			int bpp = pbo->mBytesPerPixel;
 			auto fut = std::async(std::launch::async, [imageData = std::move(pSData), w, h, bpp, savePath = pathToSave]{
 				auto pColor = imageData->data();
 				stbi_flip_vertically_on_write(1);
@@ -159,7 +159,7 @@ void Pbo::saveToFile(const std::shared_ptr<Texture>& pTex,const std::string& pat
 	fbo.disable();
 }
 
-void Pbo::pullToMem(const std::shared_ptr<Texture>& pTex, std::function<void(void*)> func) {
+void Pbo::pullToMem(const std::shared_ptr<Texture>& pTex, std::function<void(Pbo* pbo, void*)> func) {
 	Fbo fbo;
 	fbo.attachColorTexture(pTex);
 	fbo.enable();
@@ -188,9 +188,10 @@ void Pbo::initPbo(int w,int h,unsigned int format, unsigned int type) {
 	}
 }
 
-void Pbo::pullToMem(GLuint colorBuffer,std::function<void(void*)> func) {
+void Pbo::pullToMem(GLuint colorBuffer,std::function<void(Pbo* pbo, void*)> func) {
 	glReadBuffer(colorBuffer);
 	if (mPbo > 0) {
+		//glPixelStorei(GL_PACK_ALIGNMENT, 1);//only 1,2,4,8 is supported
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, mPbo);
 		//dma 将当前colorBuffer读取到pbo
 		glReadPixels(0, 0, mWidth, mHeight, mFormat, mType, nullptr);
@@ -198,10 +199,13 @@ void Pbo::pullToMem(GLuint colorBuffer,std::function<void(void*)> func) {
 		void* pData = glMapBufferRange(GL_PIXEL_PACK_BUFFER,
 			0, mWidth * mHeight * mBytesPerPixel, GL_MAP_READ_BIT);
 		if (func) {
-			func(pData);
+			func(this,pData);
 		}
 		glUnmapBuffer(GL_PIXEL_PACK_BUFFER); //取消映射
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+	}
+	else {
+		LOGE(" please call initPbo before pullToMem");
 	}
 	glReadBuffer(GL_NONE);
 }

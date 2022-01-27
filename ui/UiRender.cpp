@@ -6,7 +6,7 @@
 #include "../MeshCircle.h"
 
 using namespace std;
-
+int FontManager::gMyFontFileVersion = 1;
 const string CharSizeKey("charSize");		//一个字占用的宽高
 //static const string gUIRenderMaterialFile("./opengles3/material/uiDraw.material");
 static const string gFontTextureName("fontsTexture");
@@ -18,7 +18,9 @@ FontManager::FontManager()
 {
 }
 
-bool FontManager::initFontManager(const shared_ptr<Texture>& pTex, const shared_ptr<Material>& pMaterial, const string& savePath_, const string& ttfPath, int charSize_) {
+bool FontManager::initFontManager(const shared_ptr<Texture>& pTex, const shared_ptr<Material>& pMaterial, 
+	const string& savePath_, const string& ttfPath, int charSize_) {
+	bool ret = true;
 	if (!pTex || !pMaterial) {
 		LOGE("ERROR to initFontManager the texture or material is null");
 		return false;
@@ -39,39 +41,46 @@ bool FontManager::initFontManager(const shared_ptr<Texture>& pTex, const shared_
 		mpCharMesh->setMaterial(pMaterial);
 	}
 
-	/*mpTextGpuRender = make_shared<TextGpuRender>();
-	if (mpTextGpuRender) {
-		mpTextGpuRender->init();
-		mpTextGpuRender->setRenderTexture(pTex);
-	}*/
-
-	ifstream inFile(mSavePath, ios::in);
-	if (inFile.is_open()) {
+	ifstream inFile(mSavePath, std::ios::binary);
+	while (inFile.is_open()) {
+		int version = 0.0f;
+		inFile.read((char*)&version,sizeof(version));
+		if (version != gMyFontFileVersion) {
+			LOGD("myFontFile version is old");
+			break;
+		}
 		//把字符信息取出来
 		int countOfChar = 0;
-		inFile >> countOfChar >> mTextureWidth >> mTextureHeight >> mCurTextureWidth >> mCurTextureHeight;
-		if (mTextureWidth != mpCharTexture->getWidth() || mTextureHeight != mpCharTexture->getHeight()) {
+		int tempWidth = 0;
+		int tempHeight = 0;
+		inFile.read((char*)&countOfChar, sizeof(countOfChar));
+		inFile.read((char*)&tempWidth, sizeof(tempWidth));
+		inFile.read((char*)&tempHeight, sizeof(tempHeight));
+		inFile.read((char*)&mCurTextureWidth, sizeof(mCurTextureWidth));
+		inFile.read((char*)&mCurTextureHeight, sizeof(mCurTextureHeight));
+		if (mTextureWidth != tempWidth || mTextureHeight != tempHeight) {
 			LOGE("charTexture widht or height is not equal width the one defined in fonts Material file ");
-			return false;
+			break;
 		}
 		for (int i = 0; i < countOfChar; ++i) {
 			CharInfo info;
 			UnicodeType code;
 			inFile.read((char*)&code, sizeof(UnicodeType));
-			inFile >> info.x >> info.y >> info.left >> info.top >> info.width >> info.width >> info.advX >> info.advX;
-
-			mFontsMap.insert(make_pair(code, info));
+			inFile.read((char*)&info, sizeof(info));
+			mFontsMap.emplace(code, info);
 		}
 
 		//将文件中保存的渲染好的部分字符的图像读取出来
 		int imageSize = mTextureWidth * mCurTextureHeight;
-		std::vector<char> imageData(imageSize,0);
+		std::vector<char> imageData;
+		imageData.resize(imageSize);
 		inFile.read(imageData.data(), imageSize);
 		//更新纹理，把已经渲染好的字符图像上传到纹理上去
-		mpCharTexture->update(0, 0, mTextureHeight, mCurTextureHeight, imageData.data());
-		inFile.close();
+		mpCharTexture->update(0, 0, mTextureWidth, mCurTextureHeight, imageData.data());	
+		break;
 	}
-	return true;
+	inFile.close();
+	return ret;
 }
 
 FontManager::~FontManager()
@@ -109,123 +118,47 @@ shared_ptr<FontManager> FontManager::loadFromFile(const string& savePath, const 
 
 void FontManager::saveToFile() {
 	if (!mFontsMap.empty()) {
-		Fbo fbo;
-		fbo.attachColorTexture(mpCharTexture, 0);
-		fbo.enable();
-		glReadBuffer(GL_COLOR_ATTACHMENT0);
-		std::vector<unsigned char> imageData;
-		imageData.resize((size_t)mTextureWidth * (size_t)mCurTextureHeight);
-			glReadPixels(0, 0, mTextureWidth, mCurTextureHeight, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)imageData.data());
-		fbo.disable();
-
+		/*
+		*	1 版本信息
+		*	2 纹理信息
+		*	3 总字符个数
+		*	4 每个字符的信息
+		*	5 保存字符的纹理内容
+		*/
 		ofstream out(mSavePath, ios::out | ios::binary);
-		size_t countOfChar = mFontsMap.size();
-		out << countOfChar << mTextureWidth << mTextureHeight << mCurTextureWidth << mCurTextureHeight;
+		int countOfChar = mFontsMap.size();
+		auto width = mpCharTexture->getWidth();
+		auto height = mpCharTexture->getHeight();
+		out.write( (const char*)&gMyFontFileVersion,sizeof(gMyFontFileVersion));
+		out.write((const char*)&countOfChar, sizeof(countOfChar));
+		out.write((const char*)&width, sizeof(width));
+		out.write((const char*)&height, sizeof(height));
+		out.write((const char*)&mCurTextureWidth, sizeof(mCurTextureWidth));
+		out.write((const char*)&mCurTextureHeight, sizeof(mCurTextureHeight));
 		for (const auto& info : mFontsMap) {
 			out.write((const char*)&info.first, sizeof(UnicodeType));
-			out << info.second.x << info.second.y << info.second.left << info.second.top << info.second.width << info.second.width << info.second.advX << info.second.advX;
+			out.write((const char*)&info.second, sizeof(CharInfo));
 		}
+
+		Pbo pbo;
+		pbo.initPbo(mpCharTexture->getWidth(), mpCharTexture->getHeight());
+		//pbo.saveToFile(mpCharTexture, "saveFont.tga");
+		pbo.pullToMem(mpCharTexture, [this,&out](Pbo* pbo, void* pdata) {
+			if (pdata != nullptr) {
+				//从opengl里面取出来的图片是上下颠倒的
+				for (int i = 0; i < mCurTextureHeight; ++i) {
+					const char* pd = static_cast<const char*>(pdata) + mTextureWidth*pbo->getBpp() * i;
+					for (int j = 0; j < mTextureWidth; ++j) {
+						out.write(pd+ pbo->getBpp() * j, 1);
+					}
+					
+				}
+			}
+		});
+
 		out.close();
 	}	
 }
-
-//const CharInfo& FontManager::getCharIntexture2(UnicodeType code)
-//{
-//	auto it = mFontsMap.find(code);
-//	if (it != mFontsMap.end()) {
-//		return it->second;
-//	}
-//	else {
-//		int error = 0;
-//		error = FT_Set_Pixel_Sizes(gface, mCharSize, mCharSize);
-//		if (error)
-//		{
-//			LOGE("error to FT_Set_Pixel_Sizes \n");
-//			throw error;
-//		}
-//		FT_Select_Charmap(gface, FT_ENCODING_UNICODE);
-//		auto glyphIndex = FT_Get_Char_Index(gface, code);
-//		error = FT_Load_Glyph(gface, glyphIndex, FT_LOAD_DEFAULT);
-//		if (gface->glyph->format == FT_GLYPH_FORMAT_OUTLINE) {
-//			FT_Outline* pOutline = &gface->glyph->outline;
-//			FT_Outline_Funcs callbacks;
-//
-//			callbacks.move_to = TextGpuRender::moveTo;
-//			callbacks.line_to = TextGpuRender::lineTo;
-//			callbacks.conic_to = TextGpuRender::conicTo;
-//			callbacks.cubic_to = TextGpuRender::cubicTo;
-//			callbacks.shift = 0;
-//			callbacks.delta = 0;
-//			printf("ExtractOutline \n");
-//			FT_Error error = FT_Outline_Decompose(pOutline, &callbacks, pOutline);
-//			if (error) {
-//				printf("Couldn't extract the outline: FT_Outline_Decompose() failed");
-//			}
-//		}
-//		else {
-//			error = FT_Render_Glyph(gface->glyph, FT_RENDER_MODE_NORMAL);
-//			if (error)
-//			{
-//				LOGE("error to FT_Load_Char \n");
-//				throw error;
-//			}
-//			//FT_BBox bbox;
-//			//FT_Glyph glyph;
-//			//FT_Get_Glyph(gface->glyph, &glyph);                   //获取字形图像 的信息
-//			//FT_Glyph_Get_CBox(glyph, FT_GLYPH_BBOX_TRUNCATE, &bbox);
-//			FT_GlyphSlot slot = gface->glyph;
-//
-//			CharInfo info;
-//			/*auto metrics = slot->metrics;*/
-//			info.left = slot->bitmap_left;
-//			info.top = slot->bitmap_top;
-//			info.width = slot->bitmap.width;
-//			info.height = slot->bitmap.rows;
-//			info.advX = slot->advance.x >> 6;
-//			info.advY = slot->advance.y >> 6;
-//			if (mCurTextureHeight == 0) {
-//				mCurTextureHeight = mCharSize;
-//			}
-//
-//			if (mCurTextureWidth + info.width > mTextureWidth) {//当前行写不下要换一行了
-//				mCurTextureWidth = 0;
-//				if (mCurTextureHeight + mCharSize > mTextureHeight)
-//				{
-//					//当前纹理已经写满了
-//					throw - 1;
-//				}
-//				mCurTextureHeight += mCharSize;
-//			}
-//
-//			info.x = mCurTextureWidth;
-//			info.y = mCurTextureHeight - mCharSize;
-//
-//			//把字符点阵数据更新到纹理上。
-//			//由于opengl纹理坐标的原点是在左下角，上下颠倒一下图像
-//			std::vector<unsigned char> tempBuf;
-//			tempBuf.resize(info.width * info.height);
-//			unsigned char* pStart = slot->bitmap.buffer;
-//			unsigned char* pEnd = tempBuf.data();
-//			for (int i = info.height - 1; i >= 0; --i) {
-//				memcpy(pEnd, pStart + (slot->bitmap.pitch * i), info.width);
-//				pEnd += info.width;
-//			}
-//			mpCharTexture->update(info.x, info.y, info.width, info.height, tempBuf.data());
-//
-//			mCurTextureWidth += info.width;
-//
-//			auto& ret = mFontsMap.try_emplace(code, info);
-//			if (ret.second)
-//			{
-//				return ret.first->second;
-//				LOGD("success to insert map \n");
-//			}
-//			else {
-//				throw - 2;
-//			}
-//		}
-//	}
-//}
 
 bool FontManager::getCharInTexture(UnicodeType code, CharInfo& info) {
 	auto it = mFontsMap.find(code);
@@ -236,7 +169,7 @@ bool FontManager::getCharInTexture(UnicodeType code, CharInfo& info) {
 	else {
 		std::vector<unsigned char> tempBuf;
 
-		if (getCharBitmap(code, mCharSize, info, tempBuf)) {
+		if (getCharBitmap2(code, mCharSize, info, tempBuf)) {
 			if (mCurTextureHeight == 0) {
 				mCurTextureHeight = mCharSize;
 			}
@@ -280,6 +213,12 @@ void UiRender::initUiRender() {
 	if (mpLastMesh) {
 		mpLastMesh->loadMesh();
 		mpLastMesh->setMaterial(mpLastMaterial);
+	}
+}
+
+void UiRender::saveFonts() {
+	if (mpFontManager) {
+		mpFontManager->saveToFile();
 	}
 }
 
@@ -704,7 +643,7 @@ void UiRender::calcTextPosition(TextView* tv) {
 
 		//计算文字的model矩阵，渲染ui的时候使用的是正交投影，适配窗口的宽高
 		//注意，ui坐标系统原点在左上角，y轴向下，与传统保持一直，openglY轴向上的
-		rInfo.matrix = glm::translate(rInfo.matrix, glm::vec3(currentPosX + scaleFactor * cinfo.left, currentPosY + lineSpace + 5 + scaleFactor * (cinfo.top - cinfo.height), 0.0f));
+		rInfo.matrix = glm::translate(rInfo.matrix, glm::vec3(currentPosX + scaleFactor * cinfo.left, currentPosY + lineSpace + cinfo.base + scaleFactor * (cinfo.top - cinfo.height), 0.0f));
 		rInfo.matrix = glm::scale(rInfo.matrix, glm::vec3(scaleFactor * cinfo.width, scaleFactor * cinfo.height, 1.0f));
 
 		currentPosX += (scaleFactor * cinfo.advX + xExtraAdvance);//考虑到textview设置的额外字符间距

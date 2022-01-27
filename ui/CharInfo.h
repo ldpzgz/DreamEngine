@@ -12,7 +12,7 @@ public:
 	int height{ 0 };	//字符的高度,x,y,width,height取值范围都是[0,1]
 	int left{ 0 };		//left
 	int top{ 0 };		//top,相对于基线的高度，单位是像素，用于实际渲染
-
+	int base{ 0 };
 	int advX{ 0 }; //表示下一个字符与本字符的水平距离，单位是像素
 	int advY{ 0 }; //表示下一个字符与本字符的垂直距离，单位是像素
 };

@@ -116,4 +116,35 @@ namespace Utils {
 			}
 		}
 	}
+
+	int splitStr(const std::string& str, const std::string& separator, std::vector<std::string>& result) {
+		int count = 0;
+		if (!str.empty() && !separator.empty()) {
+			size_t startPos = 0;
+			size_t endPos = 0;
+			int strLen = str.length();
+			do {
+				auto tempPos = str.find_first_of(separator,startPos);
+				if (tempPos != std::string::npos) {
+					++count;
+					result.emplace_back(str.substr(startPos, tempPos - startPos));
+					startPos = str.find_first_not_of(separator, tempPos + 1);
+					if (startPos != std::string::npos) {
+						continue;
+					}
+					else {
+						break;
+					}
+				}
+				else {
+					if (startPos < strLen) {
+						++count;
+						result.emplace_back(str.substr(startPos));
+					}
+					break;
+				}
+			} while (true);
+		}
+		return count;
+	}
 }

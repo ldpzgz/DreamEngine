@@ -96,7 +96,9 @@ public:
 			mBlendSrcFactor = o.mBlendSrcFactor;
 			mBlendDstFactor = o.mBlendDstFactor;
 			mBlendEquation = o.mBlendEquation;
-
+			mBlendAlphaSrcFactor = o.mBlendAlphaSrcFactor;
+			mBlendAlphaDstFactor = o.mBlendAlphaDstFactor;
+			mBlendAlphaEquation = o.mBlendAlphaEquation;
 		}
 		int mbDepthTest{-1};//0 关闭，1 开启
 		int mbBlendTest{ -1 };//0 关闭，1 开启
@@ -105,6 +107,9 @@ public:
 		int mBlendSrcFactor{ 0 };
 		int mBlendDstFactor{ 0 };
 		int mBlendEquation{ 0 };
+		int mBlendAlphaSrcFactor{ 0 };
+		int mBlendAlphaDstFactor{ 0 };
+		int mBlendAlphaEquation{ 0 };
 	};
 
 	static shared_ptr<Texture>& getTexture(const std::string&);
@@ -170,13 +175,14 @@ private:
 	bool parseCubeTexture(const string& textureName, const string& texture);
 	void setDepthTest(bool b);
 	void setCullWhichFace(bool b, int fontface);
-	void setBlend(bool b, unsigned int srcFactor, unsigned int destFactor, unsigned int blendOp);
-	static bool programHandler(const std::shared_ptr<Material>&, const std::string& programName);
-	static bool samplerHandler(const std::shared_ptr<Material>&, const std::string& samplerContent);
-	static bool opHandler(const std::shared_ptr<Material>&, const std::string&);
-	static bool opDepthHandler(const std::shared_ptr<Material>&, const std::string&);
-	static bool opBlendHandler(const std::shared_ptr<Material>&, const std::string&);
-	static bool opCullfaceHandler(const std::shared_ptr<Material>&, const std::string&);
+	void setBlend(bool b, unsigned int srcFactor, unsigned int destFactor, unsigned int blendOp,
+		unsigned int srcFactorA, unsigned int destFactorA, unsigned int blendOpA);
+	static bool programHandler(Material* pMat, const std::string& programName);
+	static bool samplerHandler(Material* pMat, const std::string& samplerContent);
+	static bool opHandler(Material* pMat, const std::string&);
+	static bool opDepthHandler(Material* pMat, const std::string&);
+	static bool opBlendHandler(Material* pMat, const std::string&);
+	static bool opCullfaceHandler(Material* pMat, const std::string&);
 	//program key value handler
 	static bool posLocHandler(Material* pMat, const std::string&);
 	static bool colorLocHandler(Material* pMat, const std::string&);
@@ -212,7 +218,7 @@ private:
 	static std::unordered_map<std::string, std::shared_ptr<Material>> gMaterials;
 	static std::unordered_map<std::string, std::shared_ptr<Texture>> gTextures;
 	static std::unordered_map<std::string, std::shared_ptr<Shader>> gShaders;
-	static std::unordered_map<std::string, std::function<bool(const std::shared_ptr<Material>&, const std::string&)>> gMaterialHandlers;
+	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gMaterialHandlers;
 	static std::unordered_map<std::string, std::function<bool(Material* pMat,const std::string&)>> gProgramKeyValueHandlers;
 	//static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gMatFileHandlers;
 };

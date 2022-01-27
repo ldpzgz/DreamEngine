@@ -451,14 +451,7 @@ void UiManager::setUiTree(const shared_ptr<UiTree>& tree) {
 void UiManager::updateWidthHeight(float width, float height) {
 	mWindowWidth = width;
 	mWindowHeight = height;
-	/*mFboForCopy.detachColorTexture();
-	if (!mpTexture) {
-		mpTexture = make_shared<Texture>();
-	}
-	mpTexture->unload();
-	mpTexture->create2DMap(width, height, nullptr, GL_RGBA);
-	mFboForCopy.attachColorTexture(mpTexture, 0);
-	UiRender::getInstance()->setTexture(mpTexture);*/
+	
 	UiRender::getInstance()->updateWidthHeight(width, height);
 	if (mpUiTree) {
 		mpUiTree->updateWidthHeight(width, height);
@@ -487,6 +480,10 @@ void UiManager::mouseLButtonUp(int x, int y) {
 			mpUiTree->mpRootView->mouseLButtonUp( x, y,false);
 		}
 	}
+}
+
+void UiManager::onDestroy() {
+	UiRender::getInstance()->saveFonts();
 }
 
 bool Color::parseColor(const std::string& value, Color& color)

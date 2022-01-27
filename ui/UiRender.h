@@ -6,7 +6,7 @@
 #include "../Utils.h"
 #include "../Mesh.h"
 #include "../Node.h"
-#include "../Fbo.h"
+#include "../Pbo.h"
 #include "../Texture.h"
 #include "View.h"
 #include "TextView.h"
@@ -48,10 +48,11 @@ public:
 	int mCurTextureWidth{ 0 };  //pCharTexture纹理里面当前行的宽度
 	int mCharSize{32};
 	string mSavePath;
-	shared_ptr<Mesh> mpCharMesh;//用于承载当个字符的mesh,用于渲染textview里面的文字
+	shared_ptr<Mesh> mpCharMesh;//每一个文字都是用这个mesh去渲染
 	shared_ptr<Material> mpMaterial;
 	shared_ptr<Texture> mpCharTexture;
 	map<UnicodeType, CharInfo> mFontsMap;
+	static int gMyFontFileVersion;
 };
 
 //class View;
@@ -76,7 +77,8 @@ public:
 	}
 
 	void initUiRender();
-
+	//保存已经渲染好的文字，下次用的时候避免渲染
+	void saveFonts();
 	/*
 	功能：		初始化textview
 	savedPath	保存已经渲染好的字体信息的文件

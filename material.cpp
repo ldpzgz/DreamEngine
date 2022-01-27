@@ -15,8 +15,8 @@ static const string gProgramPath = "./opengles3/material/program";
 static const string gDrawablePath = "./opengles3/material/drawable";
 
 static std::unordered_map<std::string, unsigned int> gBlendFuncMap{
-	{"one",GL_ONE},
-	{"zero",GL_ZERO},
+	{"1",GL_ONE},
+	{"0",GL_ZERO},
 	{"sc",GL_SRC_COLOR},
 	{"dc",GL_DST_COLOR},
 	{"1-sc",GL_ONE_MINUS_SRC_COLOR},
@@ -66,12 +66,13 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"uniformColor",Material::uniformColorHandler},
 	{"sampler",Material::programSamplerHandler},
 	{"metallic",Material::metallicHandler},
-	{"roughness",Material::roughnessHandler}
+	{"roughness",Material::roughnessHandler},
+	{"op",Material::opHandler}
 };
 /*
 * material文件里面：material:testM{...}的处理函数
 */
-std::unordered_map<std::string, std::function<bool(const std::shared_ptr<Material>&, const std::string&)>> Material::gMaterialHandlers{
+std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> Material::gMaterialHandlers{
 	{"program",Material::programHandler},
 	{"sampler",Material::samplerHandler},
 	{"op",Material::opHandler},
@@ -245,7 +246,7 @@ bool Material::programSamplerHandler(Material* pMat, const std::string& value) {
 	return true;
 }
 
-bool Material::programHandler(const std::shared_ptr<Material>& pMaterial, const std::string& programName) {
+bool Material::programHandler(Material* pMaterial, const std::string& programName) {
 	auto it = gShaders.find(programName);
 	if (it != gShaders.end()) {
 		pMaterial->setShader(it->second);
@@ -254,7 +255,7 @@ bool Material::programHandler(const std::shared_ptr<Material>& pMaterial, const 
 	return false;
 }
 
-bool Material::samplerHandler(const std::shared_ptr<Material>& pMaterial, const std::string& samplerContent) {
+bool Material::samplerHandler(Material* pMaterial, const std::string& samplerContent) {
 	Umapss contents;
 	if (parseItem(samplerContent, contents)) {
 		for (auto& pairs : contents) {
@@ -284,7 +285,7 @@ bool Material::samplerHandler(const std::shared_ptr<Material>& pMaterial, const 
 	return true;
 }
 
-bool Material::opHandler(const std::shared_ptr<Material>& pMaterial, const std::string& opContent) {
+bool Material::opHandler(Material* pMaterial, const std::string& opContent) {
 	Umapss contents;
 	if (parseItem(opContent, contents)) {
 		for (auto pairs : contents) {
@@ -304,7 +305,7 @@ bool Material::opHandler(const std::shared_ptr<Material>& pMaterial, const std::
 	return true;
 }
 
-bool Material::opDepthHandler(const std::shared_ptr<Material>& pMaterial, const std::string& value) {
+bool Material::opDepthHandler(Material* pMaterial, const std::string& value) {
 	if (value == "true") {
 		pMaterial->setDepthTest(true);
 	}
@@ -318,89 +319,115 @@ bool Material::opDepthHandler(const std::shared_ptr<Material>& pMaterial, const 
 	return true;
 }
 
-bool Material::opBlendHandler(const std::shared_ptr<Material>& pMaterial, const std::string& value) {
+bool Material::opBlendHandler(Material* pMaterial, const std::string& value) {
 	bool bEnable = false;
 	unsigned int srcFactor = GL_SRC_ALPHA;
 	unsigned int dstFactor = GL_ONE_MINUS_SRC_ALPHA;
 	unsigned int equation = GL_FUNC_ADD;
+	unsigned int srcFactorAlpha = GL_SRC_ALPHA;
+	unsigned int dstFactorAlpha = GL_ONE_MINUS_SRC_ALPHA;
+	unsigned int equationAlpha = GL_FUNC_ADD;
 	bool hasError = false;
 	do {
 		if (value != "false") {
-			std::string bEnableStr;
-			std::string srcFactorStr;
-			std::string dstFactorStr;
-			std::string equationStr;
-			auto pos1 = value.find(',');
-			if (pos1 != std::string::npos) {
-				bEnableStr = value.substr(0, pos1);
-				auto pos2 = value.find(',', pos1 + 1);
-				if (pos2 != std::string::npos) {
-					srcFactorStr = value.substr(pos1 + 1, pos2 - pos1 - 1);
-					auto pos3 = value.find(',', pos2 + 1);
-					if (pos3 != std::string::npos) {
-						dstFactorStr = value.substr(pos2 + 1, pos3 - pos2 - 1);
-						equationStr = value.substr(pos3 + 1);
-					}
-					else {
-						hasError = true;
-						break;
-					}
+			std::vector<std::string> findResult;
+			auto count = Utils::splitStr(value, ",", findResult);
+			if (count != 4 && count != 7) {
+				LOGE("blend op spell error,int material %s", pMaterial->mName.c_str());
+				hasError = true;
+				break;
+			}
+			
+			if (findResult[0] == "true") {
+				bEnable = true;
+			}
+			else if(findResult[0] == "false") {
+				bEnable = false;
+				break;
+			}
+			else {
+				LOGE("blend op spell error,int material %s", pMaterial->mName.c_str());
+				hasError = true;
+				break;
+			}
+			auto srcPair = gBlendFuncMap.find(findResult[1]);
+			if (srcPair != gBlendFuncMap.end()) {
+				srcFactor = srcPair->second;
+			}
+			else {
+				LOGE("blend op spell error,int material %s", pMaterial->mName.c_str());
+				hasError = true;
+				break;
+			}
+
+			auto dstPair = gBlendFuncMap.find(findResult[2]);
+			if (dstPair != gBlendFuncMap.end()) {
+				dstFactor = dstPair->second;
+			}
+			else {
+				LOGE("blend op spell error,int material %s", pMaterial->mName.c_str());
+				hasError = true;
+				break;
+			}
+
+			auto equationPair = gBlendEquationMap.find(findResult[3]);
+			if (equationPair != gBlendEquationMap.end()) {
+				equation = equationPair->second;
+			}
+			else {
+				LOGE("blend op spell error,int material %s", pMaterial->mName.c_str());
+				hasError = true;
+				break;
+			}
+			if (count == 7) {
+				srcPair = gBlendFuncMap.find(findResult[4]);
+				if (srcPair != gBlendFuncMap.end()) {
+					srcFactorAlpha = srcPair->second;
 				}
 				else {
+					LOGE("blend op spell error,int material %s", pMaterial->mName.c_str());
+					hasError = true;
+					break;
+				}
+
+				dstPair = gBlendFuncMap.find(findResult[5]);
+				if (dstPair != gBlendFuncMap.end()) {
+					dstFactorAlpha = dstPair->second;
+				}
+				else {
+					LOGE("blend op spell error,int material %s", pMaterial->mName.c_str());
+					hasError = true;
+					break;
+				}
+
+				equationPair = gBlendEquationMap.find(findResult[6]);
+				if (equationPair != gBlendEquationMap.end()) {
+					equationAlpha = equationPair->second;
+				}
+				else {
+					LOGE("blend op spell error,int material %s", pMaterial->mName.c_str());
 					hasError = true;
 					break;
 				}
 			}
 			else {
-				hasError = true;
-				break;
+				srcFactorAlpha = srcFactor;
+				dstFactorAlpha = dstFactor;
+				equationAlpha = equation;
 			}
-			if (bEnableStr == "true") {
-				bEnable = true;
-			}
-			else {
-				hasError = true;
-				break;
-			}
-			auto srcPair = gBlendFuncMap.find(srcFactorStr);
-			if (srcPair != gBlendFuncMap.end()) {
-				srcFactor = srcPair->second;
-			}
-			else {
-				hasError = true;
-				break;
-			}
-
-			auto dstPair = gBlendFuncMap.find(dstFactorStr);
-			if (dstPair != gBlendFuncMap.end()) {
-				dstFactor = dstPair->second;
-			}
-			else {
-				hasError = true;
-				break;
-			}
-
-			auto equationPair = gBlendEquationMap.find(equationStr);
-			if (equationPair != gBlendEquationMap.end()) {
-				equation = equationPair->second;
-			}
-			else {
-				hasError = true;
-				break;
-			}
-
 		}
 	} while (false);
+
 	if (hasError) {
-		LOGE("ERROR to parse material-op-blend value %s",value.c_str());
 		return false;
 	}
 	else {
-		pMaterial->setBlend(bEnable, srcFactor, dstFactor, equation);
+		pMaterial->setBlend(bEnable, srcFactor, dstFactor, equation,
+			srcFactorAlpha,dstFactorAlpha,equationAlpha);
 		return true;
 	}
 }
-bool Material::opCullfaceHandler(const std::shared_ptr<Material>& pMaterial, const std::string& value) {
+bool Material::opCullfaceHandler(Material* pMaterial, const std::string& value) {
 	
 	std::string bEnableStr;
 	std::string cullWhichFaceStr;
@@ -472,7 +499,8 @@ void Material::setCullWhichFace(bool b, int whichFace) {
 	mMyOpData->mCullWhichFace = whichFace;
 }
 
-void Material::setBlend(bool b, unsigned int srcFactor, unsigned int destFactor,unsigned int blendOp) {
+void Material::setBlend(bool b, unsigned int srcFactor, unsigned int destFactor,unsigned int blendOp,
+	unsigned int srcFactorA, unsigned int destFactorA, unsigned int blendOpA) {
 	if (!mMyOpData) {
 		mMyOpData = std::make_unique< OpData >();
 	}
@@ -480,6 +508,9 @@ void Material::setBlend(bool b, unsigned int srcFactor, unsigned int destFactor,
 	mMyOpData->mBlendSrcFactor = srcFactor;
 	mMyOpData->mBlendDstFactor = destFactor;
 	mMyOpData->mBlendEquation = blendOp;
+	mMyOpData->mBlendAlphaSrcFactor = srcFactorA;
+	mMyOpData->mBlendAlphaDstFactor = destFactorA;
+	mMyOpData->mBlendAlphaEquation = blendOpA;
 }
 
 
@@ -590,13 +621,17 @@ void Material::setMyRenderOperation() {
 			glGetIntegerv(GL_BLEND_SRC_RGB, &mOthersOpData->mBlendSrcFactor);
 			glGetIntegerv(GL_BLEND_DST_RGB, &mOthersOpData->mBlendDstFactor);
 			glGetIntegerv(GL_BLEND_EQUATION_RGB, &mOthersOpData->mBlendEquation);
+			glGetIntegerv(GL_BLEND_SRC_ALPHA, &mOthersOpData->mBlendAlphaSrcFactor); 
+			glGetIntegerv(GL_BLEND_DST_ALPHA, &mOthersOpData->mBlendAlphaDstFactor);
+			glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &mOthersOpData->mBlendAlphaEquation);
 			if (mMyOpData->mbBlendTest == 0) {
 				glDisable(GL_BLEND);
 			}
 			else {
 				glEnable(GL_BLEND);
-				glBlendFunc(mMyOpData->mBlendSrcFactor, mMyOpData->mBlendDstFactor);
-				glBlendEquation(mMyOpData->mBlendEquation);
+				glBlendFuncSeparate(mMyOpData->mBlendSrcFactor, mMyOpData->mBlendDstFactor,
+					mMyOpData->mBlendAlphaSrcFactor, mMyOpData->mBlendAlphaDstFactor);
+				glBlendEquationSeparate(mMyOpData->mBlendEquation,mMyOpData->mBlendAlphaEquation);
 			}
 		}
 		
@@ -625,7 +660,7 @@ void Material::restoreRenderOperation() {
 	if (mOthersOpData->mbDepthTest == 0) {
 		glDisable(GL_DEPTH_TEST);
 	}
-	else {
+	else if (mOthersOpData->mbDepthTest == 1) {
 		glEnable(GL_DEPTH_TEST);
 	}
 
@@ -634,8 +669,9 @@ void Material::restoreRenderOperation() {
 	}
 	else if(mOthersOpData->mbBlendTest == 1) {
 		glEnable(GL_BLEND);
-		glBlendFunc(mOthersOpData->mBlendSrcFactor, mOthersOpData->mBlendDstFactor);
-		glBlendEquation(mOthersOpData->mBlendEquation);
+		glBlendFuncSeparate(mOthersOpData->mBlendSrcFactor, mOthersOpData->mBlendDstFactor,
+			mOthersOpData->mBlendAlphaSrcFactor, mOthersOpData->mBlendAlphaDstFactor);
+		glBlendEquationSeparate(mOthersOpData->mBlendEquation, mOthersOpData->mBlendAlphaEquation);
 	}
 
 	if (mOthersOpData->mbCullFace== 0) {
@@ -779,7 +815,7 @@ bool Material::parseMaterial(const string& matName, const string& material) {
 		for (auto& pair : umap) {
 			auto it = gMaterialHandlers.find(pair.first);
 			if (it != gMaterialHandlers.end()) {
-				if (!it->second(pMaterial, pair.second))
+				if (!it->second(pMaterial.get(), pair.second))
 				{
 					bParseSuccess = false;
 					break;
@@ -1067,8 +1103,8 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 					internalFormat = GL_RGBA;
 					format = GL_RGBA;
 				}else if (depth == 1) {
-					internalFormat = GL_LUMINANCE;
-					format = GL_LUMINANCE;
+					internalFormat = GL_R8;
+					format = GL_RED;
 				}else if (depth != 3) {
 					LOGE("not support texture %s depth %d,,in material %s", textureName.c_str(), depth,mName.c_str());
 					return false;
