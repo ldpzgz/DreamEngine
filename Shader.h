@@ -7,11 +7,13 @@
 
 #ifndef GRAPHICSSHADER_H_
 #define GRAPHICSSHADER_H_
+#ifdef _GLES3
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
 #include <GLES3/gl32.h>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
+#else
+#include <glad/glad.h>
+#endif
 #include <iostream>
 #include <map>
 #include <string>
@@ -135,6 +137,7 @@ public:
 	void setMvMatrix(const glm::mat4&);
 	void setViewMatrix(const glm::mat4&);
 	void setUniformColor(float r, float g, float b, float a);
+	void setAlbedoColor(float r, float g, float b);
 	void setUniformColor(Color color);
 	void setLightPos(const std::vector<Vec3>& lightPos);
 	void setViewPos(const Vec3& viewPos);
@@ -144,6 +147,10 @@ public:
 	}
 	void setRoughness(float r) {
 		mRoughness = r;
+	}
+
+	void setAo(float ao) {
+		mAo = ao;
 	}
 
 	void enable();
@@ -156,8 +163,10 @@ public:
 	void getLightColorLoc(const std::string& lightColorNameInShader);
 	void getTextureMatrixLoc(const std::string& textureMatrixNameInShader);
 	void getUniformColorLoc(const std::string& uniformColorNameInShader);
+	void getAlbedoColorLoc(const std::string& albedoNameInShader);
 	void getMetallicLoc(const std::string& value);
 	void getRoughnessLoc(const std::string& value);
+	void getAoLoc(const std::string& value);
 	//void getDiffuseTextureLoc(const std::string& diffuseSamplerInShader);
 	//void getNormalTextureLoc(const std::string& normalSamplerInShader);
 
@@ -198,22 +207,27 @@ private:
 	int mUniformColorLoc{ -1 }; //在fs里面可以有个uniform vec4 color，用于设置输出固定颜色
 	int mMetallicLoc{ -1 };
 	int mRoughnessLoc{ -1 };
-	std::string mName;	//只是用来输出日志
+	int mAlbedoColorLoc{ -1 };
+	int mAoLoc{ -1 };
+	float mMetallic{ 0.5f };
+	float mRoughness{ 0.5f };
+	float mAo{ 0.1f };
+	Color mUniformColor{ 0.0f,0.0f,0.0f,1.0f };
+	Vec3 mViewPos{ 0.0f,100.0f,0.0f };
+	
 	std::unique_ptr<glm::mat4> mpMvpMatrix;
 	std::unique_ptr<glm::mat4> mpMvMatrix;
 	std::unique_ptr<glm::mat4> mpViewMatrix;
 	std::unique_ptr<glm::mat4> mpTextureMatrix;
-	//int mSamplerCount;
+	
+	std::string mName;	//只是用来输出日志
+
 	std::map<std::string, int> mAttributeLocMap;
 	std::map<std::string, int> mUniformLocMap;
 	std::vector<std::string> mSamplerNames;
-	//std::unordered_map<int, std::shared_ptr<Texture>> mSamplerToTex;//Sampler in shader to Texture;
-	Color mUniformColor{ 0.0f,0.0f,0.0f,0.0f };
-	Vec3 mViewPos{ 0.0f,100.0f,0.0f };
+	
 	std::vector<Vec3> mLightPositions{ {0.0f,100.0f,0.0f} };
 	std::vector<Vec3> mLightColors{ {1.0f,1.0f,1.0f} };
-	float mMetallic{ 0.5f };
-	float mRoughness{ 0.5f };
 protected:
 	//GL_VERTEX_SHADER,GL_FRAGMENT_SHADER
 	GLuint loadShader ( GLenum type, const char *shaderSrc );

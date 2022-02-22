@@ -32,11 +32,10 @@ fs{
 	}
 	void main()
 	{
-	  vec3 envColor = texture( skybox, v_texCoord ).rgb;
-	  //envColor = envColor / (1.0f + luminance(envColor));
+	  vec3 envColor = texture( skybox, v_texCoord).rgb;
 	  envColor = aces_approx(envColor);
 	  envColor = pow(envColor, vec3(1.0/2.2)); 
-	  outColor = vec4(envColor, 1.0);
+	  outColor = vec4(envColor,1.0);
 	}
 }
 

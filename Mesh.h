@@ -7,11 +7,13 @@
 
 #ifndef GRAPHICSMESH_H_
 #define GRAPHICSMESH_H_
+#ifdef _GLES3
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
 #include <GLES3/gl32.h>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
+#else
+#include <glad/glad.h>
+#endif
 #include "material.h"
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/glm.hpp> // vec3, vec4, ivec4, mat4
@@ -26,7 +28,8 @@ enum class MeshType //枚举类型定义加了class就是强类型枚举，不�
 {
 	MESH_None,
 	MESH_Triangle,
-	MESH_Rectangle,//纯色矩形
+	MESH_Quad,//矩形，坐标范围是[-1，1]
+	MESH_Rectangle,//纯色矩形,坐标范围是[0,1]
 	MESH_FilledRect,//可以填充纯色，可贴图，也可以绘制为线框的矩形
 	MESH_Rounded_Rectangle,//带center color的rounded rectangle
 	MESH_Cuboid,//立方体
@@ -124,6 +127,8 @@ public:
 	void render(const glm::mat4& mvpMat, const glm::mat4& mvMat,const glm::mat4& texMat);
 
 	void render(const glm::mat4& mvpMat, const glm::mat4& mvMat);
+
+	void render();
 
 	//void render(const glm::mat4& mvpMat, const glm::mat4& mvMat);
 

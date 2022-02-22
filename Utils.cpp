@@ -1,7 +1,8 @@
 #include "Utils.h"
 #include "Texture.h"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/imgproc/types_c.h"
+#include <sstream>
+//#include "opencv2/imgproc/imgproc.hpp"
+//#include "opencv2/imgproc/types_c.h"
 using namespace std;
 namespace Utils {
 	/*std::shared_ptr<Texture> loadImageFromFile(const std::string& path) {

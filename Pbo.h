@@ -5,9 +5,13 @@
 #include <thread>
 #include <chrono>
 #include <list>
+#ifdef _GLES3
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
 #include <GLES3/gl32.h>
+#else
+#include <glad/glad.h>
+#endif
 #include "Utils.h"
 #include "Texture.h"
 //pbo 就是一块显存，
@@ -57,20 +61,28 @@ public:
 	*		and GL_RED, GL_RED_INTEGER, GL_RG, GL_RG_INTEGER, GL_RGB, 
 		GL_RGB_INTEGER, GL_RGBA, GL_RGBA_INTEGER, GL_LUMINANCE_ALPHA, 
 		GL_LUMINANCE, and GL_ALPHA is supported
-		但是经过测试只支持GL_RGBA
+		但是经过测试opengles3只支持GL_RGBA
 
 		type: GL_UNSIGNED_BYTE, GL_UNSIGNED_INT, GL_INT, or GL_FLOAT
 			glGet and GL_IMPLEMENTATION_COLOR_READ_TYPE is supported
 	*/
 	void initPbo(int width,int height,unsigned int format= GL_RGBA,unsigned int type= GL_UNSIGNED_BYTE);
-	//将指定的readbuffer，保存到ppm图像文件
+	//主要用于截屏保存到图像文件
 	//colorBuffer: GL_BACK, GL_NONE, and GL_COLOR_ATTACHMENTi
 	void saveToFile(unsigned int buffer, const std::string& pathToSave);
+	/*
+	* 只能将可以添加到fbo的纹理保存到文件，
+	* opengles3不支持浮点纹理
+	*/
 	void saveToFile(const std::shared_ptr<Texture>& pTex, const std::string& pathToSave);
 
+	/*
+	* 只能将可以添加到fbo的纹理拉取到内存，
+	* opengles3不支持浮点纹理
+	*/
 	void pullToMem(const std::shared_ptr<Texture>& pTex, std::function<void(Pbo* pbo, void*)> func);
 	void pullToMem(GLuint colorBuffer, std::function<void(Pbo* pbo, void*)> func);
-	
+
 	int getBpp() {
 		return mBytesPerPixel;
 	}
@@ -96,7 +108,6 @@ private:
 	unsigned int mBytesPerPixel{ 4 };
 	
 	void getBytesPerPixel(int readFormat, int readType, unsigned int& bytesPerPixel);
-
 	
 	//保存视频相关的数据
 	/*int mIndex{ 0 };

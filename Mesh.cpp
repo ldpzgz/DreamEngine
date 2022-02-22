@@ -170,6 +170,25 @@ void Mesh::loadMesh()
 			indexes, sizeof(indexes), 
 			tex, sizeof(tex),(GLfloat*)nor.data(), nor.size() * sizeof(Vec3));
 	}
+	else if (mMeshType == MeshType::MESH_Quad) {
+		std::vector<Vec3> pos{
+			{1.0f,1.0f,0.0f},
+			{-1.0f,1.0f,0.0f},
+			{-1.0f,-1.0f,0.0f},
+			{1.0f,-1.0f,0.0f},
+		};
+		std::vector<Vec3> nor{
+			{0.0f,0.0f,1.0f},
+			{0.0f,0.0f,1.0f},
+			{0.0f,0.0f,1.0f},
+			{0.0f,0.0f,1.0f},
+		};
+		GLuint indexes[] = { 0,1,2,0,2,3 };
+		GLfloat tex[] = { 1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,1.0f,0.0f };
+		createBufferObject((GLfloat*)pos.data(), pos.size() * sizeof(Vec3), 4,
+			indexes, sizeof(indexes),
+			tex, sizeof(tex), (GLfloat*)nor.data(), nor.size() * sizeof(Vec3));
+	}
 	else if (mMeshType == MeshType::MESH_Triangle) {
 		GLfloat pos[] = { 0.0f,1.0f,0.0f,
 			-1.0f,-1.0f,0.0f,
@@ -806,6 +825,30 @@ void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat,const glm::mat
 		}
 		else {
 			LOGE("mesh has no shader 2,can't render");
+		}
+	}
+	else {
+		LOGE("mesh has no material,can't render");
+	}
+}
+
+void Mesh::render() {
+	if (mpMaterial) {
+		auto& pShader = mpMaterial->getShader();
+		if (pShader) {
+			mpMaterial->enable();
+			mpMaterial->setMyRenderOperation();
+			int posloc = -1;
+			int texloc = -1;
+			int norloc = -1;
+			int colorloc = -1;
+			int tangentloc = -1;
+			pShader->getLocation(posloc, texloc, colorloc, norloc, tangentloc);
+			draw(posloc, texloc, norloc, colorloc, tangentloc);
+			mpMaterial->restoreRenderOperation();
+		}
+		else {
+			LOGE("mesh has no shader 3,can't render");
 		}
 	}
 	else {

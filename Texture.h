@@ -3,13 +3,13 @@
 #include<string>
 #include <map>
 #include <memory>
+#ifdef _GLES3
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
 #include <GLES3/gl32.h>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-#include <GLES3/gl31.h>
-#include <GLES3/gl32.h>
+#else
+#include <glad/glad.h>
+#endif
 /*
 void glTexImage2D(	GLenum target,
 	GLint level,
@@ -87,8 +87,9 @@ public:
 	* internalFormat:该纹理在显存中的格式，GL_RGB,GL_RGBA
 	* format:pdata指向的内存数据的格式，GL_RGB,GL_RGBA
 	* type:pdata指向的内存，比如rgb中的r的类型，GL_UNSIGNED_BYTE
+	* opengles3.0的浮点纹理不支持三线性过滤，不支持glGenMipmap（可renderable，filterable的纹理才支持）
 	*/
-	bool createCubicMap(int width,int height, GLint internalFormat = GL_RGB,GLenum format= GL_RGB,GLenum type= GL_UNSIGNED_BYTE);
+	bool createCubicMap(int width,int height, GLint internalFormat = GL_RGB,GLenum format= GL_RGB,GLenum type= GL_UNSIGNED_BYTE,bool autoMipmap = false);
 	
 	//internalFormat:该纹理在显存中的格式，GL_RGB,GL_RGBA
 	//format:pdata指向的内存数据的格式，GL_RGB,GL_RGBA
@@ -120,16 +121,6 @@ public:
 
 	void saveToFile(const std::string& path);
 
-	/*
-	* 将hdr的texture，转换为cubemap
-	*/
-	void convertHdrToCubicmap();
-	
-	/*
-	* 从hdr的cubemap生成diffuse irradiance map,默认纹理宽高都为128
-	*/
-	std::shared_ptr<Texture> genDiffuseIrrMap();
-
 	const std::string& getName() {
 		return mName;
 	}
@@ -154,7 +145,7 @@ protected:
 	std::string mName;
 };
 
-using TextureP = std::shared_ptr<Texture>;
-extern TextureP gpTextureNothing;
+using TextureSP = std::shared_ptr<Texture>;
+extern TextureSP gpTextureNothing;
 
 #endif

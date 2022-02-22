@@ -1,7 +1,7 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
-#include <opencv2/opencv.hpp>
+//#include <opencv2/opencv.hpp>
 #include <iostream>
 #include <memory>
 #include <chrono>
@@ -12,9 +12,7 @@
 #include <vector>
 #include <filesystem>
 #include "Log.h"
-#ifndef Texture
-class Texture;
-#endif
+
 using namespace std::filesystem;
 namespace Utils {
 	//std::shared_ptr<Texture> loadImageFromFile(const std::string& path);

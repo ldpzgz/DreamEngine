@@ -246,6 +246,14 @@ void Shader::enable()
 	if (mRoughnessLoc >= 0) {
 		glUniform1f(mRoughnessLoc, mRoughness);
 	}
+
+	if (mAlbedoColorLoc >= 0) {
+		glUniform3f(mAlbedoColorLoc, mUniformColor[0], mUniformColor[1], mUniformColor[2]);
+	}
+
+	if (mAoLoc >= 0) {
+		glUniform1f(mAoLoc, mAo);
+	}
 }
 
 //结果小于0表示错误
@@ -342,6 +350,13 @@ void Shader::setUniformColor(float r, float g, float b, float a)
 	mUniformColor[3] = a;
 }
 
+void Shader::setAlbedoColor(float r, float g, float b)
+{
+	mUniformColor[0] = r;
+	mUniformColor[1] = g;
+	mUniformColor[2] = b;
+}
+
 void Shader::setUniformColor(Color color) {
 	mUniformColor = color;
 }
@@ -433,6 +448,13 @@ void Shader::getUniformColorLoc(const std::string& uniformColorNameInShader) {
 	}
 }
 
+void Shader::getAlbedoColorLoc(const std::string& albedoNameInShader) {
+	mAlbedoColorLoc = glGetUniformLocation(mProgram, albedoNameInShader.c_str());
+	if (mAlbedoColorLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), albedoNameInShader.c_str());
+	}
+}
+
 void Shader::getMetallicLoc(const std::string& value) {
 	mMetallicLoc = glGetUniformLocation(mProgram, value.c_str());
 	if (mMetallicLoc < 0) {
@@ -443,6 +465,13 @@ void Shader::getMetallicLoc(const std::string& value) {
 void Shader::getRoughnessLoc(const std::string& value) {
 	mRoughnessLoc = glGetUniformLocation(mProgram, value.c_str());
 	if (mRoughnessLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), value.c_str());
+	}
+}
+
+void Shader::getAoLoc(const std::string& value) {
+	mAoLoc = glGetUniformLocation(mProgram, value.c_str());
+	if (mAoLoc < 0) {
 		LOGE("the shader %s  has no %s uniform member", mName.c_str(), value.c_str());
 	}
 }

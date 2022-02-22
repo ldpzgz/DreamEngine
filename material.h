@@ -68,6 +68,15 @@ public:
 			*mpUniformColor = Color(r, g, b, a);
 		}
 	}
+
+	void setAlbedoColor(float r, float g, float b) {
+		if (!mpUniformColor) {
+			mpUniformColor = make_unique<Color>(r, g, b, 1.0f);
+		}
+		else {
+			*mpUniformColor = Color(r, g, b, 1.0f);
+		}
+	}
 	/*
 	*	m: 0.0f-1.0f 1.0f表示纯金属，0.0f表示非金属
 	*/
@@ -79,6 +88,10 @@ public:
 	*/
 	void setRoughness(float r) {
 		mRoughness = r;
+	}
+
+	void setAo(float ao) {
+		mAo = ao;
 	}
 
 	void setName(const std::string name) {
@@ -113,7 +126,7 @@ public:
 	};
 
 	static shared_ptr<Texture>& getTexture(const std::string&);
-	static void emplaceTexture(const std::string&, shared_ptr<Texture>&);
+	static bool emplaceTexture(const std::string&, shared_ptr<Texture>&);
 	static shared_ptr<Material>& getMaterial(const std::string&);
 	static shared_ptr<Shader>& getShader(const std::string&);
 
@@ -194,11 +207,13 @@ private:
 	static bool vMatrixHandler(Material* pMat, const std::string&);
 	static bool texMatrixHandler(Material* pMat, const std::string&);
 	static bool uniformColorHandler(Material* pMat, const std::string&);
+	static bool albedoColorHandler(Material* pMat, const std::string&);
 	static bool viewPosHandler(Material* pMat, const std::string&);
 	static bool lightPosHandler(Material* pMat, const std::string&);
 	static bool lightColorHandler(Material* pMat, const std::string&);
 	static bool metallicHandler(Material* pMat, const std::string&);
 	static bool roughnessHandler(Material* pMat, const std::string&);
+	static bool aoHandler(Material* pMat, const std::string&);
 	static bool programSamplerHandler(Material* pMat, const std::string&);
 
 	std::unordered_map<std::string, std::string> mContents;//保存的是材质文件里面形如key{value}的key-value对
@@ -206,7 +221,7 @@ private:
 	std::shared_ptr<Color> mpUniformColor;//纯色物体设置这个
 	float mMetallical{ 0.5f }; //金属还是非金属（0.0f-1.0f);
 	float mRoughness{ 0.5f };	//粗糙程度（0.0f-1.0f);
-
+	float mAo{ 0.1f };
 	std::unordered_map<int, std::shared_ptr<Texture>> mSamplerName2Texture;
 
 	std::string mName;

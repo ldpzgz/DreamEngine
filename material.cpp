@@ -3,6 +3,7 @@
 #include <set>
 #include "Log.h"
 #include "Utils.h"
+#include "helper.h"
 #include <filesystem>
 
 using namespace std;
@@ -64,9 +65,11 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"lightColor",Material::lightColorHandler},
 	{"viewPos",Material::viewPosHandler},
 	{"uniformColor",Material::uniformColorHandler},
+	{"albedo",Material::albedoColorHandler},
 	{"sampler",Material::programSamplerHandler},
 	{"metallic",Material::metallicHandler},
 	{"roughness",Material::roughnessHandler},
+	{"ao",Material::aoHandler},
 	{"op",Material::opHandler}
 };
 /*
@@ -171,6 +174,13 @@ bool Material::uniformColorHandler(Material* pMat, const std::string& value) {
 	return true;
 }
 
+bool Material::albedoColorHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getAlbedoColorLoc(value);
+	}
+	return true;
+}
+
 bool Material::viewPosHandler(Material* pMat, const std::string& value) {
 	if (!value.empty()) {
 		pMat->getShader()->getViewPosLoc(value);
@@ -202,6 +212,13 @@ bool Material::metallicHandler(Material* pMat, const std::string& value){
 bool Material::roughnessHandler(Material* pMat, const std::string& value) {
 	if (!value.empty()) {
 		pMat->getShader()->getRoughnessLoc(value);
+	}
+	return true;
+}
+
+bool Material::aoHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getAoLoc(value);
 	}
 	return true;
 }
@@ -554,6 +571,8 @@ void Material::loadAllMaterial() {
 			}
 		}
 	}
+
+	genBrdfLut();
 }
 
 Material::Material()
@@ -572,6 +591,7 @@ Material::Material(const Material& pMat) {
 	mContents = pMat.mContents;
 	mMetallical = pMat.mMetallical;
 	mRoughness = pMat.mRoughness;
+	mAo = pMat.mAo;
 	if(pMat.mpUniformColor)
 		mpUniformColor = std::make_shared<Color>(*pMat.mpUniformColor);
 }
@@ -690,6 +710,7 @@ void Material::enable() {
 		}
 		mShader->setMetallic(mMetallical);
 		mShader->setRoughness(mRoughness);
+		mShader->setAo(mAo);
 		mShader->enable();
 		int texNum = 0;
 		for (auto it = mSamplerName2Texture.begin(); it != mSamplerName2Texture.end(); it++) {
@@ -905,10 +926,12 @@ bool Material::findkeyValue(const string& str, const string& mid,const string& e
 	}
 }
 
-void Material::emplaceTexture(const std::string& name, shared_ptr<Texture>& pTex) {
+bool Material::emplaceTexture(const std::string& name, shared_ptr<Texture>& pTex) {
 	if (!name.empty() && pTex) {
-		gTextures.emplace(name, pTex);
+		auto res = gTextures.emplace(name, pTex);
+		return res.second;
 	}
+	return false;
 }
 
 shared_ptr<Texture>& Material::getTexture(const std::string& name) {

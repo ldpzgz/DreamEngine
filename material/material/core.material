@@ -22,7 +22,7 @@ material:skyboxM{
 material:skyboxHdr1{
 	program=skyboxHdr
 	sampler{
-		skybox=hdr/Mans_Outside_2k.hdr
+		skybox=hdr/Tokyo_BigSight_3k.hdr
 	}
 	op{
 		depthTest=true
