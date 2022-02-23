@@ -5,6 +5,7 @@
 #include "Utils.h"
 #include "helper.h"
 #include <filesystem>
+#include <algorithm>
 
 using namespace std;
 using namespace std::filesystem;
@@ -81,7 +82,13 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"op",Material::opHandler},
 	{"depthTest",Material::opDepthHandler},
 	{"blend",Material::opBlendHandler},
-	{"cullFace",Material::opCullfaceHandler}
+	{"cullFace",Material::opCullfaceHandler},
+
+	{"uniformColor",Material::materialUniformColorHandler},
+	{"albedo",Material::materialAlbedoColorHandler},
+	{"metallic",Material::materialMetallicHandler},
+	{"roughness",Material::materialRoughnessHandler},
+	{"ao",Material::materialAoHandler}
 };
 
 bool Material::posLocHandler(Material* pMat, const std::string& value) {
@@ -180,6 +187,87 @@ bool Material::albedoColorHandler(Material* pMat, const std::string& value) {
 	}
 	return true;
 }
+/*
+* value=#xxxxxxxx或者@color/xxx
+*/
+bool Material::materialUniformColorHandler(Material* pMat, const std::string& value) {
+	if ( !value.empty() && pMat ) {
+		std::string tempV;
+		std::remove_copy(value.begin(), value.end(), tempV.begin(),'\20');
+		Color color;
+		if (Color::parseColor(tempV, color)) {
+			pMat->setUniformColor(color);
+			return true;
+		}
+		else {
+			LOGE("to parse uniform color in material %s",pMat->getName().c_str());
+		}
+	}
+	return false;
+}
+
+bool Material::materialAlbedoColorHandler(Material* pMat, const std::string& value) {
+	if (!value.empty() && pMat) {
+		std::string tempV;
+		std::remove_copy(value.begin(), value.end(), tempV.begin(), '\20');
+		Color color;
+		if (Color::parseColor(tempV, color)) {
+			pMat->setAlbedoColor(color);
+			return true;
+		}
+		else {
+			LOGE("to parse albedo color in material %s", pMat->getName().c_str());
+		}
+	}
+	return false;
+}
+
+
+bool Material::materialMetallicHandler(Material* pMat, const std::string& value) {
+	if (!value.empty() && pMat) {
+		try {
+			float f = std::stof(value);
+			pMat->setMetallical(f);
+			return true;
+		}
+		catch (...) {
+			LOGE("stof failed when parse metallic in material %s",pMat->getName().c_str());
+			return false;
+		}
+	}
+	return false;
+}
+
+bool Material::materialRoughnessHandler(Material* pMat, const std::string& value) {
+	if (!value.empty() && pMat) {
+		try {
+			float f = std::stof(value);
+			pMat->setRoughness(f);
+			return true;
+		}
+		catch (...) {
+			LOGE("stof failed when parse metallic in material %s", pMat->getName().c_str());
+			return false;
+		}
+	}
+	return false;
+}
+
+bool Material::materialAoHandler(Material* pMat, const std::string& value) {
+	if (!value.empty() && pMat) {
+		try {
+			float f = std::stof(value);
+			pMat->setAo(f);
+			return true;
+		}
+		catch (...) {
+			LOGE("stof failed when parse metallic in material %s", pMat->getName().c_str());
+			return false;
+		}
+	}
+	return false;
+}
+
 
 bool Material::viewPosHandler(Material* pMat, const std::string& value) {
 	if (!value.empty()) {

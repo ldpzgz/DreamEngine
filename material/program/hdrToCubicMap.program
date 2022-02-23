@@ -25,6 +25,9 @@ fs{
 	const vec2 invAtan = vec2(0.1591f, 0.3183f);
 	const vec4 scale1 = vec4(1.0f, 255.0f, 65025.0f, 16581375.0f);
 	const vec4 scale2 = vec4(1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f, 0);
+	//atan(v.z, v.x),返回结果的范围是[-pi,pi]，asin(y)返回结果的范围是[-pi/2,pi/2]
+	//所以这个函数是将球面xyz（单位球面，xyz都是-1到1的范围）坐标
+	//映射为平面uv坐标（uv都是0到1的范围）
 	vec2 SampleSphericalMap(vec3 v)
 	{
 		vec2 uv = vec2(atan(v.z, v.x), asin(v.y));

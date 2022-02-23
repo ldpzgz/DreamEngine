@@ -77,6 +77,10 @@ public:
 			*mpUniformColor = Color(r, g, b, 1.0f);
 		}
 	}
+
+	void setAlbedoColor(const Color& c) {
+		setUniformColor(c);
+	}
 	/*
 	*	m: 0.0f-1.0f 1.0f表示纯金属，0.0f表示非金属
 	*/
@@ -98,6 +102,9 @@ public:
 		mName = name;
 	}
 
+	const std::string& getName() {
+		return mName;
+	}
 	struct OpData {
 		OpData() = default;
 		OpData(const OpData& o) = default;
@@ -207,6 +214,8 @@ private:
 	static bool vMatrixHandler(Material* pMat, const std::string&);
 	static bool texMatrixHandler(Material* pMat, const std::string&);
 	static bool uniformColorHandler(Material* pMat, const std::string&);
+	static bool materialUniformColorHandler(Material* pMat, const std::string&);
+	static bool materialAlbedoColorHandler(Material* pMat, const std::string&);
 	static bool albedoColorHandler(Material* pMat, const std::string&);
 	static bool viewPosHandler(Material* pMat, const std::string&);
 	static bool lightPosHandler(Material* pMat, const std::string&);
@@ -214,6 +223,9 @@ private:
 	static bool metallicHandler(Material* pMat, const std::string&);
 	static bool roughnessHandler(Material* pMat, const std::string&);
 	static bool aoHandler(Material* pMat, const std::string&);
+	static bool materialMetallicHandler(Material* pMat, const std::string&);
+	static bool materialRoughnessHandler(Material* pMat, const std::string&);
+	static bool materialAoHandler(Material* pMat, const std::string&);
 	static bool programSamplerHandler(Material* pMat, const std::string&);
 
 	std::unordered_map<std::string, std::string> mContents;//保存的是材质文件里面形如key{value}的key-value对
