@@ -199,4 +199,6 @@ private:
 		}
 	}
 };
+
+using SP_Node = std::shared_ptr<Node<glm::mat4>>;
 #endif

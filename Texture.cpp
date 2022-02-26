@@ -190,7 +190,7 @@ bool Texture::loadHdrFile(const std::string& path) {
 	}
 	else
 	{
-		LOGE("Cubemap tex failed to load at path: %s", path.c_str());
+		LOGE("loadHdrFile failed at path: %s", path.c_str());
 		return false;
 	}
 }
@@ -220,7 +220,7 @@ bool Texture::loadFromFile(const std::string& path) {
 			mFormat = GL_LUMINANCE;
 		}
 		else {
-			LOGE("Cubemap texture %s,unknow channels: %d", path.c_str(), nrChannels);
+			LOGE("load texture %s,unknow channels: %d", path.c_str(), nrChannels);
 		}
 		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, mType, data);
 		glGenerateMipmap(mTarget);
@@ -229,7 +229,7 @@ bool Texture::loadFromFile(const std::string& path) {
 	}
 	else
 	{
-		LOGE("Cubemap tex failed to load at path: %s", path.c_str());
+		LOGE("load texture from file: %s", path.c_str());
 		return false;
 	}
 
@@ -272,7 +272,7 @@ bool Texture::loadCubemap(const std::string& path) {
 		}
 		else
 		{
-			LOGE( "Cubemap tex failed to load at path: %s", filePath.c_str());
+			LOGE( "load Cubemap failed path: %s", filePath.c_str());
 			stbi_image_free(data);
 		}
 		++i;

@@ -384,7 +384,7 @@ bool Material::samplerHandler(Material* pMaterial, const std::string& samplerCon
 		}
 	}
 	else {
-		LOGD("ERROR to parse material's sampler property: %s",samplerContent.c_str());
+		LOGD("to parse material's sampler property: %s",samplerContent.c_str());
 		return false;
 	}
 	return true;

@@ -305,6 +305,19 @@ void Mesh::loadMesh(const std::vector<Vec3>& pos, const std::vector<Vec3ui>& ind
 	createBufferObject((float*)pos.data(), pos.size() * sizeof(Vec3), pos.size(), (GLuint*)index.data() , index.size()*sizeof(Vec3ui));
 }
 
+bool Mesh::loadMesh(const std::vector<float>& pos,
+	const std::vector<float>& texcoord,
+	const std::vector<float>& normal,
+	const std::vector<unsigned int>& index) {
+
+	return createBufferObject(&pos[0], pos.size()*sizeof(float), pos.size()/3,
+		index.data(), index.size()*sizeof(unsigned int),
+		texcoord.data(), texcoord.size() * sizeof(float),
+		normal.data(), texcoord.size() * sizeof(float),
+		nullptr, 0,
+		nullptr, 0);
+}
+
 bool Mesh::loadMesh(const std::string meshFilePath) {
 	std::ifstream infile;
 	infile.open(meshFilePath, std::ifstream::in | std::ifstream::binary);
@@ -380,12 +393,12 @@ bool Mesh::loadMesh(const std::string meshFilePath) {
 	return false;
 }
 
-bool Mesh::createBufferObject(GLfloat* pos,int posByteSize, int countOfVertex, 
-	GLuint* index,int indexByteSize,
-	GLfloat* tex,int texByteSize,
-	GLfloat* nor,int norByteSize, 
-	GLfloat* color, int colorByteSize,
-	GLfloat* tangent, int tangentByteSize,
+bool Mesh::createBufferObject(const GLfloat* pos,int posByteSize, int countOfVertex, 
+	const GLuint* index,int indexByteSize,
+	const GLfloat* tex,int texByteSize,
+	const GLfloat* nor,int norByteSize,
+	const GLfloat* color, int colorByteSize,
+	const GLfloat* tangent, int tangentByteSize,
 	int drawType)
 {
 	if(pos != nullptr && posByteSize>0)
@@ -883,7 +896,7 @@ void Mesh::render(const glm::mat4& mvpMat,const glm::mat4& mvMat) {
 }
 
 
-bool Mesh::setPosData(GLfloat* pos, int size, unsigned int drawType)
+bool Mesh::setPosData(const GLfloat* pos, int size, unsigned int drawType)
 {
 	if (mPosVbo > 0) {
 		glDeleteBuffers(1, &mPosVbo);
@@ -899,7 +912,7 @@ bool Mesh::setPosData(GLfloat* pos, int size, unsigned int drawType)
 	mPosByteSize = size;
 	return true;
 }
-bool Mesh::setTexcoordData(GLfloat* tex, int size, unsigned int drawType)
+bool Mesh::setTexcoordData(const GLfloat* tex, int size, unsigned int drawType)
 {
 	if (mTexVbo > 0) {
 		glDeleteBuffers(1, &mTexVbo);
@@ -916,7 +929,7 @@ bool Mesh::setTexcoordData(GLfloat* tex, int size, unsigned int drawType)
 	return true;
 }
 
-bool Mesh::setNormalData(GLfloat* nor, int sizeInbyte, unsigned int drawType)
+bool Mesh::setNormalData(const GLfloat* nor, int sizeInbyte, unsigned int drawType)
 {
 	if (mNorVbo > 0) {
 		glDeleteBuffers(1, &mNorVbo);
@@ -933,7 +946,7 @@ bool Mesh::setNormalData(GLfloat* nor, int sizeInbyte, unsigned int drawType)
 	return true;
 }
 
-bool Mesh::setTangentData(GLfloat* tangent, int sizeInbyte, unsigned int drawType) {
+bool Mesh::setTangentData(const GLfloat* tangent, int sizeInbyte, unsigned int drawType) {
 	if (mTangentVbo > 0) {
 		glDeleteBuffers(1, &mTangentVbo);
 		if (mVAO != 0) {
@@ -965,7 +978,7 @@ bool Mesh::setTangentData(GLfloat* tangent, int sizeInbyte, unsigned int drawTyp
 //	return true;
 //}
 
-bool Mesh::setColorData(GLfloat* nor, int size, unsigned int drawType)
+bool Mesh::setColorData(const GLfloat* nor, int size, unsigned int drawType)
 {
 	if (mColorVbo > 0) {
 		glDeleteBuffers(1, &mColorVbo);
@@ -982,7 +995,7 @@ bool Mesh::setColorData(GLfloat* nor, int size, unsigned int drawType)
 	return true;
 }
 
-bool Mesh::setIndexData(GLuint* index, int size, unsigned int drawType)
+bool Mesh::setIndexData(const GLuint* index, int size, unsigned int drawType)
 {
 	if (mIndexVbo > 0) {
 		glDeleteBuffers(1, &mIndexVbo);

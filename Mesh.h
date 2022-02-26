@@ -101,6 +101,11 @@ public:
 
 	virtual bool loadMesh(const std::string meshFilePath);
 
+	virtual bool loadMesh(const std::vector<float>& pos,
+		const std::vector<float>& texcoord,
+		const std::vector<float>& normal,
+		const std::vector<unsigned int>& index);
+
 	//uniform b spline
 	//void loadUBS(const std::vector<float>& points);
 
@@ -166,13 +171,13 @@ public:
 	//}
 
 	//这四个函数都是创建vbo，ebo，并从内存上传数据到vbo的显存,如果之前存在vbo了，先删除
-	bool setPosData(GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	bool setTexcoordData(GLfloat* tex, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	bool setNormalData(GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	bool setTangentData(GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	bool setPosData(const GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	bool setTexcoordData(const GLfloat* tex, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	bool setNormalData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	bool setTangentData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	//bool setBiTangentData(GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	bool setColorData(GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	bool setIndexData(GLuint* index, int indexByteSize, unsigned int drawType = GL_STATIC_DRAW);
+	bool setColorData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	bool setIndexData(const GLuint* index, int indexByteSize, unsigned int drawType = GL_STATIC_DRAW);
 
 	static void getMaxNumVertexAttr();
 	static void getLineWidthRange();
@@ -180,12 +185,12 @@ public:
 protected:
 	//根据指定的顶点坐标数据，纹理坐标数据，法向量坐标数据，顶点索引数据，以及他们的大小（字节为单位）
 	//创建对应的vbo，类型为静态GL_STATIC_DRAW
-	bool createBufferObject(GLfloat* pos, int posByteSize, int countOfVertex,
-		GLuint* index, int indexByteSize,
-		GLfloat* tex = 0, int texByteSize = 0,
-		GLfloat* nor = 0, int norByteSize = 0,
-		GLfloat* color = 0, int colorByteSize = 0,
-		GLfloat* tangent = 0, int tangentByteSize = 0,
+	bool createBufferObject(const GLfloat* pos, int posByteSize, int countOfVertex,
+		const GLuint* index, int indexByteSize,
+		const GLfloat* tex = 0, int texByteSize = 0,
+		const GLfloat* nor = 0, int norByteSize = 0,
+		const GLfloat* color = 0, int colorByteSize = 0,
+		const GLfloat* tangent = 0, int tangentByteSize = 0,
 		int drawType = GL_STATIC_DRAW);
 
 	//当做三角形绘制GL_TRIANGLES

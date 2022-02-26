@@ -47,9 +47,9 @@ glReadPixel:如果当前绑定了pbo，则将指定的source（默认是缺省�
 * 这个类经常与fbo联合使用，fbo绑定纹理到color attachment，
 * 然后创建一个pbo，将colorbuffer pull到pbo，然后map pbo到内存。
 * 这个过程中，不是什么纹理格式都能绑定到fbo的,请参考opengles3.0编程向导
-* 还有经过测试pbo的format 只能是GL_RGBA,type为GL_UNSIGNED_BYTE,
-* 最后的结论是fbo可以绑定internalFormat为GL_RED等他支持的格式，但是
-* pbo的format只能是GL_RGBA,最后取出来的数据有4个通道！！！
+* 还有pbo只是一块内存区域，本身没有格式。
+* fbo可以绑定internalFormat为GL_RED等他支持的格式，但是
+* pull到pbo的是GL_RGBA,最后取出来的数据有4个通道！！！
 */
 class Pbo {
 public:

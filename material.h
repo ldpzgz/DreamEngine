@@ -142,6 +142,11 @@ public:
 	static std::shared_ptr<Texture> loadImageFromFile(const std::string& path, std::string texName="");
 	static void loadAllMaterial();
 	static shared_ptr<Material> clone(const std::string&);
+	/*
+	* 分析配置文件里面的：material:matName{material}，内容
+	* 根据里面的内容生成名字为matName的material对象，保存到gMaterial里面。
+	*/
+	static bool parseMaterial(const string& matName, const string& material);
 private:
 	using Umapss = std::unordered_map<std::string, std::string>;
 	static shared_ptr<Material> clone(const Material&);
@@ -149,11 +154,7 @@ private:
 	//if success set the start position of the key,the pos of '{', the pos of '}' into pos seprately and return true,
 	//else return false
 	static bool findkeyValue(const string& str, const string& mid, const string& end, std::string::size_type startPos, std::string::size_type* pos);
-	/*
-	* 分析配置文件里面的：material:matName{material}，内容
-	* 根据里面的内容生成名字为matName的material对象，保存到gMaterial里面。
-	*/
-	static bool parseMaterial(const string& matName, const string& material);
+	
 	/*
 	* 将value字符串里面形如key=value、或者key{value}格式的，key和value字符串解析出来，存储到umap里面
 	*/
