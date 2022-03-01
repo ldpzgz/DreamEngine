@@ -1,4 +1,5 @@
 #include "MeshBezier.h"
+#include "Log.h"
 
 MeshBezier::MeshBezier():
 	Mesh(MeshType::MESH_Bezier_Curves)

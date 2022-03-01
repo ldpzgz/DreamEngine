@@ -59,7 +59,8 @@ public:
 };
 
 template<typename T>
-struct Vector3 {
+class Vector3 {
+public:
 	Vector3():x(0),y(0),z(0) {
 	}
 
@@ -145,7 +146,8 @@ Vector3<T> operator*(T a, const Vector3<T>& v) {
 }
 
 template<typename T>
-struct Vector2 {
+class Vector2 {
+public:
 	Vector2() :x(0), y(0) {
 	}
 	Vector2(T x1, T y1):x(x1),y(y1) {
@@ -231,7 +233,8 @@ Vector2<T> operator*(T a, const Vector2<T>& v) {
 
 
 template<typename T>
-struct Vector4 {
+class Vector4 {
+public:
 	Vector4() :x(0), y(0), z(0),w(0){
 	}
 

@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include "Rect.h"
 #include "Scene.h"
 #include "Light.h"
 #include <glm/gtc/matrix_transform.hpp>

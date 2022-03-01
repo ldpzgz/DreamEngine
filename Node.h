@@ -180,7 +180,6 @@ private:
 		mId = id;
 	}
 
-	template<typename T>
 	void setParentWorldMatrix(const T& matrix) noexcept {
 		mParentWorldMat = matrix;
 	}

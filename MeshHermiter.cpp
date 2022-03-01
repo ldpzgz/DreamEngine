@@ -1,5 +1,5 @@
 #include "MeshHermiter.h"
-
+#include "Log.h"
 MeshHermiter::MeshHermiter():
 	Mesh(MeshType::MESH_Cubic_Hermiter_Curves)
 {

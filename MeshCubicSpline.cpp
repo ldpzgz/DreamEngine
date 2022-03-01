@@ -1,5 +1,6 @@
 #include "MeshCubicSpline.h"
 #include "Spline.h"
+#include "Log.h"
 MeshCubicSpline::MeshCubicSpline():
 	Mesh(MeshType::MESH_Cubic_Spline)
 {

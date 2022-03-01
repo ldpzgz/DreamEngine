@@ -1,7 +1,10 @@
 #ifndef _CAMERA_H_
 #define _CAMERA_H_
 #include "Node.h"
+
 class Scene;
+template<typename T>
+class Vector3;
 class Camera : virtual public Node<glm::mat4>
 {
 public:
@@ -42,6 +45,7 @@ private:
 	float nearp{ 0.1f };
 	float farp{ 1000.0f };
 	glm::mat4 mProjMatrix{ 1.0f };
+	glm::mat4 mViewMatrix{ 1.0f };
 	Vec3 mPosition{ 0.0f,0.0f,0.0f };
 	weak_ptr<Scene> mpScene;
 };

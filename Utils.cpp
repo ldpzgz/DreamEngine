@@ -121,7 +121,7 @@ namespace Utils {
 	int splitStr(const std::string& str, const std::string& separator, std::vector<std::string>& result) {
 		int count = 0;
 		if (!str.empty() && !separator.empty()) {
-			size_t startPos = 0;
+			size_t startPos = str.find_first_not_of(separator);
 			size_t endPos = 0;
 			int strLen = str.length();
 			do {

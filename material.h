@@ -6,11 +6,35 @@
 #include <functional>
 #include <unordered_map>
 #include <any>
-#include "Shader.h"
-#include "Texture.h"
+
 using namespace std;
+class Texture;
+class Shader;
+class Color;
 class Material : public enable_shared_from_this<Material> {
 public:
+	class MaterialInfo {
+	public:
+		//颜色必须要，要么一个color，要么一个map
+		std::string albedo{"#ffffff"};
+		std::string albedoMap;
+
+		//normal可以没有，可以有：要么normalmap，要么顶点normal
+		bool hasNormal{true};
+		std::string normalMap;
+
+		//aoMap不为0，就有
+		std::string aoMap;
+
+		//粗糙度，要么是一个固定值，要么是map
+		float roughness{ 0.5f };
+		std::string roughnessMap;
+
+		//金属性，要么是一个固定值，要么是map
+		float metallic{ 0.5f };
+		std::string metallicMap;
+	};
+
 	explicit Material(const std::string name):mName(name) {
 
 	}
@@ -48,35 +72,14 @@ public:
 	* 给物体设置一种颜色，物体以这种纯色显示，用于线条、网格的绘制
 	* 如果shader里面没有相应的uniformColor变量，也可以调用这个函数，只是不会生效而已
 	*/
-	void setUniformColor(const Color& color) {
-		if (!mpUniformColor) {
-			mpUniformColor = make_shared<Color>(color);
-		}
-		else {
-			*mpUniformColor = color;
-		}
-	}
+	void setUniformColor(const Color& color);
 	/*
 	* 给物体设置一种颜色，物体以这种纯色显示，用于线条、网格的绘制
 	* 如果shader里面没有相应的uniformColor变量，也可以调用这个函数，只是不会生效而已
 	*/
-	void setUniformColor(float r, float g, float b, float a) {
-		if (!mpUniformColor) {
-			mpUniformColor = make_unique<Color>(r, g, b, a);
-		}
-		else {
-			*mpUniformColor = Color(r, g, b, a);
-		}
-	}
+	void setUniformColor(float r, float g, float b, float a);
 
-	void setAlbedoColor(float r, float g, float b) {
-		if (!mpUniformColor) {
-			mpUniformColor = make_unique<Color>(r, g, b, 1.0f);
-		}
-		else {
-			*mpUniformColor = Color(r, g, b, 1.0f);
-		}
-	}
+	void setAlbedoColor(float r, float g, float b);
 
 	void setAlbedoColor(const Color& c) {
 		setUniformColor(c);
@@ -135,11 +138,17 @@ public:
 	static shared_ptr<Texture>& getTexture(const std::string&);
 	static bool emplaceTexture(const std::string&, shared_ptr<Texture>&);
 	static shared_ptr<Material>& getMaterial(const std::string&);
+	/*
+	* name: 可以是物体的名字
+	* mInfo：材质信息，根据里面的信息生成或者clone一个material对象
+	*/
+	static shared_ptr<Material> getMaterial(const std::string& name, const MaterialInfo& mInfo);
 	static shared_ptr<Shader>& getShader(const std::string&);
 
 	static shared_ptr<Material> loadFromFile(const string& filename);
 	static std::shared_ptr<Texture> createTexture(const std::string& name,int width, int height, unsigned char* pdata, GLint internalFormat = GL_RGB, GLint format = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, bool autoMipmap = false);
-	static std::shared_ptr<Texture> loadImageFromFile(const std::string& path, std::string texName="");
+	static std::shared_ptr<Texture> getOrLoadTextureFromFile(const std::string& path, const std::string& texName = "");
+	static std::shared_ptr<Texture> loadImageFromFile(const std::string& path, const std::string& texName = "");
 	static void loadAllMaterial();
 	static shared_ptr<Material> clone(const std::string&);
 	/*
@@ -150,6 +159,7 @@ public:
 private:
 	using Umapss = std::unordered_map<std::string, std::string>;
 	static shared_ptr<Material> clone(const Material&);
+
 	//find key value from startPos at str,
 	//if success set the start position of the key,the pos of '{', the pos of '}' into pos seprately and return true,
 	//else return false
@@ -165,13 +175,15 @@ private:
 	*/
 	static void splitKeyAndName(const string& key,string& realKey,string& keyName);
 
+	bool compileShader(const string& programName, const std::string& vs,const std::string& fs);
 	/*
 	* programName,program:后面跟的名字
 	* program，要被分析的program的内容
-	* 分析program，创建名字为programName的shader，将shader放到gShader全局变量里面，
+	* 分析program，program:name{xxx},program的内容是xxx，
+	* 创建名字为programName的shader，将shader放到gShader全局变量里面，
 	* 拿到shader的各种uniform的loc，为shader里面的sampler指定纹理。
 	*/
-	bool parseProgram(const string& programName,const string& program);
+	bool parseProgram(const string& program);
 	/*
 	* textureName  material文件里面texture：后面跟的纹理的名字
 	* texture material文件里面texture的内容

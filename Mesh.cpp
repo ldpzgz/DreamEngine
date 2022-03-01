@@ -7,9 +7,11 @@
 //#include "StdAfx.h"
 #include "Mesh.h"
 #include "Log.h"
+#include "LdpMesh.h"
+#include "Shader.h"
 #include <cmath>
 #include <fstream>
-#include "LdpMesh.h"
+
 //extern void checkglerror();
 void checkglerror()
 {

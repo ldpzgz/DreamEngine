@@ -1,5 +1,6 @@
 #include "MeshFilledRect.h"
 #include <cassert>
+#include "Log.h"
 MeshFilledRect::MeshFilledRect():
 	Mesh()
 {

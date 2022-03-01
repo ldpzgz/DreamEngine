@@ -1,4 +1,11 @@
-﻿#include "UiTree.h"
+﻿#ifdef _GLES3
+#include <GLES3/gl3.h>
+#include <GLES3/gl31.h>
+#include <GLES3/gl32.h>
+#else
+#include <glad/glad.h>
+#endif
+#include "UiTree.h"
 #include "UiRender.h"
 #include "../Log.h"
 using namespace std;

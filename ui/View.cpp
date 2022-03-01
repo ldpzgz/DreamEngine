@@ -255,7 +255,7 @@ void View::layoutWidthHandler(const shared_ptr<View>& pv, const std::string& val
 				pv->mLayoutWidth = stoi(value);
 			}
 			catch (const logic_error& e) {
-				LOGE("error to parse layoutWidth value %s", value.c_str());
+				LOGE("error to parse layoutWidth value %s,error:%s", value.c_str(),e.what());
 			}
 		}
 	}
@@ -267,7 +267,7 @@ void View::layoutWidthPercentHandler(const shared_ptr<View>& pv, const std::stri
 			pv->mWidthPercent = stoi(value);
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse layoutWidthPercent value %s", value.c_str());
+			LOGE("error to parse layoutWidthPercent value %s,error:%s", value.c_str(),e.what());
 		}
 	}
 }
@@ -285,7 +285,7 @@ void View::layoutHeightHandler(const shared_ptr<View>& pv, const std::string& va
 				pv->mLayoutHeight = stoi(value);
 			}
 			catch (const logic_error& e) {
-				LOGE("error to parse layoutHeight value %s", value.c_str());
+				LOGE("error to parse layoutHeight value %s,error:%s", value.c_str(),e.what());
 			}
 		}
 	}
@@ -297,7 +297,7 @@ void View::layoutHeightPercentHandler(const shared_ptr<View>& pv, const std::str
 			pv->mHeightPercent = stoi(value);
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse layoutHeightPercent value %s", value.c_str());
+			LOGE("error to parse layoutHeightPercent value %s,error:%s", value.c_str(),e.what());
 		}
 	}
 }
@@ -308,7 +308,7 @@ void View::layoutMarginTopHandler(const shared_ptr<View>& pv, const std::string&
 			pv->mLayoutMarginTop = stoi(value);
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse layoutMarginTop value %s", value.c_str());
+			LOGE("error to parse layoutMarginTop value %s,error:%s", value.c_str(),e.what());
 		}
 	}
 }
@@ -318,7 +318,7 @@ void View::layoutMarginBottomHandler(const shared_ptr<View>& pv, const std::stri
 			pv->mLayoutMarginBottom = stoi(value);
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse layoutMarginBottom value %s", value.c_str());
+			LOGE("error to parse layoutMarginBottom value %s,error:%s", value.c_str(),e.what());
 		}
 	}
 }
@@ -328,7 +328,7 @@ void View::layoutMarginLeftHandler(const shared_ptr<View>& pv, const std::string
 			pv->mLayoutMarginLeft = stoi(value);
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse layoutMarginLeft value %s", value.c_str());
+			LOGE("error to parse layoutMarginLeft value %s,error:%s", value.c_str(),e.what());
 		}
 	}
 }
@@ -338,7 +338,7 @@ void View::layoutMarginRightHandler(const shared_ptr<View>& pv, const std::strin
 			pv->mLayoutMarginRight = stoi(value);
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse layoutMarginRight value %s", value.c_str());
+			LOGE("error to parse layoutMarginRight value %s,error:%s", value.c_str(),e.what());
 		}
 	}
 }

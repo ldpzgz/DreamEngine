@@ -1,5 +1,5 @@
 #include "MeshCircle.h"
-
+#include "Log.h"
 MeshCircle::MeshCircle():
 	MeshFilledRect()
 {

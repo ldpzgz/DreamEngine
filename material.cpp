@@ -1,4 +1,6 @@
-﻿#include "material.h"
+﻿#include "Shader.h"
+#include "Texture.h"
+#include "material.h"
 #include <fstream>
 #include <set>
 #include "Log.h"
@@ -6,6 +8,7 @@
 #include "helper.h"
 #include <filesystem>
 #include <algorithm>
+#include <sstream>
 
 using namespace std;
 using namespace std::filesystem;
@@ -325,21 +328,21 @@ bool Material::programSamplerHandler(Material* pMat, const std::string& value) {
 						samplers.emplace_back(item.first);
 					}
 					else {
-						LOGE("error in material file sampler2D has no %s", item.first.c_str());
+						LOGE("error in material file sampler2D %s not found in shader", item.first.c_str());
 					}
-
-					const auto pTex = gTextures.find(item.second);
+					auto texName = Utils::getFileName(item.second);
+					auto pTex = Material::getOrLoadTextureFromFile(item.second, texName);
 					int loc = pMat->getShader()->getUniformLoc(item.first.c_str()); //
 					if (loc != -1) {
-						if (pTex != gTextures.end()) {
-							pMat->mSamplerName2Texture.emplace(loc, pTex->second);
+						if (pTex) {
+							pMat->mSamplerName2Texture.emplace(loc, pTex);
 						}
 						else {
 							pMat->mSamplerName2Texture.emplace(loc, shared_ptr<Texture>()); //
 						}
 					}
 					else {
-						LOGD("can't to find texture %s", item.second.c_str());
+						LOGE("error in material file sampler2D %s not found in shader", item.first.c_str());
 					}
 				}
 			}
@@ -362,32 +365,25 @@ bool Material::programHandler(Material* pMaterial, const std::string& programNam
 
 bool Material::samplerHandler(Material* pMaterial, const std::string& samplerContent) {
 	Umapss contents;
-	if (parseItem(samplerContent, contents)) {
-		for (auto& pairs : contents) {
-			auto pTexture = gTextures.find(pairs.second);
-			if (pTexture != gTextures.end()) {
-				pMaterial->setTextureForSampler(pairs.first, pTexture->second);
-			}
-			else {
-				//如果写的是drawable文件夹里面的某个文件
-				auto filePath = gDrawablePath + "/" + pairs.second;
-				auto texname = Utils::getFileNameWithPath(pairs.second);
-				auto pTex = Material::loadImageFromFile(filePath, texname);
-				if (pTex) {
-					pMaterial->setTextureForSampler(pairs.first, pTex);
+	bool bret = false;
+	do {
+		if (parseItem(samplerContent, contents)) {
+			for (auto& pairs : contents) {
+				auto pTexture = Material::getOrLoadTextureFromFile(pairs.second);
+				if (pTexture) {
+					pMaterial->setTextureForSampler(pairs.first, pTexture);
+					bret = true;
 				}
 				else {
-					LOGE("parse material's sampler property error,cannot find texture %s", pairs.second.c_str());
-					return false;
+					LOGE("parse material's sampler property error,cannot find or load texture %s", pairs.second.c_str());
 				}
 			}
 		}
-	}
-	else {
-		LOGD("to parse material's sampler property: %s",samplerContent.c_str());
-		return false;
-	}
-	return true;
+		else {
+			LOGD("to parse material's sampler property: %s", samplerContent.c_str());
+		}
+	} while (false);
+	return bret;
 }
 
 bool Material::opHandler(Material* pMaterial, const std::string& opContent) {
@@ -618,7 +614,32 @@ void Material::setBlend(bool b, unsigned int srcFactor, unsigned int destFactor,
 	mMyOpData->mBlendAlphaEquation = blendOpA;
 }
 
+void Material::setUniformColor(const Color& color) {
+	if (!mpUniformColor) {
+		mpUniformColor = make_shared<Color>(color);
+	}
+	else {
+		*mpUniformColor = color;
+	}
+}
 
+void Material::setUniformColor(float r, float g, float b, float a) {
+	if (!mpUniformColor) {
+		mpUniformColor = make_unique<Color>(r, g, b, a);
+	}
+	else {
+		*mpUniformColor = Color(r, g, b, a);
+	}
+}
+
+void Material::setAlbedoColor(float r, float g, float b) {
+	if (!mpUniformColor) {
+		mpUniformColor = make_unique<Color>(r, g, b, 1.0f);
+	}
+	else {
+		*mpUniformColor = Color(r, g, b, 1.0f);
+	}
+}
 
 void Material::loadAllMaterial() {
 	path programPath(gProgramPath);
@@ -887,7 +908,18 @@ bool Material::parseMaterialFile(const string& path) {
 		auto it = mContents.find(programKey);
 		if (it != mContents.end()) {
 			if (!programName.empty()) {
-				bParseSuccess = parseProgram(programName, it->second);
+				const auto ptrVs = mContents.find("vs");
+				const auto ptrFs = mContents.find("fs");
+				if (ptrVs != mContents.cend() && ptrFs != mContents.cend()) {
+					bParseSuccess = compileShader(programName, ptrVs->second,ptrFs->second);
+					if (bParseSuccess) {
+						parseProgram(it->second);
+					}
+					else {
+						LOGE("compile shader failed in file %s",mName.c_str());
+					}
+				}
+				
 			}
 			else {
 				LOGE("program has no name in %s material", mName.c_str());
@@ -1029,6 +1061,242 @@ shared_ptr<Texture>& Material::getTexture(const std::string& name) {
 	return gpTextureNothing;
 }
 
+shared_ptr<Material> Material::getMaterial(const std::string& name, const MaterialInfo& mInfo) {
+	/*
+	* 材质信息标志
+	* 0: pos标志，总是1
+	* 1: albedo标志,0表示固定颜色，1表示albedo map
+	* 2: normal标志，0表示顶点normal，1表示normal map
+	* 3：metellic标志，0表示固定值，1表示metellic map
+	* 4: roughness表示，0表示固定值，1表示roughness map
+	* 5：ao标志，0表示固定值，1表示ao map
+	* 
+	* 根据mInfo里面的信息计算出materialFlag，然后看看名字“defferedGeomertry_标志位”的纹理是否已经存在，
+	* 如果已经存在就clone这个material，然后为它设置好各种纹理
+	* 如果不存在，就根据mInfo里面的信息合成一个shader，material以名字“defferedGeomertry_标志位”保存起来。
+	*/
+	
+	unsigned int materialFlag = 1;
+	std::string vs;
+	std::string vsAttr;
+	std::string vsUniform;
+	std::string vsOut;
+	std::string vsMain;
+
+	std::string fs;
+	std::string fsOut;
+	std::string fsIn;
+	std::string fsUniform;
+	std::string fsGetNormal;
+	std::string fsMain;
+	std::string program;
+	std::string programSampler;
+
+
+	constexpr char* pVersion = "#version 330 core\n";
+	constexpr char* pPrecision = "precision highp float;\n";
+
+	constexpr char* getNormalFromMap = "vec3 getNormalFromMap(sampler2D nmap,vec2 texcoord,vec3 worldPos,vec3 normal){\n \
+		vec3 tangentNormal = texture(nmap, texcoord).xyz * 2.0 - 1.0;\n \
+		vec3 Q1 = dFdx(worldPos); \n \
+		vec3 Q2 = dFdy(worldPos); \n \
+		vec2 st1 = dFdx(texcoord); \n \
+		vec2 st2 = dFdy(texcoord); \n \
+		vec3 N = normalize(normal);\n \
+		vec3 T = normalize(Q1 * st2.t - Q2 * st1.t);\n \
+		vec3 B = normalize(cross(N, T));\n \
+		mat3 TBN = mat3(T, B, N);\n \
+		return normalize(TBN * tangentNormal);\n \
+	}\n";
+
+	constexpr char* pFsOut = "layout (location = 0) out vec3 outPosMap;\n \
+		layout(location = 1) out vec3 outNormalMap;\n \
+	layout(location = 2) out vec3 outAlbedoMap;\n \
+	layout(location = 3) out vec3 outRoughnessMap;\n \
+	layout(location = 4) out vec3 outMetalicalMap;\n";
+
+	vsAttr = "layout(location = 0) in vec4 inPos;\n";
+	program = "posLoc=0\n";
+
+	vsUniform = "uniform mat4 mvpMat;\n";
+	vsUniform += "uniform mat4 mvMat;\n";
+
+	vsOut = "out vec3 outPos;\n";
+	vsOut += "out vec3 outNormal;\n";
+
+	vsMain = "void main(){\n \
+			gl_Position = mvpMat * vec4(inPos,1.0f);\n";
+
+	programSampler = "sampler{\n";
+
+	fs += pVersion;
+	fs += pPrecision;
+	fsOut = pFsOut;
+	//先计算出标志，确定material的名字，然后在gMaterial里面找，能找到就用现成的
+	if (!mInfo.albedoMap.empty()) {
+		materialFlag |= 0x02;
+	}
+	if (!mInfo.normalMap.empty()) {
+		materialFlag |= 0x04;
+	}
+	if (!mInfo.metallicMap.empty()) {
+		materialFlag |= 0x08;
+	}
+	if (!mInfo.roughnessMap.empty()) {
+		materialFlag |= 0x10;
+	}
+	std::stringstream tempss;
+	tempss << "defferedGeomertry_" << materialFlag;
+	auto materialName = tempss.str();
+	auto destMat = Material::clone(materialName);
+	//如果找到了现成的，为他们设置好参数
+	if (destMat) {
+		if (!mInfo.albedoMap.empty()) {
+			auto pTex = Material::getOrLoadTextureFromFile(mInfo.albedoMap);
+			destMat->setTextureForSampler("albedoMap", pTex);
+		}
+		else {
+			Color c;
+			Color::parseColor(mInfo.albedo, c);
+			destMat->setAlbedoColor(c);
+		}
+		if (!mInfo.normalMap.empty()) {
+			auto pTex = Material::getOrLoadTextureFromFile(mInfo.normalMap);
+			destMat->setTextureForSampler("normalMap", pTex);
+		}
+		if (!mInfo.metallicMap.empty()) {
+			auto pTex = Material::getOrLoadTextureFromFile(mInfo.normalMap);
+			destMat->setTextureForSampler("metallicMap", pTex);
+		}
+		else {
+			destMat->setMetallical(mInfo.metallic);
+		}
+		if (!mInfo.roughnessMap.empty()) {
+			auto pTex = Material::getOrLoadTextureFromFile(mInfo.roughnessMap);
+			destMat->setTextureForSampler("roughnessMap", pTex);
+		}
+		else {
+			destMat->setRoughness(mInfo.roughness);
+		}
+		return destMat;
+	}
+
+	if (!mInfo.albedoMap.empty()) {
+		vsAttr += "layout(location = 1) in vec2 inTexcoord;\n";
+		vsAttr += "layout(location = 2) in vec3 inNormal;\n";
+
+		vsOut += "out vec2 outTexcoord;\n";
+
+		vsMain += "outTexCoord = inTexcoord;\n";
+
+		fsIn += "in vec2 outTexcoord;\n";
+
+		program += "texcoordLoc=1\n";
+		program += "normalLoc=2\n";
+		
+		//fs相关的
+		fsUniform += "uniform sampler2D albedoMap;\n";
+		programSampler += "albedoMap=";
+		programSampler += mInfo.albedoMap;
+		fsMain += "outAlbedoMap = texture(albedoMap,outTexcoord).rgb;\n";
+	}
+	else {
+		vsAttr += "layout(location = 1) in vec3 inNormal;\n";
+		program += "normalLoc=1\n";
+		if (!mInfo.normalMap.empty()) {
+			LOGE(" %s no albedomap,but has normal map",__func__);
+			return nullptr;
+		}
+		//fs相关的
+		fsUniform += "uniform vec3 albedo;\n";
+		fsMain += "outAlbedoMap = albedo;\n";
+		program += "uniformColor=albedo\n";
+	}
+
+	vsMain += "outNormal=mat3(mvMat)*inNormal;\n \
+		outPos = vec3(mvMat * vec4(inPos, 1.0));\n";
+	vsMain += "}\n";
+
+	vs += pVersion;
+	vs += pPrecision;
+	vs += (vsAttr + vsUniform + vsOut + vsMain);
+	//vs 已经搞定
+	fsIn += "in vec3 outPos;\n \
+		in vec3 outNormal;\n";
+	
+	fsMain = "void main(){\n \
+		outPosMap = outPos;\n";
+
+	program += "mvpMatrix=mvpMat\n";
+	program += "mvMatrix=mvMat\n";
+
+	if (!mInfo.normalMap.empty()) {
+		fsUniform += "uniform sampler2D normalMap;";
+		programSampler += "normalMap=";
+		programSampler += mInfo.normalMap;
+		fsGetNormal = getNormalFromMap;
+		fsMain += "outNormalMap = getNormalFromMap(normalMap,outTexcoord,outPos,outNormal);\n";
+		materialFlag |= 0x04;
+	}
+	else {
+		fsMain += "outNormalMap = outNormal;\n";
+	}
+
+
+	if (!mInfo.metallicMap.empty()) {
+		fsUniform += "uniform sampler2D metallicMap;\n";
+		programSampler += "metallicMap=";
+		programSampler += mInfo.metallicMap;
+		fsMain += "outMetalicalMap = texture(metallicMap,outTexcoord).rgb;\n";
+		materialFlag |= 0x08;
+	}
+	else {
+		fsUniform += "uniform vec3 metallic;\n";
+		fsMain += "outMetalicalMap = metallic;\n";
+		program += "metallic=metallic\n";
+	}
+
+	if (!mInfo.roughnessMap.empty()) {
+		fsUniform += "uniform sampler2D roughnessMap;\n";
+		programSampler += "roughnessMap=";
+		programSampler += mInfo.roughnessMap;
+		fsMain += "outRoughnessMap = texture(roughnessMap,outTexcoord).rgb;\n";
+		materialFlag |= 0x10;
+	}
+	else {
+		fsUniform += "uniform vec3 roughness;\n";
+		fsMain += "outRoughnessMap = roughness;\n";
+		program += "roughness=roughness\n";
+	}
+
+	fsMain += "}\n";
+	programSampler += "}\n";
+
+	fs += (fsOut+ fsIn+ fsUniform+ fsGetNormal+ fsMain); 
+	program += programSampler;
+	//fs 搞定了
+	auto pMaterial = std::make_shared<Material>();
+	LOGD(" VS:%s",vs.c_str());
+	LOGD(" FS:%s", fs.c_str());
+	LOGD(" program:%s", program.c_str());
+	if (pMaterial->compileShader(materialName, vs, fs)) {
+		if (pMaterial->parseProgram(program)) {
+			if (!gMaterials.emplace(materialName, pMaterial).second) {
+				LOGE("there are already exist %s material in gMaterials when call Material::getMaterial", materialName.c_str());
+			}
+		}
+		else {
+			LOGE(" parseProgram when call Material::getMaterial");
+			pMaterial.reset();
+		}
+	}
+	else {
+		LOGE(" compile shader failed when  call Material::getMaterial");
+		pMaterial.reset();
+	}
+	return pMaterial;
+}
+
 shared_ptr<Material>& Material::getMaterial(const std::string& name) {
 	auto it = gMaterials.find(name);
 	if (it != gMaterials.end())
@@ -1074,15 +1342,29 @@ std::shared_ptr<Texture> Material::createTexture(const std::string& name,int wid
 	return pTex;
 }
 
-std::shared_ptr<Texture> Material::loadImageFromFile(const std::string& path, std::string texName) {
-	if (texName.empty()) {
-		texName = Utils::getFileName(path);
+std::shared_ptr<Texture> Material::getOrLoadTextureFromFile(const std::string& path, const std::string& texName) {
+	std::string RealTexName = texName;
+	if (RealTexName.empty()) {
+		RealTexName = Utils::getFileName(path);
 	}
+	auto pTexture = gTextures.find(RealTexName);
+	if (pTexture != gTextures.end()) {
+		return pTexture->second;
+	}
+	else {
+		//如果写的是drawable文件夹里面的某个文件
+		auto filePath = gDrawablePath + "/" + path;
+		auto pTex = Material::loadImageFromFile(filePath, RealTexName);
+		return pTex;
+	}
+}
+
+std::shared_ptr<Texture> Material::loadImageFromFile(const std::string& path, const std::string& texName) {
 	std::shared_ptr<Texture> pTexture = Texture::loadImageFromFile(path);
 	if (pTexture) {
 		auto it = gTextures.try_emplace(texName, pTexture);
 		if (!it.second) {
-			LOGE("to add texture %s to gTexture,exist already", path.c_str());
+			LOGE("to emplace texture %s to gTexture,the path is %s", texName.c_str(),path.c_str());
 			pTexture.reset();
 		}
 	}
@@ -1239,36 +1521,40 @@ bool Material::parseTexture(const string& textureName, const string& texture) {
 	return true;
 }
 
-bool Material::parseProgram(const string& programName,const string& programContent) {
-	Umapss umap;
-	string vs_key{ "vs" };
-	string fs_key{ "fs" };
+bool Material::compileShader(const string& programName, const std::string& vs, const std::string& fs) {
 	bool bsuccess = false;
-	if (parseItem(programContent, umap)) {
-		const auto ptrVs = mContents.find(vs_key);
-		const auto ptrFs = mContents.find(fs_key);
-		if (ptrVs != mContents.cend() && ptrFs != mContents.cend()) {
-			mShader = std::make_shared<Shader>(programName);
-			if (mShader->initShader(ptrVs->second, ptrFs->second)) {
-				LOGD("initShader %s success", programName.c_str());
-				if (gShaders.try_emplace(programName, mShader).second) {
-					bsuccess = true;
-				}
-				for (auto& pair : umap) {
-					auto it = gProgramKeyValueHandlers.find(pair.first);
-					if (it != gProgramKeyValueHandlers.end()) {
-						it->second(this, pair.second);
-					}
-				}
-			}
-			else {
-				LOGE("initShader %s failed", programName.c_str());
-				mShader.reset();
-			}
+	
+	mShader = std::make_shared<Shader>(programName);
+	if (mShader->initShader(vs, fs)) {
+		LOGD("initShader %s success", programName.c_str());
+		if (gShaders.try_emplace(programName, mShader).second) {
+			bsuccess = true;
 		}
 		else {
-			LOGE("can't find program's vs shader or fs shader %s", programName.c_str());
+			LOGE("add shader %s to gShaders failed", programName.c_str());
 		}
+	}
+	else {
+		LOGE("initShader %s failed", programName.c_str());
+	}
+	
+	return bsuccess;
+}
+
+bool Material::parseProgram(const string& programContent) {
+	Umapss umap;
+	bool bsuccess = false;
+	if (parseItem(programContent, umap)) {
+		for (auto& pair : umap) {
+			auto it = gProgramKeyValueHandlers.find(pair.first);
+			if (it != gProgramKeyValueHandlers.end()) {
+				it->second(this, pair.second);
+			}
+		}
+		bsuccess = true;
+	}
+	else {
+		LOGE(" parseProgram failed,content is %s",programContent.c_str());
 	}
 	return bsuccess;
 }
