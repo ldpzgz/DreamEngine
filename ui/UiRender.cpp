@@ -797,7 +797,9 @@ void UiRender::drawTextView(TextView* tv) {
 				glm::mat4 tempMat(1.0f);
 				tempMat = glm::translate(tempMat, glm::vec3(moveVec.x, -moveVec.y, 0.0f));
 				tempMat = tempMat * charPos.matrix;
-				mpFontManager->mpCharMesh->render(mProjMatrix * tempMat, glm::mat4(1.0f),charPos.texMatrix);
+				tempMat = mProjMatrix * tempMat;
+				glm::mat4 mvMat(1.0f);
+				mpFontManager->mpCharMesh->render(&tempMat,&mvMat,&charPos.texMatrix);
 			}
 		}
 		if (!bScissorTest) {
@@ -877,6 +879,9 @@ bool UiRender::drawBackground(View* v){
 				(mWindowHeight - rect.y - rect.height + paddingBottom), 0.0f));
 			/*model = glm::scale(model, 
 				glm::vec3(rect.width-(paddingLeft+ paddingRight), rect.height-(paddingTop+ paddingBottom), 1.0f));*/
+			
+			auto mvpMat = mProjMatrix * model;
+			glm::mat4 mvMat(1.0f);
 
 			if (pMesh) {
 				pMesh->setColorVbo(colorVbo);
@@ -888,7 +893,8 @@ bool UiRender::drawBackground(View* v){
 						pMat->setTextureForSampler("s_texture", pTexture);
 					}
 				}
-				pMesh->render(mProjMatrix * model,glm::mat4(1.0f));
+				
+				pMesh->render(&mvpMat,&mvMat);
 			}
 			
 			if (pBorderMesh && !borderColor.isZero()) {
@@ -897,7 +903,7 @@ bool UiRender::drawBackground(View* v){
 				if (pMat) {
 					pMat->setUniformColor(borderColor);
 				}
-				pBorderMesh->render(mProjMatrix * model,glm::mat4(1.0f));
+				pBorderMesh->render(&mvpMat,&mvMat);
 			}
 		}
 	}
@@ -1009,7 +1015,9 @@ void UiRender::drawUi() {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glBlendEquation(GL_FUNC_ADD);
-		mpLastMesh->render(mProjMatrix*mLastMeshModelMatrix,glm::mat4(1.0f));
+		auto mvpMat = mProjMatrix * mLastMeshModelMatrix;
+		glm::mat4 mvMat(1.0f);
+		mpLastMesh->render(&mvpMat,&mvMat);
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 	}

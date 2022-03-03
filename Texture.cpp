@@ -60,6 +60,7 @@ bool Texture::createMStexture(int width,int height,int samples,unsigned int inte
 		mWidth,
 		mHeight,
 		GL_FALSE);
+	checkglerror();
 	return true;
 }
 
@@ -129,13 +130,13 @@ bool Texture::create2DMap(int width,int height,unsigned char* pdata, GLint inter
 		//可以renderable he filterable的纹理才可以生成mipmap
 		glGenerateMipmap(mTarget);
 	}
-
-	if (glGetError() != GL_NO_ERROR)
+	checkglerror();
+	/*if (glGetError() != GL_NO_ERROR)
 	{
 		LOGE("Error loading texture into OpenGL.");
 		unload();
 		return false;
-	}
+	}*/
 	return true;
 }
 
@@ -224,6 +225,7 @@ bool Texture::loadFromFile(const std::string& path) {
 		}
 		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, mType, data);
 		glGenerateMipmap(mTarget);
+		checkglerror();
 		stbi_image_free(data);
 		return true;
 	}

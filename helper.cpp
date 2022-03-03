@@ -14,7 +14,7 @@ std::shared_ptr<Texture> genBrdfLut() {
 	Fbo fbo;
 	fbo.attachColorTexture(lut, 0);
 	fbo.render([&mesh]() {
-		mesh.render();
+		mesh.render(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 	});
 
 	Material::emplaceTexture("brdfLut", lut);
@@ -53,7 +53,7 @@ TextureSP genSpecularFilterMap(const std::shared_ptr<Texture>& pCube) {
 		float roughness = (float)mip / (float)(maxMipLevels - 1);
 		pMaterial->setRoughness(roughness);
 		// reisze framebuffer according to mip-level size.
-		unsigned int mipWidth = imgWidth * std::pow(0.5, mip);
+		unsigned int mipWidth = static_cast<unsigned int>(imgWidth * std::pow(0.5, mip));
 
 		floatR->create2DMap(mipWidth, mipWidth, nullptr, GL_RGBA, GL_RGBA);
 		floatG->create2DMap(mipWidth, mipWidth, nullptr, GL_RGBA, GL_RGBA);
@@ -67,8 +67,9 @@ TextureSP genSpecularFilterMap(const std::shared_ptr<Texture>& pCube) {
 		fbo.attachColorTexture(floatB, 2);
 
 		for (int i = 0; i < 6; ++i) {
-			fbo.render([&mesh, &captureProjection, &captureViews, &floatCubeSpec, &pbo, mipWidth, i, mip] {
-				mesh.render(captureProjection * captureViews[i], captureViews[i]);
+			auto mvpMat = captureProjection * captureViews[i];
+			fbo.render([&mesh, &mvpMat, &captureViews, &floatCubeSpec, &pbo, mipWidth, i, mip] {
+				mesh.render(&mvpMat, &captureViews[i]);
 				//将渲染得到的三张rgba转换成一张rgb32f
 				std::vector<unsigned char> pRGB[3];
 				std::vector<float> resultRGB;
@@ -85,10 +86,10 @@ TextureSP genSpecularFilterMap(const std::shared_ptr<Texture>& pCube) {
 				constexpr float scale = 1.0f / 255.0f;
 				constexpr float scale2 = 1.0f / 65025.0f;
 				constexpr float scale3 = 1.0f / 16581375.0f;
-				for (int i = 0; i < mipWidth; ++i) {
-					for (int j = 0; j < mipWidth; ++j) {
-						int i1 = 4 * (i * mipWidth + j);
-						int r1 = 3 * (i * mipWidth + j);
+				for (unsigned int i = 0; i < mipWidth; ++i) {
+					for (unsigned int j = 0; j < mipWidth; ++j) {
+						unsigned int i1 = 4 * (i * mipWidth + j);
+						unsigned int r1 = 3 * (i * mipWidth + j);
 						resultRGB[r1] = pRGB[0][i1] * scale +
 							pRGB[0][i1 + 1] * scale2 +
 							pRGB[0][i1 + 2] * scale3 +
@@ -153,8 +154,9 @@ TextureSP genDiffuseIrrMap(const std::shared_ptr<Texture>& pCube) {
 	fbo.attachColorTexture(floatB, 2);
 
 	for (int i = 0; i < 6; ++i) {
-		fbo.render([&mesh, &captureProjection, &captureViews, &floatCubeIrr, &pbo, irrWidth, i] {
-			mesh.render(captureProjection * captureViews[i], captureViews[i]);
+		auto mvpMat = captureProjection * captureViews[i];
+		fbo.render([&mesh, &mvpMat, &captureViews, &floatCubeIrr, &pbo, irrWidth, i] {
+			mesh.render(&mvpMat, &captureViews[i]);
 			//将渲染得到的三张rgba转换成一张rgb32f
 			std::vector<unsigned char> pRGB[3];
 			std::vector<float> resultRGB;
@@ -238,8 +240,9 @@ TextureSP convertHdrToCubicmap(const std::shared_ptr<Texture>& pHdr) {
 	Pbo pbo;
 	pbo.initPbo(width, width);
 	for (int i = 0; i < 6; ++i) {
-		fbo.render([&mesh, &captureProjection, &captureViews, &floatCube, &pbo, width, i] {
-			mesh.render(captureProjection * captureViews[i], captureViews[i]);
+		auto mvpMat = captureProjection * captureViews[i];
+		fbo.render([&mesh, &mvpMat, &captureViews, &floatCube, &pbo, width, i] {
+			mesh.render(&mvpMat, &captureViews[i]);
 			//将渲染得到的三张rgba转换成一张rgb32f
 			std::vector<unsigned char> pRGB[3];
 			std::vector<float> resultRGB;

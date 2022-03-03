@@ -128,9 +128,12 @@ bool Fbo::attachColorRbo(int attachment_n, int width, int height) {
 	GLint sampleBuf = 0;
 	glGetIntegerv(GL_SAMPLE_BUFFERS, &sampleBuf);
 
-	bool ret = checkFrameBuffer();
+	bool bret = checkFrameBuffer();
+	if (bret) {
+		mbEnableDepthTest = true;
+	}
 	disable();
-	return ret;
+	return bret;
 }
 
 void Fbo::detachDepthRbo() {
@@ -140,6 +143,7 @@ void Fbo::detachDepthRbo() {
 		glDeleteRenderbuffers(1, &mRbo);
 		mRbo = 0;
 	}
+	mbEnableDepthTest = false;
 	disable();
 }
 
@@ -243,7 +247,7 @@ bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attach
 
 	ret = checkFrameBuffer();
 	if (ret) {
-		unsigned int s = mAttachments.size();
+		unsigned int s = static_cast<unsigned int>(mAttachments.size());
 		mAttachments.emplace_back(GL_COLOR_ATTACHMENT0 + s);
 	}
 	disable();
@@ -267,7 +271,11 @@ bool Fbo::attachDepthTextureMS(const std::shared_ptr<Texture>& texture) {
 		GL_TEXTURE_2D_MULTISAMPLE,
 		texture->getId(),
 		0);
-	return checkFrameBuffer();
+	bool bret = checkFrameBuffer();
+	if (bret) {
+		mbEnableDepthTest = true;
+	}
+	return bret;
 }
 
 bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level)
@@ -283,7 +291,11 @@ bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level
 				GL_TEXTURE_2D,
 				texture->getId(),
 				level);
-	return checkFrameBuffer();
+	bool bret = checkFrameBuffer();
+	if (bret) {
+		mbEnableDepthTest = true;
+	}
+	return bret;
 }
 
 void Fbo::disable()
@@ -302,6 +314,8 @@ void Fbo::deleteFbo()
 
 void Fbo::render(std::function<void()> func) {
 	float preClearColor[4]{ 0.0f,0.0f,0.0f,0.0f };
+	float preClearDepth = 1.0f;
+	int preDepthFunc = GL_LESS;
 	GLboolean bpreDepthTest;
 	GLboolean bpreBlend;
 	int presFactorRgb = GL_ONE;
@@ -310,9 +324,10 @@ void Fbo::render(std::function<void()> func) {
 	int predFactorAlpha = GL_ONE;
 	int premodelRgb, premodelAlpha;
 	int preViewport[4];
+	//这两个必定会改动
 	glGetIntegerv(GL_VIEWPORT, preViewport);
 	glGetFloatv(GL_COLOR_CLEAR_VALUE, preClearColor);
-	glGetBooleanv(GL_DEPTH_TEST, &bpreDepthTest);
+	
 	if (mbEnableBlend) {
 		glGetBooleanv(GL_BLEND, &bpreBlend);
 		glGetIntegerv(GL_BLEND_SRC_RGB, &presFactorRgb);
@@ -321,6 +336,14 @@ void Fbo::render(std::function<void()> func) {
 		glGetIntegerv(GL_BLEND_DST_ALPHA, &predFactorAlpha);
 		glGetIntegerv(GL_BLEND_EQUATION_RGB, &premodelRgb);
 		glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &premodelAlpha);
+	}
+	if (mbEnableDepthTest) {
+		glGetBooleanv(GL_DEPTH_TEST, &bpreDepthTest);
+		glGetIntegerv(GL_DEPTH_FUNC, &preDepthFunc);
+		glGetFloatv(GL_DEPTH_CLEAR_VALUE, &preClearDepth);
+	}
+	else {
+		glGetBooleanv(GL_DEPTH_TEST, &bpreDepthTest);
 	}
 	GLboolean preCullFace = false;
 	int preCullFaceModel = GL_BACK;
@@ -350,7 +373,8 @@ void Fbo::render(std::function<void()> func) {
 	
 	if (mbEnableDepthTest) {
 		glEnable(GL_DEPTH_TEST);
-		glClearDepthf(0.0f);
+		glDepthFunc(GL_LESS);
+		glClearDepthf(1.0f);
 		glClear(GL_DEPTH_BUFFER_BIT);
 	}
 	else {
@@ -363,7 +387,7 @@ void Fbo::render(std::function<void()> func) {
 		glBlendEquationSeparate(mModelRgb, mModelAlpha);
 	}
 
-	glDrawBuffers(mAttachments.size(), mAttachments.data());
+	glDrawBuffers(static_cast<GLsizei>(mAttachments.size()), mAttachments.data());
 
 	if (func) {
 		func();
@@ -379,6 +403,11 @@ void Fbo::render(std::function<void()> func) {
 	else {
 		glDisable(GL_DEPTH_TEST);
 	}
+	if (mbEnableDepthTest) {
+		glClearDepthf(preClearDepth);
+		glDepthFunc(preDepthFunc);
+	}
+	
 
 	if (mbEnableBlend) {
 		if (bpreBlend) {
@@ -420,6 +449,15 @@ void Fbo::setBlendValue(int sFactorRgb, int dFactorRgb, int sFactorAlpha, int dF
 	mdFactorAlpha = dFactorAlpha;
 	mModelRgb = modelRgb;
 	mModelAlpha = modelAlpha;
+}
+
+bool Fbo::blitDepthBufToWin() {
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, mFboId);
+	glBlitFramebuffer(0, 0,mWidth, mHeight,0, 0,mWidth, mHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	checkglerror();
+	return true;
 }
 
 bool Fbo::blitFbo(const Fbo& src, const Rect<int>& srcRect, 

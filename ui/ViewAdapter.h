@@ -17,7 +17,7 @@ public:
 
 	virtual std::shared_ptr<View>& getView(int position) = 0;
 
-	virtual int getItemCounts() {
+	virtual size_t getItemCounts() {
 		return 0;
 	}
 protected:

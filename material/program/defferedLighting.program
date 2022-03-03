@@ -2,28 +2,25 @@ vs{
 	#version 330 core
     layout(location = 0) in vec3 inPos;
     layout(location = 1) in vec2 inTexcoord;
-	uniform mat4 mvpMat;
     out vec2 texcoord;
     void main()
     {
-       gl_Position = mvpMat * vec4(inPos,1.0f);
+       gl_Position = vec4(inPos,1.0f);
        texcoord = inTexcoord;
     }
 }
 fs{
 	#version 330 core
 	precision highp float;
-	const float PI = 3.14159265359;
+	const float PI = 3.14159265359f;
 	
 	out vec4 FragColor;
 	
 	in vec2 texcoord;
 
-	uniform sampler2D posMap;
-	uniform sampler2D albedoMap;
-	uniform sampler2D normalMap;
-	uniform sampler2D metallicMap;
-	uniform sampler2D roughnessMap;
+	uniform sampler2D posMap;//ao in a
+	uniform sampler2D albedoMap;//roughness in a
+	uniform sampler2D normalMap;//metallic in a
 	// IBL
 	uniform samplerCube irrMap;
 	uniform samplerCube prefilterMap;
@@ -89,7 +86,7 @@ fs{
 	
 	vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 	{
-		return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+		return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
 	}
 	
 	vec3 directLight(float roughness,float metallic,vec3 F0,vec3 albedo,vec3 worldPos,vec3 normal,vec3 lightPos,vec3 lightColor){
@@ -124,14 +121,14 @@ fs{
 		return Lo;
 	}
 	
-	vec3 envLight(float roughness,float metallic,vec3 F0,vec3 albedo,vec3 worldPos,vec3 normal,samplerCube irrMap,samplerCube prefilterMap,sampler2D brdfLUT){
+	vec3 envLight(float ao,float roughness,float metallic,vec3 F0,vec3 albedo,vec3 worldPos,vec3 normal,samplerCube irrMap,samplerCube prefilterMap,sampler2D brdfLUT){
 		vec3 V = normalize(vec3(0.0f,0.0f,0.0f) - worldPos);
 		// ambient lighting (we now use IBL as the ambient term)
-		vec3 F = fresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
+		vec3 F = fresnelSchlickRoughness(max(dot(normal, V), 0.0f), F0, roughness);
 		vec3 R = reflect(-V, normal);
 		vec3 kS = F;
-		vec3 kD = 1.0 - kS;
-		kD *= 1.0 - metallic;	  
+		vec3 kD = 1.0f - kS;
+		kD *= 1.0f - metallic;	  
 		
 		vec3 irradiance = texture(irrMap, normal).rgb;
 		vec3 diffuse      = irradiance * albedo;
@@ -142,7 +139,7 @@ fs{
 		vec2 brdf  = texture(brdfLUT, vec2(max(dot(normal, V), 0.0), roughness)).rg;
 		vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 		//0.2f is ao;
-		vec3 ambient = (kD * diffuse + specular) * 0.2f;
+		vec3 ambient = (kD * diffuse + specular)*ao;
 		return ambient;
 	}
 	
@@ -150,18 +147,22 @@ fs{
 	void main()
 	{             
 		// retrieve data from G-buffer
-		vec3 worldPos = texture(posMap, texcoord).rgb;
-		vec3 normal = texture(normalMap, texcoord).rgb;
-		vec3 albedo = texture(albedoMap, texcoord).rgb;
-		float metallic = texture(metallicMap, texcoord).r;
-		float roughness = texture(roughnessMap, texcoord).r;
+		vec4 posRgba = texture(posMap, texcoord);
+		vec4 normalRgba = texture(normalMap, texcoord);
+		vec4 albedoRgba = texture(albedoMap, texcoord);
+		vec3 worldPos = posRgba.rgb;
+		vec3 normal = normalRgba.rgb;
+		vec3 albedo = albedoRgba.rgb;
+		float metallic = normalRgba.a;
+		float roughness = albedoRgba.a;
+		float ao = posRgba.a;
 		
 		// calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
 		// of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
 		vec3 F0 = vec3(0.04); 
 		F0 = mix(F0, albedo, metallic);
 		vec3 dirColor = directLight(roughness,metallic,F0,albedo,worldPos,normal,lightPos,lightColor);
-		vec3 envColor = envLight(roughness,metallic,F0,albedo,worldPos,normal,irrMap,prefilterMap,brdfLUT);
+		vec3 envColor = envLight(ao,roughness,metallic,F0,albedo,worldPos,normal,irrMap,prefilterMap,brdfLUT);
 		
 		vec3 color = dirColor + envColor;
 		// HDR tonemapping
@@ -181,8 +182,6 @@ program:defferedLighting{
 		posMap=none
 		albedoMap=none
 		normalMap=none
-		metallicMap=none
-		roughnessMap=none
 		irrMap=none
 		prefilterMap=none
 		brdfLUT=none

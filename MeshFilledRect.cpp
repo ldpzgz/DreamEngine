@@ -11,7 +11,7 @@ MeshFilledRect::MeshFilledRect():
 MeshFilledRect::~MeshFilledRect() {
 	mPoints.clear();
 	if (!mExtraColorVbos.empty()) {
-		glDeleteBuffers(mExtraColorVbos.size(), mExtraColorVbos.data());
+		glDeleteBuffers(static_cast<GLsizei>(mExtraColorVbos.size()), mExtraColorVbos.data());
 	}
 }
 
@@ -25,16 +25,14 @@ unsigned int MeshFilledRect::createAColorData(float angle, const Color& startCol
 	}
 	if (angle == 0) {
 		colors.emplace_back(center);
-		auto size = mPoints.size();
-		for (int i = 1; i < size; ++i) {
-			int x = mPoints[i].x;
-			if (x > mCenterX) {
-				float endFactor = (x - mCenterX) / (mWidth - mCenterX);
+		for (const auto& point : mPoints) {
+			if (point.x > mCenterX) {
+				float endFactor = (point.x - mCenterX) / (mWidth - mCenterX);
 				float startFactor = 1 - endFactor;
 				colors.emplace_back(startFactor*center + endFactor*end);
 			}
 			else {
-				float endFactor = x / mCenterX;
+				float endFactor = point.x / mCenterX;
 				float startFactor = 1 - endFactor;
 				colors.emplace_back(startFactor*start + endFactor*center);
 			}
@@ -43,16 +41,14 @@ unsigned int MeshFilledRect::createAColorData(float angle, const Color& startCol
 	else if (angle == 90) {
 		
 		colors.emplace_back(center);
-		auto size = mPoints.size();
-		for (int i = 1; i < size; ++i) {
-			int y = mPoints[i].y;
-			if (y > mCenterY) {
-				float endFactor = (y - mCenterY) / (mHeight - mCenterY);
+		for (const auto& point : mPoints) {
+			if (point.y > mCenterY) {
+				float endFactor = (point.y - mCenterY) / (mHeight - mCenterY);
 				float startFactor = 1 - endFactor;
 				colors.emplace_back(startFactor*center + endFactor*end);
 			}
 			else {
-				float endFactor = y / mCenterY;
+				float endFactor = point.y / mCenterY;
 				float startFactor = 1 - endFactor;
 				colors.emplace_back(startFactor*start + endFactor*center);
 			}
@@ -62,16 +58,14 @@ unsigned int MeshFilledRect::createAColorData(float angle, const Color& startCol
 	else if (angle == 180) {
 		
 		colors.emplace_back(center);
-		auto size = mPoints.size();
-		for (int i = 1; i < size; ++i) {
-			int x = mPoints[i].x;
-			if (x > mCenterX) {
-				float endFactor = (x - mCenterX) / (mWidth - mCenterX);
+		for (const auto& point : mPoints) {
+			if (point.x > mCenterX) {
+				float endFactor = (point.x - mCenterX) / (mWidth - mCenterX);
 				float startFactor = 1 - endFactor;
 				colors.emplace_back(endFactor*center + startFactor*end);
 			}
 			else {
-				float endFactor = x / mCenterX;
+				float endFactor = point.x / mCenterX;
 				float startFactor = 1 - endFactor;
 				colors.emplace_back(endFactor*start + startFactor*center);
 			}
@@ -81,16 +75,14 @@ unsigned int MeshFilledRect::createAColorData(float angle, const Color& startCol
 	else if (angle == 270) {
 		
 		colors.emplace_back(center);
-		auto size = mPoints.size();
-		for (int i = 1; i < size; ++i) {
-			int y = mPoints[i].y;
-			if (y > mCenterY) {
-				float endFactor = (y - mCenterY) / (mHeight - mCenterY);
+		for (const auto& point:mPoints) {
+			if (point.y > mCenterY) {
+				float endFactor = (point.y - mCenterY) / (mHeight - mCenterY);
 				float startFactor = 1 - endFactor;
 				colors.emplace_back(endFactor*center + startFactor*end);
 			}
 			else {
-				float endFactor = y / mCenterY;
+				float endFactor = point.y / mCenterY;
 				float startFactor = 1 - endFactor;
 				colors.emplace_back(endFactor*start + startFactor*center);
 			}
@@ -103,7 +95,7 @@ unsigned int MeshFilledRect::createAColorData(float angle, const Color& startCol
 
 	
 	GLuint colorVbo=0;
-	int colorSize = 4 * sizeof(float) * colors.size();
+	int colorSize = 4 * sizeof(float) * static_cast<int>(colors.size());
 	glGenBuffers(1, &colorVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, colorVbo);
 	glBufferData(GL_ARRAY_BUFFER, colorSize, (float*)colors.data(), GL_STATIC_DRAW);

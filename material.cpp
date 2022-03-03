@@ -1060,8 +1060,8 @@ shared_ptr<Texture>& Material::getTexture(const std::string& name) {
 		return it->second;
 	return gpTextureNothing;
 }
-
-shared_ptr<Material> Material::getMaterial(const std::string& name, const MaterialInfo& mInfo) {
+extern void checkglerror();
+shared_ptr<Material> Material::getMaterial(const MaterialInfo& mInfo) {
 	/*
 	* 材质信息标志
 	* 0: pos标志，总是1
@@ -1097,35 +1097,36 @@ shared_ptr<Material> Material::getMaterial(const std::string& name, const Materi
 	constexpr char* pPrecision = "precision highp float;\n";
 
 	constexpr char* getNormalFromMap = "vec3 getNormalFromMap(sampler2D nmap,vec2 texcoord,vec3 worldPos,vec3 normal){\n \
-		vec3 tangentNormal = texture(nmap, texcoord).xyz * 2.0 - 1.0;\n \
+		vec3 tangentNormal = texture(nmap, texcoord).xyz * 2.0f - 1.0f;\n \
 		vec3 Q1 = dFdx(worldPos); \n \
 		vec3 Q2 = dFdy(worldPos); \n \
 		vec2 st1 = dFdx(texcoord); \n \
 		vec2 st2 = dFdy(texcoord); \n \
 		vec3 N = normalize(normal);\n \
 		vec3 T = normalize(Q1 * st2.t - Q2 * st1.t);\n \
-		vec3 B = normalize(cross(N, T));\n \
+		vec3 B = -normalize(cross(N, T));\n \
 		mat3 TBN = mat3(T, B, N);\n \
 		return normalize(TBN * tangentNormal);\n \
 	}\n";
 
-	constexpr char* pFsOut = "layout (location = 0) out vec3 outPosMap;\n \
-		layout(location = 1) out vec3 outNormalMap;\n \
-	layout(location = 2) out vec3 outAlbedoMap;\n \
-	layout(location = 3) out vec3 outRoughnessMap;\n \
-	layout(location = 4) out vec3 outMetalicalMap;\n";
+	constexpr char* pFsOut = "layout (location = 0) out vec4 outPosMap;\n \
+		layout(location = 1) out vec4 outNormalMap;\n \
+	layout(location = 2) out vec4 outAlbedoMap;\n";
 
-	vsAttr = "layout(location = 0) in vec4 inPos;\n";
+	vsAttr = "layout(location = 0) in vec3 inPos;\n";
 	program = "posLoc=0\n";
 
 	vsUniform = "uniform mat4 mvpMat;\n";
 	vsUniform += "uniform mat4 mvMat;\n";
 
-	vsOut = "out vec3 outPos;\n";
-	vsOut += "out vec3 outNormal;\n";
+	vsOut = "out vec3 worldPos;\n";
+	vsOut += "out vec3 worldNormal;\n";
 
 	vsMain = "void main(){\n \
 			gl_Position = mvpMat * vec4(inPos,1.0f);\n";
+
+	fsMain = "void main(){\n \
+		outPosMap.rgb = worldPos;\n";
 
 	programSampler = "sampler{\n";
 
@@ -1139,12 +1140,23 @@ shared_ptr<Material> Material::getMaterial(const std::string& name, const Materi
 	if (!mInfo.normalMap.empty()) {
 		materialFlag |= 0x04;
 	}
-	if (!mInfo.metallicMap.empty()) {
+	if (!mInfo.armMap.empty()) {
 		materialFlag |= 0x08;
-	}
-	if (!mInfo.roughnessMap.empty()) {
 		materialFlag |= 0x10;
+		materialFlag |= 0x20;
 	}
+	else {
+		if (!mInfo.metallicMap.empty()) {
+			materialFlag |= 0x08;
+		}
+		if (!mInfo.roughnessMap.empty()) {
+			materialFlag |= 0x10;
+		}
+		if (!mInfo.aoMap.empty()) {
+			materialFlag |= 0x20;
+		}
+	}
+	
 	std::stringstream tempss;
 	tempss << "defferedGeomertry_" << materialFlag;
 	auto materialName = tempss.str();
@@ -1164,19 +1176,32 @@ shared_ptr<Material> Material::getMaterial(const std::string& name, const Materi
 			auto pTex = Material::getOrLoadTextureFromFile(mInfo.normalMap);
 			destMat->setTextureForSampler("normalMap", pTex);
 		}
-		if (!mInfo.metallicMap.empty()) {
-			auto pTex = Material::getOrLoadTextureFromFile(mInfo.normalMap);
-			destMat->setTextureForSampler("metallicMap", pTex);
+		if (!mInfo.armMap.empty()) {
+			auto pTex = Material::getOrLoadTextureFromFile(mInfo.armMap);
+			destMat->setTextureForSampler("armMap", pTex);
 		}
 		else {
-			destMat->setMetallical(mInfo.metallic);
-		}
-		if (!mInfo.roughnessMap.empty()) {
-			auto pTex = Material::getOrLoadTextureFromFile(mInfo.roughnessMap);
-			destMat->setTextureForSampler("roughnessMap", pTex);
-		}
-		else {
-			destMat->setRoughness(mInfo.roughness);
+			if (!mInfo.metallicMap.empty()) {
+				auto pTex = Material::getOrLoadTextureFromFile(mInfo.metallicMap);
+				destMat->setTextureForSampler("metallicMap", pTex);
+			}
+			else {
+				destMat->setMetallical(mInfo.metallic);
+			}
+			if (!mInfo.roughnessMap.empty()) {
+				auto pTex = Material::getOrLoadTextureFromFile(mInfo.roughnessMap);
+				destMat->setTextureForSampler("roughnessMap", pTex);
+			}
+			else {
+				destMat->setRoughness(mInfo.roughness);
+			}
+			if (!mInfo.aoMap.empty()) {
+				auto pTex = Material::getOrLoadTextureFromFile(mInfo.aoMap);
+				destMat->setTextureForSampler("aoMap", pTex);
+			}
+			else {
+				destMat->setAo(mInfo.ao);
+			}
 		}
 		return destMat;
 	}
@@ -1185,11 +1210,11 @@ shared_ptr<Material> Material::getMaterial(const std::string& name, const Materi
 		vsAttr += "layout(location = 1) in vec2 inTexcoord;\n";
 		vsAttr += "layout(location = 2) in vec3 inNormal;\n";
 
-		vsOut += "out vec2 outTexcoord;\n";
+		vsOut += "out vec2 fsTexcoord;\n";
 
-		vsMain += "outTexCoord = inTexcoord;\n";
+		vsMain += "fsTexcoord = inTexcoord;\n";
 
-		fsIn += "in vec2 outTexcoord;\n";
+		fsIn += "in vec2 fsTexcoord;\n";
 
 		program += "texcoordLoc=1\n";
 		program += "normalLoc=2\n";
@@ -1198,76 +1223,105 @@ shared_ptr<Material> Material::getMaterial(const std::string& name, const Materi
 		fsUniform += "uniform sampler2D albedoMap;\n";
 		programSampler += "albedoMap=";
 		programSampler += mInfo.albedoMap;
-		fsMain += "outAlbedoMap = texture(albedoMap,outTexcoord).rgb;\n";
+		programSampler += "\n";
+		fsMain += "outAlbedoMap.rgb = texture(albedoMap,fsTexcoord).rgb;\n";
 	}
 	else {
 		vsAttr += "layout(location = 1) in vec3 inNormal;\n";
 		program += "normalLoc=1\n";
-		if (!mInfo.normalMap.empty()) {
-			LOGE(" %s no albedomap,but has normal map",__func__);
-			return nullptr;
-		}
+		//if (!mInfo.normalMap.empty()) {
+		//	LOGE(" %s no albedomap,but has normal map",__func__);
+		//	return nullptr;
+		//}
 		//fs相关的
 		fsUniform += "uniform vec3 albedo;\n";
-		fsMain += "outAlbedoMap = albedo;\n";
+		fsMain += "outAlbedoMap.rgb = albedo;\n";
 		program += "uniformColor=albedo\n";
 	}
 
-	vsMain += "outNormal=mat3(mvMat)*inNormal;\n \
-		outPos = vec3(mvMat * vec4(inPos, 1.0));\n";
+	vsMain += "worldNormal=mat3(mvMat)*inNormal;\n \
+		worldPos = vec3(mvMat * vec4(inPos, 1.0));\n";
 	vsMain += "}\n";
 
 	vs += pVersion;
 	vs += pPrecision;
 	vs += (vsAttr + vsUniform + vsOut + vsMain);
 	//vs 已经搞定
-	fsIn += "in vec3 outPos;\n \
-		in vec3 outNormal;\n";
-	
-	fsMain = "void main(){\n \
-		outPosMap = outPos;\n";
+	fsIn += "in vec3 worldPos;\n \
+		in vec3 worldNormal;\n";
 
 	program += "mvpMatrix=mvpMat\n";
 	program += "mvMatrix=mvMat\n";
 
 	if (!mInfo.normalMap.empty()) {
-		fsUniform += "uniform sampler2D normalMap;";
+		fsUniform += "uniform sampler2D normalMap;\n";
 		programSampler += "normalMap=";
 		programSampler += mInfo.normalMap;
+		programSampler += "\n";
 		fsGetNormal = getNormalFromMap;
-		fsMain += "outNormalMap = getNormalFromMap(normalMap,outTexcoord,outPos,outNormal);\n";
+		fsMain += "outNormalMap.rgb = getNormalFromMap(normalMap,fsTexcoord,worldPos,worldNormal);\n";
 		materialFlag |= 0x04;
 	}
 	else {
-		fsMain += "outNormalMap = outNormal;\n";
+		fsMain += "outNormalMap.rgb = normalize(worldNormal);\n";
 	}
 
-
-	if (!mInfo.metallicMap.empty()) {
-		fsUniform += "uniform sampler2D metallicMap;\n";
-		programSampler += "metallicMap=";
-		programSampler += mInfo.metallicMap;
-		fsMain += "outMetalicalMap = texture(metallicMap,outTexcoord).rgb;\n";
+	if (!mInfo.armMap.empty()) {
+		fsUniform += "uniform sampler2D armMap;\n";
+		programSampler += "armMap=";
+		programSampler += mInfo.armMap;
+		programSampler += "\n";
+		fsMain += "vec3 arm = texture(armMap,fsTexcoord).rgb;\n";
+		fsMain += "outPosMap.a = arm.r;\n";
+		fsMain += "outNormalMap.a = arm.b;\n";
+		fsMain += "outAlbedoMap.a = arm.g;\n";
 		materialFlag |= 0x08;
-	}
-	else {
-		fsUniform += "uniform vec3 metallic;\n";
-		fsMain += "outMetalicalMap = metallic;\n";
-		program += "metallic=metallic\n";
-	}
-
-	if (!mInfo.roughnessMap.empty()) {
-		fsUniform += "uniform sampler2D roughnessMap;\n";
-		programSampler += "roughnessMap=";
-		programSampler += mInfo.roughnessMap;
-		fsMain += "outRoughnessMap = texture(roughnessMap,outTexcoord).rgb;\n";
 		materialFlag |= 0x10;
+		materialFlag |= 0x20;
 	}
 	else {
-		fsUniform += "uniform vec3 roughness;\n";
-		fsMain += "outRoughnessMap = roughness;\n";
-		program += "roughness=roughness\n";
+		if (!mInfo.metallicMap.empty()) {
+			fsUniform += "uniform sampler2D metallicMap;\n";
+			programSampler += "metallicMap=";
+			programSampler += mInfo.metallicMap;
+			programSampler += "\n";
+			fsMain += "outNormalMap.a = texture(metallicMap,fsTexcoord).r;\n";
+			materialFlag |= 0x08;
+		}
+		else {
+			fsUniform += "uniform float metallic;\n";
+			fsMain += "outNormalMap.a = metallic;\n";
+			program += "metallic=metallic\n";
+		}
+
+		if (!mInfo.roughnessMap.empty()) {
+			fsUniform += "uniform sampler2D roughnessMap;\n";
+			programSampler += "roughnessMap=";
+			programSampler += mInfo.roughnessMap;
+			programSampler += "\n";
+			fsMain += "outAlbedoMap.a = texture(roughnessMap,fsTexcoord).r;\n";
+			materialFlag |= 0x10;
+		}
+		else {
+			fsUniform += "uniform float roughness;\n";
+			fsMain += "outAlbedoMap.a = roughness;\n";
+			program += "roughness=roughness\n";
+		}
+		if (!mInfo.aoMap.empty()) {
+			fsUniform += "uniform sampler2D aoMap;\n";
+			programSampler += "aoMap=";
+			programSampler += mInfo.aoMap;
+			programSampler += "\n";
+			fsMain += "outPosMap.a = texture(aoMap,fsTexcoord).r;\n";
+			materialFlag |= 0x20;
+		}
+		else {
+			fsUniform += "uniform float ao;\n";
+			fsMain += "outPosMap.a = ao;\n";
+			program += "ao=ao\n";
+		}
 	}
+	
 
 	fsMain += "}\n";
 	programSampler += "}\n";
@@ -1294,6 +1348,7 @@ shared_ptr<Material> Material::getMaterial(const std::string& name, const Materi
 		LOGE(" compile shader failed when  call Material::getMaterial");
 		pMaterial.reset();
 	}
+	checkglerror();
 	return pMaterial;
 }
 

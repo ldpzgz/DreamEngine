@@ -311,11 +311,38 @@ bool Mesh::loadMesh(const std::vector<float>& pos,
 	const std::vector<float>& texcoord,
 	const std::vector<float>& normal,
 	const std::vector<unsigned int>& index) {
-
+	float xmin, xmax, ymin, ymax, zmin, zmax;
+	if (pos.size() >= 9) {
+		xmin = xmax = pos[0];
+		ymin = ymax = pos[1];
+		zmin = zmax = pos[2];
+		for (size_t i = 0; i < pos.size(); i += 3) {
+			if (xmin > pos[i]) {
+				xmin = pos[i];
+			}		   
+			if (xmax < pos[i]) {
+				xmax = pos[i];
+			}		   
+			if (ymin > pos[i + 1]) {
+				ymin = pos[i + 1];
+			}		   
+			if (ymax < pos[i + 1]) {
+				ymax = pos[i + 1];
+			}		   
+			if (zmin > pos[i + 2]) {
+				zmin = pos[i + 2];
+			}
+			if (zmax < pos[i + 2]) {
+				zmax = pos[i + 2];
+			}
+		}
+		mpAabb = std::make_unique<AABB>(xmin, xmax, ymin, ymax, zmin, zmax);
+	}
+	
 	return createBufferObject(&pos[0], pos.size()*sizeof(float), pos.size()/3,
 		index.data(), index.size()*sizeof(unsigned int),
 		texcoord.data(), texcoord.size() * sizeof(float),
-		normal.data(), texcoord.size() * sizeof(float),
+		normal.data(), normal.size() * sizeof(float),
 		nullptr, 0,
 		nullptr, 0);
 }
@@ -786,18 +813,33 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc
 	}
 }
 
-void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat, 
-	std::vector<Vec3>& lightPos, std::vector<Vec3>& lightColor, const Vec3& viewPos) {
+void Mesh::render(const glm::mat4* mvpMat, 
+	const glm::mat4* mvMat, 
+	const glm::mat4* texMat,
+	const std::vector<Vec3>* lightPos, 
+	const std::vector<Vec3>* lightColor, 
+	const Vec3* viewPos) {
 	if (mpMaterial) {
 		auto& pShader = mpMaterial->getShader();
 		if (pShader) {
-			pShader->setMvpMatrix(mvpMat);
-			pShader->setMvMatrix(mvMat);
-			//pShader->setViewMatrix(viewMat);
-			//pShader->setTextureMatrix();
-			pShader->setLightPos(lightPos);
-			pShader->setLightColor(lightColor);
-			pShader->setViewPos(viewPos);
+			if (mvpMat) {
+				pShader->setMvpMatrix(*mvpMat);
+			}
+			if (mvMat) {
+				pShader->setMvMatrix(*mvMat);
+			}
+			if (texMat) {
+				pShader->setTextureMatrix(*texMat);
+			}
+			if (lightPos) {
+				pShader->setLightPos(*lightPos);
+			}
+			if (lightColor) {
+				pShader->setLightColor(*lightColor);
+			}
+			if (viewPos) {
+				pShader->setViewPos(*viewPos);
+			}
 
 			mpMaterial->enable();
 			mpMaterial->setMyRenderOperation();
@@ -816,87 +858,9 @@ void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat,
 		
 	}
 	else {
-		//LOGE("mesh has no material,can't render");
-	}
-}
-
-void Mesh::render(const glm::mat4& mvpMat, const glm::mat4& mvMat,const glm::mat4& texMat) {
-	if (mpMaterial) {
-		auto& pShader = mpMaterial->getShader();
-		if (pShader) {
-			pShader->setMvpMatrix(mvpMat);
-			pShader->setMvMatrix(mvMat);
-			pShader->setTextureMatrix(texMat);
-			mpMaterial->enable();
-			mpMaterial->setMyRenderOperation();
-			int posloc = -1;
-			int texloc = -1;
-			int norloc = -1;
-			int colorloc = -1;
-			int tangentloc = -1;
-			pShader->getLocation(posloc, texloc, colorloc, norloc, tangentloc);
-			draw(posloc, texloc, norloc, colorloc, tangentloc);
-			mpMaterial->restoreRenderOperation();
-		}
-		else {
-			LOGE("mesh has no shader 2,can't render");
-		}
-	}
-	else {
 		LOGE("mesh has no material,can't render");
 	}
 }
-
-void Mesh::render() {
-	if (mpMaterial) {
-		auto& pShader = mpMaterial->getShader();
-		if (pShader) {
-			mpMaterial->enable();
-			mpMaterial->setMyRenderOperation();
-			int posloc = -1;
-			int texloc = -1;
-			int norloc = -1;
-			int colorloc = -1;
-			int tangentloc = -1;
-			pShader->getLocation(posloc, texloc, colorloc, norloc, tangentloc);
-			draw(posloc, texloc, norloc, colorloc, tangentloc);
-			mpMaterial->restoreRenderOperation();
-		}
-		else {
-			LOGE("mesh has no shader 3,can't render");
-		}
-	}
-	else {
-		LOGE("mesh has no material,can't render");
-	}
-}
-
-void Mesh::render(const glm::mat4& mvpMat,const glm::mat4& mvMat) {
-	if (mpMaterial) {
-		auto& pShader = mpMaterial->getShader();
-		if (pShader) {
-			pShader->setMvpMatrix(mvpMat);
-			pShader->setMvMatrix(mvMat);
-			mpMaterial->enable();
-			mpMaterial->setMyRenderOperation();
-			int posloc = -1;
-			int texloc = -1;
-			int norloc = -1;
-			int colorloc = -1;
-			int tangentloc = -1;
-			pShader->getLocation(posloc, texloc, colorloc, norloc, tangentloc);
-			draw(posloc, texloc, norloc, colorloc, tangentloc);
-			mpMaterial->restoreRenderOperation();
-		}
-		else {
-			LOGE("mesh has no shader 3,can't render");
-		}
-	}
-	else {
-		LOGE("mesh has no material,can't render");
-	}
-}
-
 
 bool Mesh::setPosData(const GLfloat* pos, int size, unsigned int drawType)
 {

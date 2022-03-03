@@ -15,6 +15,9 @@ class Material : public enable_shared_from_this<Material> {
 public:
 	class MaterialInfo {
 	public:
+		//ao roughness metallic,三合一map
+		std::string armMap;
+
 		//颜色必须要，要么一个color，要么一个map
 		std::string albedo{"#ffffff"};
 		std::string albedoMap;
@@ -24,6 +27,7 @@ public:
 		std::string normalMap;
 
 		//aoMap不为0，就有
+		float ao{ 0.5f };
 		std::string aoMap;
 
 		//粗糙度，要么是一个固定值，要么是map
@@ -142,7 +146,7 @@ public:
 	* name: 可以是物体的名字
 	* mInfo：材质信息，根据里面的信息生成或者clone一个material对象
 	*/
-	static shared_ptr<Material> getMaterial(const std::string& name, const MaterialInfo& mInfo);
+	static shared_ptr<Material> getMaterial(const MaterialInfo& mInfo);
 	static shared_ptr<Shader>& getShader(const std::string&);
 
 	static shared_ptr<Material> loadFromFile(const string& filename);

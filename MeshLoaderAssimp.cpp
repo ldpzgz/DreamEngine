@@ -19,6 +19,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 
 class MeshLoaderAssimpImpl {
 public:
@@ -27,16 +28,16 @@ public:
 
 	aiScene* mpAiScene{ nullptr };
 	bool mbMergeAllMesh{ false };
-	vector<float> mPos;//±£´æ¶¥µã×ø±ê
-	vector<float> mNormals;//±£´ænormal
-	vector<float> mTangents;//±£´ætangents£¬ÓÃÓÚ×ö°¼Í¹ÌùÍ¼
-	vector<float> mTexcoords;//±£´æÎÆÀí×ø±êÖµ
-	vector<unsigned int> mIndexes;//±£´æË÷ÒıÖµ
+	vector<float> mPos;//ä¿å­˜é¡¶ç‚¹åæ ‡
+	vector<float> mNormals;//ä¿å­˜normal
+	vector<float> mTangents;//ä¿å­˜tangentsï¼Œç”¨äºåšå‡¹å‡¸è´´å›¾
+	vector<float> mTexcoords;//ä¿å­˜çº¹ç†åæ ‡å€¼
+	vector<unsigned int> mIndexes;//ä¿å­˜ç´¢å¼•å€¼
 	unordered_map<unsigned int, unsigned int> mIndexMap;
 	unsigned int mCurIndex{ 0 };
-	int mMeshNum{ 0 }; //¼ÇÂ¼meshµÄ¸öÊı
-	std::string mMaterialName;//µ±Ç°meshµÄ²ÄÖÊÃû×Ö
-	std::string mFileName;//µ±Ç°Òª¼ÓÔØµÄÎÄ¼şµÄÃû×Ö£¬²»°üÀ¨ÎÄ¼şµÄÂ·¾¶Óëºó×ºÃû¡£ÓÃÓÚ×÷ÎªmaterialµÄÃû×ÖµÄÇ°×º
+	int mMeshNum{ 0 }; //è®°å½•meshçš„ä¸ªæ•°
+	std::string mMaterialName;//å½“å‰meshçš„æè´¨åå­—
+	std::string mFileName;//å½“å‰è¦åŠ è½½çš„æ–‡ä»¶çš„åå­—ï¼Œä¸åŒ…æ‹¬æ–‡ä»¶çš„è·¯å¾„ä¸åç¼€åã€‚ç”¨äºä½œä¸ºmaterialçš„åå­—çš„å‰ç¼€
 	unordered_map<string, string> mContentNameMap;
 };
 
@@ -48,12 +49,12 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 	}
 	unsigned int n = 0;
 	unsigned int t = 0;
-	aiMatrix4x4 model = nd->mTransformation;//±¾½ÚµãµÄmodel¾ØÕó
+	aiMatrix4x4 model = nd->mTransformation;//æœ¬èŠ‚ç‚¹çš„modelçŸ©é˜µ
 	if (!model.IsIdentity()) {
 		std::cout << "node transform is not identity" << std::endl;
 	}
 
-	for (n = 0; n < nd->mNumMeshes; ++n)//±éÀú±¾½ÚµãÏÂµÄmesh
+	for (n = 0; n < nd->mNumMeshes; ++n)//éå†æœ¬èŠ‚ç‚¹ä¸‹çš„mesh
 	{
 		std::shared_ptr<Material> pMeshMat;
 		if (!mbMergeAllMesh) {
@@ -70,183 +71,212 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 		const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
 		auto pMeshMaterial = sc->mMaterials[mesh->mMaterialIndex];
 		int texCount = 0;
-		std::string diffuse;
-		std::string specular;
-		std::string normal;
-		std::string mask;
-		std::map<int, std::string> texMap;
-		for (int i = 1; i <= 9; ++i) {
-			aiString textureFilePath;
-			auto texCount = pMeshMaterial->GetTextureCount((aiTextureType)i);
-			if (texCount > 0) {
-				pMeshMaterial->GetTexture((aiTextureType)i, 0, &textureFilePath);
-				texMap.emplace(i, textureFilePath.C_Str());
-				std::cout << i << ": " << textureFilePath.C_Str() << std::endl;
-				++texCount;
-			}
-		}
-		std::string matName = mFileName;
-		std::string program;
-		std::string sampler;
-		string op;
-		if (!texMap.empty()) {
-			//1 diff 5 normal 8 mask
-			if (texMap.find(1) != texMap.end()) {
-				sampler = "\tsampler{\n\t\t";
-				sampler += "s_texture=";
-				sampler += texMap[1];
-				sampler += "\n";
-				int normalMapIndex = 0;
-				if (texMap.find(5) != texMap.end()) {
-					normalMapIndex = 5;
-				}
-				else if (texMap.find(9) != texMap.end()) {
-					normalMapIndex = 9;
-				}
-				if (normalMapIndex != 0) {
-					sampler += "\t\ts_normal=";
-					sampler += texMap[normalMapIndex];
-					sampler += "\n";
-					if (texMap.find(8) != texMap.end()) {
-						matName += "_dnlm";//diffuse normal light mask
-						program = "\tprogram=posDiffNormalLightMask\n";
-						sampler += "\t\tmaskTex=";
-						sampler += texMap[8];
-						sampler += "\n";
-						op = "\top{\n";
-						op += "\t\tblend=true,sa,1-sa,add\n";
-						op += "\t}\n";
+		//std::string diffuse;
+		//std::string specular;
+		//std::string normal;
+		//std::string mask;
+		//std::map<int, std::string> texMap;
+		//for (int i = 1; i <= 9; ++i) {
+		//	aiString textureFilePath;
+		//	auto texCount = pMeshMaterial->GetTextureCount((aiTextureType)i);
+		//	if (texCount > 0) {
+		//		pMeshMaterial->GetTexture((aiTextureType)i, 0, &textureFilePath);
+		//		texMap.emplace(i, textureFilePath.C_Str());
+		//		std::cout << i << ": " << textureFilePath.C_Str() << std::endl;
+		//		++texCount;
+		//	}
+		//}
+		//std::string matName = mFileName;
+		//std::string program;
+		//std::string sampler;
+		//string op;
+		//if (!texMap.empty()) {
+		//	//1 diff 5 normal 8 mask
+		//	if (texMap.find(1) != texMap.end()) {
+		//		sampler = "\tsampler{\n\t\t";
+		//		sampler += "s_texture=";
+		//		sampler += texMap[1];
+		//		sampler += "\n";
+		//		int normalMapIndex = 0;
+		//		if (texMap.find(5) != texMap.end()) {
+		//			normalMapIndex = 5;
+		//		}
+		//		else if (texMap.find(9) != texMap.end()) {
+		//			normalMapIndex = 9;
+		//		}
+		//		if (normalMapIndex != 0) {
+		//			sampler += "\t\ts_normal=";
+		//			sampler += texMap[normalMapIndex];
+		//			sampler += "\n";
+		//			if (texMap.find(8) != texMap.end()) {
+		//				matName += "_dnlm";//diffuse normal light mask
+		//				program = "\tprogram=posDiffNormalLightMask\n";
+		//				sampler += "\t\tmaskTex=";
+		//				sampler += texMap[8];
+		//				sampler += "\n";
+		//				op = "\top{\n";
+		//				op += "\t\tblend=true,sa,1-sa,add\n";
+		//				op += "\t}\n";
+		//			}
+		//			else {
+		//				matName += "_dnl";
+		//				program = "\tprogram=posDiffNormalLight\n";
+		//			}
+		//		}
+		//		else if (texMap.find(8) != texMap.end()) {
+		//			matName += "_dlm";
+		//			program = "\tprogram=posDiffLightMask\n";
+		//			sampler += "\t\tmaskTex=";
+		//			sampler += texMap[8];
+		//			sampler += "\n";
+		//			op = "\top{\n";
+		//			op += "\t\tblend=true,sa,1-sa,add\n";
+		//			op += "\t}\n";
+		//		}
+		//		else {
+		//			matName += "_dl";
+		//			program = "\tprogram=posDiffLight\n";
+		//		}
+		//		sampler += "\n\t}\n";
+		//	}
+		//	else {
+		//		matName += "_l";
+		//		program = "\tprogram=posLight\n";
+		//	}
+		//}
+		//else {
+		//	//å¦‚æœæ²¡æœ‰çº¹ç†ï¼Œè¿™ä¸ªç‰©ä½“çš„æè´¨åå­—å°±é»˜è®¤ä¸º
+		//	matName += "_l";
+		//	program = "\tprogram=posLight\n";
+		//}
+		////å†™å…¥materialä¿¡æ¯
+		//stringstream tt;
+		//tt << matName << "_" << mMeshNum;
+		//mMaterialName = tt.str();
+		//string matContents = program + sampler + op;
+		//auto it = mContentNameMap.find(matContents);
+		//if (it != mContentNameMap.end()) {
+		//	mMaterialName = it->second;
+		//	pMeshMat = Material::getMaterial(mMaterialName);
+		//}
+		//else {
+		//	if (Material::parseMaterial(mMaterialName, matContents)) {
+		//		pMeshMat = Material::getMaterial(mMaterialName);
+		//	}
+		//	else {
+		//		LOGE("parse material failed when import mesh");
+		//	}
+		//	mContentNameMap.emplace(matContents, mMaterialName);
+		//}
+		std::unordered_map<unsigned int,unsigned int> indexMap;
+		auto primitivType = mesh->mPrimitiveTypes;
+		if (primitivType == aiPrimitiveType_TRIANGLE) {
+			unsigned int index = 0;
+			for (t = 0; t < mesh->mNumFaces; ++t) {
+				const struct aiFace* face = &mesh->mFaces[t];
+				for (int i = 0; i < face->mNumIndices; i++) {
+					int vertexIndex = face->mIndices[i];
+					auto cit = indexMap.find(vertexIndex);
+					if (cit == indexMap.end()) {
+						if (mesh->mNormals != nullptr && mesh->mVertices != nullptr) {
+							mPos.emplace_back(mesh->mVertices[vertexIndex].x);
+							mPos.emplace_back(mesh->mVertices[vertexIndex].y);
+							mPos.emplace_back(mesh->mVertices[vertexIndex].z);
+							mNormals.emplace_back(mesh->mNormals[vertexIndex].x);
+							mNormals.emplace_back(mesh->mNormals[vertexIndex].y);
+							mNormals.emplace_back(mesh->mNormals[vertexIndex].z);
+							if (mesh->HasTextureCoords(0)) {
+								mTexcoords.emplace_back(mesh->mTextureCoords[0][vertexIndex].x);
+								mTexcoords.emplace_back(mesh->mTextureCoords[0][vertexIndex].y);
+							}
+
+						}
+						mIndexes.emplace_back(index);
+						indexMap.emplace(vertexIndex,index);
+						++index;
 					}
 					else {
-						matName += "_dnl";
-						program = "\tprogram=posDiffNormalLight\n";
+						mIndexes.emplace_back(cit->second);
 					}
 				}
-				else if (texMap.find(8) != texMap.end()) {
-					matName += "_dlm";
-					program = "\tprogram=posDiffLightMask\n";
-					sampler += "\t\tmaskTex=";
-					sampler += texMap[8];
-					sampler += "\n";
-					op = "\top{\n";
-					op += "\t\tblend=true,sa,1-sa,add\n";
-					op += "\t}\n";
-				}
-				else {
-					matName += "_dl";
-					program = "\tprogram=posDiffLight\n";
-				}
-				sampler += "\n\t}\n";
+
 			}
-			else {
-				matName += "_l";
-				program = "\tprogram=posLight\n";
-			}
+			
 		}
 		else {
-			//Èç¹ûÃ»ÓĞÎÆÀí£¬Õâ¸öÎïÌåµÄ²ÄÖÊÃû×Ö¾ÍÄ¬ÈÏÎª
-			matName += "_l";
-			program = "\tprogram=posLight\n";
-		}
-		//Ğ´ÈëmaterialĞÅÏ¢
-		stringstream tt;
-		tt << matName << "_" << mMeshNum;
-		mMaterialName = tt.str();
-		string matContents = program + sampler + op;
-		auto it = mContentNameMap.find(matContents);
-		if (it != mContentNameMap.end()) {
-			mMaterialName = it->second;
-			pMeshMat = Material::getMaterial(mMaterialName);
-		}
-		else {
-			if (Material::parseMaterial(mMaterialName, matContents)) {
-				pMeshMat = Material::getMaterial(mMaterialName);
-			}
-			else {
-				LOGE("parse material failed when import mesh");
-			}
-			mContentNameMap.emplace(matContents, mMaterialName);
-		}
-
-		auto primitivType = mesh->mPrimitiveTypes;
-		auto& aabb = mesh->mAABB;
-		for (t = 0; t < mesh->mNumFaces; ++t) {
-			auto face = &mesh->mFaces[t];
-			auto drawType = face->mNumIndices;
-			if (drawType != 3) {
-				std::cout << "discard a mesh,the drawType is <<drawType " << ",not triangle" << std::endl;
-				break;
-			}
-			/*switch (face->mNumIndices)
-			{
-			case 1: face_mode = GL_POINTS; break;
-			case 2: face_mode = GL_LINES; break;
-			case 3: face_mode = GL_TRIANGLES; break;
-			default: face_mode = GL_POLYGON; break;
-			}*/
-
-			for (int i = 0; i < face->mNumIndices; i++)		// go through all vertices in face
-			{
-				auto vertexIndex = face->mIndices[i];	// get group index for current index
-				auto tempIt = mIndexMap.find(vertexIndex + indexTranslate);
-				if (tempIt != mIndexMap.end()) {
-					mIndexes.emplace_back(tempIt->second);
-				}
-				else {
-					auto pPos = &mesh->mVertices[vertexIndex];
-					auto vec3Size = sizeof(*pPos);
-					mPos.emplace_back(pPos->x);
-					mPos.emplace_back(pPos->y);
-					mPos.emplace_back(pPos->z);
-					mIndexes.emplace_back(mCurIndex);
-					mIndexMap.emplace(vertexIndex + indexTranslate, mCurIndex);
-					++mCurIndex;
-
-					if (mesh->mNormals != nullptr)
-					{
-						auto pNormal = &mesh->mNormals[vertexIndex];
-						mNormals.emplace_back(pNormal->x);
-						mNormals.emplace_back(pNormal->y);
-						mNormals.emplace_back(pNormal->z);
-					}
-
-					if (mesh->mTangents != nullptr)
-					{
-						auto pTangent = &mesh->mTangents[vertexIndex];
-						mTangents.emplace_back(pTangent->x);
-						mTangents.emplace_back(pTangent->y);
-						mTangents.emplace_back(pTangent->z);
-					}
-
-					if (mesh->HasTextureCoords(0))		//HasTextureCoords(texture_coordinates_set)
-					{
-						mTexcoords.emplace_back(mesh->mTextureCoords[0][vertexIndex].x);
-						mTexcoords.emplace_back(mesh->mTextureCoords[0][vertexIndex].y);
-					}
-				}
-			}
+			LOGE(" primitive type is not triangle when import mesh from file");
 		}
 		MeshP pMesh = make_shared<Mesh>(MeshType::MESH_DIY);
 		if (pMesh->loadMesh(mPos, mTexcoords, mNormals, mIndexes)) {
+			pRootNode->addAttachment(pMesh);
 			if (pMeshMat) {
 				pMesh->setMaterial(pMeshMat);
-				pRootNode->addAttachment(pMesh);
 			}
 			else {
-				LOGE( "%s mesh material is null",__func__);
+				LOGE("%s mesh material is null", __func__);
 			}
 		}
 		else {
 			LOGE("%s load mesh failed", __func__);
 		}
 		++mMeshNum;
+
+		//for (t = 0; t < mesh->mNumFaces; ++t) {
+		//	auto face = &mesh->mFaces[t];
+		//	auto drawType = face->mNumIndices;
+		//	if (drawType != 3) {
+		//		std::cout << "discard a mesh,the drawType is <<drawType " << ",not triangle" << std::endl;
+		//		break;
+		//	}
+
+		//	for (int i = 0; i < face->mNumIndices; i++)		// go through all vertices in face
+		//	{
+		//		auto vertexIndex = face->mIndices[i];	// get group index for current index
+		//		auto tempIt = mIndexMap.find(vertexIndex + indexTranslate);
+		//		if (tempIt != mIndexMap.end()) {
+		//			mIndexes.emplace_back(tempIt->second);
+		//		}
+		//		else {
+		//			auto pPos = &mesh->mVertices[vertexIndex];
+		//			auto vec3Size = sizeof(*pPos);
+		//			mPos.emplace_back(pPos->x);
+		//			mPos.emplace_back(pPos->y);
+		//			mPos.emplace_back(pPos->z);
+		//			mIndexes.emplace_back(mCurIndex);
+		//			mIndexMap.emplace(vertexIndex + indexTranslate, mCurIndex);
+		//			++mCurIndex;
+
+		//			if (mesh->mNormals != nullptr)
+		//			{
+		//				auto pNormal = &mesh->mNormals[vertexIndex];
+		//				mNormals.emplace_back(pNormal->x);
+		//				mNormals.emplace_back(pNormal->y);
+		//				mNormals.emplace_back(pNormal->z);
+		//			}
+
+		//			if (mesh->mTangents != nullptr)
+		//			{
+		//				auto pTangent = &mesh->mTangents[vertexIndex];
+		//				mTangents.emplace_back(pTangent->x);
+		//				mTangents.emplace_back(pTangent->y);
+		//				mTangents.emplace_back(pTangent->z);
+		//			}
+
+		//			if (mesh->HasTextureCoords(0))		//HasTextureCoords(texture_coordinates_set)
+		//			{
+		//				mTexcoords.emplace_back(mesh->mTextureCoords[0][vertexIndex].x);
+		//				mTexcoords.emplace_back(mesh->mTextureCoords[0][vertexIndex].y);
+		//			}
+		//		}
+		//	}
+		//}
+		
 	}
 	
 	// recursive all children
 	for (n = 0; n < nd->mNumChildren; ++n)
 	{
-		SP_Node pChidNode = pRootNode->newAChild();
-		recursive_parse(sc, nd->mChildren[n], pChidNode);
+		recursive_parse(sc, nd->mChildren[n], pRootNode);
 	}
 }
 
@@ -278,7 +308,7 @@ bool MeshLoaderAssimpImpl::loadFromFile(const std::string& filename, std::shared
 		LOGE(" importer.ReadFile %s,info:%s", filename.c_str(), importer.GetErrorString());
 		return false;
 	}
-	//ÄÃµ½meshµÄÎÄ¼şÃû£¬ÓÃÓÚ¸ømeshµÄ²ÄÖÊÃüÃû
+	//æ‹¿åˆ°meshçš„æ–‡ä»¶åï¼Œç”¨äºç»™meshçš„æè´¨å‘½å
 	mFileName = Utils::getFileName(filename);
 	
 

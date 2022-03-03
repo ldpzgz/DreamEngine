@@ -24,6 +24,6 @@ std::shared_ptr<View>& ListAdapter::getView(int position){
 	
 }
 
-int ListAdapter::getItemCounts() {
+size_t ListAdapter::getItemCounts() {
 	return mDatas.size();
 }

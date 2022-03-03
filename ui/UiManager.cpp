@@ -428,7 +428,7 @@ shared_ptr<View> UiManager::loadFromFile(const string& filepath, int parentWidth
 
 //加载ui的布局文件
 shared_ptr<View> UiManager::loadFromFile(const string& filepath) {
-	return loadFromFile(filepath, mWindowWidth, mWindowHeight);
+	return loadFromFile(filepath, static_cast<int>(mWindowWidth), static_cast<int>(mWindowHeight));
 }
 
 UiManager::UiManager() {
@@ -444,7 +444,7 @@ void UiManager::setUiTree(const shared_ptr<UiTree>& tree) {
 	if (mpUiTree) {
 		//计算出view的位置尺寸
 		mpUiTree->updateWidthHeight(mWindowWidth, mWindowHeight);
-		mpUiTree->calcViewsRect(mWindowWidth, mWindowHeight);
+		mpUiTree->calcViewsRect(static_cast<int>(mWindowWidth), static_cast<int>(mWindowHeight));
 	}
 }
 
@@ -593,7 +593,7 @@ bool UiManager::initUi(int w, int h) {
 	//初始化uirender
 	UiRender::getInstance()->initUiRender();
 
-	updateWidthHeight(w, h);
+	updateWidthHeight(static_cast<float > (w), static_cast<float>(h));
 	return true;
 }
 

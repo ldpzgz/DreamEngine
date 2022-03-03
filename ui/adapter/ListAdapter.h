@@ -7,7 +7,7 @@ public:
 
 	std::shared_ptr<View>& getView(int position) override;
 
-	int getItemCounts() override;
+	size_t getItemCounts() override;
 private:
 	std::shared_ptr<View> mpItemView;
 	std::vector<std::string> mDatas{ "a","b","c","d","e","f","g","hfjal","hdhf","hakdf","dfadf"};

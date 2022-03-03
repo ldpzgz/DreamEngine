@@ -50,7 +50,7 @@ public:
 	shared_ptr<Node<T>> newAChild() {
 		auto child = make_shared<Node<T>>();
 		unsigned int id = mCurChileId++;
-		auto& it = mChildren.try_emplace(id, child);
+		auto& it = mChildren.emplace(id, child);
 		if (it.second) {
 			auto& tempNode = it.first->second;
 			tempNode->setId(id);
@@ -76,7 +76,7 @@ public:
 
 	bool addChild(shared_ptr<Node<T>>& child) {
 		if (child->hasParent()) {
-			LOGE("node cannot add a child which has parent");
+			//LOGE("node cannot add a child which has parent");
 			return false;
 		}
 		unsigned int id = mCurChileId++;

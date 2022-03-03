@@ -92,6 +92,7 @@ public:
 
 	void enable();
 	void disable();
+	bool blitDepthBufToWin();
 	static bool blitFbo(const Fbo& src,const Rect<int>& srcRect, const Fbo& dst, const Rect<int>& dstRect);
 	static bool blitFbo(const Fbo& src, const Fbo& dst);
 private:
@@ -100,10 +101,10 @@ private:
 	GLuint mFboId{ 0 };
 	GLint mPreFrameBuffer{ 0 };
 	
-	GLboolean mPrebDepthTest{ false };
+	GLboolean mPrebDepthTest{ true };
 	int mWidth{ 0 }; //render to tex ,tex width
 	int mHeight{ 0 };//render to tex ,tex height
-	bool mbEnableDepthTest{ false };
+	bool mbEnableDepthTest{ true };
 	bool mbClearColor{ true };
 	bool mbClearColorOnlyOnce{ false };
 	float mClearColor[4]{0.0f,0.0f,0.0f,0.0f};

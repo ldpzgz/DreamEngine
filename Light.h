@@ -16,7 +16,11 @@ public:
 		mPosOrDir = pd;
 	}
 
-	const Vec3& getPosOrDir() {
+	const Vec3& getPosOrDir() const{
+		return mPosOrDir;
+	}
+
+	Vec3& getPosOrDir() {
 		return mPosOrDir;
 	}
 
@@ -24,7 +28,11 @@ public:
 		mLightColor = color;
 	}
 
-	const Vec3& getLightColor() {
+	const Vec3& getLightColor() const{
+		return mLightColor;
+	}
+
+	Vec3& getLightColor() {
 		return mLightColor;
 	}
 private:
