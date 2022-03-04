@@ -17,7 +17,7 @@ std::shared_ptr<Texture> genBrdfLut() {
 		mesh.render(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 	});
 
-	Material::emplaceTexture("brdfLut", lut);
+	Material::emplaceTexture("brdfLUT", lut);
 	return lut;
 }
 
