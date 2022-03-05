@@ -1011,7 +1011,6 @@ void UiRender::drawListView(ListView* plv) {
 
 void UiRender::drawUi() {
 	if (mpLastMesh) {
-		//todo关闭深度测试，等等
 		glDisable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

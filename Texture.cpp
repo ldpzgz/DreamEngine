@@ -34,7 +34,9 @@ bool Texture::createMStexture(int width,int height,int samples,unsigned int inte
 	mNumOfSamples = samples;
 	mTarget = GL_TEXTURE_2D_MULTISAMPLE;
 	GLint maxSamples = 0;
+	checkglerror();
 	glGetInternalformativ(GL_TEXTURE_2D_MULTISAMPLE, GL_RGBA8, GL_SAMPLES, 1, &maxSamples);
+	checkglerror();
 	if (mNumOfSamples > maxSamples) {
 		mNumOfSamples = maxSamples;
 	}
@@ -48,12 +50,14 @@ bool Texture::createMStexture(int width,int height,int samples,unsigned int inte
 	glGenTextures(1, &mTextureId);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(mTarget, mTextureId);
-	// Set-up texture properties.
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-
+	checkglerror();
+	// 多重采样纹理，opengl3.3如果设置这些属性会报错，"无效枚举值"(es3.1不会报错），
+	// 不需要设置这些参数
+	//glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(mTarget, GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+	//glTexParameteri(mTarget, GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+	
 	glTexStorage2DMultisample(mTarget,
 		mNumOfSamples,
 		mInternalFormat,

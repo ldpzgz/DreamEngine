@@ -43,6 +43,7 @@ void Fbo::detachColorTextureMS(unsigned int attachment_n) {
 		GL_TEXTURE_2D_MULTISAMPLE,
 		0,
 		0);
+	mAttachments.erase(mAttachments.begin() + attachment_n);
 	disable();
 }
 
@@ -130,7 +131,8 @@ bool Fbo::attachColorRbo(int attachment_n, int width, int height) {
 
 	bool bret = checkFrameBuffer();
 	if (bret) {
-		mbEnableDepthTest = true;
+		unsigned int s = static_cast<unsigned int>(mAttachments.size());
+		mAttachments.emplace_back(GL_COLOR_ATTACHMENT0 + s);
 	}
 	disable();
 	return bret;
@@ -154,6 +156,7 @@ void Fbo::detachColorRbo(int attachment_n) {
 		glDeleteRenderbuffers(1, &mRbo);
 		mRbo = 0;
 	}
+	mAttachments.erase(mAttachments.begin() + attachment_n);
 	disable();
 }
 
@@ -214,6 +217,10 @@ bool Fbo::attachColorTextureMS(const std::shared_ptr<Texture>& texture, int atta
 		0);
 
 	ret = checkFrameBuffer();
+	if (ret) {
+		unsigned int s = static_cast<unsigned int>(mAttachments.size());
+		mAttachments.emplace_back(GL_COLOR_ATTACHMENT0 + s);
+	}
 	disable();
 	return ret;
 }
