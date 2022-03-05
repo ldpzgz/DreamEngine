@@ -7,7 +7,7 @@
 #include "../stb_truetype.h"
 #include "../Log.h"
 using namespace std;
-static const string gFontFile("./opengles3/material/aliFont.ttf");
+static const string gFontFile("./opengles3/resource/aliFont.ttf");
 
 //static 	FT_Library  glibrary;
 //static  FT_Face     gface;      /* handle to face object */

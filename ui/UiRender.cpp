@@ -4,15 +4,16 @@
 #include <vector>
 #include "../MeshRoundedRectangle.h"
 #include "../MeshCircle.h"
+#include "../Resource.h"
 
 using namespace std;
 int FontManager::gMyFontFileVersion = 1;
 const string CharSizeKey("charSize");		//一个字占用的宽高
 //static const string gUIRenderMaterialFile("./opengles3/material/uiDraw.material");
 static const string gFontTextureName("fontsTexture");
-static const string gFontFile("./opengles3/material/simfang.ttf");
-static const string gSavedFontFile("./opengles3/material/myfont.data");
-static const string gFontMaterialName("font");
+static const string gFontFile("./opengles3/resource/simfang.ttf");
+static const string gSavedFontFile("./opengles3/resource/myfont.data");
+static const string gFontMaterialName("fontsBasic");
 
 FontManager::FontManager()
 {
@@ -89,21 +90,21 @@ FontManager::~FontManager()
 
 shared_ptr<FontManager> FontManager::loadFromFile(const string& savePath, const string& ttfPath, const string& materialName) {
 
-	auto& pMaterial = Material::getMaterial(materialName);
+	auto& pMaterial = Resource::getInstance().getMaterial(materialName);
 
 	if (!pMaterial) {
 		LOGE("error to parse font material");
 		return shared_ptr<FontManager>();
 	}
 
-	auto& pTex = Material::getTexture(gFontTextureName);
+	auto& pTex = Resource::getInstance().getTexture(gFontTextureName);
 	if (!pTex) {
 		LOGE("font texture %s not found in material %s",gFontTextureName.c_str(), materialName.c_str());
 		pMaterial.reset();
 		return shared_ptr<FontManager>();
 	}
 
-	auto charSize = pMaterial->getKeyAsInt(CharSizeKey);
+	auto charSize = Resource::getInstance().getKeyAsInt(CharSizeKey);
 
 	if (charSize < 0) {
 		LOGE("not found charSize key in material %s", materialName.c_str());
@@ -208,7 +209,7 @@ unique_ptr<UiRender> UiRender::gInstance = make_unique<UiRender>();
 
 void UiRender::initUiRender() {
 	initTextView(gSavedFontFile, gFontFile, gFontMaterialName);
-	mpLastMaterial = Material::getMaterial("posDiffMS");
+	mpLastMaterial = Resource::getInstance().getMaterial("posDiffMS");
 	mpLastMesh = make_shared<Mesh>(MeshType::MESH_Rectangle);
 	if (mpLastMesh) {
 		mpLastMesh->loadMesh();
@@ -395,7 +396,7 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 	}
 
 	if (pMesh && pTexture) {
-		auto pMaterial = Material::clone("posDiff");
+		auto pMaterial = Resource::getInstance().cloneMaterial("posDiff");
 		if (pMaterial) {
 			//pMaterial->setTextureForSampler("s_texture", pTexture);//这个每次渲染前都需要调用
 			pMesh->setMaterial(pMaterial);
@@ -406,7 +407,7 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 	}
 	else if (pMesh && hasGradient) {
 		if (gradientType == GradientType::Linear) {
-			auto pMaterial = Material::clone("posColor");
+			auto pMaterial = Resource::getInstance().cloneMaterial("posColor");
 			if (pMaterial) {
 				pStyle->setColorVbo(pMesh->createAColorData(gradientAngle, startColor, endColor, centerColor));
 				pMesh->setMaterial(pMaterial);
@@ -417,7 +418,7 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 		}
 	}
 	else if (pMesh && !solidColor.isZero()) {
-		auto pMaterial = Material::clone("posUniformColor");
+		auto pMaterial = Resource::getInstance().cloneMaterial("posUniformColor");
 		if (pMaterial) {
 			pMaterial->setUniformColor(solidColor);//这个每次渲染前都需要调用
 			pMesh->setMaterial(pMaterial);
@@ -428,7 +429,7 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 	}
 
 	if (pBorderMesh) {
-		auto pMaterial = Material::clone("posUniformColor");
+		auto pMaterial = Resource::getInstance().cloneMaterial("posUniformColor");
 		if (pMaterial) {
 			pMaterial->setUniformColor(borderColor);//这个每次渲染前都需要调用
 			pBorderMesh->setMaterial(pMaterial);

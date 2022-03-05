@@ -10,7 +10,7 @@ std::shared_ptr<View>& ListAdapter::getView(int position){
 			auto pParent = mpParentView.lock();
 			if (pParent) {
 				auto& parentRect = pParent->getRect();
-				mpItemView = UiManager::loadFromFile("./opengles3/material/layout/lvItem.xml", parentRect.width, parentRect.height);
+				mpItemView = UiManager::loadFromFile("./opengles3/resource/layout/lvItem.xml", parentRect.width, parentRect.height);
 			}
 		}
 		if (mpItemView) {

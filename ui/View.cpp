@@ -374,7 +374,7 @@ void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& valu
 			}
 			else if (value.find(imagePrefix) == 0) {
 				string imageName = value.substr(imagePrefix.size());
-				auto& pTex = UiManager::getTexture(imageName);
+				auto pTex = UiManager::getTexture(imageName);
 				if (pTex) {
 					pv->setBackgroundImg(pTex);
 					/*auto& pShape = pv->getBackgroundShape();

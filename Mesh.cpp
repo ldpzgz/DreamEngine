@@ -9,6 +9,7 @@
 #include "Log.h"
 #include "LdpMesh.h"
 #include "Shader.h"
+#include "Resource.h"
 #include <cmath>
 #include <fstream>
 
@@ -361,7 +362,7 @@ bool Mesh::loadMesh(const std::string meshFilePath) {
 				mMaterialName.resize(mesh.materialNameSize);
 				infile.read(mMaterialName.data(), mesh.materialNameSize);
 				assert(infile.gcount() == mesh.materialNameSize);
-				mpMaterial = Material::getMaterial(mMaterialName);
+				mpMaterial = Resource::getInstance().getMaterial(mMaterialName);
 				if (!mpMaterial) {
 					LOGE("ERROR to find material %s,when load mesh from file", mMaterialName.c_str());
 				}

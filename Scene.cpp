@@ -5,6 +5,7 @@
 #include "Material.h"
 #include "helper.h"
 #include "Rect.h"
+#include "Resource.h"
 Scene::Scene() {
 	mpRootNode = make_shared<Node<glm::mat4>>();
 	mpRootNodeDeffered = make_shared<Node<glm::mat4>>();
@@ -32,7 +33,7 @@ bool Scene::createSkybox() {
 	//天空盒
 	mSkyboxInfo.mpMesh = make_shared<Mesh>(MeshType::MESH_Cuboid);
 	mSkyboxInfo.mpMesh->loadMesh();
-	auto& pSkyboxMaterial = Material::getMaterial("skyboxHdr1");
+	auto& pSkyboxMaterial = Resource::getInstance().getMaterial("skyboxHdr1");
 	auto& pHdrTex = pSkyboxMaterial->getTextureOfSampler("skybox");
 	if (pHdrTex) {
 		auto pCube = convertHdrToCubicmap(pHdrTex);

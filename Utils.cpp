@@ -103,18 +103,29 @@ namespace Utils {
 			return;
 		}
 		if (is_directory(upPath)) {
-			//��Ŀ¼
+			//是目录
 			std::filesystem::directory_iterator list(upPath);
 			for (auto& it : list) {
 				auto& filePath = it.path();
 				if (is_regular_file(filePath)) {
-					//���ļ�
+					//是文件
 					auto filename = filePath.string();
 					if (getFileSuffix(filename) == suffix) {
 						func(filename);
 					}
 				}
 			}
+		}
+	}
+
+	void splitKeyAndName(const string& key, string& realKey, string& keyName) {
+		auto pos = key.find(':');
+		if (pos != string::npos) {
+			realKey = key.substr(0, pos);
+			keyName = key.substr(pos + 1);
+		}
+		else {
+			realKey = key;
 		}
 	}
 
@@ -147,5 +158,115 @@ namespace Utils {
 			} while (true);
 		}
 		return count;
+	}
+
+	bool parseItem(const string& value, std::unordered_map<std::string,std::string>& umap) {
+		std::string::size_type pos[3]{ 0,0,0 };
+		std::string::size_type startPos = 0;
+		do {
+			bool findKV = false;
+			auto tpos = value.find_first_of("={", startPos);
+			if (tpos != string::npos) {
+				if (value[tpos] == '=') {
+					findKV = findkeyValue(value, "=", "\r\n", startPos, pos);//"\x20\r\n\t"
+				}
+				else {
+					findKV = findkeyValue(value, "{", "}", startPos, pos);
+				}
+			}
+			if (findKV) {
+				auto temp = value.substr(pos[0], pos[1] - pos[0]);
+				auto keyendpos = temp.find_last_not_of("\x20\t");
+				if (keyendpos == string::npos) {
+					LOGE("find a empty key!!!");
+					return false;
+				}
+				auto realKey = temp.substr(0, keyendpos + 1);
+				auto tempValue = value.substr(pos[1] + 1, pos[2] - pos[1] - 1);
+				auto valueStartPos = tempValue.find_first_not_of("\x20\r\n\t", 0);
+				if (valueStartPos != string::npos) {
+					auto valueEndPos = tempValue.find_last_not_of("\x20\r\n\t");//becarful ,see http://www.cplusplus.com/reference/string/string/find_last_not_of/
+					auto realValue = tempValue.substr(valueStartPos, valueEndPos - valueStartPos + 1);
+					if (!umap.try_emplace(realKey, std::move(realValue)).second) {
+						LOGE("failed to insert material key %s into unordermap", realKey.c_str());
+					}
+				}
+				else {
+					LOGE("find a empty value!!!");
+					return false;
+				}
+				startPos = pos[2] + 1;
+			}
+			else {
+				break;
+			}
+		} while (true);
+		return true;
+	}
+
+	/*
+	在字符串str里面从startPos开始，查找第一个形如：key{value}
+	str		where to find key-value;
+	mid		the str between key and value;
+	end		the end of value;
+	startPos from which pos to start serach in str;
+	pos		is int[3]，pos[0],the start pos of the key,
+	pos[1]	the pos of mid
+	pos[2]	the pos of end
+	*/
+	bool findkeyValue(const string& str, const string& mid, const string& end, std::string::size_type startPos, std::string::size_type* pos) {
+		auto len = str.length();
+		if (startPos >= len) {
+			return false;
+		}
+		int countOfStart = 0;
+		int countOfEnd = 0;
+		std::string::size_type nextPos = startPos;
+		pos[0] = pos[1] = pos[2] = -1;
+		pos[0] = str.find_first_not_of(mid + end + "\x20\r\n\t", nextPos);
+
+		if (pos[0] == string::npos) {
+			return false;
+		}
+		nextPos = pos[0] + 1;
+		do {
+			auto tempPos = str.find_first_of(mid + end, nextPos);
+			if (tempPos != string::npos) {
+				if (mid.find(str[tempPos]) != string::npos) {
+					++countOfStart;
+					if (pos[1] == -1) {
+						pos[1] = tempPos;
+					}
+				}
+				else if (end.find(str[tempPos]) != string::npos) {
+					pos[2] = tempPos;
+					++countOfEnd;
+					if (countOfEnd > countOfStart) {
+						//语法错误退出
+						break;
+					}
+				}
+				nextPos = tempPos + 1;
+			}
+			else {
+				if (pos[1] > 0 && pos[1] < str.size() - 1)
+				{
+					++countOfEnd;
+					pos[2] = str.size();
+				}
+				break;
+			}
+
+		} while (countOfStart != countOfEnd);
+
+		if (countOfStart == countOfEnd && countOfStart > 0 && pos[0] < pos[1] && pos[1] < pos[2]) {
+			return true;
+		}
+		else {
+			if (countOfStart > 0 || countOfEnd > 0) {
+				LOGE("findkeyValue ,syntax error");
+			}
+			return false;
+		}
 	}
 }

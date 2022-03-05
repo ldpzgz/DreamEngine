@@ -4,6 +4,7 @@
 #include "Light.h"
 #include "Fbo.h"
 #include "Log.h"
+#include "Resource.h"
 #include <glm/gtc/matrix_transform.hpp>
 
 Camera::Camera(const shared_ptr<Scene>& ps, int w,int h) :
@@ -114,7 +115,7 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 				pMat1->setTextureForSampler("posMap", mpNormal);
 				mpMeshQuad->setMaterial(pMat1);
 			}*/
-			auto& pMat = Material::getMaterial("defferedLighting");
+			auto& pMat = Resource::getInstance().getMaterial("defferedLighting");
 			if (pMat) {
 				mpMeshQuad->setMaterial(pMat);
 				pMat->setTextureForSampler("posMap", mpPosMap);
@@ -125,7 +126,7 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 					pMat->setTextureForSampler("irrMap", skyInfo.mpIrrTex);
 					pMat->setTextureForSampler("prefilterMap", skyInfo.mpPrefilterTex);
 				}
-				pMat->setTextureForSampler("brdfLUT", Material::getTexture("brdfLUT"));
+				pMat->setTextureForSampler("brdfLUT", Resource::getInstance().getTexture("brdfLUT"));
 			}
 		}
 		

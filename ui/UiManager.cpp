@@ -6,15 +6,16 @@
 #include <rapidxml_print.hpp>  //rapidxml::print
 #include <filesystem>
 #include "../Utils.h"
+#include "../Resource.h"
 using namespace std::filesystem;
 using namespace std;
 
-static const string gStringFile("./opengles3/material/strings.xml");
-static const string gColorFile("./opengles3/material/colors.xml");
-static const string gShapePath("./opengles3/material/shape");
-static const string gBackgroundPath("./opengles3/material/background");
-static const string gUiImagePath("./opengles3/material/drawable/uiImage");
-static const string gUiLayoutPath("./opengles3/material/layout");
+static const string gStringFile("./opengles3/resource/strings.xml");
+static const string gColorFile("./opengles3/resource/colors.xml");
+static const string gShapePath("./opengles3/resource/shape");
+static const string gBackgroundPath("./opengles3/resource/background");
+static const string gUiImagePath("./opengles3/resource/drawable/uiImage");
+static const string gUiLayoutPath("./opengles3/resource/layout");
 
 unique_ptr<UiManager> UiManager::gInstance = make_unique<UiManager>();
 unordered_map<string, string> UiManager::gRStrings;
@@ -82,7 +83,7 @@ void UiManager::loadAllUiImage() {
 				//是文件
 				auto filePathString = filePath.string();
 				auto texName = "ui"+Utils::getFileName(filePathString);
-				Material::loadImageFromFile(filePathString,texName);
+				Resource::getInstance().loadImageFromFile(filePathString,texName);
 			}
 		}
 	}
@@ -555,8 +556,8 @@ std::shared_ptr<Shape>& UiManager::getShape(const std::string& name) {
 	}
 }
 
-std::shared_ptr<Texture>& UiManager::getTexture(const std::string& name) {
-	return Material::getTexture(name);
+std::shared_ptr<Texture> UiManager::getTexture(const std::string& name) {
+	return Resource::getInstance().getTexture(name);
 }
 
 std::shared_ptr<Background> UiManager::getBackground(const std::string& name) {

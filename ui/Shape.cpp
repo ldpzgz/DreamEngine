@@ -1,6 +1,7 @@
 #include <stdexcept>
 #include "Shape.h"
 #include "../Material.h"
+#include "../Resource.h"
 using namespace std;
 
 std::unordered_map < std::string, std::function<void(const shared_ptr<Shape>&, const std::string&)>> Shape::gShapeAttributeHandler{
@@ -246,7 +247,7 @@ void Shape::sizeHeightHandler(const shared_ptr<Shape>& shape, const std::string&
 
 void Shape::textureHandler(const std::shared_ptr<Shape>& shape, const std::string& value) {
 	if (shape) {
-		auto& pTex = Material::getTexture(value);
+		auto& pTex = Resource::getInstance().getTexture(value);
 		if (pTex) {
 			shape->setTexture(pTex);
 		}

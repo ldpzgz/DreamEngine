@@ -29,6 +29,22 @@ namespace Utils {
 	int splitStr(const std::string& str, const std::string& Separator, std::vector<std::string>& result);
 
 	void forEachFile(const std::string pathName, const std::string suffix, std::function<void(const std::string& path)> func);
+
+	/*
+	* 拆分这种形式的字符串：key:name
+	*/
+	void splitKeyAndName(const std::string& key, std::string& realKey, std::string& keyName);
+
+	/*
+	* 将value字符串里面形如key=value、或者key{value}格式的，key和value字符串解析出来，存储到umap里面
+	*/
+	bool parseItem(const std::string& value, std::unordered_map<std::string,std::string>& umap);
+
+	//find key value from startPos at str,
+	//if success set the start position of the key,the pos of '{', the pos of '}' into pos seprately and return true,
+	//else return false
+	bool findkeyValue(const std::string& str, const std::string& mid, const std::string& end, std::string::size_type startPos, std::string::size_type* pos);
+
 }
 
 /*

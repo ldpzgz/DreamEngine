@@ -3,6 +3,7 @@
 #include "Fbo.h"
 #include "Pbo.h"
 #include "Mesh.h"
+#include "Resource.h"
 
 std::shared_ptr<Texture> genBrdfLut() {
 	TextureSP lut = std::make_shared<Texture>();
@@ -10,14 +11,12 @@ std::shared_ptr<Texture> genBrdfLut() {
 
 	Mesh mesh(MeshType::MESH_Quad);
 	mesh.loadMesh();
-	mesh.setMaterial(Material::getMaterial("brdfLut"));
+	mesh.setMaterial(Resource::getInstance().getMaterial("brdfLut"));
 	Fbo fbo;
 	fbo.attachColorTexture(lut, 0);
 	fbo.render([&mesh]() {
 		mesh.render(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 	});
-
-	Material::emplaceTexture("brdfLUT", lut);
 	return lut;
 }
 
@@ -32,7 +31,7 @@ TextureSP genSpecularFilterMap(const std::shared_ptr<Texture>& pCube) {
 
 	Mesh mesh(MeshType::MESH_Cuboid);
 	mesh.loadMesh();
-	auto& pMaterial = Material::getMaterial("preFilteredEnv");
+	auto& pMaterial = Resource::getInstance().getMaterial("preFilteredEnv");
 	pMaterial->setTextureForSampler("skybox", pCube);
 	mesh.setMaterial(pMaterial);
 
@@ -132,7 +131,7 @@ TextureSP genDiffuseIrrMap(const std::shared_ptr<Texture>& pCube) {
 
 	Mesh mesh(MeshType::MESH_Cuboid);
 	mesh.loadMesh();
-	auto& pMaterial = Material::getMaterial("irradianceConvolution");
+	auto& pMaterial = Resource::getInstance().getMaterial("irradianceConvolution");
 	pMaterial->setTextureForSampler("skybox", pCube);
 	mesh.setMaterial(pMaterial);
 
@@ -215,7 +214,7 @@ TextureSP convertHdrToCubicmap(const std::shared_ptr<Texture>& pHdr) {
 
 	Mesh mesh(MeshType::MESH_Cuboid);
 	mesh.loadMesh();
-	auto& pMaterial = Material::getMaterial("hdrToCubicMap");
+	auto& pMaterial = Resource::getInstance().getMaterial("hdrToCubicMap");
 	pMaterial->setTextureForSampler("equirectangularMap", pHdr);
 	mesh.setMaterial(pMaterial);
 

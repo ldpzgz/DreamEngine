@@ -79,7 +79,7 @@ public:
 	static Color& getColor(const std::string& name);
 	static std::shared_ptr<Shape>& getShape(const std::string& name);
 	static std::string& getString(const std::string& name);
-	static std::shared_ptr<Texture>& getTexture(const std::string& name);
+	static std::shared_ptr<Texture> getTexture(const std::string& name);
 	static std::shared_ptr<Background> getBackground(const std::string& name);
 private:
 	shared_ptr<UiTree> mpUiTree;

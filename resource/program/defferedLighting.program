@@ -175,7 +175,6 @@ fs{
 program:defferedLighting{
 	posLoc=0
 	texcoordLoc=1
-	mvpMatrix=mvpMat
 	lightPos=lightPos
 	lightColor=lightColor
 	sampler{
