@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include "Node.h"
 class Texture;
 class Material;
 class MaterialInfo;
@@ -24,6 +25,8 @@ public:
 
 	std::shared_ptr<Shader> getShader(const std::string& name);
 
+	SP_Node getNode(const std::string& name);
+
 	//GL_RGB,GL_RGB,GL_UNSIGNED_BYTE
 	std::shared_ptr<Texture> createTexture(const std::string& name, int width, int height,
 		unsigned char* pdata,
@@ -44,6 +47,11 @@ public:
 	* 每个.material / .program文件都会自动生成一个Material对象
 	*/
 	bool parseMaterialFile(const std::string& filePath);
+
+	/*
+	* 分析.meshCfg文件,加载mesh
+	*/
+	bool parseMeshCfgFile(const std::string& filePath);
 
 	//如果材质文件里面有个key对应的value是整数，可以用这个函数获取到
 	int getKeyAsInt(const std::string& key);
