@@ -35,6 +35,8 @@ namespace Utils {
 	*/
 	void splitKeyAndName(const std::string& key, std::string& realKey, std::string& keyName);
 
+	bool parseItem(const std::string& value, std::vector<std::pair<std::string, std::string>>& vec);
+
 	/*
 	* 将value字符串里面形如key=value、或者key{value}格式的，key和value字符串解析出来，存储到umap里面
 	*/
@@ -43,7 +45,7 @@ namespace Utils {
 	//find key value from startPos at str,
 	//if success set the start position of the key,the pos of '{', the pos of '}' into pos seprately and return true,
 	//else return false
-	bool findkeyValue(const std::string& str, const std::string& mid, const std::string& end, std::string::size_type startPos, std::string::size_type* pos);
+	bool findkeyValue(const std::string& str, const std::string& mid, const std::string& end, std::string::size_type& startPos, std::string::size_type* pos, std::string& key,std::string& value);
 
 }
 

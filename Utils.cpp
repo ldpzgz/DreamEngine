@@ -134,7 +134,7 @@ namespace Utils {
 		if (!str.empty() && !separator.empty()) {
 			size_t startPos = str.find_first_not_of(separator);
 			size_t endPos = 0;
-			int strLen = str.length();
+			size_t strLen = str.length();
 			do {
 				auto tempPos = str.find_first_of(separator,startPos);
 				if (tempPos != std::string::npos) {
@@ -160,48 +160,54 @@ namespace Utils {
 		return count;
 	}
 
-	bool parseItem(const string& value, std::unordered_map<std::string,std::string>& umap) {
+	bool parseItem(const string& value, std::function<bool(const std::string&, const std::string&)> func) {
 		std::string::size_type pos[3]{ 0,0,0 };
 		std::string::size_type startPos = 0;
 		do {
 			bool findKV = false;
 			auto tpos = value.find_first_of("={", startPos);
+			std::string realKey;
+			std::string realValue;
 			if (tpos != string::npos) {
 				if (value[tpos] == '=') {
-					findKV = findkeyValue(value, "=", "\r\n", startPos, pos);//"\x20\r\n\t"
+					findKV = findkeyValue(value, "=", "\r\n", startPos, pos, realKey, realValue);//"\x20\r\n\t"
 				}
 				else {
-					findKV = findkeyValue(value, "{", "}", startPos, pos);
+					findKV = findkeyValue(value, "{", "}", startPos, pos, realKey, realValue);
 				}
-			}
-			if (findKV) {
-				auto temp = value.substr(pos[0], pos[1] - pos[0]);
-				auto keyendpos = temp.find_last_not_of("\x20\t");
-				if (keyendpos == string::npos) {
-					LOGE("find a empty key!!!");
-					return false;
-				}
-				auto realKey = temp.substr(0, keyendpos + 1);
-				auto tempValue = value.substr(pos[1] + 1, pos[2] - pos[1] - 1);
-				auto valueStartPos = tempValue.find_first_not_of("\x20\r\n\t", 0);
-				if (valueStartPos != string::npos) {
-					auto valueEndPos = tempValue.find_last_not_of("\x20\r\n\t");//becarful ,see http://www.cplusplus.com/reference/string/string/find_last_not_of/
-					auto realValue = tempValue.substr(valueStartPos, valueEndPos - valueStartPos + 1);
-					if (!umap.try_emplace(realKey, std::move(realValue)).second) {
-						LOGE("failed to insert material key %s into unordermap", realKey.c_str());
+				if (findKV) {
+					if (!realKey.empty() && !realValue.empty()) {
+						if (!func(realKey, realValue)) {
+							LOGE("parseItem cannot embrace item to container when parse config file");
+						}
+					}
+					else {
+						LOGE("find a empty value!!!");
+						return false;
 					}
 				}
 				else {
-					LOGE("find a empty value!!!");
-					return false;
+					break;
 				}
-				startPos = pos[2] + 1;
 			}
 			else {
 				break;
 			}
 		} while (true);
 		return true;
+	}
+
+	bool parseItem(const string& value, std::vector<std::pair<std::string, std::string>>& vec) {
+		return parseItem(value, [&vec](const std::string& key, const std::string& value)->bool{
+			vec.emplace_back(key, value);
+			return true;
+			});
+	}
+
+	bool parseItem(const string& value, std::unordered_map<std::string,std::string>& umap) {
+		return parseItem(value, [&umap](const std::string& key, const std::string& value)->bool {
+			return umap.emplace(key, value).second;
+			});
 	}
 
 	/*
@@ -214,16 +220,22 @@ namespace Utils {
 	pos[1]	the pos of mid
 	pos[2]	the pos of end
 	*/
-	bool findkeyValue(const string& str, const string& mid, const string& end, std::string::size_type startPos, std::string::size_type* pos) {
+	bool findkeyValue(const string& str, const string& mid, const string& end, std::string::size_type& startPos, std::string::size_type* pos,std::string& key, std::string& value) {
+		const std::string emptyChar{ "\x20\r\n\t" };
 		auto len = str.length();
 		if (startPos >= len) {
 			return false;
 		}
+		if (str.empty()||mid.empty()||end.empty() ) {
+			LOGE("utils findkeyValue func's string param is empty ");
+			return false;
+		}
+		
 		int countOfStart = 0;
 		int countOfEnd = 0;
-		std::string::size_type nextPos = startPos;
 		pos[0] = pos[1] = pos[2] = -1;
-		pos[0] = str.find_first_not_of(mid + end + "\x20\r\n\t", nextPos);
+		std::string::size_type nextPos = startPos;
+		pos[0] = str.find_first_not_of(mid + end + emptyChar, nextPos);
 
 		if (pos[0] == string::npos) {
 			return false;
@@ -260,6 +272,18 @@ namespace Utils {
 		} while (countOfStart != countOfEnd);
 
 		if (countOfStart == countOfEnd && countOfStart > 0 && pos[0] < pos[1] && pos[1] < pos[2]) {
+			auto keyEnd = str.find_last_not_of(emptyChar, pos[1]-1);
+			if (keyEnd != string::npos) {
+				key = str.substr(pos[0], keyEnd - pos[0] + 1);
+
+				auto valueStart = str.find_first_not_of(emptyChar, pos[1] + 1);
+				auto valueEnd = str.find_last_not_of(emptyChar, pos[2] - 1);
+
+				if (valueStart != string::npos && valueEnd != string::npos && valueStart <= valueEnd) {
+					value = str.substr(valueStart, valueEnd - valueStart + 1);
+				}
+			}
+			startPos = pos[2] + 1;
 			return true;
 		}
 		else {
