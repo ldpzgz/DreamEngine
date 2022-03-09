@@ -32,7 +32,8 @@ void NodeRoamer::rotate(int x, int y) {
 		}
 		if (fabs(b)> 0.99f) {
 			auto& viewMat = mpView->getMatrix();
-			tempUd = glm::rotate(tempUd, b / 100.0f, glm::vec3(viewMat[0][0], -viewMat[0][1], -viewMat[0][2]));
+			//view矩阵左上角的旋转矩阵一般都是正交矩阵
+			tempUd = glm::rotate(tempUd, b / 100.0f, glm::vec3(viewMat[0][0], viewMat[1][0], viewMat[2][0]));
 		}
 		const auto& myMat = mpNode->getMatrix();
 		
