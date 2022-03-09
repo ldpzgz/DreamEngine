@@ -50,13 +50,11 @@ public:
 	shared_ptr<Node<T>> newAChild() {
 		auto child = make_shared<Node<T>>();
 		unsigned int id = mCurChileId++;
-		auto& it = mChildren.emplace(id, child);
-		if (it.second) {
-			auto& tempNode = it.first->second;
-			tempNode->setId(id);
+		if (mChildren.emplace(id, child).second) {
+			child->setId(id);
 			auto thisptr = shared_from_this();
-			tempNode->setParent(thisptr);
-			return tempNode;
+			child->setParent(thisptr);
+			return child;
 		}
 		else {
 			child.reset();
@@ -121,8 +119,6 @@ public:
 		return mChildren;
 	}
 
-
-	//虚函数，模板在实例化的时候，没有调用过也会生成这个虚函数
 	void translate(float x,float y,float z) {
 		mMat = glm::translate(mMat, glm::vec3(x, y, z));
 		updateChildWorldMatrix();
@@ -199,5 +195,6 @@ private:
 	}
 };
 
+using NodeMat4 = Node<glm::mat4>;
 using SP_Node = std::shared_ptr<Node<glm::mat4>>;
 #endif
