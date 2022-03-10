@@ -71,7 +71,7 @@ fs{
 
 program:irradianceConvolution{
 	posLoc=0
-	mvpMatrix=mvp_matrix
+	projMatrix=mvp_matrix
 	sampler{
 		skybox=none
 	}

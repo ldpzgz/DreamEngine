@@ -814,7 +814,7 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc
 	}
 }
 
-void Mesh::render(const glm::mat4* mvpMat, 
+void Mesh::render(const glm::mat4* projMat, 
 	const glm::mat4* mvMat, 
 	const glm::mat4* texMat,
 	const std::vector<Vec3>* lightPos, 
@@ -823,8 +823,10 @@ void Mesh::render(const glm::mat4* mvpMat,
 	if (mpMaterial) {
 		auto& pShader = mpMaterial->getShader();
 		if (pShader) {
-			if (mvpMat) {
-				pShader->setMvpMatrix(*mvpMat);
+			mpMaterial->enable();
+			mpMaterial->setMyRenderOperation();
+			if (projMat) {
+				pShader->setProjMatrix(*projMat);
 			}
 			if (mvMat) {
 				pShader->setMvMatrix(*mvMat);
@@ -841,9 +843,7 @@ void Mesh::render(const glm::mat4* mvpMat,
 			if (viewPos) {
 				pShader->setViewPos(*viewPos);
 			}
-
-			mpMaterial->enable();
-			mpMaterial->setMyRenderOperation();
+			
 			int posloc = -1;
 			int texloc = -1;
 			int norloc = -1;

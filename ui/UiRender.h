@@ -65,7 +65,6 @@ public:
 class UiRender {
 public:
 	UiRender() :
-		mLastMeshModelMatrix(1.0f),
 		mWindowWidth(0.0f),
 		mWindowHeight(0.0f),
 		mProjMatrix(1.0f)
@@ -119,7 +118,6 @@ private:
 	shared_ptr<FontManager> mpFontManager;
 	shared_ptr<Material> mpLastMaterial;//渲染最终的ui的材质
 	shared_ptr<Mesh> mpLastMesh;//渲染最终的ui的材质mesh
-	glm::mat4 mLastMeshModelMatrix;
 	float mWindowWidth;
 	float mWindowHeight;
 	glm::mat4 mProjMatrix;

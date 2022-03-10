@@ -198,45 +198,9 @@ GLuint Shader::loadShader(GLenum type, const char *shaderSrc)
 void Shader::enable()
 {
 	glUseProgram ( mProgram );
-	/*int texNum = 0;
-	for (auto it = mSamplerToTex.begin(); it != mSamplerToTex.end(); it++) {
-		if (it->second) {
-			it->second->active(GL_TEXTURE0 + texNum);
-			glUniform1i(it->first, texNum);
-			++texNum;
-		}
-	}*/
-
-	if (mMvpMatrixLoc >= 0 && mpMvpMatrix) {
-		glUniformMatrix4fv(mMvpMatrixLoc, 1, GL_FALSE, glm::value_ptr(*mpMvpMatrix));
-	}
-
-	if (mMvMatrixLoc >= 0 && mpMvMatrix) {
-		glUniformMatrix4fv(mMvMatrixLoc, 1, GL_FALSE, glm::value_ptr(*mpMvMatrix));
-	}
-
-	if (mViewMatrixLoc >= 0 && mpViewMatrix) {
-		glUniformMatrix4fv(mViewMatrixLoc, 1, GL_FALSE, glm::value_ptr(*mpViewMatrix));
-	}
-
-	if (mTextureMatrixLoc >= 0 && mpTextureMatrix) {
-		glUniformMatrix4fv(mTextureMatrixLoc, 1, GL_FALSE, glm::value_ptr(*mpTextureMatrix));
-	}
 
 	if (mUniformColorLoc >= 0) {
 		glUniform4f(mUniformColorLoc, mUniformColor[0], mUniformColor[1], mUniformColor[2], mUniformColor[3]);
-	}
-
-	if (mLightPosLoc >= 0) {
-		glUniform3fv(mLightPosLoc, mLightPositions.size(), (const float*)mLightPositions.data());
-	}
-
-	if (mViewPosLoc >= 0) {
-		glUniform3f(mViewPosLoc, mViewPos.x, mViewPos.y, mViewPos.z);
-	}
-
-	if (mLightColorLoc >= 0) {
-		glUniform3fv(mLightColorLoc, mLightColors.size(),(const float*)mLightColors.data());
 	}
 
 	if (mMetallicLoc >= 0) {
@@ -315,13 +279,7 @@ void Shader::setUniform4f(const char* uniformName,float x,float y,float z,float 
 
 void Shader::setMvpMatrix(const glm::mat4& pMatrix) {
 	if (mMvpMatrixLoc >= 0 ) {
-		if (!mpMvpMatrix) {
-			mpMvpMatrix = std::make_unique<glm::mat4>(1.0f);
-		}
-		if (mpMvpMatrix) {
-			*mpMvpMatrix = pMatrix;
-		}
-			
+			glUniformMatrix4fv(mMvpMatrixLoc, 1, GL_FALSE, glm::value_ptr(pMatrix));
 	}
 	else {
 		LOGD("the mMvpMatrixLoc of shader %s has not been got",mName.c_str());
@@ -330,12 +288,7 @@ void Shader::setMvpMatrix(const glm::mat4& pMatrix) {
 
 void Shader::setTextureMatrix(const glm::mat4& pMatrix) {
 	if (mTextureMatrixLoc >= 0) {
-		if (!mpTextureMatrix) {
-			mpTextureMatrix = std::make_unique<glm::mat4>(1.0f);
-		}
-		if (mpTextureMatrix) {
-			*mpTextureMatrix = pMatrix;
-		}
+		glUniformMatrix4fv(mTextureMatrixLoc, 1, GL_FALSE, glm::value_ptr(pMatrix));
 	}
 	else {
 		LOGD("the mTextureMatrixLoc of shader %s has not been got", mName.c_str());
@@ -363,38 +316,55 @@ void Shader::setUniformColor(Color color) {
 
 void Shader::setLightPos(const std::vector<Vec3>& lightPos) {
 	if (mLightPosLoc >= 0) {
-		mLightPositions = lightPos;
+		glUniform3fv(mLightPosLoc, lightPos.size(), (const float*)lightPos.data());
 	}
 }
 void Shader::setViewPos(const Vec3& viewPos) {
-	mViewPos = viewPos;
+	if (mViewPosLoc >= 0) {
+		glUniform3f(mViewPosLoc, viewPos.x, viewPos.y, viewPos.z);
+	}
 }
 void Shader::setLightColor(const std::vector<Vec3>& lightColor) {
 	if (mLightColorLoc >= 0) {
-		mLightColors = lightColor;
+		glUniform3fv(mLightColorLoc, lightColor.size(), (const float*)lightColor.data());
 	}
 }
 void Shader::setMvMatrix(const glm::mat4& m) {
 	if (mMvMatrixLoc >= 0) {
-		if (!mpMvMatrix) {
-			mpMvMatrix = std::make_unique<glm::mat4>(1.0f);
-		}
-		if (mpMvMatrix) {
-			*mpMvMatrix = m;
-		}
+		glUniformMatrix4fv(mMvMatrixLoc, 1, GL_FALSE, glm::value_ptr(m));
 	}
 }
 void Shader::setViewMatrix(const glm::mat4& m) {
 	if (mViewMatrixLoc >= 0) {
-		if (!mpViewMatrix) {
-			mpViewMatrix = std::make_unique<glm::mat4>(1.0f);
-		}
-		if (mpViewMatrix) {
-			*mpViewMatrix = m;
-		}
+		glUniformMatrix4fv(mViewMatrixLoc, 1, GL_FALSE, glm::value_ptr(m));
 	}
 }
 
+void Shader::setProjMatrix(const glm::mat4& m) {
+	if (mProjMatrixLoc >= 0) {
+		glUniformMatrix4fv(mProjMatrixLoc, 1, GL_FALSE, glm::value_ptr(m));
+	}
+}
+
+void Shader::setModelMatrix(const glm::mat4& m) {
+	if (mModelMatrixLoc >= 0) {
+		glUniformMatrix4fv(mModelMatrixLoc, 1, GL_FALSE, glm::value_ptr(m));
+	}
+}
+
+void Shader::getProjMatrixLoc(const std::string& projectMatrixNameInShader) {
+	mProjMatrixLoc = glGetUniformLocation(mProgram, projectMatrixNameInShader.c_str());
+	if (mProjMatrixLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), projectMatrixNameInShader.c_str());
+	}
+}
+
+void Shader::getModelMatrixLoc(const std::string& modelMatrixNameInShader) {
+	mModelMatrixLoc = glGetUniformLocation(mProgram, modelMatrixNameInShader.c_str());
+	if (mModelMatrixLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), modelMatrixNameInShader.c_str());
+	}
+}
 
 void Shader::getMvpMatrixLoc(const std::string& mvpMatrixNameInShader) {
 	mMvpMatrixLoc = glGetUniformLocation(mProgram, mvpMatrixNameInShader.c_str());

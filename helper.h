@@ -22,3 +22,5 @@ TextureSP genSpecularFilterMap(const std::shared_ptr<Texture>& pCube);
 * 生成一张brdflut图像，pbr里面会用到
 */
 TextureSP genBrdfLut();
+
+TextureSP genSSAO();

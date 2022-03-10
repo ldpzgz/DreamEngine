@@ -2,11 +2,10 @@ vs{
 	#version 300 es
     layout(location = 0) in vec4 a_position;
     layout(location = 1) in vec2 a_texCoord;
-	uniform mat4 mvp_matrix;
     out vec2 v_texCoord;
     void main()
     {
-       gl_Position = mvp_matrix * a_position;
+       gl_Position = a_position;
        v_texCoord = a_texCoord;
     }
 }
@@ -23,18 +22,10 @@ fs{
 	}
 }
 
-texture:buti{
-	path=buti.jpg
-}
-
-program:lineBasic{
+program:ssaoBlur{
 	posLoc=0
 	texcoordLoc=1
-	mvpMatrix=mvp_matrix
 	sampler{
-		s_texture=buti
+		s_texture=none
 	}
 }
-
-
-

@@ -8,7 +8,7 @@ vs{
 	out vec3 WorldPos;
 	out vec3 Normal;
 
-	uniform mat4 mvpMat;
+	uniform mat4 projMat;
 	uniform mat4 mvMat;
 
 	void main()
@@ -17,7 +17,7 @@ vs{
 		WorldPos = vec3(mvMat * vec4(aPos, 1.0));
 		Normal = mat3(mvMat) * aNormal;   
 
-		gl_Position =  mvpMat * vec4(aPos, 1.0);
+		gl_Position =  projMat * mvMat * vec4(aPos, 1.0);
 	}
 }
 fs{
@@ -172,7 +172,7 @@ program:pbr{
 	posLoc=0
 	normalLoc=1
 	texcoordLoc=2
-	mvpMatrix=mvpMat
+	projMatrix=projMat
 	mvMatrix=mvMat
 	viewPos=camPos
 	lightPos=lightPositions

@@ -3,14 +3,14 @@ vs{
     layout (location = 0) in vec3 aPos;
 	layout (location = 1) in vec3 aNormal;
 	layout (location = 2) in vec2 aTexCoord;
-	uniform mat4 mvpMatrix;
+	uniform mat4 projMat;
 	uniform mat4 mvMat;
     out vec2 vTexCoord;
 	out vec3 vNormal;
 	out vec3 vPos;
     void main()
     {
-       gl_Position = mvpMatrix * vec4(aPos,1.0f);
+       gl_Position = projMat * mvMat * vec4(aPos,1.0f);
        vTexCoord = aTexCoord;
 	   vPos = vec3(mvMat * vec4(aPos, 1.0f));
 	   vNormal = mat3(mvMat) * aNormal;
@@ -60,7 +60,7 @@ program:posDiffLight{
 	posLoc=0
 	normalLoc=1
 	texcoordLoc=2
-	mvpMatrix=mvpMatrix
+	projMatrix=projMat
 	mvMatrix=mvMat
 	lightPos=lightPos
 	viewPos=viewPos

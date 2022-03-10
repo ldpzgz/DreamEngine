@@ -79,12 +79,11 @@ void Camera::renderNode(const shared_ptr<Node<glm::mat4>>& node,
 	if (node) {
 		const auto& pAttaches = node->getAttachments();
 		glm::mat4 modelViewMatrix = mMat * node->getWorldMatrix();
-		glm::mat4 mvpMatrix = mProjMatrix * modelViewMatrix;
 
 		for (const auto& pAttach : pAttaches) {
 			std::shared_ptr<Mesh> pMesh = std::dynamic_pointer_cast<Mesh>(pAttach.second);
 			if (pMesh) {
-				pMesh->render(&mvpMatrix, &modelViewMatrix, nullptr,lightPos, lightColor, &mPosition);
+				pMesh->render(&mProjMatrix, &modelViewMatrix, nullptr,lightPos, lightColor, &mPosition);
 			}
 		}
 		
@@ -152,7 +151,7 @@ void Camera::defferedLightingPass(std::vector<Vec3>* lightPos,std::vector<Vec3>*
 	GLboolean preDepthTest = true;
 	glGetBooleanv(GL_DEPTH_TEST, &preDepthTest);
 	glDisable(GL_DEPTH_TEST);
-	mpMeshQuad->render(nullptr,nullptr,nullptr,lightPos,lightColor,nullptr);
+	mpMeshQuad->render(nullptr,nullptr,nullptr,lightPos,lightColor);
 	if (preDepthTest) {
 		glEnable(GL_DEPTH_TEST);
 	}

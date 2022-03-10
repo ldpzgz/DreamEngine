@@ -210,7 +210,7 @@ unique_ptr<UiRender> UiRender::gInstance = make_unique<UiRender>();
 void UiRender::initUiRender() {
 	initTextView(gSavedFontFile, gFontFile, gFontMaterialName);
 	mpLastMaterial = Resource::getInstance().getMaterial("posDiffMS");
-	mpLastMesh = make_shared<Mesh>(MeshType::MESH_Rectangle);
+	mpLastMesh = make_shared<Mesh>(MeshType::MESH_Quad);
 	if (mpLastMesh) {
 		mpLastMesh->loadMesh();
 		mpLastMesh->setMaterial(mpLastMaterial);
@@ -227,8 +227,6 @@ void UiRender::updateWidthHeight(float width, float height) {
 	mWindowWidth = width;
 	mWindowHeight = height;
 	mProjMatrix = glm::ortho(0.0f, width, 0.0f, height,200.0f,-200.0f);
-	mLastMeshModelMatrix = glm::identity<glm::mat4>();
-	mLastMeshModelMatrix = glm::scale(mLastMeshModelMatrix, glm::vec3(width, height, 1.0f));
 }
 
 bool UiRender::initTextView(const string& savedPath, const string& ttfPath, const string& materialName) {
@@ -799,8 +797,7 @@ void UiRender::drawTextView(TextView* tv) {
 				tempMat = glm::translate(tempMat, glm::vec3(moveVec.x, -moveVec.y, 0.0f));
 				tempMat = tempMat * charPos.matrix;
 				tempMat = mProjMatrix * tempMat;
-				glm::mat4 mvMat(1.0f);
-				mpFontManager->mpCharMesh->render(&tempMat,&mvMat,&charPos.texMatrix);
+				mpFontManager->mpCharMesh->render(&tempMat,nullptr,&charPos.texMatrix);
 			}
 		}
 		if (!bScissorTest) {
@@ -878,11 +875,6 @@ bool UiRender::drawBackground(View* v){
 			glm::mat4 model(1.0f);
 			model = glm::translate(model, glm::vec3(rect.x + paddingLeft, 
 				(mWindowHeight - rect.y - rect.height + paddingBottom), 0.0f));
-			/*model = glm::scale(model, 
-				glm::vec3(rect.width-(paddingLeft+ paddingRight), rect.height-(paddingTop+ paddingBottom), 1.0f));*/
-			
-			auto mvpMat = mProjMatrix * model;
-			glm::mat4 mvMat(1.0f);
 
 			if (pMesh) {
 				pMesh->setColorVbo(colorVbo);
@@ -895,7 +887,7 @@ bool UiRender::drawBackground(View* v){
 					}
 				}
 				
-				pMesh->render(&mvpMat,&mvMat);
+				pMesh->render(&mProjMatrix, &model);
 			}
 			
 			if (pBorderMesh && !borderColor.isZero()) {
@@ -904,7 +896,7 @@ bool UiRender::drawBackground(View* v){
 				if (pMat) {
 					pMat->setUniformColor(borderColor);
 				}
-				pBorderMesh->render(&mvpMat,&mvMat);
+				pBorderMesh->render(&mProjMatrix, &model);
 			}
 		}
 	}
@@ -1015,9 +1007,7 @@ void UiRender::drawUi() {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glBlendEquation(GL_FUNC_ADD);
-		auto mvpMat = mProjMatrix * mLastMeshModelMatrix;
-		glm::mat4 mvMat(1.0f);
-		mpLastMesh->render(&mvpMat,&mvMat);
+		mpLastMesh->render(nullptr,nullptr);
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 	}

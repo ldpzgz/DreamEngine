@@ -36,7 +36,7 @@ texture:fontsTexture{
 program:fontsBasic{
 	posLoc=0
 	texcoordLoc=1
-	mvpMatrix=mvp_matrix
+	projMatrix=mvp_matrix
 	textureMatrix=texture_matrix
 	uniformColor=color
 	sampler{

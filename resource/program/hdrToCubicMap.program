@@ -62,7 +62,7 @@ fs{
 
 program:hdrToCubicMap{
 	posLoc=0
-	mvpMatrix=mvp
+	projMatrix=mvp
 	sampler{
 		equirectangularMap=none
 	}

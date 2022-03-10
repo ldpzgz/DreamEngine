@@ -132,9 +132,11 @@ private:
 	static bool normalLocHandler(Material* pMat, const std::string&);
 	static bool texcoordLocHandler(Material* pMat, const std::string&);
 	static bool tangentLocHandler(Material* pMat, const std::string&);
+	static bool projMatrixHandler(Material* pMat, const std::string&);
+	static bool modelMatrixHandler(Material* pMat, const std::string&);
 	static bool mvpMatrixHandler(Material* pMat, const std::string&);
 	static bool mvMatrixHandler(Material* pMat, const std::string&);
-	static bool vMatrixHandler(Material* pMat, const std::string&);
+	static bool viewMatrixHandler(Material* pMat, const std::string&);
 	static bool texMatrixHandler(Material* pMat, const std::string&);
 	static bool uniformColorHandler(Material* pMat, const std::string&);
 	static bool materialUniformColorHandler(Material* pMat, const std::string&);
@@ -156,6 +158,9 @@ private:
 	static bool meshArmMapHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
 	static bool meshAlbedoMapHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
 	static bool meshNormalMapHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
+	static bool meshMetallicMapHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
+	static bool meshRoughnessMapHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
+	static bool meshAoMapHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
 
 	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gMaterialHandlers;
 	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gProgramKeyValueHandlers;
@@ -184,9 +189,11 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"colorLoc",ResourceImpl::colorLocHandler},
 	{"normalLoc",ResourceImpl::normalLocHandler},
 	{"tangentLoc",ResourceImpl::tangentLocHandler},
+	{"projMatrix",ResourceImpl::projMatrixHandler},
+	{"modelMatrix",ResourceImpl::modelMatrixHandler},
 	{"mvpMatrix",ResourceImpl::mvpMatrixHandler},
 	{"mvMatrix",ResourceImpl::mvMatrixHandler},
-	{"viewMatrix",ResourceImpl::vMatrixHandler},
+	{"viewMatrix",ResourceImpl::viewMatrixHandler},
 	{"textureMatrix",ResourceImpl::texMatrixHandler},
 	{"lightPos",ResourceImpl::lightPosHandler},
 	{"lightColor",ResourceImpl::lightColorHandler},
@@ -222,7 +229,10 @@ std::unordered_map<std::string, std::function<bool(SP_Node& pNode, MaterialInfo&
 	{"path",ResourceImpl::meshPathHander},
 	{"armMap",ResourceImpl::meshArmMapHander},
 	{"albedoMap",ResourceImpl::meshAlbedoMapHander},
-	{"normalMap",ResourceImpl::meshNormalMapHander}
+	{"normalMap",ResourceImpl::meshNormalMapHander},
+	{"metallicMap",ResourceImpl::meshMetallicMapHander},
+	{"roughnessMap",ResourceImpl::meshRoughnessMapHander},
+	{"aoMap",ResourceImpl::meshAoMapHander}
 };
 
 bool ResourceImpl::meshNameHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
@@ -260,6 +270,27 @@ bool ResourceImpl::meshAlbedoMapHander(SP_Node& pNode, MaterialInfo& info, const
 bool ResourceImpl::meshNormalMapHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.normalMap = value;
+	}
+	return true;
+}
+
+bool ResourceImpl::meshMetallicMapHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
+	if (!value.empty()) {
+		info.metallicMap = value;
+	}
+	return true;
+}
+
+bool ResourceImpl::meshRoughnessMapHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
+	if (!value.empty()) {
+		info.roughnessMap = value;
+	}
+	return true;
+}
+
+bool ResourceImpl::meshAoMapHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
+	if (!value.empty()) {
+		info.aoMap = value;
 	}
 	return true;
 }
@@ -320,6 +351,20 @@ bool ResourceImpl::tangentLocHandler(Material* pMat, const std::string& value) {
 	return true;
 }
 
+bool ResourceImpl::projMatrixHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getProjMatrixLoc(value);
+	}
+	return true;
+}
+
+bool ResourceImpl::modelMatrixHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getModelMatrixLoc(value);
+	}
+	return true;
+}
+
 bool ResourceImpl::mvpMatrixHandler(Material* pMat, const std::string& value) {
 	if (!value.empty()) {
 		pMat->getShader()->getMvpMatrixLoc(value);
@@ -334,7 +379,7 @@ bool ResourceImpl::mvMatrixHandler(Material* pMat, const std::string& value) {
 	return true;
 }
 
-bool ResourceImpl::vMatrixHandler(Material* pMat, const std::string& value) {
+bool ResourceImpl::viewMatrixHandler(Material* pMat, const std::string& value) {
 	if (!value.empty()) {
 		pMat->getShader()->getViewMatrixLoc(value);
 	}
@@ -1316,14 +1361,14 @@ std::shared_ptr<Material> ResourceImpl::getMaterial(const MaterialInfo& mInfo) {
 	vsAttr = "layout(location = 0) in vec3 inPos;\n";
 	program = "posLoc=0\n";
 
-	vsUniform = "uniform mat4 mvpMat;\n";
+	vsUniform = "uniform mat4 projMat;\n";
 	vsUniform += "uniform mat4 mvMat;\n";
 
 	vsOut = "out vec3 worldPos;\n";
 	vsOut += "out vec3 worldNormal;\n";
 
 	vsMain = "void main(){\n \
-			gl_Position = mvpMat * vec4(inPos,1.0f);\n";
+			gl_Position = projMat * mvMat * vec4(inPos,1.0f);\n";
 
 	fsMain = "void main(){\n \
 		outPosMap.rgb = worldPos;\n";
@@ -1450,7 +1495,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterial(const MaterialInfo& mInfo) {
 	fsIn += "in vec3 worldPos;\n \
 		in vec3 worldNormal;\n";
 
-	program += "mvpMatrix=mvpMat\n";
+	program += "projMatrix=projMat\n";
 	program += "mvMatrix=mvMat\n";
 
 	if (!mInfo.normalMap.empty()) {

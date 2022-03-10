@@ -1,11 +1,12 @@
 vs{
 	#version 300 es
     layout(location = 0) in vec3 a_position;
-	uniform mat4 mvp_matrix;
+	uniform mat4 projMat;
+	uniform mat4 mvMat;
     out vec3 v_texCoord;
     void main()
     {
-       gl_Position = mvp_matrix * vec4(a_position,1.0f);
+       gl_Position = projMat * mvMat * vec4(a_position,1.0f);
        v_texCoord = a_position;
     }
 }
@@ -41,7 +42,8 @@ fs{
 
 program:skyboxHdr{
 	posLoc=0
-	mvpMatrix=mvp_matrix
+	projMatrix=projMat
+	mvMatrix=mvMat
 	sampler{
 		skybox=none
 	}

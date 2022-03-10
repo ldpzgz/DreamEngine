@@ -2,11 +2,12 @@ vs{
 	#version 300 es
     layout(location = 0) in vec4 a_position;
     layout(location = 1) in vec2 a_texCoord;
-	uniform mat4 mvp_matrix;
+	uniform mat4 projMat;
+	uniform mat4 mvMat;
     out vec2 v_texCoord;
     void main()
     {
-       gl_Position = mvp_matrix * a_position;
+       gl_Position = projMat * mvMat * a_position;
        v_texCoord = a_texCoord;
     }
 }
@@ -26,7 +27,8 @@ fs{
 program:posDiff{
 	posLoc=0
 	texcoordLoc=1
-	mvpMatrix=mvp_matrix
+	projMatrix=projMat
+	mvMatrix=mvMat
 	sampler{
 		s_texture=none
 	}

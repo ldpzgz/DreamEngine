@@ -116,26 +116,17 @@ public:
 	//结果小于0表示错误
 	int getUniformLoc(const std::string& uniformName);
 
-	//void setTextureForSampler(int samplerLoc, const std::shared_ptr<Texture>& pTexture) {
-	//	auto it = mSamplerToTex.find(samplerLoc);
-	//	if (it != mSamplerToTex.end()) {
-	//		it->second = pTexture;
-	//	}else{
-	//		if (!mSamplerToTex.try_emplace(samplerLoc, pTexture).second) {
-	//			LOGD("changeTexture emplace failed");
-	//		}
-	//	}
-	//}
-
 	void setUniform1i(const char* uniformName, int value);
 	void setUniform1f(const char* uniformName, float x);
 	void setUniform2f(const char* uniformName, float x, float y);
 	void setUniform3f(const char* uniformName, float x, float y, float z);
 	void setUniform4f(const char* uniformName, float x, float y, float z, float w);
+	void setProjMatrix(const glm::mat4&);
+	void setModelMatrix(const glm::mat4&);
+	void setViewMatrix(const glm::mat4&);
 	void setMvpMatrix(const glm::mat4&);
 	void setTextureMatrix(const glm::mat4&);
 	void setMvMatrix(const glm::mat4&);
-	void setViewMatrix(const glm::mat4&);
 	void setUniformColor(float r, float g, float b, float a);
 	void setAlbedoColor(float r, float g, float b);
 	void setUniformColor(Color color);
@@ -154,10 +145,11 @@ public:
 	}
 
 	void enable();
-
+	void getProjMatrixLoc(const std::string& projectMatrixNameInShader);
+	void getModelMatrixLoc(const std::string& modelMatrixNameInShader);
+	void getViewMatrixLoc(const std::string& viewMatrixNameInShader);
 	void getMvpMatrixLoc(const std::string& mvpMatrixNameInShader);
 	void getMvMatrixLoc(const std::string& mvMatrixNameInShader);
-	void getViewMatrixLoc(const std::string& viewMatrixNameInShader);
 	void getLightPosLoc(const std::string& lightPosNameInShader);
 	void getViewPosLoc(const std::string& viewPosNameInShader);
 	void getLightColorLoc(const std::string& lightColorNameInShader);
@@ -177,16 +169,7 @@ public:
 	std::map<std::string, int>& getUniforms() {
 		return mUniformLocMap;
 	}
-	//std::shared_ptr<Texture>& getTexture(const std::string& samplerName) {
-	//	auto loc = getUniformLoc(samplerName);
-	//	if (loc >= 0) {
-	//		auto p = mSamplerToTex.find(loc);
-	//		if (p != mSamplerToTex.end()) {
-	//			return p->second;
-	//		}
-	//	}
-	//	return gpTextureNothing;
-	//}
+
 private:
 	GLuint mVs{ 0 };
 	GLuint mFs{ 0 };
@@ -197,9 +180,11 @@ private:
 	int mNormalLoc{ -1 };
 	int mTangentLoc{ -1 };
 
+	int mProjMatrixLoc{ -1 };
+	int mModelMatrixLoc{ -1 };
+	int mViewMatrixLoc{ -1 };
 	int mMvpMatrixLoc{ -1 };
 	int mMvMatrixLoc{ -1 };
-	int mViewMatrixLoc{ -1 };
 	int mTextureMatrixLoc{ -1 };
 	int mLightPosLoc{ -1 };
 	int mViewPosLoc{ -1 };
@@ -214,11 +199,6 @@ private:
 	float mAo{ 0.1f };
 	Color mUniformColor{ 0.0f,0.0f,0.0f,1.0f };
 	Vec3 mViewPos{ 0.0f,100.0f,0.0f };
-	
-	std::unique_ptr<glm::mat4> mpMvpMatrix;
-	std::unique_ptr<glm::mat4> mpMvMatrix;
-	std::unique_ptr<glm::mat4> mpViewMatrix;
-	std::unique_ptr<glm::mat4> mpTextureMatrix;
 	
 	std::string mName;	//只是用来输出日志
 

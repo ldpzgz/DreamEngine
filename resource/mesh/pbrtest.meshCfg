@@ -1,0 +1,23 @@
+mesh{
+	name=coffee_table
+	path=C:\myproject\opengles\freeMesh\pbr-model-material\coffee_table_round_01_2k.gltf\untitled.obj
+	armMap=coffee_table_round_01_arm_2k.jpg
+	albedoMap=coffee_table_round_01_diff_2k.jpg
+	normalMap=coffee_table_round_01_nor_gl_2k.jpg
+}
+
+mesh{
+	name=brassVase
+	path=C:\myproject\opengles\freeMesh\pbr-model-material\brass_vase_03_2k\brass_vase_03_2k.gltf
+	armMap=brass_vase_03_arm_2k.jpg
+	albedoMap=brass_vase_03_diff_2k.jpg
+	normalMap=brass_vase_03_nor_gl_2k.jpg
+}
+mesh{
+	name=gun
+	path=C:\myproject\opengles\freeMesh\pbr-model-material\Cerberus_by_Andrew_Maximov\untitled.obj
+	albedoMap=Cerberus_A.tga
+	normalMap=Cerberus_N.tga
+	metallicMap=Cerberus_M.tga
+	roughnessMap=Cerberus_R.tga
+}

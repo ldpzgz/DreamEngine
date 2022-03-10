@@ -126,7 +126,7 @@ public:
 
 	bool updateTangent(float* normal, int byteOffset, int size);
 
-	void render(const glm::mat4* projviewMat, const glm::mat4* modelMat, const glm::mat4* texMat=nullptr,
+	void render(const glm::mat4* projMat, const glm::mat4* modelMat, const glm::mat4* texMat=nullptr,
 		const std::vector<Vec3>* lightPos = nullptr, const std::vector<Vec3>* lightColor = nullptr, const Vec3* viewPos = nullptr);
 
 	//void render(const glm::mat4& mvpMat, const glm::mat4& mvMat);
