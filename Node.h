@@ -1,6 +1,7 @@
 ﻿#ifndef _NODE_H_
 #define _NODE_H_
 #include <unordered_map>
+#include <vector>
 #include <memory>
 #include <atomic>
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
@@ -24,6 +25,15 @@ result 是先在原点缩放，然后再平移，glm这个库矩阵运算与之�
 */
 
 class Attachable;
+
+/*
+* 节点方位变化监听
+*/
+class NodeListener {
+public:
+	virtual void update(const glm::mat4& mat) = 0;
+};
+
 class Node : public enable_shared_from_this<Node> {
 public:
 	Node();
@@ -77,23 +87,50 @@ public:
 	auto& getChildren() const noexcept {
 		return mChildren;
 	}
+	/*
+	* 根据x,y,z构造一个moveMat
+	* 最终矩阵：mMat*moveMat
+	* 效果：v*mMat*moveMat
+	*/
+	virtual void translate(float x, float y, float z) noexcept;
 
-	void translate(float x, float y, float z) noexcept;
+	/*
+	* 根据angle,vec构造一个rotateMat
+	* 最终矩阵：mMat*rotateMat
+	* 效果：v*mMat*rotateMat
+	*/
+	virtual void rotate(float angle, const glm::vec3& vec) noexcept;
 
-	void rotate(float angle, const glm::vec3& vec) noexcept;
-
+	/*
+	* 根据scaleVec构造一个scaleMat
+	* 最终矩阵：mMat*scaleMat
+	* 效果：v*mMat*scaleMat
+	*/
 	void scale(const glm::vec3& scaleVec) noexcept;
 
-
+	/*
+	* 根据eyepos,center,up构造一个lookMat
+	* 最终矩阵：mMat=lookMat
+	* 效果：v*lookMat
+	*/
 	virtual void lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up) noexcept;
+	
+	//void addListener(shared_ptr<NodeListener>);
+	
+	//void removeListener();
 protected:
 	glm::mat4 mMat;
 	glm::mat4 mParentWorldMat;
+	void setParentWorldMatrix(const glm::mat4& matrix) noexcept {
+		mParentWorldMat = matrix;
+	}
+	void updateChildWorldMatrix()noexcept;
 private:
 	unsigned int mId;
 	weak_ptr<Node> mpParent;	//使用weak_ptr防止父子node循环引用导致内存泄漏
 	unordered_map<unsigned int, shared_ptr<Node>> mChildren;
 	unordered_map<unsigned int, shared_ptr<Attachable>> mAttachments;
+	//std::vector<shared_ptr<NodeListener>> mListeners;
 
 	static atomic_uint sCurChildId;
 	static atomic_uint sCurMeshId;
@@ -101,12 +138,6 @@ private:
 	void setParent(shared_ptr<Node>& parent) noexcept{
 		mpParent = parent;
 	}
-
-	void setParentWorldMatrix(const glm::mat4& matrix) noexcept {
-		mParentWorldMat = matrix;
-	}
-
-	void updateChildWorldMatrix() noexcept;
 };
 using NodeSP = std::shared_ptr<Node>;
 #endif

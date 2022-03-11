@@ -35,9 +35,50 @@ void Camera::ortho(float left, float right, float bottom, float top, float zNear
 	mPosition.z = zNear+1.0f;
 }
 
+const glm::mat4& Camera::getViewMatrix() {
+	auto worldMatrix = getWorldMatrix();
+	mViewMatrix[0][0] = worldMatrix[0][0];
+	mViewMatrix[0][1] = worldMatrix[1][0];
+	mViewMatrix[0][2] = worldMatrix[2][0];
+
+	mViewMatrix[1][0] = worldMatrix[0][1];
+	mViewMatrix[1][1] = worldMatrix[1][1];
+	mViewMatrix[1][2] = worldMatrix[2][1];
+
+	mViewMatrix[2][0] = worldMatrix[0][2];
+	mViewMatrix[2][1] = worldMatrix[1][2];
+	mViewMatrix[2][2] = worldMatrix[2][2];
+
+	mViewMatrix[3][0] = -worldMatrix[3][0] * mViewMatrix[0][0] - worldMatrix[3][1] * mViewMatrix[1][0] - worldMatrix[3][2] * mViewMatrix[2][0];
+	mViewMatrix[3][1] = -worldMatrix[3][0] * mViewMatrix[0][1] - worldMatrix[3][1] * mViewMatrix[1][1] - worldMatrix[3][2] * mViewMatrix[2][1];
+	mViewMatrix[3][2] = -worldMatrix[3][0] * mViewMatrix[0][2] - worldMatrix[3][1] * mViewMatrix[1][2] - worldMatrix[3][2] * mViewMatrix[2][2];
+	
+	return mViewMatrix;
+}
+
+void Camera::lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up) noexcept {
+	mViewMatrix = glm::lookAt(eyepos, center, up);
+	mMat[0][0] = mViewMatrix[0][0];
+	mMat[0][1] = mViewMatrix[1][0];
+	mMat[0][2] = mViewMatrix[2][0];
+
+	mMat[1][0] = mViewMatrix[0][1];
+	mMat[1][1] = mViewMatrix[1][1];
+	mMat[1][2] = mViewMatrix[2][1];
+
+	mMat[2][0] = mViewMatrix[0][2];
+	mMat[2][1] = mViewMatrix[1][2];
+	mMat[2][2] = mViewMatrix[2][2];
+
+	mMat[3][0] = -mViewMatrix[3][0] * mMat[0][0] - mViewMatrix[3][1] * mMat[1][0] - mViewMatrix[3][2] * mMat[2][0];
+	mMat[3][1] = -mViewMatrix[3][0] * mMat[0][1] - mViewMatrix[3][1] * mMat[1][1] - mViewMatrix[3][2] * mMat[2][1];
+	mMat[3][2] = -mViewMatrix[3][0] * mMat[0][2] - mViewMatrix[3][1] * mMat[1][2] - mViewMatrix[3][2] * mMat[2][2];
+}
+
 void Camera::renderScene() {
 	auto pScene = mpScene.lock();
 	if (pScene) {
+		getViewMatrix();
 		//获取场景中的灯光
 		std::vector<Vec3> lightPos;
 		std::vector<Vec3> lightColor;
@@ -45,7 +86,7 @@ void Camera::renderScene() {
 		for (const auto& pl : lights) {
 			if (pl) {
 				auto& pos = pl->getPosOrDir();
-				auto tpos = mMat * glm::vec4(pos.x, pos.y, pos.z,1.0f);
+				auto tpos = mViewMatrix * glm::vec4(pos.x, pos.y, pos.z,1.0f);
 				lightPos.emplace_back(Vec3(tpos.x,tpos.y,tpos.z));
 				lightColor.emplace_back(pl->getLightColor());
 			}
@@ -79,7 +120,7 @@ void Camera::renderNode(const shared_ptr<Node>& node,
 {
 	if (node) {
 		const auto& pAttaches = node->getAttachments();
-		glm::mat4 modelViewMatrix = mMat * node->getWorldMatrix();
+		glm::mat4 modelViewMatrix = mViewMatrix * node->getWorldMatrix();
 
 		for (const auto& pAttach : pAttaches) {
 			std::shared_ptr<Mesh> pMesh = std::dynamic_pointer_cast<Mesh>(pAttach.second);
@@ -162,15 +203,6 @@ void Camera::updateWidthHeight(int w,int h) {
 	mWidth = w;
 	mHeight = h;
 	perspective(fov, static_cast<float>(w)/static_cast<float>(h), nearp, farp);
-}
-
-//这里相机的移动，旋转，应该是相反的，因为如果相机往右移动，看到的物体是在往左移动。
-void Camera::translate(float x, float y, float z) {
-	Node::translate(-x, -y, -z);
-}
-
-void Camera::rotate(float angle, const glm::vec3& vec) {
-	Node::rotate(-angle, vec);
 }
 
 std::shared_ptr<Scene> Camera::getScene() {

@@ -31,10 +31,10 @@ shared_ptr<Node> Node::newAChild() {
 }
 
 bool Node::addChild(shared_ptr<Node>& child) {
-	if (child->hasParent()) {
-		//LOGE("node cannot add a child which has parent");
-		return false;
-	}
+	//if (child->hasParent()) {
+	//	//LOGE("node cannot add a child which has parent");
+	//	return false;
+	//}
 	int id = sCurChildId++;
 	if (mChildren.emplace(id, child).second) {
 		child->setId(id);

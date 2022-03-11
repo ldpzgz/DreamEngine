@@ -17,7 +17,7 @@ Scene::~Scene() {
 shared_ptr<Camera> Scene::createACamera(int w,int h) {
 	auto camera = make_shared<Camera>(shared_from_this(),w,h);
 	mCameras.push_back(camera);
-	mpRootNode->addChild(static_pointer_cast<Node>(camera));
+	mpRootNode->addChild(dynamic_pointer_cast<Node>(camera));
 	return camera;
 }
 

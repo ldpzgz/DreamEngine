@@ -7,6 +7,10 @@ class Vector3;
 class Fbo;
 class Texture;
 class Mesh;
+/*
+* 这个camera是一个节点，相当于节点上绑了一个相机，节点的方位就是相机的方位。
+* 但是camera节点，以及其所有父节点都只能做旋转和平移变换
+*/
 class Camera : virtual public Node
 {
 public:
@@ -22,15 +26,15 @@ public:
 	//设置宽高比，这个与窗口显示区域不符合的话，画面会变形
 	void updateWidthHeight(int w, int h);
 
-	void translate(float x, float y, float z);
-
-	void rotate(float angle, const glm::vec3& vec);
-
 	Vector3<float>& getPosition() {
 		return mPosition;
 	}
 
+	void lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up) noexcept override;
+
 	std::shared_ptr<Scene> getScene();
+
+	const glm::mat4& getViewMatrix();
 private:
 	void initDefferedRendering(const std::shared_ptr<Scene>& pScene);
 	void renderNode(const shared_ptr<Node>& node,
