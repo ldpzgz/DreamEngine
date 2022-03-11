@@ -34,7 +34,7 @@ public:
 
 	shared_ptr<Light> createALight(Vector3<float> pos, Vector3<float> color);
 
-	bool createSkybox();
+	shared_ptr<Node> createSkybox();
 
 	const SkyboxInfo& getSkybox() const{
 		return mSkyboxInfo;

@@ -3,12 +3,13 @@ vs{
 	precision mediump float;
     layout (location = 0) in vec3 aPos;
 	out vec3 WorldPos;
-	uniform mat4 mvp;
+	uniform mat4 projMat;
+	uniform mat4 mvMat;
 
 	void main()
 	{
 		WorldPos = aPos;
-		gl_Position =  mvp * vec4(WorldPos, 1.0f);
+		gl_Position =  projMat * mvMat * vec4(WorldPos, 1.0f);
 	}
 }
 
@@ -62,7 +63,8 @@ fs{
 
 program:hdrToCubicMap{
 	posLoc=0
-	projMatrix=mvp
+	projMatrix=projMat
+	mvMatrix=mvMat
 	sampler{
 		equirectangularMap=none
 	}

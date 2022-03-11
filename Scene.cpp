@@ -29,7 +29,7 @@ shared_ptr<Light> Scene::createALight(Vector3<float> pos, Vector3<float> color) 
 	return light;
 }
 
-bool Scene::createSkybox() {
+shared_ptr<Node> Scene::createSkybox() {
 	//天空盒
 	mSkyboxInfo.mpMesh = make_shared<Mesh>(MeshType::MESH_Cuboid);
 	mSkyboxInfo.mpMesh->loadMesh();
@@ -46,5 +46,5 @@ bool Scene::createSkybox() {
 	auto pSkyNode = mpRootNode->newAChild();
 	pSkyNode->addAttachment(mSkyboxInfo.mpMesh);
 	pSkyNode->scale(glm::vec3(1000.0f, 1000.0f, 1000.0f));
-	return true;
+	return pSkyNode;
 }
