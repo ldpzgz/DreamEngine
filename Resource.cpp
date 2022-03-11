@@ -19,7 +19,7 @@ using namespace std::filesystem;
 using MapSMaterial = unordered_map<string, shared_ptr<Material>>;
 using MapSTexture = unordered_map<string, shared_ptr<Texture>>;
 using MapSShader = unordered_map<string, shared_ptr<Shader>>;
-using MapSNode = unordered_map<string, SP_Node>;
+using MapSNode = unordered_map<string, NodeSP>;
 using Umapss = unordered_map<string, string>;
 extern void checkglerror();
 static const string gMaterialPath = "./opengles3/resource/material";
@@ -61,7 +61,7 @@ public:
 
 	std::shared_ptr<Shader> getShader(const std::string& name);
 
-	SP_Node getNode(const std::string& name);
+	std::shared_ptr<Node> getNode(const std::string& name);
 
 	std::shared_ptr<Texture> createTexture(const std::string& name, int width, int height,
 		unsigned char* pdata,
@@ -153,18 +153,18 @@ private:
 	static bool materialAoHandler(Material* pMat, const std::string&);
 	static bool programSamplerHandler(Material* pMat, const std::string&);
 
-	static bool meshNameHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
-	static bool meshPathHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
-	static bool meshArmMapHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
-	static bool meshAlbedoMapHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
-	static bool meshNormalMapHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
-	static bool meshMetallicMapHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
-	static bool meshRoughnessMapHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
-	static bool meshAoMapHander(SP_Node& pNode, MaterialInfo& info, const std::string&);
+	static bool meshNameHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool meshPathHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool meshArmMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool meshAlbedoMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool meshNormalMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool meshMetallicMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool meshRoughnessMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool meshAoMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
 
 	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gMaterialHandlers;
 	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gProgramKeyValueHandlers;
-	static std::unordered_map<std::string, std::function<bool(SP_Node& pNode, MaterialInfo& info,const std::string&)>> gMeshKeyValueHandlers;
+	static std::unordered_map<std::string, std::function<bool(NodeSP& pNode, MaterialInfo& info,const std::string&)>> gMeshKeyValueHandlers;
 
 	static MapSMaterial mMaterials;
 	static MapSTexture mTextures;
@@ -224,7 +224,7 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"ao",ResourceImpl::materialAoHandler}
 };
 
-std::unordered_map<std::string, std::function<bool(SP_Node& pNode, MaterialInfo& info, const std::string&)>> ResourceImpl::gMeshKeyValueHandlers{
+std::unordered_map<std::string, std::function<bool(NodeSP& pNode, MaterialInfo& info, const std::string&)>> ResourceImpl::gMeshKeyValueHandlers{
 	{"name",ResourceImpl::meshNameHander},
 	{"path",ResourceImpl::meshPathHander},
 	{"armMap",ResourceImpl::meshArmMapHander},
@@ -235,13 +235,13 @@ std::unordered_map<std::string, std::function<bool(SP_Node& pNode, MaterialInfo&
 	{"aoMap",ResourceImpl::meshAoMapHander}
 };
 
-bool ResourceImpl::meshNameHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshNameHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
 	if (pNode && !value.empty()) {
 		mMeshes.emplace(value, pNode);
 	}
 	return true;
 }
-bool ResourceImpl::meshPathHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshPathHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
 	if (pNode && !value.empty()) {
 		MeshLoaderAssimp loader;
 		if (loader.loadFromFile(value, pNode)) {
@@ -255,40 +255,40 @@ bool ResourceImpl::meshPathHander(SP_Node& pNode, MaterialInfo& info, const std:
 	}
 	return false;
 }
-bool ResourceImpl::meshArmMapHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshArmMapHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.armMap = value;
 	}
 	return true;
 }
-bool ResourceImpl::meshAlbedoMapHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshAlbedoMapHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.albedoMap = value;
 	}
 	return true;
 }
-bool ResourceImpl::meshNormalMapHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshNormalMapHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.normalMap = value;
 	}
 	return true;
 }
 
-bool ResourceImpl::meshMetallicMapHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshMetallicMapHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.metallicMap = value;
 	}
 	return true;
 }
 
-bool ResourceImpl::meshRoughnessMapHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshRoughnessMapHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.roughnessMap = value;
 	}
 	return true;
 }
 
-bool ResourceImpl::meshAoMapHander(SP_Node& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshAoMapHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.aoMap = value;
 	}
@@ -834,7 +834,7 @@ std::shared_ptr<Shader> Resource::getShader(const std::string& name) {
 	return mpImpl->getShader(name);
 }
 
-SP_Node Resource::getNode(const std::string& name) {
+std::shared_ptr<Node> Resource::getNode(const std::string& name) {
 	return mpImpl->getNode(name);
 }
 
@@ -911,7 +911,7 @@ bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 		std::vector<std::pair<std::string, std::string>> meshValue;
 		//这个node会放在全局变量里面，这个node attach了mesh
 			//解析出来的material也会放在全局变量里面，所在这三个都不会自动被释放。
-		SP_Node pNode = std::make_shared< NodeMat4>();
+		NodeSP pNode = std::make_shared<Node>();
 		MaterialInfo info;
 		if (Utils::parseItem(cfgValue, meshValue)) {
 			//处理meshCfg配置项
@@ -1298,7 +1298,7 @@ std::shared_ptr<Texture> ResourceImpl::createTexture(const std::string& name, in
 	return pTex;
 }
 
-SP_Node ResourceImpl::getNode(const std::string& name) {
+std::shared_ptr<Node> ResourceImpl::getNode(const std::string& name) {
 	auto pit = mMeshes.find(name);
 	if (pit != mMeshes.end()) {
 		return pit->second;

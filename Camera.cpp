@@ -1,5 +1,6 @@
-#include "Camera.h"
 #include "Rect.h"
+#include "Camera.h"
+#include "Mesh.h"
 #include "Scene.h"
 #include "Light.h"
 #include "Fbo.h"
@@ -10,7 +11,7 @@
 Camera::Camera(const shared_ptr<Scene>& ps, int w,int h) :
 	mWidth(w),
 	mHeight(h),
-	Node<glm::mat4>(),
+	Node(),
 	mpScene(ps)
 {
 	perspective(fov, static_cast<float>(w)/ static_cast<float>(h),nearp,farp);
@@ -71,7 +72,7 @@ void Camera::renderScene() {
 	}
 }
 
-void Camera::renderNode(const shared_ptr<Node<glm::mat4>>& node, 
+void Camera::renderNode(const shared_ptr<Node>& node, 
 	const std::shared_ptr<Scene>& pScene,
 	std::vector<Vec3>* lightPos, 
 	std::vector<Vec3>* lightColor) const
@@ -163,16 +164,13 @@ void Camera::updateWidthHeight(int w,int h) {
 	perspective(fov, static_cast<float>(w)/static_cast<float>(h), nearp, farp);
 }
 
-void Camera::lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up) {
-	Node<glm::mat4>::lookAt(eyepos, center, up);
-}
 //这里相机的移动，旋转，应该是相反的，因为如果相机往右移动，看到的物体是在往左移动。
 void Camera::translate(float x, float y, float z) {
-	Node<glm::mat4>::translate(-x, -y, -z);
+	Node::translate(-x, -y, -z);
 }
 
 void Camera::rotate(float angle, const glm::vec3& vec) {
-	Node<glm::mat4>::rotate(-angle, vec);
+	Node::rotate(-angle, vec);
 }
 
 std::shared_ptr<Scene> Camera::getScene() {

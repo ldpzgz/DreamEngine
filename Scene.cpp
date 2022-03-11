@@ -1,14 +1,14 @@
 #include"Scene.h"
+#include "Rect.h"
 #include "Camera.h"
 #include "Light.h"
 #include "Mesh.h"
 #include "Material.h"
 #include "helper.h"
-#include "Rect.h"
 #include "Resource.h"
 Scene::Scene() {
-	mpRootNode = make_shared<Node<glm::mat4>>();
-	mpRootNodeDeffered = make_shared<Node<glm::mat4>>();
+	mpRootNode = make_shared<Node>();
+	mpRootNodeDeffered = make_shared<Node>();
 }
 Scene::~Scene() {
 
@@ -17,11 +17,11 @@ Scene::~Scene() {
 shared_ptr<Camera> Scene::createACamera(int w,int h) {
 	auto camera = make_shared<Camera>(shared_from_this(),w,h);
 	mCameras.push_back(camera);
-	mpRootNode->addChild(static_pointer_cast<Node<glm::mat4>>(camera));
+	mpRootNode->addChild(static_pointer_cast<Node>(camera));
 	return camera;
 }
 
-shared_ptr<Light> Scene::createALight(Vec3 pos, Vec3 color) {
+shared_ptr<Light> Scene::createALight(Vector3<float> pos, Vector3<float> color) {
 	auto light = make_shared<Light>();
 	mLights.emplace_back(light);
 	light->setPosOrDir(pos);

@@ -7,7 +7,7 @@ class Vector3;
 class Fbo;
 class Texture;
 class Mesh;
-class Camera : virtual public Node<glm::mat4>
+class Camera : virtual public Node
 {
 public:
 	Camera(const shared_ptr<Scene>& ps,int w,int h);
@@ -26,19 +26,17 @@ public:
 
 	void rotate(float angle, const glm::vec3& vec);
 
-	void lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up);
-
-	Vec3& getPosition() {
+	Vector3<float>& getPosition() {
 		return mPosition;
 	}
 
 	std::shared_ptr<Scene> getScene();
 private:
 	void initDefferedRendering(const std::shared_ptr<Scene>& pScene);
-	void renderNode(const shared_ptr<Node<glm::mat4>>& node,
-		const std::shared_ptr<Scene>& pScene, std::vector<Vec3>*, std::vector<Vec3>*) const;
+	void renderNode(const shared_ptr<Node>& node,
+		const std::shared_ptr<Scene>& pScene, std::vector<Vector3<float>>*, std::vector<Vector3<float>>*) const;
 	void defferedGeometryPass(const std::shared_ptr<Scene>& pScene) const;
-	void defferedLightingPass(std::vector<Vec3>* lightPos,std::vector<Vec3>* lightColor);
+	void defferedLightingPass(std::vector<Vector3<float>>* lightPos,std::vector<Vector3<float>>* lightColor);
 	int mWidth;
 	int mHeight;
 	float fov{ 45.0f };
@@ -46,7 +44,7 @@ private:
 	float farp{ 1000.0f };
 	glm::mat4 mProjMatrix{ 1.0f };
 	glm::mat4 mViewMatrix{ 1.0f };
-	Vec3 mPosition{ 0.0f,0.0f,0.0f };
+	Vector3<float> mPosition{ 0.0f,0.0f,0.0f };
 	weak_ptr<Scene> mpScene;
 	std::shared_ptr<Fbo> mpFboDefferedGeo;//用于defered Rendering
 	std::shared_ptr<Texture> mpPosMap;

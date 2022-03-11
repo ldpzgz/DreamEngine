@@ -1,9 +1,9 @@
 #ifndef _SCENE_H_
 #define _SCENE_H_
-#include "Node.h"
 #include <memory>
 #include <vector>
 using namespace std;
+class Node;
 class Camera;
 class Light;
 class Mesh;
@@ -22,17 +22,17 @@ public:
 	};
 	Scene();
 	~Scene();
-	shared_ptr<Node<glm::mat4>>& getRoot() noexcept{
+	shared_ptr<Node>& getRoot() noexcept{
 		return mpRootNode;
 	}
 
-	shared_ptr<Node<glm::mat4>>& getRootDeffered() noexcept {
+	shared_ptr<Node>& getRootDeffered() noexcept {
 		return mpRootNodeDeffered;
 	}
 
 	shared_ptr<Camera> createACamera(int w,int h);
 
-	shared_ptr<Light> createALight(Vec3 pos,Vec3 color);
+	shared_ptr<Light> createALight(Vector3<float> pos, Vector3<float> color);
 
 	bool createSkybox();
 
@@ -44,8 +44,8 @@ public:
 		return mLights;
 	}
 private:
-	shared_ptr<Node<glm::mat4>> mpRootNode;
-	shared_ptr<Node<glm::mat4>> mpRootNodeDeffered;//走deffered rendering
+	shared_ptr<Node> mpRootNode;
+	shared_ptr<Node> mpRootNodeDeffered;//走deffered rendering
 	vector<shared_ptr<Camera>> mCameras;
 	vector<shared_ptr<Light>> mLights;
 	SkyboxInfo mSkyboxInfo;

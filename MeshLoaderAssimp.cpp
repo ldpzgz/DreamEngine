@@ -23,15 +23,15 @@
 
 class MeshLoaderAssimpImpl {
 public:
-	bool loadFromFile(const std::string& filename, std::shared_ptr<Node<glm::mat4>>& pRootNode);
-	void recursive_parse(const struct aiScene* sc, const struct aiNode* nd, std::shared_ptr<Node<glm::mat4>>& pRootNode);
+	bool loadFromFile(const std::string& filename, std::shared_ptr<Node>& pRootNode);
+	void recursive_parse(const struct aiScene* sc, const struct aiNode* nd, std::shared_ptr<Node>& pRootNode);
 
 	aiScene* mpAiScene{ nullptr };
 	
 };
 
 
-void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struct aiNode* nd,std::shared_ptr<Node<glm::mat4>>& pRootNode) {
+void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struct aiNode* nd,std::shared_ptr<Node>& pRootNode) {
 
 	if (nd == nullptr) {
 		return;
@@ -108,12 +108,12 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 	}
 }
 
-bool MeshLoaderAssimp::loadFromFile(const std::string& path, std::shared_ptr<Node<glm::mat4>>& pRootNode) {
+bool MeshLoaderAssimp::loadFromFile(const std::string& path, std::shared_ptr<Node>& pRootNode) {
 	MeshLoaderAssimpImpl impl;
 	return impl.loadFromFile(path, pRootNode);
 }
 
-bool MeshLoaderAssimpImpl::loadFromFile(const std::string& filename, std::shared_ptr<Node<glm::mat4>>& pRootNode) {
+bool MeshLoaderAssimpImpl::loadFromFile(const std::string& filename, std::shared_ptr<Node>& pRootNode) {
 	Assimp::Importer importer;
 	// Check if file exists
 	std::ifstream fin(filename.c_str());

@@ -1,10 +1,10 @@
+#include "Node.h"
 #include "NodeRoamer.h"
-
 /*
 * 操纵节点漫游
 */
 
-void NodeRoamer::setTarget(std::shared_ptr<Node<glm::mat4>>& pNode,std::shared_ptr<Node<glm::mat4>>& pView) {
+void NodeRoamer::setTarget(std::shared_ptr<Node>& pNode,std::shared_ptr<Node>& pView) {
 	mpNode = pNode;
 	mpView = pView;
 	mStartRotateX = 0;

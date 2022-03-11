@@ -10,7 +10,7 @@ public:
 	~MeshLoaderAssimp() {
 
 	}
-	bool loadFromFile(const std::string& path, std::shared_ptr<Node<glm::mat4>>& pRootNode) override;
+	bool loadFromFile(const std::string& path, std::shared_ptr<Node>& pRootNode) override;
 };
 
 #endif

@@ -1,13 +1,14 @@
 #pragma once
 #include <memory>
 #include <string>
-#include "Node.h"
+
 class Texture;
 class Material;
 class MaterialInfo;
 class Shader;
 class ResourceImpl;
 class MaterialInfo;
+class Node;
 
 class Resource {
 public:
@@ -25,7 +26,7 @@ public:
 
 	std::shared_ptr<Shader> getShader(const std::string& name);
 
-	SP_Node getNode(const std::string& name);
+	std::shared_ptr<Node> getNode(const std::string& name);
 
 	//GL_RGB,GL_RGB,GL_UNSIGNED_BYTE
 	std::shared_ptr<Texture> createTexture(const std::string& name, int width, int height,
