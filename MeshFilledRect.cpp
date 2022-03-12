@@ -16,10 +16,10 @@ MeshFilledRect::~MeshFilledRect() {
 }
 
 unsigned int MeshFilledRect::createAColorData(float angle, const Color& startColor, const Color& endColor, const Color& centerColor) {
-	vector<Vec4> colors;
-	Vec4 start(startColor.r, startColor.g, startColor.b, startColor.a);
-	Vec4 end(endColor.r, endColor.g, endColor.b, endColor.a);
-	Vec4 center(centerColor.r, centerColor.g, centerColor.b, centerColor.a);
+	vector<glm::vec4> colors;
+	glm::vec4 start(startColor.r, startColor.g, startColor.b, startColor.a);
+	glm::vec4 end(endColor.r, endColor.g, endColor.b, endColor.a);
+	glm::vec4 center(centerColor.r, centerColor.g, centerColor.b, centerColor.a);
 	if (centerColor.isZero()) {
 		center = 0.5f * start + 0.5f * end;
 	}
@@ -167,7 +167,7 @@ void MeshFilledRect::loadMesh(float width, float height, int gradientAngle, floa
 	tex[index++] = 1.0f;
 	tex[index++] = 1.0f;
 	mPoints.emplace_back(mWidth, mHeight, 0.0f);
-	bool b = createBufferObject((float*)mPoints.data(), numOfVertex *sizeof(Vec3), 
+	bool b = createBufferObject((float*)mPoints.data(), numOfVertex *sizeof(glm::vec3), 
 		numOfVertex,
 		nullptr,0,
 		tex,sizeof(tex));

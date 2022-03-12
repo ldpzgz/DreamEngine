@@ -1,5 +1,6 @@
 #ifndef _NODE_ROAMER_H_
 #define _NODE_ROAMER_H_
+#include <memory>
 /*
 * 操纵节点漫游
 */

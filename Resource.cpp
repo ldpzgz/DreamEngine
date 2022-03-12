@@ -922,11 +922,11 @@ bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 				}
 			}
 			//给mesh创建material，
-			MaterialP pMat = Resource::getInstance().getMaterial(info);
+			MaterialSP pMat = Resource::getInstance().getMaterial(info);
 			//给每一个mesh都设置相同的材质
 			if (pMat) {
-				auto& attachments = pNode->getAttachments();
-				for (const auto& pMesh : attachments) {
+				auto& renders = pNode->getRenderables();
+				for (const auto& pMesh : renders) {
 					auto pM = std::dynamic_pointer_cast<Mesh>(pMesh.second);
 					if (pM) {
 						pM->setMaterial(pMat);

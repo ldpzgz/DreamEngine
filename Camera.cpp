@@ -6,7 +6,7 @@
 #include "Fbo.h"
 #include "Log.h"
 #include "Resource.h"
-#include <glm/gtc/matrix_transform.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
 Camera::Camera(const shared_ptr<Scene>& ps, int w,int h) :
 	mWidth(w),
@@ -80,14 +80,14 @@ void Camera::renderScene() {
 	if (pScene) {
 		getViewMatrix();
 		//获取场景中的灯光
-		std::vector<Vec3> lightPos;
-		std::vector<Vec3> lightColor;
+		std::vector<glm::vec3> lightPos;
+		std::vector<glm::vec3> lightColor;
 		const auto& lights = pScene->getLights();
 		for (const auto& pl : lights) {
 			if (pl) {
 				auto& pos = pl->getPosOrDir();
 				auto tpos = mViewMatrix * glm::vec4(pos.x, pos.y, pos.z,1.0f);
-				lightPos.emplace_back(Vec3(tpos.x,tpos.y,tpos.z));
+				lightPos.emplace_back(glm::vec3(tpos.x,tpos.y,tpos.z));
 				lightColor.emplace_back(pl->getLightColor());
 			}
 		}
@@ -115,17 +115,17 @@ void Camera::renderScene() {
 
 void Camera::renderNode(const shared_ptr<Node>& node, 
 	const std::shared_ptr<Scene>& pScene,
-	std::vector<Vec3>* lightPos, 
-	std::vector<Vec3>* lightColor) const
+	std::vector<glm::vec3>* lightPos, 
+	std::vector<glm::vec3>* lightColor) const
 {
 	if (node) {
-		const auto& pAttaches = node->getAttachments();
+		const auto& pRenderables = node->getRenderables();
 		glm::mat4 modelViewMatrix = mViewMatrix * node->getWorldMatrix();
 
-		for (const auto& pAttach : pAttaches) {
-			std::shared_ptr<Mesh> pMesh = std::dynamic_pointer_cast<Mesh>(pAttach.second);
-			if (pMesh) {
-				pMesh->render(&mProjMatrix, &modelViewMatrix, nullptr,lightPos, lightColor, &mPosition);
+		for (const auto& pRen : pRenderables) {
+			//std::shared_ptr<R> pMesh = std::dynamic_pointer_cast<Mesh>(pRen.second);
+			if (pRen.second) {
+				pRen.second->draw(&mProjMatrix, &modelViewMatrix, nullptr,lightPos, lightColor, &mPosition);
 			}
 		}
 		
@@ -189,11 +189,11 @@ void Camera::defferedGeometryPass(const std::shared_ptr<Scene>& pScene) const{
 	}
 }
 
-void Camera::defferedLightingPass(std::vector<Vec3>* lightPos,std::vector<Vec3>* lightColor) {
+void Camera::defferedLightingPass(std::vector<glm::vec3>* lightPos,std::vector<glm::vec3>* lightColor) {
 	GLboolean preDepthTest = true;
 	glGetBooleanv(GL_DEPTH_TEST, &preDepthTest);
 	glDisable(GL_DEPTH_TEST);
-	mpMeshQuad->render(nullptr,nullptr,nullptr,lightPos,lightColor);
+	mpMeshQuad->draw(nullptr,nullptr,nullptr,lightPos,lightColor);
 	if (preDepthTest) {
 		glEnable(GL_DEPTH_TEST);
 	}

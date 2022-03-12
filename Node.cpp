@@ -1,7 +1,9 @@
 #include "Node.h"
 #include "Mesh.h"
 #include "Log.h"
-
+#include <glm/trigonometric.hpp>  //radians
+#include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
+#include <glm/gtc/type_ptr.hpp> // value_ptr
 atomic_uint Node::sCurChildId=0;
 atomic_uint Node::sCurMeshId=0;
 
@@ -47,8 +49,10 @@ bool Node::removeChild(unsigned int childId) noexcept{
 	return mChildren.erase(childId) == 1 ? true : false;
 }
 
-bool Node::addAttachment(const shared_ptr<Attachable>& temp) {
-	mAttachments.emplace(sCurMeshId++, temp);
+bool Node::addRenderable(const shared_ptr<Renderable>& temp) {
+	unsigned int rid = sCurMeshId++;
+	temp->setRid(rid);
+	mRenderables.emplace(rid, temp);
 	return true;
 }
 
@@ -80,12 +84,21 @@ void Node::lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::v
 	updateChildWorldMatrix();
 }
 
+void Node::addListener(const shared_ptr<NodeListener>& lis) {
+	mListeners.emplace_back(lis);
+}
+
 void Node::updateChildWorldMatrix() noexcept {
 	if (!mChildren.empty()) {
 		auto myWorldMat = mParentWorldMat * mMat;
 		for (auto& child : mChildren) {
 			child.second->setParentWorldMatrix(myWorldMat);
 			child.second->updateChildWorldMatrix();
+		}
+		for (auto& listener : mListeners) {
+			if (listener) {
+				listener->update(myWorldMat);
+			}
 		}
 	}
 }

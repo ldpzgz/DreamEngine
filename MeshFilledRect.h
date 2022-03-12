@@ -47,7 +47,7 @@ protected:
 	float mCenterY{ 0.0f };
 	float mWidth{ 0.0f };
 	float mHeight{ 0.0f };
-	vector<Vec3> mPoints;
+	vector<glm::vec3> mPoints;
 	vector<GLuint> mExtraColorVbos;
 };
 

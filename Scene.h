@@ -2,6 +2,7 @@
 #define _SCENE_H_
 #include <memory>
 #include <vector>
+#include <glm/vec3.hpp>           // vec3
 using namespace std;
 class Node;
 class Camera;
@@ -32,7 +33,7 @@ public:
 
 	shared_ptr<Camera> createACamera(int w,int h);
 
-	shared_ptr<Light> createALight(Vector3<float> pos, Vector3<float> color);
+	shared_ptr<Light> createALight(glm::vec3 pos, glm::vec3 color);
 
 	shared_ptr<Node> createSkybox();
 

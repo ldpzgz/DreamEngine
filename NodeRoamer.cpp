@@ -1,5 +1,6 @@
 #include "Node.h"
 #include "NodeRoamer.h"
+#include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
 /*
 * 操纵节点漫游
 */

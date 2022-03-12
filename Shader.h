@@ -26,13 +26,8 @@
 #include "Log.h"
 #include "Rect.h"
 
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-#include <glm/mat4x4.hpp>
-#include <glm/mat3x3.hpp>
- // Include all GLM extensions
-#include <glm/ext.hpp> // perspective, translate, rotate
-#include <glm/gtx/matrix_transform_2d.hpp>
-
+#include <glm/vec3.hpp>           // vec3
+#include <glm/mat4x4.hpp>         // mat4
 
 /*
  这个类的用法是：
@@ -130,9 +125,9 @@ public:
 	void setUniformColor(float r, float g, float b, float a);
 	void setAlbedoColor(float r, float g, float b);
 	void setUniformColor(Color color);
-	void setLightPos(const std::vector<Vec3>& lightPos);
-	void setViewPos(const Vec3& viewPos);
-	void setLightColor(const std::vector<Vec3>& lightColor);
+	void setLightPos(const std::vector<glm::vec3>& lightPos);
+	void setViewPos(const glm::vec3& viewPos);
+	void setLightColor(const std::vector<glm::vec3>& lightColor);
 	void setMetallic(float m) {
 		mMetallic = m;
 	}
@@ -198,7 +193,7 @@ private:
 	float mRoughness{ 0.5f };
 	float mAo{ 0.1f };
 	Color mUniformColor{ 0.0f,0.0f,0.0f,1.0f };
-	Vec3 mViewPos{ 0.0f,100.0f,0.0f };
+	glm::vec3 mViewPos{ 0.0f,100.0f,0.0f };
 	
 	std::string mName;	//只是用来输出日志
 
@@ -206,13 +201,12 @@ private:
 	std::map<std::string, int> mUniformLocMap;
 	std::vector<std::string> mSamplerNames;
 	
-	std::vector<Vec3> mLightPositions{ {0.0f,100.0f,0.0f} };
-	std::vector<Vec3> mLightColors{ {1.0f,1.0f,1.0f} };
+	std::vector<glm::vec3> mLightPositions{ {0.0f,100.0f,0.0f} };
+	std::vector<glm::vec3> mLightColors{ {1.0f,1.0f,1.0f} };
 protected:
 	//GL_VERTEX_SHADER,GL_FRAGMENT_SHADER
 	GLuint loadShader ( GLenum type, const char *shaderSrc );
 };
 
-using PShader = std::shared_ptr<Shader>;
-extern PShader gpShaderNothing;
+using ShaderSP = std::shared_ptr<Shader>;
 #endif /* GRAPHICSSHADER_H_ */

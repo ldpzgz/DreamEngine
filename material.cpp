@@ -194,7 +194,7 @@ void Material::enable() {
 	}
 }
 
-shared_ptr<Texture>& Material::getTextureOfSampler(const string& samplerName) {
+shared_ptr<Texture> Material::getTextureOfSampler(const string& samplerName) {
 	if (mShader) {
 		int samplerLoc = mShader->getUniformLoc(samplerName.c_str());
 		if (samplerLoc != -1) {
@@ -204,7 +204,7 @@ shared_ptr<Texture>& Material::getTextureOfSampler(const string& samplerName) {
 			}
 		}
 	}
-	return gpTextureNothing;
+	return nullptr;
 }
 
 void Material::setTextureForSampler(int loc, const shared_ptr<Texture>& pTex) {

@@ -92,9 +92,9 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 		else {
 			LOGE(" primitive type is not triangle when import mesh from file");
 		}
-		MeshP pMesh = make_shared<Mesh>(MeshType::MESH_DIY);
+		MeshSP pMesh = make_shared<Mesh>(MeshType::MESH_DIY);
 		if (pMesh->loadMesh(mPos, mTexcoords, mNormals, mIndexes)) {
-			pRootNode->addAttachment(pMesh);
+			pRootNode->addRenderable(pMesh);
 		}
 		else {
 			LOGE("%s load mesh failed", __func__);

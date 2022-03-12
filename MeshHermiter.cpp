@@ -14,10 +14,10 @@ void MeshHermiter::draw(int posloc, int texloc, int norloc, int colorloc,int tan
 	drawLineStrip(posloc);
 }
 
-void MeshHermiter::loadMesh(const std::vector<Vec3>& points,int num) {
+void MeshHermiter::loadMesh(const std::vector<glm::vec3>& points,int num) {
 	auto size = points.size();
 	auto endIndex = size / 4;
-	std::vector<Vec3> pos;
+	std::vector<glm::vec3> pos;
 
 	glm::mat4x4 Mh(
 		1.0f, 0.0f, -3.0f, 2.0f,
@@ -48,7 +48,7 @@ void MeshHermiter::loadMesh(const std::vector<Vec3>& points,int num) {
 		++index;
 	}
 	int numOfVertex = pos.size();
-	bool b = createBufferObject((float*)pos.data(), sizeof(Vec3)* numOfVertex, numOfVertex,nullptr, 0);
+	bool b = createBufferObject((float*)pos.data(), sizeof(glm::vec3)* numOfVertex, numOfVertex,nullptr, 0);
 	if (!b)
 	{
 		LOGD("error to loadHermiterCurves\n");

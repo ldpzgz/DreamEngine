@@ -1,7 +1,7 @@
 #include "Animation.h"
-#include "Spline.h"
+#include "Spline.h"           // vec3
 
-void Animation::setControlPoints(const std::vector<Vec2>& cPoints) {
+void Animation::setControlPoints(const std::vector<glm::vec2>& cPoints) {
 	std::vector<double> x;
 	std::vector<double> time;
 	for (auto& p : cPoints) {
@@ -17,7 +17,7 @@ void Animation::setControlPoints(const std::vector<Vec2>& cPoints) {
 	}
 }
 
-void Animation::setControlPoints(const std::vector<Vec3>& cPoints) {
+void Animation::setControlPoints(const std::vector<glm::vec3>& cPoints) {
 	std::vector<double> x;
 	std::vector<double> y;
 	std::vector<double> time;
@@ -63,9 +63,9 @@ float Animation::getCurX() {
 	}
 }
 
-Vec2 Animation::getCurXY() {
+glm::vec2 Animation::getCurXY() {
 	auto curTime = mTimer.elapse();
-	Vec2 ret;
+	glm::vec2 ret(0.0f,0.0f);
 	if (mLoopMode == LoopMode::None) {
 		if (curTime >= mAnimationTime) {
 			ret.x = mSplineX(mAnimationTime);

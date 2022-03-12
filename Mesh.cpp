@@ -155,13 +155,13 @@ void Mesh::loadMesh()
 {
 	if (mMeshType == MeshType::MESH_Rectangle)
 	{
-		std::vector<Vec3> pos{ 
+		std::vector<glm::vec3> pos{ 
 			{1.0f,1.0f,0.0f},
 			{0.0f,1.0f,0.0f},
 			{0.0f,0.0f,0.0f},
 			{1.0f,0.0f,0.0f},
 			 };
-		std::vector<Vec3> nor{
+		std::vector<glm::vec3> nor{
 			{0.0f,0.0f,1.0f},
 			{0.0f,0.0f,1.0f},
 			{0.0f,0.0f,1.0f},
@@ -169,18 +169,18 @@ void Mesh::loadMesh()
 		};
 		GLuint indexes[] = { 0,1,2,0,2,3 };
 		GLfloat tex[] = { 1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,1.0f,0.0f };
-		createBufferObject((GLfloat*)pos.data(), pos.size()*sizeof(Vec3),4, 
+		createBufferObject((GLfloat*)pos.data(), pos.size()*sizeof(glm::vec3),4, 
 			indexes, sizeof(indexes), 
-			tex, sizeof(tex),(GLfloat*)nor.data(), nor.size() * sizeof(Vec3));
+			tex, sizeof(tex),(GLfloat*)nor.data(), nor.size() * sizeof(glm::vec3));
 	}
 	else if (mMeshType == MeshType::MESH_Quad) {
-		std::vector<Vec3> pos{
+		std::vector<glm::vec3> pos{
 			{1.0f,1.0f,0.0f},
 			{-1.0f,1.0f,0.0f},
 			{-1.0f,-1.0f,0.0f},
 			{1.0f,-1.0f,0.0f},
 		};
-		std::vector<Vec3> nor{
+		std::vector<glm::vec3> nor{
 			{0.0f,0.0f,1.0f},
 			{0.0f,0.0f,1.0f},
 			{0.0f,0.0f,1.0f},
@@ -188,9 +188,9 @@ void Mesh::loadMesh()
 		};
 		GLuint indexes[] = { 0,1,2,0,2,3 };
 		GLfloat tex[] = { 1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,1.0f,0.0f };
-		createBufferObject((GLfloat*)pos.data(), pos.size() * sizeof(Vec3), 4,
+		createBufferObject((GLfloat*)pos.data(), pos.size() * sizeof(glm::vec3), 4,
 			indexes, sizeof(indexes),
-			tex, sizeof(tex), (GLfloat*)nor.data(), nor.size() * sizeof(Vec3));
+			tex, sizeof(tex), (GLfloat*)nor.data(), nor.size() * sizeof(glm::vec3));
 	}
 	else if (mMeshType == MeshType::MESH_Triangle) {
 		GLfloat pos[] = { 0.0f,1.0f,0.0f,
@@ -252,9 +252,9 @@ void Mesh::loadMesh()
 	}
 	else if (mMeshType == MeshType::Mesh_Shpere) {
 		mDrawType = DrawType::TriangleStrip;
-		std::vector<Vec3> positions;
-		std::vector<Vec2> uv;
-		std::vector<Vec3> normals;
+		std::vector<glm::vec3> positions;
+		std::vector<glm::vec2> uv;
+		std::vector<glm::vec3> normals;
 		std::vector<unsigned int> indices;
 
 		const unsigned int X_SEGMENTS = 64;
@@ -270,9 +270,9 @@ void Mesh::loadMesh()
 				float yPos = std::cos(ySegment * PI);
 				float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
 
-				positions.push_back(Vec3(xPos, yPos, zPos));
-				uv.push_back(Vec2(xSegment, ySegment));
-				normals.push_back(Vec3(xPos, yPos, zPos));
+				positions.emplace_back(xPos, yPos, zPos);
+				uv.emplace_back(xSegment, ySegment);
+				normals.emplace_back(xPos, yPos, zPos);
 			}
 		}
 
@@ -283,29 +283,29 @@ void Mesh::loadMesh()
 			{
 				for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
 				{
-					indices.push_back(y * (X_SEGMENTS + 1) + x);
-					indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+					indices.emplace_back(y * (X_SEGMENTS + 1) + x);
+					indices.emplace_back((y + 1) * (X_SEGMENTS + 1) + x);
 				}
 			}
 			else
 			{
 				for (int x = X_SEGMENTS; x >= 0; --x)
 				{
-					indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-					indices.push_back(y * (X_SEGMENTS + 1) + x);
+					indices.emplace_back((y + 1) * (X_SEGMENTS + 1) + x);
+					indices.emplace_back(y * (X_SEGMENTS + 1) + x);
 				}
 			}
 			oddRow = !oddRow;
 		}
-		createBufferObject((GLfloat*)positions.data(), positions.size() * sizeof(Vec3), 
+		createBufferObject((GLfloat*)positions.data(), positions.size() * sizeof(glm::vec3), 
 			positions.size(), indices.data(), indices.size() * sizeof(unsigned int), 
-			(GLfloat*)uv.data(), uv.size()*sizeof(Vec2),
-			(GLfloat*)normals.data(),normals.size() * sizeof(Vec3));
+			(GLfloat*)uv.data(), uv.size()*sizeof(glm::vec2),
+			(GLfloat*)normals.data(),normals.size() * sizeof(glm::vec3));
 	}
 }
 
-void Mesh::loadMesh(const std::vector<Vec3>& pos, const std::vector<Vec3ui>& index) {
-	createBufferObject((float*)pos.data(), pos.size() * sizeof(Vec3), pos.size(), (GLuint*)index.data() , index.size()*sizeof(Vec3ui));
+void Mesh::loadMesh(const std::vector<glm::vec3>& pos, const std::vector<glm::uvec3>& index) {
+	createBufferObject((float*)pos.data(), pos.size() * sizeof(glm::vec3), pos.size(), (GLuint*)index.data() , index.size()*sizeof(glm::uvec3));
 }
 
 bool Mesh::loadMesh(const std::vector<float>& pos,
@@ -814,12 +814,12 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc
 	}
 }
 
-void Mesh::render(const glm::mat4* projMat, 
+void Mesh::draw(const glm::mat4* projMat,
 	const glm::mat4* mvMat, 
 	const glm::mat4* texMat,
-	const std::vector<Vec3>* lightPos, 
-	const std::vector<Vec3>* lightColor, 
-	const Vec3* viewPos) {
+	const std::vector<glm::vec3>* lightPos, 
+	const std::vector<glm::vec3>* lightColor, 
+	const glm::vec3* viewPos) {
 	if (mpMaterial) {
 		auto& pShader = mpMaterial->getShader();
 		if (pShader) {

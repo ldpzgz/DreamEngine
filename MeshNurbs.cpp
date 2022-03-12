@@ -14,8 +14,8 @@ void MeshNurbs::draw(int posloc, int texloc, int norloc, int colorloc, int tange
 	drawLineStrip(posloc);
 }
 
-void MeshNurbs::loadMesh(const std::vector<Vec3>& P, const std::vector<int>& knots, const std::vector<float>& w) {
-	std::vector<Vec3> pos;
+void MeshNurbs::loadMesh(const std::vector<glm::vec3>& P, const std::vector<int>& knots, const std::vector<float>& w) {
+	std::vector<glm::vec3> pos;
 	auto n = P.size() - 1;
 	float u = 0.0f;
 	float delta = (n - 2) / 1000.0f;
@@ -35,7 +35,7 @@ void MeshNurbs::loadMesh(const std::vector<Vec3>& P, const std::vector<int>& kno
 		pos.emplace_back(xyz);
 	}*/
 	int numOfVertex = pos.size();
-	bool b = createBufferObject((float*)pos.data(), sizeof(Vec3)* numOfVertex, numOfVertex,nullptr, 0);
+	bool b = createBufferObject((float*)pos.data(), sizeof(glm::vec3)* numOfVertex, numOfVertex,nullptr, 0);
 	if (!b)
 	{
 		LOGD("error to loadCRSplines\n");

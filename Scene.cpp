@@ -21,7 +21,7 @@ shared_ptr<Camera> Scene::createACamera(int w,int h) {
 	return camera;
 }
 
-shared_ptr<Light> Scene::createALight(Vector3<float> pos, Vector3<float> color) {
+shared_ptr<Light> Scene::createALight(glm::vec3 pos, glm::vec3 color) {
 	auto light = make_shared<Light>();
 	mLights.emplace_back(light);
 	light->setPosOrDir(pos);
@@ -44,7 +44,7 @@ shared_ptr<Node> Scene::createSkybox() {
 	//Material::getTexture("hdr/memorial.hdr")->convertHdrToCubicmap();
 	mSkyboxInfo.mpMesh->setMaterial(pSkyboxMaterial);
 	auto pSkyNode = mpRootNode->newAChild();
-	pSkyNode->addAttachment(mSkyboxInfo.mpMesh);
+	pSkyNode->addRenderable(mSkyboxInfo.mpMesh);
 	pSkyNode->scale(glm::vec3(1000.0f, 1000.0f, 1000.0f));
 	return pSkyNode;
 }

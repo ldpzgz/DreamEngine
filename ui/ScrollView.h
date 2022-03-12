@@ -22,7 +22,7 @@ public:
 private:
 	unsigned int mMouseState{ MouseState::MouseNone };
 	bool mbLButtonDown{ false };
-	Vec2i mPrePos;
-	Vec2i mChildTotalWidthHeight;
+	glm::ivec2 mPrePos{0,0};
+	glm::ivec2 mChildTotalWidthHeight{0,0};
 };
 #endif

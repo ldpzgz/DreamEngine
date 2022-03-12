@@ -60,7 +60,7 @@ public:
 	//改变shader里面sampler对应的纹理
 	void setTextureForSampler(int loc, const shared_ptr<Texture>& pTex);
 
-	shared_ptr<Texture>& getTextureOfSampler(const string& samplerName);
+	shared_ptr<Texture> getTextureOfSampler(const string& samplerName);
 
 	void setShader(const std::shared_ptr<Shader>& ps) {
 		mShader = ps;
@@ -155,5 +155,5 @@ private:
 	std::shared_ptr <OpData> mOthersOpData;
 	std::shared_ptr <OpData> mMyOpData;
 };
-using MaterialP = std::shared_ptr<Material>;
+using MaterialSP = std::shared_ptr<Material>;
 #endif

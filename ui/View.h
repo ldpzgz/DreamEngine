@@ -2,7 +2,7 @@
 #define _VIEW_H_
 #include <string>
 #include "../Rect.h"
-#include "../Attachable.h"
+#include "../Renderable.h"
 #include <functional>
 #include <list>
 #include <memory>
@@ -94,18 +94,18 @@ public:
 	virtual ~MoveListener() {
 
 	}
-	const Vec2i& getTranslateVector() {
+	const glm::ivec2& getTranslateVector() {
 		return mTranslateVector;
 	};
-	void translate(const Vec2i& move) {
+	void translate(const glm::ivec2& move) {
 		mTranslateVector += move;
 	}
 protected:
-	Vec2i mTranslateVector;
+	glm::ivec2 mTranslateVector{0,0};
 };
 
 //这个类及其子类都只能在堆中分配内存，用智能指针管理
-class View : public Attachable,public std::enable_shared_from_this<View>{
+class View : public std::enable_shared_from_this<View>{
 public:
 	explicit View(shared_ptr<View> parent):mpParent(parent) {
 	}
@@ -399,17 +399,17 @@ public:
 
 	void initBackground();
 
-	Vec2i getTranslateVector(){
+	glm::ivec2 getTranslateVector(){
 		auto pMoveLis = mpMoveListener.lock();
 		if (pMoveLis) {
 			return pMoveLis->getTranslateVector();
 		}
 		else {
-			return Vec2i();
+			return glm::ivec2(0,0);
 		}
 	}
 
-	void setMove(Vec2i v) {
+	void setMove(glm::ivec2 v) {
 		mMoveVector = v;
 		for (auto& pChild : mChildren) {
 			if (pChild) {
@@ -418,7 +418,7 @@ public:
 		}
 	}
 
-	Vec2i& getMoveVector() {
+	glm::ivec2& getMoveVector() {
 		return mMoveVector;
 	}
 
@@ -458,7 +458,7 @@ public:
 	int mHeightPercent{ 0 };	//高度百分比
 	int mGravity{ LayoutParam::Center };//控制view内部的元素或者子view如何居中对齐，水平居中，垂直居中，居中
 	Rect<int> mRect{ 0,0,0,0 };
-	Vec2i mMoveVector;
+	glm::ivec2 mMoveVector{0,0};
 	std::list<std::shared_ptr<View>> mChildren;
 	weak_ptr<DirtyListener> mpDirtyListener;
 	weak_ptr<MoveListener> mpMoveListener;

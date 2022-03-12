@@ -4,12 +4,10 @@
 #include <vector>
 #include <memory>
 #include <atomic>
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-#include <glm/mat4x4.hpp>
-#include <glm/mat3x3.hpp>
-// Include all GLM extensions
-#include <glm/ext.hpp> // perspective, translate, rotate
-#include <glm/gtx/matrix_transform_2d.hpp>
+
+#include <glm/vec3.hpp>           // vec3
+#include <glm/mat4x4.hpp>         // mat4
+
 #include <type_traits>
 using namespace std;
 
@@ -24,7 +22,7 @@ auto result = temp * model;
 result 是先在原点缩放，然后再平移，glm这个库矩阵运算与之前认识的运算顺序相反。
 */
 
-class Attachable;
+class Renderable;
 
 /*
 * 节点方位变化监听
@@ -62,7 +60,7 @@ public:
 
 	bool removeChild(unsigned int childId) noexcept;
 
-	bool addAttachment(const shared_ptr<Attachable>& temp);
+	bool addRenderable(const shared_ptr<Renderable>& temp);
 
 
 	void setMatrix(const glm::mat4& matrix) noexcept;
@@ -80,8 +78,8 @@ public:
 		return mParentWorldMat*mMat;
 	}
 
-	const auto& getAttachments() const noexcept {
-		return mAttachments;
+	const auto& getRenderables() const noexcept {
+		return mRenderables;
 	}
 
 	auto& getChildren() const noexcept {
@@ -110,12 +108,12 @@ public:
 
 	/*
 	* 根据eyepos,center,up构造一个lookMat
-	* 最终矩阵：mMat=lookMat
+	* 最终mMat矩阵与直觉相反：mMat=lookMat
 	* 效果：v*lookMat
 	*/
 	virtual void lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up) noexcept;
 	
-	//void addListener(shared_ptr<NodeListener>);
+	void addListener(const shared_ptr<NodeListener>& lis);
 	
 	//void removeListener();
 protected:
@@ -129,8 +127,8 @@ private:
 	unsigned int mId;
 	weak_ptr<Node> mpParent;	//使用weak_ptr防止父子node循环引用导致内存泄漏
 	unordered_map<unsigned int, shared_ptr<Node>> mChildren;
-	unordered_map<unsigned int, shared_ptr<Attachable>> mAttachments;
-	//std::vector<shared_ptr<NodeListener>> mListeners;
+	unordered_map<unsigned int, shared_ptr<Renderable>> mRenderables;
+	std::vector<shared_ptr<NodeListener>> mListeners;
 
 	static atomic_uint sCurChildId;
 	static atomic_uint sCurMeshId;

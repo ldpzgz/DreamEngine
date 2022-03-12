@@ -797,7 +797,7 @@ void UiRender::drawTextView(TextView* tv) {
 				tempMat = glm::translate(tempMat, glm::vec3(moveVec.x, -moveVec.y, 0.0f));
 				tempMat = tempMat * charPos.matrix;
 				tempMat = mProjMatrix * tempMat;
-				mpFontManager->mpCharMesh->render(&tempMat,nullptr,&charPos.texMatrix);
+				mpFontManager->mpCharMesh->draw(&tempMat,nullptr,&charPos.texMatrix);
 			}
 		}
 		if (!bScissorTest) {
@@ -887,7 +887,7 @@ bool UiRender::drawBackground(View* v){
 					}
 				}
 				
-				pMesh->render(&mProjMatrix, &model);
+				pMesh->draw(&mProjMatrix, &model);
 			}
 			
 			if (pBorderMesh && !borderColor.isZero()) {
@@ -896,7 +896,7 @@ bool UiRender::drawBackground(View* v){
 				if (pMat) {
 					pMat->setUniformColor(borderColor);
 				}
-				pBorderMesh->render(&mProjMatrix, &model);
+				pBorderMesh->draw(&mProjMatrix, &model);
 			}
 		}
 	}
@@ -978,7 +978,7 @@ void UiRender::drawListView(ListView* plv) {
 		for (int i = firstItem; i <= lastItem; ++i) {
 			auto& pView = pAdapter->getView(i);
 			if (pView) {
-				Vec2i tempMove(lvRect.x, lvRect.y);
+				glm::ivec2 tempMove(lvRect.x, lvRect.y);
 				auto& rectInc = pView->getRect();
 				if (isHorizontal) {
 					tempMove.x += moveLength;
@@ -1007,7 +1007,7 @@ void UiRender::drawUi() {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glBlendEquation(GL_FUNC_ADD);
-		mpLastMesh->render(nullptr,nullptr);
+		mpLastMesh->draw(nullptr,nullptr);
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 	}

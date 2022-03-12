@@ -52,7 +52,7 @@ private:
 
 	unsigned int mMouseState{ MouseState::MouseNone };
 	bool mbLButtonDown{ false };
-	Vec2i mPrePos;
+	glm::ivec2 mPrePos{0,0};
 	int mFirstVisibleItem{ 0 };
 	int mFirstItemHideLength{ 0 };
 	int mLastVisibleItem{ 0 };

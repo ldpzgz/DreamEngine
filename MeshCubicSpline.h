@@ -14,8 +14,8 @@ public:
 	MeshCubicSpline();
 	~MeshCubicSpline();
 	
-	void loadMesh(const std::vector<Vec3>& p,int num) override;
-	void loadMesh(const std::vector<Vec2>& p,int num) override;
+	void loadMesh(const std::vector<glm::vec3>& p,int num) override;
+	void loadMesh(const std::vector<glm::vec2>& p,int num) override;
 protected:
 	void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1) override;
 };

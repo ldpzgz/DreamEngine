@@ -15,12 +15,15 @@
 #include <glad/glad.h>
 #endif
 #include "material.h"
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-#include <glm/glm.hpp> // vec3, vec4, ivec4, mat4
-#include <glm/mat4x4.hpp>
-#include <glm/mat4x3.hpp>
-#include <glm/gtc/type_ptr.hpp> // value_ptr
-#include "Attachable.h"
+
+#include <glm/vec3.hpp>           // vec3
+#include <glm/vec4.hpp>           // vec3
+#include <glm/mat4x4.hpp>         // mat4
+#include <glm/trigonometric.hpp>  //sin cos,tan,radians,degree
+#include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
+#include <glm/gtc/type_ptr.hpp> // value_ptr,make_vec,make_mat
+
+#include "Renderable.h"
 #include "Rect.h"
 #include <memory>
 #include "aabb.h"
@@ -62,7 +65,7 @@ enum class DrawType {
 	LineStrip,
 	Points,
 };
-class Mesh : public Attachable
+class Mesh : public Renderable
 {
 public:
 	explicit Mesh(MeshType meshType) noexcept;
@@ -77,27 +80,27 @@ public:
 	virtual void loadMesh();
 
 	//nurbs
-	virtual void loadMesh(const std::vector<Vec3>& p, const std::vector<int>& knots, const std::vector<float>& w) {
+	virtual void loadMesh(const std::vector<glm::vec3>& p, const std::vector<int>& knots, const std::vector<float>& w) {
 
 	}
 
-	virtual void loadMesh(const std::vector<Vec3>& p,int num) {
+	virtual void loadMesh(const std::vector<glm::vec3>& p,int num) {
 
 	}
 
-	virtual void loadMesh(const std::vector<Vec2>& p, int num) {
+	virtual void loadMesh(const std::vector<glm::vec2>& p, int num) {
 
 	}
 
-	virtual void loadMesh(const std::vector<Vec2>& p) {
+	virtual void loadMesh(const std::vector<glm::vec2>& p) {
 
 	}
 
-	virtual void loadMesh(const std::vector<Vec3>& p) {
+	virtual void loadMesh(const std::vector<glm::vec3>& p) {
 
 	}
 
-	virtual void loadMesh(const std::vector<Vec3>& pos, const std::vector<Vec3ui>& index);
+	virtual void loadMesh(const std::vector<glm::vec3>& pos, const std::vector<glm::uvec3>& index);
 
 	virtual bool loadMesh(const std::string meshFilePath);
 
@@ -126,8 +129,13 @@ public:
 
 	bool updateTangent(float* normal, int byteOffset, int size);
 
-	void render(const glm::mat4* projMat, const glm::mat4* modelMat, const glm::mat4* texMat=nullptr,
-		const std::vector<Vec3>* lightPos = nullptr, const std::vector<Vec3>* lightColor = nullptr, const Vec3* viewPos = nullptr);
+
+	void draw(const glm::mat4* projMat, 
+		const glm::mat4* modelMat, 
+		const glm::mat4* texMat=nullptr,
+		const std::vector<glm::vec3>* lightPos = nullptr, 
+		const std::vector<glm::vec3>* lightColor = nullptr, 
+		const glm::vec3* viewPos = nullptr) override;
 
 	//void render(const glm::mat4& mvpMat, const glm::mat4& mvMat);
 
@@ -235,6 +243,6 @@ protected:
 	//如果函数内部创建了vao就返回true
 	bool createVaoIfNeed(int posloc=-1, int texloc=-1, int norloc=-1);
 };
-using MeshP = std::shared_ptr<Mesh>;
+using MeshSP = std::shared_ptr<Mesh>;
 
 #endif /* GRAPHICSMESH_H_ */

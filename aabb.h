@@ -29,11 +29,11 @@ public:
 	float zmax() {
 		return xyz[5];
 	}
-	Vec3 center() {
-		return Vec3((xyz[0] + xyz[1]) / 2.0f, (xyz[2] + xyz[3]) / 2.0f, (xyz[4] + xyz[5]) / 2.0f);
+	glm::vec3 center() {
+		return glm::vec3((xyz[0] + xyz[1]) / 2.0f, (xyz[2] + xyz[3]) / 2.0f, (xyz[4] + xyz[5]) / 2.0f);
 	}
-	Vec3 length() {
-		return Vec3((xyz[1] - xyz[0]) / 2.0f, (xyz[3] - xyz[2]) / 2.0f, (xyz[5] - xyz[4]) / 2.0f);
+	glm::vec3 length() {
+		return glm::vec3((xyz[1] - xyz[0]) / 2.0f, (xyz[3] - xyz[2]) / 2.0f, (xyz[5] - xyz[4]) / 2.0f);
 	}
 	AABB operator+(const AABB& other) {
 		return AABB(std::min<float>(xyz[0],other.xyz[0]),

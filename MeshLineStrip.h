@@ -8,8 +8,8 @@ public:
 	MeshLineStrip();
 	~MeshLineStrip();
 	
-	void loadMesh(const std::vector<Vec3>& p) override;
-	void loadMesh(const std::vector<Vec2>& p) override;
+	void loadMesh(const std::vector<glm::vec3>& p) override;
+	void loadMesh(const std::vector<glm::vec2>& p) override;
 };
 
 #endif

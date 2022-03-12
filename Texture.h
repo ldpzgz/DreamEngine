@@ -10,22 +10,6 @@
 #else
 #include <glad/glad.h>
 #endif
-/*
-void glTexImage2D(	GLenum target,
-	GLint level,
-	GLint internalFormat,
-	GLsizei width,
-	GLsizei height,
-	GLint border,
-	GLenum format,
-	GLenum type,
-	const void * data);
-
-	internalFormat: Specifies the number of color components in the texture
-	type：a single color component's type ：signed or unsigned bytes, shorts, or longs, or single-precision floating-point values
-	format:these values are grouped into sets of one, two, three, or four values, depending on format
-
-*/
 
 class Texture : public std::enable_shared_from_this<Texture>
 {
@@ -146,6 +130,5 @@ protected:
 };
 
 using TextureSP = std::shared_ptr<Texture>;
-extern TextureSP gpTextureNothing;
 
 #endif

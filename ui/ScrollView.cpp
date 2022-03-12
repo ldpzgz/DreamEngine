@@ -13,7 +13,7 @@ bool ScrollView::mouseMove(int x, int y,bool notInside) {
 		/*
 		* 只看第一个和最后一个子view是否到了不可移动的位置，否则就translate相应的距离。
 		*/
-		Vec2i temp;
+		glm::ivec2 temp{0,0};
 		if (isVertical()) {
 			temp.y = y - mPrePos.y;
 			if (!mChildren.empty()) {

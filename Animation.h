@@ -1,10 +1,9 @@
 #ifndef _ANIMATION_H_
 #define _ANIMATION_H_
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-#include <glm/glm.hpp> // vec3, vec4, ivec4, mat4
-#include <glm/mat4x4.hpp>
-#include <glm/mat4x3.hpp>
-#include <glm/gtc/type_ptr.hpp> // value_ptr
+//#include <glm/glm.hpp>
+#include <glm/vec2.hpp>           // vec3
+#include <glm/vec3.hpp>           // vec3
+
 #include "Rect.h"
 #include "Utils.h"
 #include <vector>
@@ -49,17 +48,17 @@ public:
 		mInterpolateType = type;
 	}
 	/*
-	* Vec2: x是要做插值的坐标，y是时间值
+	* glm::vec2: x是要做插值的坐标，y是时间值
 	*/
-	void setControlPoints(const std::vector<Vec2>& cPoints);
+	void setControlPoints(const std::vector<glm::vec2>& cPoints);
 	/*
 	* Vec3: x，y是要做插值的坐标，z是时间值
 	*/
-	void setControlPoints(const std::vector<Vec3>& cPoints);
+	void setControlPoints(const std::vector<glm::vec3>& cPoints);
 
 	float getCurX();
 
-	Vec2 getCurXY();
+	glm::vec2 getCurXY();
 protected:
 	int64_t mAnimationTime{ 0 };
 	int64_t mCurTime;

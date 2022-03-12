@@ -15,7 +15,7 @@ std::shared_ptr<Texture> genBrdfLut() {
 	Fbo fbo;
 	fbo.attachColorTexture(lut, 0);
 	fbo.render([&mesh]() {
-		mesh.render(nullptr, nullptr);
+		mesh.draw(nullptr, nullptr);
 	});
 	return lut;
 }
@@ -68,7 +68,7 @@ TextureSP genSpecularFilterMap(const std::shared_ptr<Texture>& pCube) {
 		for (int i = 0; i < 6; ++i) {
 			//auto mvpMat = captureProjection * captureViews[i];
 			fbo.render([&mesh, &captureProjection, &captureViews, &floatCubeSpec, &pbo, mipWidth, i, mip] {
-				mesh.render(&captureProjection, &captureViews[i]);
+				mesh.draw(&captureProjection, &captureViews[i]);
 				//将渲染得到的三张rgba转换成一张rgb32f
 				std::vector<unsigned char> pRGB[3];
 				std::vector<float> resultRGB;
@@ -155,7 +155,7 @@ TextureSP genDiffuseIrrMap(const std::shared_ptr<Texture>& pCube) {
 	for (int i = 0; i < 6; ++i) {
 		//auto mvpMat = captureProjection * captureViews[i];
 		fbo.render([&mesh, &captureProjection, &captureViews, &floatCubeIrr, &pbo, irrWidth, i] {
-			mesh.render(&captureProjection, &captureViews[i]);
+			mesh.draw(&captureProjection, &captureViews[i]);
 			//将渲染得到的三张rgba转换成一张rgb32f
 			std::vector<unsigned char> pRGB[3];
 			std::vector<float> resultRGB;
@@ -241,7 +241,7 @@ TextureSP convertHdrToCubicmap(const std::shared_ptr<Texture>& pHdr) {
 	for (int i = 0; i < 6; ++i) {
 		//auto mvpMat = captureProjection * captureViews[i];
 		fbo.render([&mesh, &captureProjection, &captureViews, &floatCube, &pbo, width, i] {
-			mesh.render(&captureProjection, &captureViews[i]);
+			mesh.draw(&captureProjection, &captureViews[i]);
 			//将渲染得到的三张rgba转换成一张rgb32f
 			std::vector<unsigned char> pRGB[3];
 			std::vector<float> resultRGB;

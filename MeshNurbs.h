@@ -22,7 +22,7 @@ public:
 	knots[t(0)..t(n+4)]
 	w[w0......wn,wn+1,..w(n+4)];
 	*/
-	void loadMesh(const std::vector<Vec3>& P, const std::vector<int>& knots,const std::vector<float>& w) override;
+	void loadMesh(const std::vector<glm::vec3>& P, const std::vector<int>& knots,const std::vector<float>& w) override;
 protected:
 	void draw(int posloc = -1, int texloc = -1, int norloc = -1,int colorloc = -1, int tangentloc=-1) override;
 private:

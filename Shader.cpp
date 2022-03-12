@@ -6,11 +6,13 @@
  */
 //#include "StdAfx.h"
 #include "Shader.h"
+#include <glm/trigonometric.hpp>  //sin cos,tan,radians,degree
+#include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
+#include <glm/gtc/type_ptr.hpp> // value_ptr
 #include "Log.h"
 #include <string>
 #include <fstream>
 extern void checkglerror();
-PShader gpShaderNothing;
 Shader::Shader(const std::string& name) :
 	mName(name)
 {
@@ -314,17 +316,17 @@ void Shader::setUniformColor(Color color) {
 	mUniformColor = color;
 }
 
-void Shader::setLightPos(const std::vector<Vec3>& lightPos) {
+void Shader::setLightPos(const std::vector<glm::vec3>& lightPos) {
 	if (mLightPosLoc >= 0) {
 		glUniform3fv(mLightPosLoc, lightPos.size(), (const float*)lightPos.data());
 	}
 }
-void Shader::setViewPos(const Vec3& viewPos) {
+void Shader::setViewPos(const glm::vec3& viewPos) {
 	if (mViewPosLoc >= 0) {
 		glUniform3f(mViewPosLoc, viewPos.x, viewPos.y, viewPos.z);
 	}
 }
-void Shader::setLightColor(const std::vector<Vec3>& lightColor) {
+void Shader::setLightColor(const std::vector<glm::vec3>& lightColor) {
 	if (mLightColorLoc >= 0) {
 		glUniform3fv(mLightColorLoc, lightColor.size(), (const float*)lightColor.data());
 	}

@@ -1,6 +1,6 @@
 #include "MeshRoundedRectangle.h"
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-#include <glm/glm.hpp> // vec3, vec4, ivec4, mat4
+//#include <glm/glm.hpp> // vec3, vec4, ivec4, mat4
 #include <glm/mat4x4.hpp>
 #include <glm/mat4x3.hpp>
 #include <glm/gtc/type_ptr.hpp> // value_ptr
@@ -26,7 +26,7 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 	mCenterY = centerY;
 	mWidth = width;
 	mHeight = height;
-	std::vector<Vec2> texcoord;
+	std::vector<glm::vec2> texcoord;
 	float angle = 0.0f;
 	float halfWidth = width / 2.0f;
 	float halfHeight = height / 2.0f;
@@ -37,37 +37,37 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 	//中心点的处理
 	mPoints.emplace_back(centerX, centerY, 0.0f);
 	texcoord.emplace_back(centerX / mWidth, centerY / mHeight);
-	Vec3 lastPoint;
-	Vec2 lastTex;
+	glm::vec3 lastPoint{0.0f,0.0f,0.0f};
+	glm::vec2 lastTex{ 0.0f,0.0f};
 	float PI_1_2 = 3.1415926535897932f / 2.0f;
 	//先从右上角开始
 	if (rightTopRadius <= 0.0f) {
 		mPoints.emplace_back(width, height, 0.0f);
 		texcoord.emplace_back(1.0f, 1.0f);
-		lastPoint = Vec3(width, height, 0.0f);
-		lastTex = Vec2(1.0f, 1.0f);
+		lastPoint = glm::vec3(width, height, 0.0f);
+		lastTex = glm::vec2(1.0f, 1.0f);
 	}
 	else {
 		if (rightTopRadius >= maxRadius)
 			rightTopRadius = maxRadius;
 		float texX = rightTopRadius / width;
 		float texY = rightTopRadius / width;
-		Vec2 texTranslate(1.0f - texX, 1.0f - texY);
-		Vec3 translate(width - rightTopRadius, height - rightTopRadius, 0.0f);
+		glm::vec2 texTranslate(1.0f - texX, 1.0f - texY);
+		glm::vec3 translate(width - rightTopRadius, height - rightTopRadius, 0.0f);
 		float tempAngle = angle;
 		for (int i = 0; i < STEP; ++i) {
-			mPoints.emplace_back(translate+ Vec3(rightTopRadius*cosf(tempAngle), rightTopRadius*sinf(tempAngle), 0.0f));
-			texcoord.emplace_back(texTranslate + Vec2(texX*cosf(tempAngle), texY*sinf(tempAngle)));
+			mPoints.emplace_back(translate+ glm::vec3(rightTopRadius*cosf(tempAngle), rightTopRadius*sinf(tempAngle), 0.0f));
+			texcoord.emplace_back(texTranslate + glm::vec2(texX*cosf(tempAngle), texY*sinf(tempAngle)));
 			tempAngle = angle+i* PI_1_2 /(STEP-1);
 		}
 		angle += PI_1_2;
-		lastPoint = translate + Vec3(rightTopRadius, 0.0f, 0.0f);
-		lastTex = texTranslate + Vec2(texX, 0.0f);
+		lastPoint = translate + glm::vec3(rightTopRadius, 0.0f, 0.0f);
+		lastTex = texTranslate + glm::vec2(texX, 0.0f);
 	}
 
 	if (gradientAngle == 0 || gradientAngle == 180) {
-		mPoints.emplace_back(Vec3(mCenterX, mHeight, 0.0f));
-		texcoord.emplace_back(Vec2(mCenterX / mWidth,1.0f));
+		mPoints.emplace_back(glm::vec3(mCenterX, mHeight, 0.0f));
+		texcoord.emplace_back(glm::vec2(mCenterX / mWidth,1.0f));
 	}
 
 	if (leftTopRadius <= 0.0f) {
@@ -79,20 +79,20 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 			leftTopRadius = maxRadius;
 		float texX = leftTopRadius / width;
 		float texY = leftTopRadius / width;
-		Vec2 texTranslate(texX, 1.0f - texY);
-		Vec3 translate(leftTopRadius, height - leftTopRadius, 0.0f);
+		glm::vec2 texTranslate(texX, 1.0f - texY);
+		glm::vec3 translate(leftTopRadius, height - leftTopRadius, 0.0f);
 		float tempAngle = angle;
 		for (int i = 0; i < STEP; ++i) {
-			mPoints.emplace_back(translate + Vec3(leftTopRadius*cosf(tempAngle), leftTopRadius*sinf(tempAngle), 0.0f));
-			texcoord.emplace_back(texTranslate + Vec2(texX*cosf(tempAngle), texY*sinf(tempAngle)));
+			mPoints.emplace_back(translate + glm::vec3(leftTopRadius*cosf(tempAngle), leftTopRadius*sinf(tempAngle), 0.0f));
+			texcoord.emplace_back(texTranslate + glm::vec2(texX*cosf(tempAngle), texY*sinf(tempAngle)));
 			tempAngle = angle + i* PI_1_2 / (STEP - 1);
 		}
 		angle += PI_1_2;
 	}
 
 	if (gradientAngle == 90 || gradientAngle == 270) {
-		mPoints.emplace_back(Vec3(0.0f, mCenterY, 0.0f));
-		texcoord.emplace_back(Vec2(0.0f, mCenterY/mHeight));
+		mPoints.emplace_back(0.0f, mCenterY, 0.0f);
+		texcoord.emplace_back(0.0f, mCenterY/mHeight);
 	}
 
 	if (leftDownRadius <= 0.0f) {
@@ -104,20 +104,20 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 			leftDownRadius = maxRadius;
 		float texX = leftDownRadius / width;
 		float texY = leftDownRadius / width;
-		Vec2 texTranslate(texX, texY);
-		Vec3 translate(leftDownRadius, leftDownRadius, 0.0f);
+		glm::vec2 texTranslate(texX, texY);
+		glm::vec3 translate(leftDownRadius, leftDownRadius, 0.0f);
 		float tempAngle = angle;
 		for (int i = 0; i < STEP; ++i) {
-			mPoints.emplace_back(translate + Vec3(leftDownRadius*cosf(tempAngle), leftDownRadius*sinf(tempAngle), 0.0f));
-			texcoord.emplace_back(texTranslate + Vec2(texX*cosf(tempAngle), texY*sinf(tempAngle)));
+			mPoints.emplace_back(translate + glm::vec3(leftDownRadius*cosf(tempAngle), leftDownRadius*sinf(tempAngle), 0.0f));
+			texcoord.emplace_back(texTranslate + glm::vec2(texX*cosf(tempAngle), texY*sinf(tempAngle)));
 			tempAngle = angle + i* PI_1_2 / (STEP - 1);
 		}
 		angle += PI_1_2;
 	}
 
 	if (gradientAngle == 0 || gradientAngle == 180) {
-		mPoints.emplace_back(Vec3(mCenterX, 0.0f, 0.0f));
-		texcoord.emplace_back(Vec2(mCenterX/mWidth,0.0f));
+		mPoints.emplace_back(mCenterX, 0.0f, 0.0f);
+		texcoord.emplace_back(mCenterX/mWidth,0.0f);
 	}
 
 	if (rightDownRadius <= 0.0f) {
@@ -129,12 +129,12 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 			rightDownRadius = maxRadius;
 		float texX = leftDownRadius / width;
 		float texY = leftDownRadius / width;
-		Vec2 texTranslate(1.0f-texX, texY);
-		Vec3 translate(width - rightDownRadius, rightDownRadius, 0.0f);
+		glm::vec2 texTranslate(1.0f-texX, texY);
+		glm::vec3 translate(width - rightDownRadius, rightDownRadius, 0.0f);
 		float tempAngle = angle;
 		for (int i = 0; i < STEP; ++i) {
-			mPoints.emplace_back(translate + Vec3(rightDownRadius*cosf(tempAngle), rightDownRadius*sinf(tempAngle), 0.0f));
-			texcoord.emplace_back(texTranslate + Vec2(texX*cosf(tempAngle), texY*sinf(tempAngle)));
+			mPoints.emplace_back(translate + glm::vec3(rightDownRadius*cosf(tempAngle), rightDownRadius*sinf(tempAngle), 0.0f));
+			texcoord.emplace_back(texTranslate + glm::vec2(texX*cosf(tempAngle), texY*sinf(tempAngle)));
 			tempAngle = angle + i* PI_1_2 / (STEP - 1);
 		}
 		angle += PI_1_2;
@@ -142,8 +142,8 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 
 	if (gradientAngle == 90 || gradientAngle == 270) {
 		if (gradientAngle == 0 || gradientAngle == 180) {
-			mPoints.emplace_back(Vec3(mWidth, mCenterY, 0.0f));
-			texcoord.emplace_back(Vec2(1.0f, mCenterY/mHeight));
+			mPoints.emplace_back(mWidth, mCenterY, 0.0f);
+			texcoord.emplace_back(1.0f, mCenterY/mHeight);
 		}
 	}
 
@@ -153,7 +153,7 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 	bool b = createBufferObject((float*)mPoints.data(), 3*sizeof(float)* numOfVertex, 
 		numOfVertex,
 		nullptr, 0,
-		(float*)texcoord.data(),texcoord.size()*sizeof(Vec2));
+		(float*)texcoord.data(),texcoord.size()*sizeof(glm::vec2));
 	if (!b)
 	{
 		LOGD("error to load MeshRoundedRectangle\n");
