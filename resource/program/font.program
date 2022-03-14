@@ -46,6 +46,6 @@ program:fontsBasic{
 		blend=true,sa,1-sa,add,0,1,add
 	}
 }
-config:fontcfg{
+config{
 	charSize=42
 }

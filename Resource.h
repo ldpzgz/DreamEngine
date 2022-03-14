@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <string_view>
 
 class Texture;
 class Material;
@@ -22,7 +23,8 @@ public:
 	* name: 可以是物体的名字
 	* mInfo：材质信息，根据里面的信息生成或者clone一个material对象
 	*/
-	std::shared_ptr<Material> getMaterial(const MaterialInfo& mInfo);
+	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo);
+	std::shared_ptr<Material> getMaterialDefferedLightPass(bool hasIBL);
 
 	std::shared_ptr<Shader> getShader(const std::string& name);
 
@@ -54,8 +56,9 @@ public:
 	*/
 	bool parseMeshCfgFile(const std::string& filePath);
 
-	//如果材质文件里面有个key对应的value是整数，可以用这个函数获取到
+	//将config配置里面的某个key对应的value转换为int，
 	int getKeyAsInt(const std::string& key);
+	const std::string_view getKeyAsStr(const std::string& key);
 private:
 	Resource();
 	std::unique_ptr<ResourceImpl> mpImpl;

@@ -34,7 +34,7 @@ void TextView::textSizeHandler(const string& value) {
 		setTextSize(size);
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse textView prop textSize value %s", value.c_str());
+		LOGE("error to parse textView prop textSize value %s,%s", value.c_str(),e.what());
 	}
 }
 
@@ -44,7 +44,7 @@ void TextView::maxWidthHandler(const std::string& value) {
 		setMaxWidth(size);
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse textView prop maxWidth value %s", value.c_str());
+		LOGE("error to parse textView prop maxWidth value %s,%s", value.c_str(),e.what());
 	}
 }
 
@@ -54,7 +54,7 @@ void TextView::maxHeightHandler(const std::string& value) {
 		setMaxHeight(size);
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse textView prop maxHeight value %s", value.c_str());
+		LOGE("error to parse textView prop maxHeight value %s,%s", value.c_str(),e.what());
 	}
 }
 
@@ -64,7 +64,7 @@ void TextView::maxLineHandler(const std::string& value) {
 		setMaxLines(size);
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse textView prop maxLine value %s", value.c_str());
+		LOGE("error to parse textView prop maxLine value %s,%s", value.c_str(),e.what());
 	}
 }
 
@@ -74,7 +74,7 @@ void TextView::charSpaceHandler(const std::string& value){
 		setCharSpacingInc(size);
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse textView prop charSpace value %s", value.c_str());
+		LOGE("error to parse textView prop charSpace value %s,%s", value.c_str(),e.what());
 	}
 }
 void TextView::lineSpaceHandler(const std::string& value) {
@@ -83,7 +83,7 @@ void TextView::lineSpaceHandler(const std::string& value) {
 		setLineSpacingInc(size);
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse textView prop lineSpace value %s", value.c_str());
+		LOGE("error to parse textView prop lineSpace value %s,%s", value.c_str(),e.what());
 	}
 }
 

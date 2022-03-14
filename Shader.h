@@ -125,6 +125,7 @@ public:
 	void setUniformColor(float r, float g, float b, float a);
 	void setAlbedoColor(float r, float g, float b);
 	void setUniformColor(Color color);
+	void setLightCount(int count);
 	void setLightPos(const std::vector<glm::vec3>& lightPos);
 	void setViewPos(const glm::vec3& viewPos);
 	void setLightColor(const std::vector<glm::vec3>& lightColor);
@@ -145,6 +146,7 @@ public:
 	void getViewMatrixLoc(const std::string& viewMatrixNameInShader);
 	void getMvpMatrixLoc(const std::string& mvpMatrixNameInShader);
 	void getMvMatrixLoc(const std::string& mvMatrixNameInShader);
+	void getLightCountLoc(const std::string& lightCountNameInShader);
 	void getLightPosLoc(const std::string& lightPosNameInShader);
 	void getViewPosLoc(const std::string& viewPosNameInShader);
 	void getLightColorLoc(const std::string& lightColorNameInShader);
@@ -182,6 +184,7 @@ private:
 	int mMvMatrixLoc{ -1 };
 	int mTextureMatrixLoc{ -1 };
 	int mLightPosLoc{ -1 };
+	int mLightCountLoc{ -1 };
 	int mViewPosLoc{ -1 };
 	int mLightColorLoc{ -1 };
 	int mUniformColorLoc{ -1 }; //在fs里面可以有个uniform vec4 color，用于设置输出固定颜色

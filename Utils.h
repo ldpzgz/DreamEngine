@@ -18,7 +18,9 @@ namespace Utils {
 	//std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
 
 	std::string nowTime();
-
+	/*
+	* 返回path中的文件名，如果path没有路径信息也没有后缀，直接返回path
+	*/
 	std::string getFileName(const std::string& path);
 	std::string getFileNameWithPath(const std::string& path);
 	std::string getFileSuffix(const std::string& path);

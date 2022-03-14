@@ -67,11 +67,11 @@ fs{
 		}
 		occlusion = 1.0 - (occlusion / kernelSize);
 		
-		FragColor = occlusion;
+		FragColor.r = occlusion;
 	}
 }
 
-program:posDiff{
+program:ssao{
 	posLoc=0
 	texcoordLoc=1
 	projMatrix=projection

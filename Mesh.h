@@ -226,13 +226,13 @@ protected:
 	int mnorLocation{ -1 };//顶点的法向量属性在shader中的location
 	int mtexLocation{ -1 };//顶点的纹理坐标属性在shader中的location
 	
-	unsigned int mPosByteSize{ 0 };
-	unsigned int mTexByteSize{ 0 };
-	unsigned int mNorByteSize{ 0 };
-	unsigned int mTangentByteSize{ 0 };
-	unsigned int mBiNormalByteSize{ 0 };
-	unsigned int mColorByteSize{ 0 };
-	unsigned int mIndexByteSize{ 0 };
+	int mPosByteSize{ 0 };
+	int mTexByteSize{ 0 };
+	int mNorByteSize{ 0 };
+	int mTangentByteSize{ 0 };
+	int mBiNormalByteSize{ 0 };
+	int mColorByteSize{ 0 };
+	int mIndexByteSize{ 0 };
 	std::string mMaterialName;
 	MeshType mMeshType{ MeshType::MESH_None };
 	DrawType mDrawType{ DrawType::Triangles };

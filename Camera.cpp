@@ -151,12 +151,8 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 		mpMeshQuad = std::make_shared<Mesh>(MeshType::MESH_Quad);
 		if (mpMeshQuad) {
 			mpMeshQuad->loadMesh();
-			/*auto& pMat1 = Material::getMaterial("defferedTest");
-			if (pMat1) {
-				pMat1->setTextureForSampler("posMap", mpNormal);
-				mpMeshQuad->setMaterial(pMat1);
-			}*/
-			auto& pMat = Resource::getInstance().getMaterial("defferedLighting");
+			
+			auto& pMat = Resource::getInstance().getMaterialDefferedLightPass(true);
 			if (pMat) {
 				mpMeshQuad->setMaterial(pMat);
 				pMat->setTextureForSampler("posMap", mpPosMap);
@@ -170,7 +166,6 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 				pMat->setTextureForSampler("brdfLUT", Resource::getInstance().getTexture("brdfLUT"));
 			}
 		}
-		
 	}
 	catch (...) {
 		LOGE(" %s create mpFboDeffered and maps failed",__func__);

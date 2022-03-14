@@ -315,7 +315,11 @@ void Shader::setAlbedoColor(float r, float g, float b)
 void Shader::setUniformColor(Color color) {
 	mUniformColor = color;
 }
-
+void Shader::setLightCount(int count) {
+	if (mLightCountLoc >= 0) {
+		glUniform1i(mLightCountLoc,count);
+	}
+}
 void Shader::setLightPos(const std::vector<glm::vec3>& lightPos) {
 	if (mLightPosLoc >= 0) {
 		glUniform3fv(mLightPosLoc, lightPos.size(), (const float*)lightPos.data());
@@ -385,6 +389,12 @@ void Shader::getViewMatrixLoc(const std::string& viewMatrixNameInShader) {
 	mViewMatrixLoc = glGetUniformLocation(mProgram, viewMatrixNameInShader.c_str());
 	if (mViewMatrixLoc < 0) {
 		LOGE("the shader %s  has no %s uniform member", mName.c_str(), viewMatrixNameInShader.c_str());
+	}
+}
+void Shader::getLightCountLoc(const std::string& lightCountNameInShader) {
+	mLightCountLoc = glGetUniformLocation(mProgram, lightCountNameInShader.c_str());
+	if (mLightCountLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), lightCountNameInShader.c_str());
 	}
 }
 void Shader::getLightPosLoc(const std::string& lightPosNameInShader) {

@@ -55,7 +55,7 @@ void Shape::cornerRadiusHandler(const shared_ptr<Shape>& shape, const std::strin
 		}
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse cornerRadius value %s", value.c_str());
+		LOGE("error to parse cornerRadius value %s,%s", value.c_str(), e.what());
 	}
 }
 void Shape::cornerLeftTopRadiusHandler(const shared_ptr<Shape>& shape, const std::string& value) {
@@ -65,7 +65,7 @@ void Shape::cornerLeftTopRadiusHandler(const shared_ptr<Shape>& shape, const std
 		}
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse cornerLeftTopRadius value %s", value.c_str());
+		LOGE("error to parse cornerLeftTopRadius value %s,%s", value.c_str(),e.what());
 	}
 
 }
@@ -76,7 +76,7 @@ void Shape::cornerLeftBottomRadiusHandler(const shared_ptr<Shape>& shape, const 
 		}
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse cornerLeftBottomRadius value %s", value.c_str());
+		LOGE("error to parse cornerLeftBottomRadius value %s,%s", value.c_str(), e.what());
 	}
 }
 void Shape::cornerRightTopRadiusHandler(const shared_ptr<Shape>& shape, const std::string& value) {
@@ -86,7 +86,7 @@ void Shape::cornerRightTopRadiusHandler(const shared_ptr<Shape>& shape, const st
 		}
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse cornerRightTopRadius value %s", value.c_str());
+		LOGE("error to parse cornerRightTopRadius value %s,%s", value.c_str(), e.what());
 	}
 }
 void Shape::cornerRightBottomRadiusHandler(const shared_ptr<Shape>& shape, const std::string& value) {
@@ -96,7 +96,7 @@ void Shape::cornerRightBottomRadiusHandler(const shared_ptr<Shape>& shape, const
 		}
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse cornerRightBottomRadius value %s", value.c_str());
+		LOGE("error to parse cornerRightBottomRadius value %s,%s", value.c_str(), e.what());
 	}
 }
 
@@ -107,7 +107,7 @@ void Shape::gradientAngleHandler(const shared_ptr<Shape>& shape, const std::stri
 		}
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse gradientAngle value %s", value.c_str());
+		LOGE("error to parse gradientAngle value %s,%s", value.c_str(), e.what());
 	}
 }
 void Shape::gradientCenterXHandler(const shared_ptr<Shape>& shape, const std::string& value) {
@@ -117,7 +117,7 @@ void Shape::gradientCenterXHandler(const shared_ptr<Shape>& shape, const std::st
 		}
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse gradientCenterX value %s", value.c_str());
+		LOGE("error to parse gradientCenterX value %s,%s", value.c_str(), e.what());
 	}
 }
 void Shape::gradientCenterYHandler(const shared_ptr<Shape>& shape, const std::string& value) {
@@ -127,7 +127,7 @@ void Shape::gradientCenterYHandler(const shared_ptr<Shape>& shape, const std::st
 		}
 	}
 	catch (const logic_error& e) {
-		LOGE("error to parse gradientCenterY value %s", value.c_str());
+		LOGE("error to parse gradientCenterY value %s,%s", value.c_str(), e.what());
 	}
 }
 void Shape::gradientCenterColorHandler(const shared_ptr<Shape>& shape, const std::string& value) {
@@ -160,7 +160,7 @@ void Shape::gradientRadiusHandler(const shared_ptr<Shape>& shape, const std::str
 			shape->setGradientRadius(stof(value));
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse gradientRadius value %s", value.c_str());
+			LOGE("error to parse gradientRadius value %s,%s", value.c_str(), e.what());
 		}
 	}
 }
@@ -176,7 +176,7 @@ void Shape::paddingHandler(const std::shared_ptr<Shape>& shape, const std::strin
 			shape->setPadding(stoi(value));
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse padding value %s", value.c_str());
+			LOGE("error to parse padding value %s,%s", value.c_str(),e.what());
 		}
 	}
 }
@@ -187,7 +187,7 @@ void Shape::paddingLeftHandler(const shared_ptr<Shape>& shape, const std::string
 			shape->setPaddingLeft(stoi(value));
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse paddingLeft value %s", value.c_str());
+			LOGE("error to parse paddingLeft value %s,%s", value.c_str(), e.what());
 		}
 	}
 }
@@ -197,7 +197,7 @@ void Shape::paddingRightHandler(const shared_ptr<Shape>& shape, const std::strin
 			shape->setPaddingRight(stoi(value));
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse paddingRight value %s", value.c_str());
+			LOGE("error to parse paddingRight value %s,%s", value.c_str(), e.what());
 		}
 	}
 }
@@ -208,7 +208,7 @@ void Shape::paddingBottomHandler(const shared_ptr<Shape>& shape, const std::stri
 			shape->setPaddingBottom(stoi(value));
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse paddingBottom value %s", value.c_str());
+			LOGE("error to parse paddingBottom value %s,%s", value.c_str(), e.what());
 		}
 	}
 }
@@ -218,7 +218,7 @@ void Shape::paddingTopHandler(const shared_ptr<Shape>& shape, const std::string&
 			shape->setPaddingTop(stoi(value));
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse paddingTop value %s", value.c_str());
+			LOGE("error to parse paddingTop value %s,%s", value.c_str(), e.what());
 		}
 	}
 }
@@ -229,7 +229,7 @@ void Shape::sizeWidthHandler(const shared_ptr<Shape>& shape, const std::string& 
 			shape->setOvalWidth(stof(value));
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse sizeWidth value %s", value.c_str());
+			LOGE("error to parse sizeWidth value %s,%s", value.c_str(), e.what());
 		}
 	}
 }
@@ -240,7 +240,7 @@ void Shape::sizeHeightHandler(const shared_ptr<Shape>& shape, const std::string&
 			shape->setOvalHeight(stof(value));
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse sizeHeight value %s", value.c_str());
+			LOGE("error to parse sizeHeight value %s,%s", value.c_str(), e.what());
 		}
 	}
 }
@@ -269,7 +269,7 @@ void Shape::strokeWidthHandler(const shared_ptr<Shape>& shape, const std::string
 			shape->setBorderWidth(stoi(value));
 		}
 		catch (const logic_error& e) {
-			LOGE("error to parse strokeWidth value %s", value.c_str());
+			LOGE("error to parse strokeWidth value %s,%s", value.c_str(),e.what());
 		}
 	}
 }
