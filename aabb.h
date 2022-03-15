@@ -1,8 +1,7 @@
 #ifndef _AABB_H_
 #define _AABB_H_
 #include <utility>
-template<class T>
-class Vector3;
+#include <glm/vec3.hpp>
 class AABB {
 public:
 	AABB()=default;

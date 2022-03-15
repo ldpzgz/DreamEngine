@@ -4,8 +4,6 @@
 #include <vector>
 #include "NodeListener.h"
 class Scene;
-template<typename T>
-class Vector3;
 class Fbo;
 class Texture;
 class Mesh;

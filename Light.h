@@ -7,8 +7,6 @@ enum class LightType {
 	Point,
 	SpotLight
 };
-template<class T>
-class Vector3;
 
 class Light :public Renderable {
 public:

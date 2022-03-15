@@ -9,8 +9,6 @@ class Camera;
 class Light;
 class Mesh;
 class Texture;
-template<typename T>
-class Vector3;
 //场景里面有相机，灯光，天空盒
 class Scene : public enable_shared_from_this<Scene> {
 public:
