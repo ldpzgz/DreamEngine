@@ -10,6 +10,7 @@
 #include <string>
 #include <functional>
 #include <vector>
+#include <map>
 #include <filesystem>
 #include "Log.h"
 
@@ -43,6 +44,8 @@ namespace Utils {
 	* 将value字符串里面形如key=value、或者key{value}格式的，key和value字符串解析出来，存储到umap里面
 	*/
 	bool parseItem(const std::string& value, std::unordered_map<std::string,std::string>& umap);
+
+	bool parseItem(const std::string& value, std::multimap<std::string, std::string>& umap);
 
 	//find key value from startPos at str,
 	//if success set the start position of the key,the pos of '{', the pos of '}' into pos seprately and return true,

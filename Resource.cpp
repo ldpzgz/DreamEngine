@@ -965,7 +965,7 @@ bool ResourceImpl::parseMeshCfgFile(const string& filePath) {
 
 bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 	if (!cfgValue.empty()) {
-		std::unordered_map<std::string, std::string> meshValue;
+		std::multimap<std::string, std::string> meshValue;
 		//这个node会放在全局变量里面，这个node attach了mesh
 			//解析出来的material也会放在全局变量里面，所在这三个都不会自动被释放。
 		NodeSP pNode = std::make_shared<Node>();
@@ -1428,7 +1428,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	* 如果不存在，就根据mInfo里面的信息合成一个shader，material以名字“defferedGeomertry_标志位”保存起来。
 	*/
 
-	unsigned int materialFlag = 1;
+	unsigned int materialFlag = 0;
 	std::string vs;
 	std::string fs;
 	std::string program;
@@ -1528,7 +1528,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		programSampler += "\n";
 	}
 	else {
-		program += "uniformColor=albedo\n";
+		program += "albedo=albedo\n";
 	}
 
 	if (!mInfo.normalMap.empty()) {

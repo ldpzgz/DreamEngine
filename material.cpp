@@ -41,30 +41,15 @@ void Material::setBlend(bool b, unsigned int srcFactor, unsigned int destFactor,
 }
 
 void Material::setUniformColor(const Color& color) {
-	if (!mpUniformColor) {
-		mpUniformColor = make_shared<Color>(color);
-	}
-	else {
-		*mpUniformColor = color;
-	}
+	mUniformColor = color;
 }
 
 void Material::setUniformColor(float r, float g, float b, float a) {
-	if (!mpUniformColor) {
-		mpUniformColor = make_unique<Color>(r, g, b, a);
-	}
-	else {
-		*mpUniformColor = Color(r, g, b, a);
-	}
+	mUniformColor = Color(r, g, b, a);
 }
 
 void Material::setAlbedoColor(float r, float g, float b) {
-	if (!mpUniformColor) {
-		mpUniformColor = make_unique<Color>(r, g, b, 1.0f);
-	}
-	else {
-		*mpUniformColor = Color(r, g, b, 1.0f);
-	}
+	mUniformColor = Color(r, g, b, 1.0f);
 }
 
 Material::Material()
@@ -82,8 +67,7 @@ Material::Material(const Material& pMat) {
 	mMetallical = pMat.mMetallical;
 	mRoughness = pMat.mRoughness;
 	mAo = pMat.mAo;
-	if(pMat.mpUniformColor)
-		mpUniformColor = std::make_shared<Color>(*pMat.mpUniformColor);
+	mUniformColor = pMat.mUniformColor;
 }
 
 //深度测试，blend，cullface等操作
@@ -176,9 +160,7 @@ void Material::restoreRenderOperation() {
 
 void Material::enable() {
 	if (mShader) {
-		if (mpUniformColor) {
-			mShader->setUniformColor(*mpUniformColor);
-		}
+		mShader->setUniformColor(mUniformColor);
 		mShader->setMetallic(mMetallical);
 		mShader->setRoughness(mRoughness);
 		mShader->setAo(mAo);

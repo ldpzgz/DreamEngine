@@ -214,7 +214,7 @@ void Shader::enable()
 	}
 
 	if (mAlbedoColorLoc >= 0) {
-		glUniform3f(mAlbedoColorLoc, mUniformColor[0], mUniformColor[1], mUniformColor[2]);
+		glUniform4f(mAlbedoColorLoc, mUniformColor[0], mUniformColor[1], mUniformColor[2], mUniformColor[3]);
 	}
 
 	if (mAoLoc >= 0) {

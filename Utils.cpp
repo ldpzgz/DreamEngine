@@ -170,9 +170,11 @@ namespace Utils {
 			std::string realValue;
 			if (tpos != string::npos) {
 				if (value[tpos] == '=') {
+					//查找x=v
 					findKV = findkeyValue(value, "=", "\r\n", startPos, pos, realKey, realValue);//"\x20\r\n\t"
 				}
 				else {
+					//查找x{v}
 					findKV = findkeyValue(value, "{", "}", startPos, pos, realKey, realValue);
 				}
 				if (findKV) {
@@ -182,12 +184,13 @@ namespace Utils {
 						}
 					}
 					else {
-						LOGE("find a empty value!!!");
-						return false;
+						LOGD("find a empty value!!!");
 					}
 				}
 				else {
-					break;
+					//语法错误
+					LOGE("parseItem syntactic error");
+					return false;
 				}
 			}
 			else {
@@ -207,6 +210,13 @@ namespace Utils {
 	bool parseItem(const string& value, std::unordered_map<std::string,std::string>& umap) {
 		return parseItem(value, [&umap](const std::string& key, const std::string& value)->bool {
 			return umap.emplace(key, value).second;
+			});
+	}
+
+	bool parseItem(const string& value, std::multimap<std::string, std::string>& umap) {
+		return parseItem(value, [&umap](const std::string& key, const std::string& value)->bool {
+			umap.emplace(key, value);
+			return true;
 			});
 	}
 

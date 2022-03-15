@@ -6,11 +6,11 @@
 #include <functional>
 #include <unordered_map>
 #include <any>
+#include "Rect.h"
 
 using namespace std;
 class Texture;
 class Shader;
-class Color;
 
 class MaterialInfo {
 public:
@@ -35,7 +35,7 @@ public:
 	std::string roughnessMap;
 
 	//金属性，要么是一个固定值，要么是map
-	float metallic{ 0.5f };
+	float metallic{ 0.0f };
 	std::string metallicMap;
 };
 
@@ -145,10 +145,10 @@ private:
 	using Umapss = std::unordered_map<std::string, std::string>;
 	
 	std::shared_ptr<Shader> mShader;
-	std::shared_ptr<Color> mpUniformColor;//纯色物体设置这个
-	float mMetallical{ 0.5f }; //金属还是非金属（0.0f-1.0f);
+	Color mUniformColor{1.0f,1.0f,1.0f,1.0f};//纯色物体设置这个
+	float mMetallical{ 0.0f }; //金属还是非金属（0.0f-1.0f);
 	float mRoughness{ 0.5f };	//粗糙程度（0.0f-1.0f);
-	float mAo{ 0.1f };
+	float mAo{ 0.5f };
 	std::unordered_map<int, std::shared_ptr<Texture>> mSamplerName2Texture;
 
 	std::string mName;

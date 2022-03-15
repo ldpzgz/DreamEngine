@@ -72,6 +72,11 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 					pMaterial = Resource::getInstance().getMaterial(matName);
 				}
 			}
+			else {
+				LOGD("a mesh has no material");
+				MaterialInfo info;
+				pMaterial = Resource::getInstance().getMaterialDefferedGeoPass(info);
+			}
 
 			unsigned int index = 0;
 			for (t = 0; t < mesh->mNumFaces; ++t) {
@@ -118,8 +123,6 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 		else {
 			LOGE(" primitive type is not triangle when import mesh from file");
 		}
-
-		
 	}
 	
 	// recursive all children

@@ -62,7 +62,7 @@ config{
 		#ifdef HAS_ALBEDO_MAP
 			uniform sampler2D albedoMap;
 		#else
-			uniform vec3 albedo;
+			uniform vec4 albedo;
 		#endif
 		
 		#ifdef HAS_ARM_MAP
@@ -113,7 +113,7 @@ config{
 			#ifdef HAS_ALBEDO_MAP
 				outAlbedoMap.rgb = texture(albedoMap,texcoord).rgb;
 			#else
-				outAlbedoMap.rgb = albedo;
+				outAlbedoMap.rgb = albedo.rgb;
 			#endif
 			#ifdef HAS_NORMAL_MAP
 				outNormalMap.rgb = getNormalFromMap(normalMap,texcoord,worldPos,worldNormal);
