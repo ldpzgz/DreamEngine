@@ -4,6 +4,8 @@
 #include "Utils.h"
 #include "Material.h"
 #include "Mesh.h"
+#include "Utils.h"
+#include "Resource.h"
 // assimp include files. These three are usually needed.
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -57,6 +59,20 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 		std::unordered_map<unsigned int,unsigned int> indexMap;
 		auto primitivType = mesh->mPrimitiveTypes;
 		if (primitivType == aiPrimitiveType_TRIANGLE) {
+			/*
+			* getMaterial
+			*/
+			MaterialSP pMaterial;
+			aiString textureFilePath;
+			pMeshMaterial->GetTexture((aiTextureType)1, 0, &textureFilePath);
+			std::string pathStr(textureFilePath.C_Str());
+			if (!pathStr.empty()) {
+				auto matName = Utils::getFileName(pathStr);
+				if (!matName.empty()) {
+					pMaterial = Resource::getInstance().getMaterial(matName);
+				}
+			}
+
 			unsigned int index = 0;
 			for (t = 0; t < mesh->mNumFaces; ++t) {
 				const struct aiFace* face = &mesh->mFaces[t];
@@ -87,18 +103,23 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 				}
 
 			}
+			MeshSP pMesh = make_shared<Mesh>(MeshType::MESH_DIY);
+			if (pMesh->loadMesh(mPos, mTexcoords, mNormals, mIndexes)) {
+				pRootNode->addRenderable(pMesh);
+				if (pMaterial) {
+					pMesh->setMaterial(pMaterial);
+				}
+			}
+			else {
+				LOGE("%s load mesh failed", __func__);
+			}
 			
 		}
 		else {
 			LOGE(" primitive type is not triangle when import mesh from file");
 		}
-		MeshSP pMesh = make_shared<Mesh>(MeshType::MESH_DIY);
-		if (pMesh->loadMesh(mPos, mTexcoords, mNormals, mIndexes)) {
-			pRootNode->addRenderable(pMesh);
-		}
-		else {
-			LOGE("%s load mesh failed", __func__);
-		}
+
+		
 	}
 	
 	// recursive all children

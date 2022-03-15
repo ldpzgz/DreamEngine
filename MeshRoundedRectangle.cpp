@@ -1,6 +1,5 @@
 #include "MeshRoundedRectangle.h"
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-//#include <glm/glm.hpp> // vec3, vec4, ivec4, mat4
+
 #include <glm/mat4x4.hpp>
 #include <glm/mat4x3.hpp>
 #include <glm/gtc/type_ptr.hpp> // value_ptr

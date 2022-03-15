@@ -4,10 +4,10 @@
 /*
 * 操纵节点漫游
 */
-class Node;
+class Camera;
 class NodeRoamer {
 public:
-	void setTarget(std::shared_ptr<Node>& pNode, std::shared_ptr<Node>& pView);
+	void setTarget(std::shared_ptr<Node>& pNode, std::shared_ptr<Camera>& pView);
 	void startRotate(int x, int y);
 	void rotate(int x, int y);
 	void endRotate(int x, int y);
@@ -17,6 +17,6 @@ protected:
 	int mStartRotateY{ 0 };
 	bool mIsStartRotate{ false };
 	std::shared_ptr<Node> mpNode;
-	std::shared_ptr<Node> mpView;
+	std::shared_ptr<Camera> mpView;
 };
 #endif

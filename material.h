@@ -14,6 +14,7 @@ class Color;
 
 class MaterialInfo {
 public:
+	std::string name;
 	//ao roughness metallic,三合一map
 	std::string armMap;
 

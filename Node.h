@@ -12,25 +12,15 @@
 using namespace std;
 
 /*
-glm这个库的矩阵运算顺序：
-glm::mat4 model(1.0f);
-model = glm::translate(model,glm::vec3(10,10,0));
-model = glm::scale(model,glm::vec3(2.0f,2.0f,0.0f);
-glm::vec4 temp(1.0f,1.0f,0.0f,1.0f);
-auto result = temp * model;
-
-result 是先在原点缩放，然后再平移，glm这个库矩阵运算与之前认识的运算顺序相反。
+glm这个库在不设置任何宏的情况下，矩阵相乘与书本上的顺序一致
+glm::mat4 modelMat;
+modelMat[0],modelMat[1],modelMat[2],modelMat[3],这是个东西
+不管设置的是左手坐标系还是右手坐标系，都表示x,y,z,w轴
+x,y,z是负责旋转的那三根轴，w是负责平移的
 */
 
 class Renderable;
-
-/*
-* 节点方位变化监听
-*/
-class NodeListener {
-public:
-	virtual void update(const glm::mat4& mat) = 0;
-};
+class NodeListener;
 
 class Node : public enable_shared_from_this<Node> {
 public:
@@ -78,6 +68,10 @@ public:
 		return mParentWorldMat*mMat;
 	}
 
+	const glm::mat4& getParentWorldMat() {
+		return mParentWorldMat;
+	}
+
 	const auto& getRenderables() const noexcept {
 		return mRenderables;
 	}
@@ -117,12 +111,12 @@ public:
 	
 	//void removeListener();
 protected:
-	glm::mat4 mMat;
-	glm::mat4 mParentWorldMat;
+	glm::mat4 mMat{1.0f};
+	glm::mat4 mParentWorldMat{1.0f};
 	void setParentWorldMatrix(const glm::mat4& matrix) noexcept {
 		mParentWorldMat = matrix;
 	}
-	void updateChildWorldMatrix()noexcept;
+	virtual void updateChildWorldMatrix()noexcept;
 private:
 	unsigned int mId;
 	weak_ptr<Node> mpParent;	//使用weak_ptr防止父子node循环引用导致内存泄漏

@@ -158,7 +158,7 @@ private:
 	static bool materialAoHandler(Material* pMat, const std::string&);
 	static bool programSamplerHandler(Material* pMat, const std::string&);
 
-	static bool meshNameHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool nodeNameHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
 	static bool meshPathHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
 	static bool meshArmMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
 	static bool meshAlbedoMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
@@ -166,6 +166,8 @@ private:
 	static bool meshMetallicMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
 	static bool meshRoughnessMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
 	static bool meshAoMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool meshMatInfoHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool meshMatInfoNameHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
 
 	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gMaterialHandlers;
 	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gProgramKeyValueHandlers;
@@ -174,7 +176,7 @@ private:
 	static MapSMaterial mMaterials;
 	static MapSTexture mTextures;
 	static MapSShader mShaders;
-	static MapSNode mMeshes;
+	static MapSNode mNodes;
 	std::unordered_map<std::string, std::string> mContents;//保存的是材质文件里面形如key{value}的key-value对
 	std::unordered_map<std::string, std::string> mConfigValues;
 	std::string_view mpVersion{ "#version 330 core\n" };
@@ -184,7 +186,7 @@ private:
 MapSMaterial ResourceImpl::mMaterials;
 MapSTexture ResourceImpl::mTextures;
 MapSShader ResourceImpl::mShaders;
-MapSNode ResourceImpl::mMeshes;
+MapSNode ResourceImpl::mNodes;
 
 
 /*
@@ -233,8 +235,9 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 };
 
 std::unordered_map<std::string, std::function<bool(NodeSP& pNode, MaterialInfo& info, const std::string&)>> ResourceImpl::gMeshKeyValueHandlers{
-	{"name",ResourceImpl::meshNameHander},
-	{"path",ResourceImpl::meshPathHander},
+	{"nodeName",ResourceImpl::nodeNameHander},
+	{"matInfo",ResourceImpl::meshMatInfoHander},
+	{"matInfoName",ResourceImpl::meshMatInfoNameHander},
 	{"armMap",ResourceImpl::meshArmMapHander},
 	{"albedoMap",ResourceImpl::meshAlbedoMapHander},
 	{"normalMap",ResourceImpl::meshNormalMapHander},
@@ -243,9 +246,9 @@ std::unordered_map<std::string, std::function<bool(NodeSP& pNode, MaterialInfo& 
 	{"aoMap",ResourceImpl::meshAoMapHander}
 };
 
-bool ResourceImpl::meshNameHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::nodeNameHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
 	if (pNode && !value.empty()) {
-		mMeshes.emplace(value, pNode);
+		mNodes.emplace(value, pNode);
 	}
 	return true;
 }
@@ -301,6 +304,37 @@ bool ResourceImpl::meshAoMapHander(NodeSP& pNode, MaterialInfo& info, const std:
 		info.aoMap = value;
 	}
 	return true;
+}
+
+bool ResourceImpl::meshMatInfoHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+	if (!value.empty()) {
+		std::unordered_map<std::string, std::string> matInfoValue;
+		MaterialInfo info1;
+		if (Utils::parseItem(value, matInfoValue)) {
+			for (const auto& pa : matInfoValue) {
+				const auto itHandler = gMeshKeyValueHandlers.find(pa.first);
+				if (itHandler != gMeshKeyValueHandlers.cend()) {
+					itHandler->second(pNode, info1, pa.second);
+				}
+			}
+
+			//解析并创建material，
+			MaterialSP pMat = Resource::getInstance().getMaterialDefferedGeoPass(info1);
+			if (pMat && !info1.name.empty()) {
+				mMaterials.emplace(info1.name, pMat);
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
+bool ResourceImpl::meshMatInfoNameHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+	if (!value.empty()) {
+		info.name = value;
+		return true;
+	}
+	return false;
 }
 
 
@@ -931,30 +965,31 @@ bool ResourceImpl::parseMeshCfgFile(const string& filePath) {
 
 bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 	if (!cfgValue.empty()) {
-		std::vector<std::pair<std::string, std::string>> meshValue;
+		std::unordered_map<std::string, std::string> meshValue;
 		//这个node会放在全局变量里面，这个node attach了mesh
 			//解析出来的material也会放在全局变量里面，所在这三个都不会自动被释放。
 		NodeSP pNode = std::make_shared<Node>();
 		MaterialInfo info;
 		if (Utils::parseItem(cfgValue, meshValue)) {
-			//处理meshCfg配置项
+			//处理mesh{}里面的nodeName,matInfo等两项。
 			for (const auto& p : meshValue) {
 				const auto itHandler = gMeshKeyValueHandlers.find(p.first);
 				if (itHandler != gMeshKeyValueHandlers.cend()) {
 					itHandler->second(pNode, info, p.second);
 				}
 			}
-			//给mesh创建material，
-			MaterialSP pMat = Resource::getInstance().getMaterialDefferedGeoPass(info);
-			//给每一个mesh都设置相同的材质
-			if (pMat) {
-				auto& renders = pNode->getRenderables();
-				for (const auto& pMesh : renders) {
-					auto pM = std::dynamic_pointer_cast<Mesh>(pMesh.second);
-					if (pM) {
-						pM->setMaterial(pMat);
-					}
-				}
+		}
+		//加载mesh，内部会设置好material
+		auto it = meshValue.find("path");
+		if (it != meshValue.end()) {
+			MeshLoaderAssimp loader;
+			if (loader.loadFromFile(it->second, pNode)) {
+				LOGD("success load mesh from %s", it->second.c_str());
+				return true;
+			}
+			else {
+				LOGE(" to load mesh from path %s", it->second.c_str());
+				return false;
 			}
 		}
 	}
@@ -1318,8 +1353,8 @@ std::shared_ptr<Texture> ResourceImpl::createTexture(const std::string& name, in
 }
 
 std::shared_ptr<Node> ResourceImpl::getNode(const std::string& name) {
-	auto pit = mMeshes.find(name);
-	if (pit != mMeshes.end()) {
+	auto pit = mNodes.find(name);
+	if (pit != mNodes.end()) {
 		return pit->second;
 	}
 	return nullptr;
@@ -1569,6 +1604,11 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		if (parseProgram(pMaterial,program)) {
 			if (!mMaterials.emplace(materialName, pMaterial).second) {
 				LOGE("there are already exist %s material in gMaterials when call Material::getMaterial", materialName.c_str());
+			}
+			else {
+				//clone一份
+				auto destMat = cloneMaterial(materialName);
+				return destMat;
 			}
 		}
 		else {

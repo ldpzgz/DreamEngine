@@ -1,3 +1,4 @@
+#include "Camera.h"
 #include "Node.h"
 #include "NodeRoamer.h"
 #include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
@@ -5,7 +6,7 @@
 * 操纵节点漫游
 */
 
-void NodeRoamer::setTarget(std::shared_ptr<Node>& pNode,std::shared_ptr<Node>& pView) {
+void NodeRoamer::setTarget(std::shared_ptr<Node>& pNode,std::shared_ptr<Camera>& pView) {
 	mpNode = pNode;
 	mpView = pView;
 	mStartRotateX = 0;
@@ -32,14 +33,17 @@ void NodeRoamer::rotate(int x, int y) {
 			tempLr = glm::rotate(tempLr, a / 100.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 		}
 		if (fabs(b)> 0.99f) {
-			auto& viewMat = mpView->getMatrix();
+			auto& viewMat = mpView->getViewMatrix();
+			auto& parentMat = mpNode->getParentWorldMat();
+			auto tempMat = viewMat * parentMat;
 			//view矩阵左上角的旋转矩阵一般都是正交矩阵
-			tempUd = glm::rotate(tempUd, b / 100.0f, glm::vec3(viewMat[0][0], viewMat[1][0], viewMat[2][0]));
+			tempUd = glm::rotate(tempUd, b / 100.0f, glm::vec3(tempMat[0][0], tempMat[1][0], tempMat[2][0]));
 		}
 		const auto& myMat = mpNode->getMatrix();
+		const auto& myParentMat = mpNode->getParentWorldMat();
 		
 		//模仿blender查看物体的方式
-		mpNode->setMatrix(tempUd *myMat * tempLr);
+		mpNode->setMatrix(tempUd * myMat * tempLr);
 
 		mStartRotateX = x;
 		mStartRotateY = y;

@@ -1,4 +1,5 @@
 #include "Node.h"
+#include "NodeListener.h"
 #include "Mesh.h"
 #include "Log.h"
 #include <glm/trigonometric.hpp>  //radians
@@ -90,7 +91,7 @@ void Node::addListener(const shared_ptr<NodeListener>& lis) {
 
 void Node::updateChildWorldMatrix() noexcept {
 	if (!mChildren.empty()) {
-		auto myWorldMat = mParentWorldMat * mMat;
+		auto myWorldMat = mParentWorldMat*mMat;
 		for (auto& child : mChildren) {
 			child.second->setParentWorldMatrix(myWorldMat);
 			child.second->updateChildWorldMatrix();

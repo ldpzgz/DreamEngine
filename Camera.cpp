@@ -1,3 +1,4 @@
+#include "Node.h"
 #include "Rect.h"
 #include "Camera.h"
 #include "Mesh.h"
@@ -11,7 +12,6 @@
 Camera::Camera(const shared_ptr<Scene>& ps, int w,int h) :
 	mWidth(w),
 	mHeight(h),
-	Node(),
 	mpScene(ps)
 {
 	perspective(fov, static_cast<float>(w)/ static_cast<float>(h),nearp,farp);
@@ -34,51 +34,43 @@ void Camera::ortho(float left, float right, float bottom, float top, float zNear
 	mPosition.y = (bottom + top) / 2.0f;
 	mPosition.z = zNear+1.0f;
 }
+//只有旋转与平移的矩阵求逆
+glm::mat4 inverseLookAt(glm::mat4& mat) {
+	glm::mat4 temp{ 1.0f };
+	temp[0][0] = mat[0][0];
+	temp[1][0] = mat[0][1];
+	temp[2][0] = mat[0][2];
+	temp[0][1] = mat[1][0];
+	temp[1][1] = mat[1][1];
+	temp[2][1] = mat[1][2];
+	temp[0][2] = mat[2][0];
+	temp[1][2] = mat[2][1];
+	temp[2][2] = mat[2][2];
+	temp[0][3] = -mat[0][3] * temp[0][0] - mat[1][3] * temp[0][1] - mat[2][3] * temp[0][2];
+	temp[1][3] = -mat[0][3] * temp[1][0] - mat[1][3] * temp[1][1] - mat[2][3] * temp[1][2];
+	temp[2][3] = -mat[0][3] * temp[2][0] - mat[1][3] * temp[2][1] - mat[2][3] * temp[2][2];
+	return temp;
+}
 
-const glm::mat4& Camera::getViewMatrix() {
-	auto worldMatrix = getWorldMatrix();
-	mViewMatrix[0][0] = worldMatrix[0][0];
-	mViewMatrix[0][1] = worldMatrix[1][0];
-	mViewMatrix[0][2] = worldMatrix[2][0];
-
-	mViewMatrix[1][0] = worldMatrix[0][1];
-	mViewMatrix[1][1] = worldMatrix[1][1];
-	mViewMatrix[1][2] = worldMatrix[2][1];
-
-	mViewMatrix[2][0] = worldMatrix[0][2];
-	mViewMatrix[2][1] = worldMatrix[1][2];
-	mViewMatrix[2][2] = worldMatrix[2][2];
-
-	mViewMatrix[3][0] = -worldMatrix[3][0] * mViewMatrix[0][0] - worldMatrix[3][1] * mViewMatrix[1][0] - worldMatrix[3][2] * mViewMatrix[2][0];
-	mViewMatrix[3][1] = -worldMatrix[3][0] * mViewMatrix[0][1] - worldMatrix[3][1] * mViewMatrix[1][1] - worldMatrix[3][2] * mViewMatrix[2][1];
-	mViewMatrix[3][2] = -worldMatrix[3][0] * mViewMatrix[0][2] - worldMatrix[3][1] * mViewMatrix[1][2] - worldMatrix[3][2] * mViewMatrix[2][2];
-	
-	return mViewMatrix;
+void Camera::update(const glm::mat4& mat) {
+	mWorldMat = mat;
+	glm::vec3 pos(mWorldMat * glm::vec4(mPosition, 1.0f));
+	glm::vec3 lookat(mWorldMat * glm::vec4(mLookAt, 1.0f));
+	mViewMat = glm::lookAt(pos, lookat, mUp);
 }
 
 void Camera::lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up) noexcept {
-	mViewMatrix = glm::lookAt(eyepos, center, up);
-	mMat[0][0] = mViewMatrix[0][0];
-	mMat[0][1] = mViewMatrix[1][0];
-	mMat[0][2] = mViewMatrix[2][0];
-
-	mMat[1][0] = mViewMatrix[0][1];
-	mMat[1][1] = mViewMatrix[1][1];
-	mMat[1][2] = mViewMatrix[2][1];
-
-	mMat[2][0] = mViewMatrix[0][2];
-	mMat[2][1] = mViewMatrix[1][2];
-	mMat[2][2] = mViewMatrix[2][2];
-
-	mMat[3][0] = -mViewMatrix[3][0] * mMat[0][0] - mViewMatrix[3][1] * mMat[1][0] - mViewMatrix[3][2] * mMat[2][0];
-	mMat[3][1] = -mViewMatrix[3][0] * mMat[0][1] - mViewMatrix[3][1] * mMat[1][1] - mViewMatrix[3][2] * mMat[2][1];
-	mMat[3][2] = -mViewMatrix[3][0] * mMat[0][2] - mViewMatrix[3][1] * mMat[1][2] - mViewMatrix[3][2] * mMat[2][2];
+	mPosition = eyepos; 
+	mLookAt = center;
+	mUp = up;
+	glm::vec3 pos(mWorldMat* glm::vec4(eyepos, 1.0f));
+	glm::vec3 lookat(mWorldMat * glm::vec4(center, 1.0f));
+	mViewMat = glm::lookAt(pos, lookat, mUp);
 }
 
 void Camera::renderScene() {
 	auto pScene = mpScene.lock();
 	if (pScene) {
-		getViewMatrix();
 		//获取场景中的灯光
 		std::vector<glm::vec3> lightPos;
 		std::vector<glm::vec3> lightColor;
@@ -86,7 +78,7 @@ void Camera::renderScene() {
 		for (const auto& pl : lights) {
 			if (pl) {
 				auto& pos = pl->getPosOrDir();
-				auto tpos = mViewMatrix * glm::vec4(pos.x, pos.y, pos.z,1.0f);
+				auto tpos = mViewMat * glm::vec4(pos.x, pos.y, pos.z,1.0f);
 				lightPos.emplace_back(glm::vec3(tpos.x,tpos.y,tpos.z));
 				lightColor.emplace_back(pl->getLightColor());
 			}
@@ -120,7 +112,7 @@ void Camera::renderNode(const shared_ptr<Node>& node,
 {
 	if (node) {
 		const auto& pRenderables = node->getRenderables();
-		glm::mat4 modelViewMatrix = mViewMatrix * node->getWorldMatrix();
+		glm::mat4 modelViewMatrix = mViewMat * node->getWorldMatrix();
 
 		for (const auto& pRen : pRenderables) {
 			//std::shared_ptr<R> pMesh = std::dynamic_pointer_cast<Mesh>(pRen.second);
