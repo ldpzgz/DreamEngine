@@ -5,14 +5,16 @@ vs{
 	layout (location = 1) in vec3 aNormal;
 	layout (location = 2) in vec2 aTexCoord;
 	//layout (location = 3) in vec3 aTangent;
-	uniform mat4 projMatrix;
-	uniform mat4 mvMat;
+	uniform mat4 projMat;
+	uniform mat4 viewMat;
+	uniform mat4 modelMat;
     out vec2 TexCoords;
 	out vec3 Normal;
 	out vec3 WorldPos;
     void main()
     {
-       gl_Position = projMatrix * mvMat * vec4(aPos,1.0f);
+		mat4 mvMat = viewMat * modelMat;
+       gl_Position = projMat * mvMat * vec4(aPos,1.0f);
        TexCoords = aTexCoord;
 	   WorldPos = vec3(mvMat * vec4(aPos, 1.0f));
 	   Normal = mat3(mvMat) * aNormal;
@@ -176,8 +178,9 @@ program:pbr1{
 	posLoc=0
 	normalLoc=1
 	texcoordLoc=2
-	projMatrix=projMatrix
-	mvMatrix=mvMat
+	projMatrix=projMat
+	modelMatrix=modelMat
+	viewMatrix=viewMat
 	viewPos=camPos
 	lightPos=lightPositions
 	lightColor=lightColors

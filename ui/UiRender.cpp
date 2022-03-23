@@ -796,8 +796,8 @@ void UiRender::drawTextView(TextView* tv) {
 				glm::mat4 tempMat(1.0f);
 				tempMat = glm::translate(tempMat, glm::vec3(moveVec.x, -moveVec.y, 0.0f));
 				tempMat = tempMat * charPos.matrix;
-				tempMat = mProjMatrix * tempMat;
-				mpFontManager->mpCharMesh->draw(&tempMat,nullptr,&charPos.texMatrix);
+				//tempMat = mProjMatrix * tempMat;
+				mpFontManager->mpCharMesh->draw(&mProjMatrix,&tempMat,nullptr,&charPos.texMatrix);
 			}
 		}
 		if (!bScissorTest) {

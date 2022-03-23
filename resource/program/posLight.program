@@ -3,11 +3,13 @@ vs{
     layout (location = 0) in vec3 aPos;
 	layout (location = 1) in vec3 aNormal;
 	uniform mat4 projMat;
-	uniform mat4 mvMat;
+	uniform mat4 viewMat;
+	uniform mat4 modelMat;
 	out vec3 vNormal;
 	out vec3 vPos;
     void main()
     {
+		mat4 mvMat=viewMat*modelMat;
        gl_Position = projMat * mvMat * vec4(aPos,1.0f);
 	   vPos = vec3(mvMat * vec4(aPos, 1.0f));
 	   vNormal = mat3(mvMat) * aNormal;
@@ -54,7 +56,8 @@ program:posLight{
 	posLoc=0
 	normalLoc=1
 	projMatrix=projMat
-	mvMatrix=mvMat
+	modelMatrix=modelMat
+	viewMatrix=viewMat
 	lightPos=lightPos
 	viewPos=viewPos
 	lightColor=lightColor

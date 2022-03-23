@@ -114,7 +114,7 @@ void Camera::renderScene() {
 			if (mpFboDefferedLighting) {
 				mpFboDefferedLighting->render([this, &lightPos, &lightColor]() {
 					mpMeshQuad->setMaterial(mpDefLightPassMaterial);
-					mpMeshQuad->draw(nullptr, nullptr, nullptr, &lightPos, &lightColor);
+					mpMeshQuad->draw(nullptr, nullptr, nullptr, nullptr, &lightPos, &lightColor);
 					});
 			}
 			//post-process
@@ -139,12 +139,12 @@ void Camera::renderNode(const shared_ptr<Node>& node,
 {
 	if (node) {
 		const auto& pRenderables = node->getRenderables();
-		glm::mat4 modelViewMatrix = mViewMat * node->getWorldMatrix();
+		glm::mat4 modelMat = node->getWorldMatrix();
 
 		for (const auto& pRen : pRenderables) {
 			//std::shared_ptr<R> pMesh = std::dynamic_pointer_cast<Mesh>(pRen.second);
 			if (pRen.second) {
-				pRen.second->draw(&mProjMatrix, &modelViewMatrix, nullptr,lightPos, lightColor, &mPosition);
+				pRen.second->draw(&mProjMatrix, &modelMat, &mViewMat, nullptr,lightPos, lightColor, &mPosition);
 			}
 		}
 		

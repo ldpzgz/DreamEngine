@@ -815,7 +815,8 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc
 }
 
 void Mesh::draw(const glm::mat4* projMat,
-	const glm::mat4* mvMat, 
+	const glm::mat4* modelMat, 
+	const glm::mat4* viewMat,
 	const glm::mat4* texMat,
 	const std::vector<glm::vec3>* lightPos, 
 	const std::vector<glm::vec3>* lightColor, 
@@ -828,8 +829,11 @@ void Mesh::draw(const glm::mat4* projMat,
 			if (projMat) {
 				pShader->setProjMatrix(*projMat);
 			}
-			if (mvMat) {
-				pShader->setMvMatrix(*mvMat);
+			if (modelMat) {
+				pShader->setModelMatrix(*modelMat);
+			}
+			if (viewMat) {
+				pShader->setViewMatrix(*viewMat);
 			}
 			if (texMat) {
 				pShader->setTextureMatrix(*texMat);

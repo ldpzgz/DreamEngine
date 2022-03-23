@@ -11,6 +11,7 @@ public:
 
 	virtual void draw(const glm::mat4* projMat, 
 		const glm::mat4* modelMat, 
+		const glm::mat4* viewMat = nullptr,
 		const glm::mat4* texMat = nullptr,
 		const std::vector<glm::vec3>* lightPos = nullptr, 
 		const std::vector<glm::vec3>* lightColor = nullptr, 

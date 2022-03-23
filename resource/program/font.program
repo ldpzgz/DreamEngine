@@ -2,12 +2,13 @@ vs{
 	#version 300 es
     layout(location = 0) in vec4 a_position;
 	layout(location = 1) in vec2 a_tex;
-	uniform mat4 mvp_matrix;
+	uniform mat4 projMat;
+	uniform mat4 modelMat;
 	uniform mat4 texture_matrix;
 	out vec2 v_texCoord;
     void main()
     {
-	   gl_Position = mvp_matrix*a_position;
+	   gl_Position = projMat * modelMat * a_position;
 	   vec4 temp = texture_matrix*vec4(a_tex,0.0f,1.0f);
 	   v_texCoord = temp.xy;
     }
@@ -36,7 +37,8 @@ texture:fontsTexture{
 program:fontsBasic{
 	posLoc=0
 	texcoordLoc=1
-	projMatrix=mvp_matrix
+	projMatrix=projMat
+	modelMatrix=modelMat
 	textureMatrix=texture_matrix
 	uniformColor=color
 	sampler{

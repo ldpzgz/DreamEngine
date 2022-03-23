@@ -35,13 +35,15 @@ config{
 		layout(location = 1) in vec2 inTexcoord;
 		layout(location = 2) in vec3 inNormal;
 		uniform mat4 projMat;
-		uniform mat4 mvMat;
+		uniform mat4 modelMat;
+		uniform mat4 viewMat;
 		out vec3 worldPos;
 		out vec3 worldNormal;
 		#ifdef HAS_MAP
 			out vec2 texcoord;
 		#endif
 		void main(){
+			mat4 mvMat = viewMat * modelMat;
 			gl_Position = projMat * mvMat * vec4(inPos,1.0f);
 			#ifdef HAS_MAP
 				texcoord = inTexcoord;
