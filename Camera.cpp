@@ -4,10 +4,12 @@
 #include "Mesh.h"
 #include "Scene.h"
 #include "Light.h"
+#include "Shader.h"
 #include "Fbo.h"
 #include "Log.h"
 #include "Resource.h"
 #include <glm/ext/matrix_transform.hpp>
+#include <random>
 
 Camera::Camera(const shared_ptr<Scene>& ps, int w,int h) :
 	mWidth(w),
@@ -90,15 +92,40 @@ void Camera::renderScene() {
 		}
 		if (mpFboDefferedGeo) {
 			mpFboDefferedGeo->render([this, &pScene] {
+				//deffered rendering geometry pass
 				defferedGeometryPass(pScene);
 				});
-			mpFboDefferedGeo->blitDepthBufToWin();
+			//ssao
+			if (mpFboSsao) {
+				mpFboSsao->render([this] {
+					mpMeshQuad->setMaterial(mpSsaoMaterial);
+					mpMeshQuad->draw(&mProjMatrix,nullptr);
+					});
+			}
+			//ssao blur
+			if (mpFboSsaoBlured) {
+				mpFboSsaoBlured->render([this] {
+					mpMeshQuad->setMaterial(mpSsaoBlurMaterial);
+					mpMeshQuad->draw(nullptr, nullptr);
+					});
+			}
 
 			//deffered render lighting pass
-			defferedLightingPass(&lightPos, &lightColor);
-		}
-		
+			if (mpFboDefferedLighting) {
+				mpFboDefferedLighting->render([this, &lightPos, &lightColor]() {
+					mpMeshQuad->setMaterial(mpDefLightPassMaterial);
+					mpMeshQuad->draw(nullptr, nullptr, nullptr, &lightPos, &lightColor);
+					});
+			}
+			//post-process
+			//todo
 
+			mpMeshQuad->setMaterial(mpDrawQuadMaterial);
+			mpMeshQuad->draw(nullptr, nullptr);
+			//把深度缓冲区copy到窗口系统
+			mpFboDefferedGeo->blitDepthBufToWin();
+			
+		}
 		//forward rendering
 		const auto& rootNode = pScene->getRoot();
 		renderNode(rootNode, pScene, &lightPos, &lightColor);
@@ -129,44 +156,112 @@ void Camera::renderNode(const shared_ptr<Node>& node,
 }
 
 void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
-	try {
-		mpFboDefferedGeo = make_shared<Fbo>();
-		mpPosMap = std::make_shared<Texture>();//0
-		mpNormal = std::make_shared<Texture>();//1
-		mpAlbedoMap = std::make_shared<Texture>();//2
-		if (mpPosMap && mpNormal && mpAlbedoMap) {
-			mpPosMap->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
-			mpNormal->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
-			mpAlbedoMap->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
+	
+	mpFboDefferedGeo = make_shared<Fbo>();
+	mpFboDefferedLighting = make_shared<Fbo>();
+	mpFboSsao = make_shared<Fbo>();
+	mpFboSsaoBlured = make_shared<Fbo>();
+	mpPosMap = std::make_shared<Texture>();//0
+	mpNormal = std::make_shared<Texture>();//1
+	mpAlbedoMap = std::make_shared<Texture>();//2
+	mpDefferedRenderResult = std::make_shared <Texture>();
+	mpSsaoMap = std::make_shared <Texture>();
+	mpSsaoNoiseMap = std::make_shared <Texture>();
+	mpSsaoBluredMap = std::make_shared <Texture>();
+	if (mpPosMap && mpNormal && mpAlbedoMap) {
+		mpPosMap->setParam(GL_NEAREST, GL_NEAREST);
+		mpPosMap->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
+		mpNormal->setParam(GL_NEAREST, GL_NEAREST);
+		mpNormal->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
+		mpAlbedoMap->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
+		mpFboDefferedGeo->attachColorTexture(mpPosMap, 0);
+		mpFboDefferedGeo->attachColorTexture(mpNormal, 1);
+		mpFboDefferedGeo->attachColorTexture(mpAlbedoMap, 2);
+		mpFboDefferedGeo->attachDepthRbo(mWidth, mHeight);//深度缓存
+	}
+	if (mpDefferedRenderResult) {
+		mpDefferedRenderResult->create2DMap(mWidth,mHeight,nullptr, GL_RGBA, GL_RGBA);
+		mpFboDefferedLighting->attachColorTexture(mpDefferedRenderResult);
+		mpFboDefferedLighting->setDepthTest(false);
+	}
+	if (mpSsaoMap) {
+		mpSsaoMap->setParam(GL_NEAREST, GL_NEAREST);
+		mpSsaoMap->create2DMap(mWidth, mHeight, nullptr, GL_RED, GL_RED,GL_FLOAT);
+		mpFboSsao->attachColorTexture(mpSsaoMap);
+	}
+	if (mpSsaoBluredMap) {
+		mpSsaoBluredMap->setParam(GL_NEAREST, GL_NEAREST);
+		mpSsaoBluredMap->create2DMap(mWidth, mHeight, nullptr, GL_RED, GL_RED, GL_FLOAT);
+		mpFboSsaoBlured->attachColorTexture(mpSsaoBluredMap);
+	}
+	if (mpSsaoNoiseMap) {
+		//生成在法线法线方向的半球内呈均匀分布的采样向量，
+		//让生成的向量靠近像素中心
+		std::uniform_real_distribution<GLfloat> randomFloats(0.0, 1.0); // generates random floats between 0.0 and 1.0
+		std::default_random_engine generator;
+			
+		for (unsigned int i = 0; i < 64; ++i)
+		{
+			glm::vec3 sample(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator) * 2.0 - 1.0, randomFloats(generator));
+			sample = glm::normalize(sample);
+			sample *= randomFloats(generator);
+			float scale = float(i) / 64.0f;
+
+			auto lerp=[](float a, float b, float f) ->float{return a + f * (b - a);};
+			// scale samples s.t. they're more aligned to center of kernel
+			scale = lerp(0.1f, 1.0f, scale * scale);
+			sample *= scale;
+			mSsaoKernel.push_back(sample);
 		}
 
-		mpMeshQuad = std::make_shared<Mesh>(MeshType::MESH_Quad);
-		if (mpMeshQuad) {
-			mpMeshQuad->loadMesh();
-			
-			auto& pMat = Resource::getInstance().getMaterialDefferedLightPass(true);
-			if (pMat) {
-				mpMeshQuad->setMaterial(pMat);
-				pMat->setTextureForSampler("posMap", mpPosMap);
-				pMat->setTextureForSampler("albedoMap", mpAlbedoMap);
-				pMat->setTextureForSampler("normalMap", mpNormal);
-				if (pScene) {
-					auto& skyInfo = pScene->getSkybox();
-					pMat->setTextureForSampler("irrMap", skyInfo.mpIrrTex);
-					pMat->setTextureForSampler("prefilterMap", skyInfo.mpPrefilterTex);
-				}
-				pMat->setTextureForSampler("brdfLUT", Resource::getInstance().getTexture("brdfLUT"));
+		//生成一个随机的旋转矩阵，用于旋转采样向量
+		std::vector<glm::vec3> ssaoNoise;
+		for (unsigned int i = 0; i < 16; i++)
+		{
+			glm::vec3 noise(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator) * 2.0 - 1.0, 0.0f); // rotate around z-axis (in tangent space)
+			ssaoNoise.push_back(noise);
+		}
+		mpSsaoNoiseMap->setParam(GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT);
+		mpSsaoNoiseMap->create2DMap(4, 4, reinterpret_cast<unsigned char*>(ssaoNoise.data()), GL_RGBA32F, GL_RGBA, GL_FLOAT);
+	}
+		
+	mpMeshQuad = std::make_shared<Mesh>(MeshType::MESH_Quad);
+	if (mpMeshQuad) {
+		mpMeshQuad->loadMesh();
+		Resource& res = Resource::getInstance();
+		mpSsaoMaterial = res.getMaterial("ssao");
+		if (mpSsaoMaterial) {
+			mpSsaoMaterial->setTextureForSampler("posMap", mpPosMap);
+			mpSsaoMaterial->setTextureForSampler("normalMap", mpNormal);
+			mpSsaoMaterial->setTextureForSampler("noiseMap", mpSsaoNoiseMap);
+			auto& pShader = mpSsaoMaterial->getShader();
+			if (pShader) {
+				pShader->updateUniformBlock("SampleArray", mSsaoKernel.data(), sizeof(glm::vec3) * mSsaoKernel.size());
 			}
 		}
+		mpSsaoBlurMaterial = res.getMaterial("ssaoBlur");
+		if (mpSsaoBlurMaterial) {
+			mpSsaoBlurMaterial->setTextureForSampler("ssaoInput", mpSsaoMap);
+		}
+		mpDefLightPassMaterial = res.getMaterialDefferedLightPass(true);
+		if (mpDefLightPassMaterial) {
+			mpDefLightPassMaterial->setTextureForSampler("posMap", mpPosMap);
+			mpDefLightPassMaterial->setTextureForSampler("albedoMap", mpAlbedoMap);
+			mpDefLightPassMaterial->setTextureForSampler("normalMap", mpNormal);
+			mpDefLightPassMaterial->setTextureForSampler("ssaoMap", mpSsaoBluredMap);
+			if (pScene) {
+				auto& skyInfo = pScene->getSkybox();
+				mpDefLightPassMaterial->setTextureForSampler("irrMap", skyInfo.mpIrrTex);
+				mpDefLightPassMaterial->setTextureForSampler("prefilterMap", skyInfo.mpPrefilterTex);
+			}
+			mpDefLightPassMaterial->setTextureForSampler("brdfLUT", Resource::getInstance().getTexture("brdfLUT"));
+		}
+
+		mpDrawQuadMaterial = res.getMaterial("drawQuad");
+		if (mpDrawQuadMaterial) {
+			mpDrawQuadMaterial->setTextureForSampler("albedoMap", mpDefferedRenderResult);
+		}
 	}
-	catch (...) {
-		LOGE(" %s create mpFboDeffered and maps failed",__func__);
-		return;
-	}
-	mpFboDefferedGeo->attachColorTexture(mpPosMap, 0);
-	mpFboDefferedGeo->attachColorTexture(mpNormal, 1);
-	mpFboDefferedGeo->attachColorTexture(mpAlbedoMap, 2);
-	mpFboDefferedGeo->attachDepthRbo(mWidth, mHeight);//深度缓存
 }
 
 void Camera::defferedGeometryPass(const std::shared_ptr<Scene>& pScene) const{
@@ -176,14 +271,12 @@ void Camera::defferedGeometryPass(const std::shared_ptr<Scene>& pScene) const{
 	}
 }
 
+void Camera::ssaoPass() {
+
+}
+
 void Camera::defferedLightingPass(std::vector<glm::vec3>* lightPos,std::vector<glm::vec3>* lightColor) {
-	GLboolean preDepthTest = true;
-	glGetBooleanv(GL_DEPTH_TEST, &preDepthTest);
-	glDisable(GL_DEPTH_TEST);
-	mpMeshQuad->draw(nullptr,nullptr,nullptr,lightPos,lightColor);
-	if (preDepthTest) {
-		glEnable(GL_DEPTH_TEST);
-	}
+	
 }
 
 void Camera::updateWidthHeight(int w,int h) {

@@ -13,6 +13,7 @@
 #include <string>
 #include <fstream>
 extern void checkglerror();
+
 Shader::Shader(const std::string& name) :
 	mName(name)
 {
@@ -84,12 +85,10 @@ bool Shader::initShader(const char* vs,const char* ps) {
 
 			if (infoLen > 1)
 			{
-				char* infoLog = (char*)malloc(sizeof(char) * infoLen);
-
-				glGetProgramInfoLog(mProgram, infoLen, NULL, infoLog);
-				LOGD("Error linking program:\n%s\n", infoLog);
-
-				free(infoLog);
+				//c++17才支持
+				auto infoLog = std::make_unique<char[]>((sizeof(char)* infoLen));
+				glGetProgramInfoLog(mProgram, infoLen, NULL, infoLog.get());
+				LOGD("Error linking program:\n%s\n", infoLog.get());
 			}
 
 			glDeleteProgram(mProgram);
@@ -106,34 +105,26 @@ bool Shader::initShader(const char* vs,const char* ps) {
 			mUniformLocMap.clear();
 			glGetProgramiv(mProgram,GL_ACTIVE_UNIFORM_MAX_LENGTH,&maxNameLength);
 			glGetProgramiv(mProgram,GL_ACTIVE_UNIFORMS,&activeNum);
-			char* tempName = new char[maxNameLength];
+			auto tempName = std::make_unique<char[]>(maxNameLength);
 			GLsizei namelength;
 			for(int i=0; i<activeNum; ++i)
 			{
-				glGetActiveUniform(mProgram,i,maxNameLength,&namelength,&size,&type,tempName);
-				loc = glGetUniformLocation(mProgram,(const char*)tempName);
-				mUniformLocMap.insert(std::make_pair(std::string(tempName),loc));
+				glGetActiveUniform(mProgram,i,maxNameLength,&namelength,&size,&type,tempName.get());
+				loc = glGetUniformLocation(mProgram,tempName.get());
+				mUniformLocMap.emplace(tempName.get(), loc);
 				//Log::info("loc: %s,%d",tempName,loc);
-			}
-			if(tempName!=0)
-			{
-				delete []tempName;
 			}
 			
 			mAttributeLocMap.clear();
 			glGetProgramiv(mProgram, GL_ACTIVE_ATTRIBUTES, &activeNum);
 			glGetProgramiv(mProgram, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH,&maxNameLength);
-			tempName = new char[maxNameLength];
+			tempName = std::make_unique<char[]>(maxNameLength);
 			for(int i=0; i<activeNum; ++i)
 			{
-				glGetActiveAttrib(mProgram,i,maxNameLength,&namelength,&size,&type,tempName);
-				loc = glGetAttribLocation(mProgram,(const char*)tempName);
-				mAttributeLocMap.insert(std::make_pair(std::string(tempName),loc));
+				glGetActiveAttrib(mProgram,i,maxNameLength,&namelength,&size,&type,tempName.get());
+				loc = glGetAttribLocation(mProgram,tempName.get());
+				mAttributeLocMap.emplace(tempName.get(), loc);
 				//Log::info("loc: %s,%d",tempName,loc);
-			}
-			if(tempName!=0)
-			{
-				delete []tempName;
 			}
 			glDeleteShader(mFs);
 			glDeleteShader(mVs);
@@ -181,12 +172,10 @@ GLuint Shader::loadShader(GLenum type, const char *shaderSrc)
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLen);
 
 		if (infoLen > 1) {
-			char* infoLog = (char*) malloc(sizeof(char) * infoLen);
+			auto infoLog = std::make_unique<char[]>((sizeof(char) * infoLen));
 
-			glGetShaderInfoLog(shader, infoLen, NULL, infoLog);
-			LOGD("Error compiling shader:\n%s\n", infoLog);
-
-			free(infoLog);
+			glGetShaderInfoLog(shader, infoLen, NULL, infoLog.get());
+			LOGD("Error compiling shader:\n%s\n", infoLog.get());
 		}
 
 		glDeleteShader(shader);
@@ -464,4 +453,33 @@ void Shader::deleteShader()
 	{
 		glDeleteProgram(mProgram);
 	}
+}
+
+
+//只bind一次，渲染的时候就不用设置了，渲染过程中只改ubo中的值就好了
+void Shader::bindUniformBlock(const char* uboName, unsigned int bindPoint) {
+	//shader的uniform block有一个index，让这个index与某个uniform buffer bindpoint联系起来
+	unsigned int ubIndex = glGetUniformBlockIndex(mProgram,uboName);
+	if (GL_INVALID_INDEX != ubIndex)
+	{
+		//先把自己bind到bindPoint
+		glUniformBlockBinding(mProgram, ubIndex, bindPoint);
+		int sizeInBytes = 0;
+		glGetActiveUniformBlockiv(mProgram, ubIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &sizeInBytes);
+		if (sizeInBytes > 0) {
+			//再把ubo绑定到bindPoint
+			Ubo::getInstance().bind(uboName, sizeInBytes, bindPoint);
+		}
+		else {
+			LOGE("cannot get uniform block size %s", uboName);
+		}
+		checkglerror();
+	}
+	else {
+		LOGE("cannot get uniform block index %s",uboName);
+	}
+}
+
+void Shader::updateUniformBlock(const char* uboName, void* pdata, int sizeInByte) {
+	Ubo::getInstance().update(uboName, pdata, sizeInByte);
 }

@@ -17,14 +17,15 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include "Texture.h"
 #include <unordered_map>
 #include <memory>
 #include <string>
 #include <array>
 #include <vector>
+#include <string_view>
 #include "Log.h"
 #include "Rect.h"
+#include "Ubo.h"
 
 #include <glm/vec3.hpp>           // vec3
 #include <glm/mat4x4.hpp>         // mat4
@@ -96,14 +97,11 @@ public:
 	int getNormalLoc() {
 		return mNormalLoc;
 	}
-
-	/*int getSamplerCount() {
-		return mSamplerCount;
-	}
-
-	void setSamplerCount(int count) {
-		mSamplerCount = count;
-	}*/
+	//把shader里面的名字为ubName的uniform block绑定到bindPoint，
+	//bindPoint：从0开始的整数，在material的progoram里面配置
+	void bindUniformBlock(const char* ubName, unsigned int bindPoint);
+	//更新本shader里面的名字为ubName的uniform block的值
+	void updateUniformBlock(const char* ubName, void* pdata,int sizeInByte);
 
 	void deleteShader();
 	//结果小于0表示错误

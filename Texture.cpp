@@ -89,18 +89,39 @@ bool Texture::createCubicMap(int width, int height, GLint internalFormat, GLenum
 		}*/
 		checkglerror();
 	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	GLint minParam = autoMipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, minParam);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
 	if (autoMipmap) {
 		glGenerateMipmap(mTarget);
+		mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
 	}
+
+	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
+	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mMagFilter);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mWrapParamR);
+
+	
 	checkglerror();
 	return true;
+}
+
+void Texture::setParam(int minFilter, int magFilter, int wrapS, int wrapT,int wrapR) {
+	mMinFilter = minFilter;
+	mMagFilter = magFilter;
+	mWrapParamS = wrapS;
+	mWrapParamT = wrapT;
+	mWrapParamR = wrapR;
+	if (mTextureId > 0) {
+		glBindTexture(mTarget, mTextureId);
+		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mMagFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
+		if (mTarget == GL_TEXTURE_CUBE_MAP) {
+			glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mWrapParamR);
+		}
+		glBindTexture(mTarget, 0);
+	}
 }
 
 bool Texture::create2DMap(int width,int height,unsigned char* pdata, GLint internalFormat,GLint format,GLenum type, int aligment,bool autoMipmap)
@@ -116,11 +137,11 @@ bool Texture::create2DMap(int width,int height,unsigned char* pdata, GLint inter
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(mTarget, mTextureId);//mTarget是GL_TEXTURE_CUBE_MAP的时候要注意，
 	// Set-up texture properties.
-	GLint minParam = autoMipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, minParam);
-	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	mMinFilter = autoMipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
+	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
+	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,mMagFilter);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
 	// Loads image data into OpenGL.
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, aligment);
@@ -184,10 +205,10 @@ bool Texture::loadHdrFile(const std::string& path) {
 		glBindTexture(mTarget, mTextureId);
 		glTexImage2D(GL_TEXTURE_2D, 0, mInternalFormat, mWidth, mHeight, 0, mFormat, mType, data);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mMagFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
 
 		stbi_image_free(data);
 		return true;
@@ -210,10 +231,6 @@ bool Texture::loadFromFile(const std::string& path) {
 		glGenTextures(1, &mTextureId);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(mTarget, mTextureId);
-		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 		if (nrChannels == 3) {
 			mFormat = GL_RGB;
 		}
@@ -228,6 +245,11 @@ bool Texture::loadFromFile(const std::string& path) {
 		}
 		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, mType, data);
 		glGenerateMipmap(mTarget);
+		mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
+		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mMagFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
 		checkglerror();
 		stbi_image_free(data);
 		return true;
@@ -287,11 +309,12 @@ bool Texture::loadCubemap(const std::string& path) {
 	//glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);//默认是4，the alignment requirements for the start of each pixel row in memory
 
 	// Set-up texture properties.
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
+	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
+	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mMagFilter);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mWrapParamR);
 
 	if (glGetError() != GL_NO_ERROR)
 	{

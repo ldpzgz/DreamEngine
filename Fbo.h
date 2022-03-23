@@ -60,8 +60,12 @@ public:
 	void setDepthTest(bool b) {
 		mbEnableDepthTest = b;
 	}
+	//blend选项，在material里面也可以设置，每个物体可以根据自身特点单独设置
+	//这里提供全局的blend设置，比如ui渲染，全部ui都是一样的blend配置，避免每个view单独配置
 	void setBlend(bool b);
 	void setBlendValue(int sFactorRgb, int dFactorRgb, int sFactorAlpha, int dFactorAlpha, int modelRgb, int modelAlpha);
+	
+	//这里提供cullface的配置，理由同上面的blend
 	void setCullFace(bool b,int model = GL_BACK,int frontFace=GL_CCW) {
 		mbCullFace = b;
 		mCullFaceMode = model;

@@ -53,24 +53,66 @@ public:
 
 	void loadAllMaterial();
 
-	std::shared_ptr<Texture> getTexture(const std::string& name);
+	std::shared_ptr<Texture> getTexture(const std::string& name) {
+		auto it = mTextures.find(name);
+		if (it != mTextures.end()) {
+			return it->second;
+		}
+		return nullptr;
+	}
 
-	std::shared_ptr<Material> getMaterial(const std::string& name);
+	std::shared_ptr<Material> getMaterial(const std::string& name) {
+		auto it = mMaterials.find(name);
+		if (it != mMaterials.end()) {
+			return it->second;
+		}
+		return nullptr;
+	}
 
 	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo);
 
 	std::shared_ptr<Material> getMaterialDefferedLightPass(bool hasIBL);
 
-	std::shared_ptr<Shader> getShader(const std::string& name);
+	std::shared_ptr<Shader> getShader(const std::string& name) {
+		auto it = mShaders.find(name);
+		if (it != mShaders.end()) {
+			return it->second;
+		}
+		return nullptr;
+	}
 
-	std::shared_ptr<Node> getNode(const std::string& name);
+	std::shared_ptr<Node> getNode(const std::string& name) {
+		auto pit = mNodes.find(name);
+		if (pit != mNodes.end()) {
+			return pit->second;
+		}
+		return nullptr;
+	}
+
+	const std::unordered_map<std::string, std::shared_ptr<Node>>& getAllNode() {
+		return mNodes;
+	}
 
 	std::shared_ptr<Texture> createTexture(const std::string& name, int width, int height,
 		unsigned char* pdata,
 		GLint internalFormat,
 		GLint format,
 		GLenum type,
-		bool autoMipmap = false);
+		bool autoMipmap = false) {
+		auto pTex = make_shared<Texture>();
+		if (!pTex->create2DMap(width, height, pdata, internalFormat, format, type, 1, autoMipmap)) {
+			LOGE("create a texture failed %s ", __func__);
+			pTex.reset();
+		}
+		else {
+			auto it = mTextures.try_emplace(name, pTex);
+			if (!it.second) {
+				LOGE("failed to add texture %s to gTexture,exist already", name.c_str());
+				pTex.reset();
+			}
+		}
+		return pTex;
+	}
 
 	static std::shared_ptr<Texture> getOrLoadTextureFromFile(const std::string& path, const std::string& texName="");
 
@@ -157,6 +199,7 @@ private:
 	static bool materialRoughnessHandler(Material* pMat, const std::string&);
 	static bool materialAoHandler(Material* pMat, const std::string&);
 	static bool programSamplerHandler(Material* pMat, const std::string&);
+	static bool programUboHandler(Material* pMat, const std::string&);
 
 	static bool nodeNameHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
 	static bool meshPathHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
@@ -210,11 +253,12 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"viewPos",ResourceImpl::viewPosHandler},
 	{"uniformColor",ResourceImpl::uniformColorHandler},
 	{"albedo",ResourceImpl::albedoColorHandler},
-	{"sampler",ResourceImpl::programSamplerHandler},
 	{"metallic",ResourceImpl::metallicHandler},
 	{"roughness",ResourceImpl::roughnessHandler},
 	{"ao",ResourceImpl::aoHandler},
-	{"op",ResourceImpl::opHandler}
+	{"op",ResourceImpl::opHandler},
+	{"sampler",ResourceImpl::programSamplerHandler},
+	{"ubo",ResourceImpl::programUboHandler},
 };
 /*
 * material文件里面：material:testM{...}的处理函数
@@ -308,7 +352,7 @@ bool ResourceImpl::meshAoMapHander(NodeSP& pNode, MaterialInfo& info, const std:
 
 bool ResourceImpl::meshMatInfoHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
-		std::unordered_map<std::string, std::string> matInfoValue;
+		vector<pair<std::string, std::string>> matInfoValue;
 		MaterialInfo info1;
 		if (Utils::parseItem(value, matInfoValue)) {
 			for (const auto& pa : matInfoValue) {
@@ -579,15 +623,38 @@ bool ResourceImpl::aoHandler(Material* pMat, const std::string& value) {
 	return true;
 }
 
+bool ResourceImpl::programUboHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		vector<pair<string, string>> uniformBlock;
+		//uniform block绑定到对于的uniform block bind point上
+		if (Utils::parseItem(value, uniformBlock)) {
+			auto& pShader = pMat->getShader();
+			for (const auto& item : uniformBlock) {
+				int bindPoint = -1;
+				try {
+					bindPoint = std::stoi(item.second);
+				}
+				catch (...) {
+					LOGE("uniform block bindpoint is not number");
+				}
+				if (bindPoint >= 0) {
+					pShader->bindUniformBlock(item.first.c_str(), bindPoint);
+				}
+			}
+		}
+	}
+	return true;
+}
+
 bool ResourceImpl::programSamplerHandler(Material* pMat, const std::string& value) {
 	if (!value.empty()) {
-		Umapss umapSampler;
+		vector<pair<string,string>> umapSampler;
 		//找到program里面列出来的sampler名字
 		if (Utils::parseItem(value, umapSampler)) {
 			if (!umapSampler.empty()) {
 				auto& samplers = pMat->getShader()->getSamplerNames();
 				auto& uniforms = pMat->getShader()->getUniforms();
-				for (auto& item : umapSampler) {
+				for (const auto& item : umapSampler) {
 					//program脚本里面列出来的sampler，看看shader的uniform里面有没有
 					if (uniforms.find(item.first) != uniforms.end()) {
 						samplers.emplace_back(item.first);
@@ -629,14 +696,14 @@ bool ResourceImpl::programHandler(Material* pMaterial, const std::string& progra
 }
 
 bool ResourceImpl::samplerHandler(Material* pMaterial, const std::string& samplerContent) {
-	Umapss contents;
+	vector<pair<string, string>> contents;
 	bool bret = false;
 	do {
 		if (Utils::parseItem(samplerContent, contents)) {
 			for (auto& pairs : contents) {
 				auto pTexture = getOrLoadTextureFromFile(pairs.second);
 				if (pTexture) {
-					pMaterial->setTextureForSampler(pairs.first, pTexture);
+					pMaterial->setTextureForSampler(pairs.first.c_str(), pTexture);
 					bret = true;
 				}
 				else {
@@ -652,9 +719,9 @@ bool ResourceImpl::samplerHandler(Material* pMaterial, const std::string& sample
 }
 
 bool ResourceImpl::opHandler(Material* pMaterial, const std::string& opContent) {
-	Umapss contents;
+	vector<pair<string, string>> contents;
 	if (Utils::parseItem(opContent, contents)) {
-		for (auto pairs : contents) {
+		for (const auto& pairs : contents) {
 			auto it = gMaterialHandlers.find(pairs.first);
 			if (it != gMaterialHandlers.end()) {
 				it->second(pMaterial, pairs.second);
@@ -891,6 +958,10 @@ std::shared_ptr<Node> Resource::getNode(const std::string& name) {
 	return mpImpl->getNode(name);
 }
 
+const std::unordered_map<std::string, std::shared_ptr<Node>>& Resource::getAllNode() {
+	return mpImpl->getAllNode();
+}
+
 //GL_RGB,GL_RGB,GL_UNSIGNED_BYTE
 std::shared_ptr<Texture> Resource::createTexture(const std::string& name, int width, int height,
 	unsigned char* pdata,
@@ -965,11 +1036,12 @@ bool ResourceImpl::parseMeshCfgFile(const string& filePath) {
 
 bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 	if (!cfgValue.empty()) {
-		std::multimap<std::string, std::string> meshValue;
+		vector<pair<string,string>> meshValue;
 		//这个node会放在全局变量里面，这个node attach了mesh
 			//解析出来的material也会放在全局变量里面，所在这三个都不会自动被释放。
 		NodeSP pNode = std::make_shared<Node>();
 		MaterialInfo info;
+		string pathStr;
 		if (Utils::parseItem(cfgValue, meshValue)) {
 			//处理mesh{}里面的nodeName,matInfo等两项。
 			for (const auto& p : meshValue) {
@@ -977,18 +1049,20 @@ bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 				if (itHandler != gMeshKeyValueHandlers.cend()) {
 					itHandler->second(pNode, info, p.second);
 				}
+				else if (p.first == "path") {
+					pathStr = p.second;
+				}
 			}
 		}
 		//加载mesh，内部会设置好material
-		auto it = meshValue.find("path");
-		if (it != meshValue.end()) {
+		if (!pathStr.empty()) {
 			MeshLoaderAssimp loader;
-			if (loader.loadFromFile(it->second, pNode)) {
-				LOGD("success load mesh from %s", it->second.c_str());
+			if (loader.loadFromFile(pathStr, pNode)) {
+				LOGD("success load mesh from %s", pathStr.c_str());
 				return true;
 			}
 			else {
-				LOGE(" to load mesh from path %s", it->second.c_str());
+				LOGE(" to load mesh from path %s", pathStr.c_str());
 				return false;
 			}
 		}
@@ -1098,10 +1172,10 @@ bool ResourceImpl::parseMaterialFile(const string& filePath) {
 }
 
 bool ResourceImpl::parseMaterial(const std::string& matName, const std::string& matValue) {
-	Umapss umap;
-	if (Utils::parseItem(matValue, umap)) {
+	vector<pair<string,string>> vec;
+	if (Utils::parseItem(matValue, vec)) {
 		auto pMaterial = std::make_shared<Material>(matName);
-		for (auto& pair : umap) {
+		for (const auto& pair : vec) {
 			auto it = gMaterialHandlers.find(pair.first);
 			if (it != gMaterialHandlers.end()) {
 				if (!it->second(pMaterial.get(), pair.second))
@@ -1125,10 +1199,10 @@ bool ResourceImpl::parseMaterial(const std::string& matName, const std::string& 
 
 bool ResourceImpl::parseProgram(std::shared_ptr<Material>& pMaterial, const string& program)
 {
-	Umapss umap;
+	vector<pair<string,string>> vec;
 	bool bsuccess = false;
-	if (Utils::parseItem(program, umap)) {
-		for (auto& pair : umap) {
+	if (Utils::parseItem(program, vec)) {
+		for (auto& pair : vec) {
 			auto it = gProgramKeyValueHandlers.find(pair.first);
 			if (it != gProgramKeyValueHandlers.end()) {
 				it->second(pMaterial.get(), pair.second);
@@ -1185,9 +1259,9 @@ bool ResourceImpl::parseCubeTexture(const string& textureName, const string& tex
 }
 
 bool ResourceImpl::parseConfig( const string& value) {
-	Umapss umap;
-	if (Utils::parseItem(value, umap)) {
-		for (auto& it : umap) {
+	vector<pair<string, string>> vec;
+	if (Utils::parseItem(value, vec)) {
+		for (const auto& it : vec) {
 			mConfigValues.emplace(it.first, it.second);
 		}
 	}
@@ -1322,44 +1396,6 @@ std::shared_ptr<Texture> ResourceImpl::getOrLoadTextureFromFile(const std::strin
 	}
 }
 
-std::shared_ptr<Shader> ResourceImpl::getShader(const std::string& name) {
-	auto it = mShaders.find(name);
-	if (it != mShaders.end()) {
-		return it->second;
-	}
-	return nullptr;
-}
-
-std::shared_ptr<Texture> ResourceImpl::createTexture(const std::string& name, int width, int height,
-	unsigned char* pdata,
-	GLint internalFormat,
-	GLint format,
-	GLenum type,
-	bool autoMipmap)
-{
-	auto pTex = make_shared<Texture>();
-	if (!pTex->create2DMap(width, height, pdata, internalFormat, format, type, 1, autoMipmap)) {
-		LOGE("create a texture failed %s ", __func__);
-		pTex.reset();
-	}
-	else {
-		auto it = mTextures.try_emplace(name, pTex);
-		if (!it.second) {
-			LOGE("failed to add texture %s to gTexture,exist already", name.c_str());
-			pTex.reset();
-		}
-	}
-	return pTex;
-}
-
-std::shared_ptr<Node> ResourceImpl::getNode(const std::string& name) {
-	auto pit = mNodes.find(name);
-	if (pit != mNodes.end()) {
-		return pit->second;
-	}
-	return nullptr;
-}
-
 std::shared_ptr<Material> ResourceImpl::getMaterialDefferedLightPass(bool hasIBL) {
 	std::string materialName = "defferedLightPass";
 	if (hasIBL) {
@@ -1380,7 +1416,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedLightPass(bool hasIBL
 	fs += mpVersion;
 	fs += mpPrecision;
 
-	program += "sampler{\nposMap=none\nalbedoMap=none\nnormalMap=none\n";	
+	program += "sampler{\nposMap=none\nalbedoMap=none\nnormalMap=none\nssaoMap=none\n";	
 	if (hasIBL) {
 		fs += hasIBLMap;
 		program += "irrMap=none\nprefilterMap=none\nbrdfLUT=none\n";
@@ -1622,21 +1658,6 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	}
 	checkglerror();
 	return pMaterial;
-}
-
-std::shared_ptr<Material> ResourceImpl::getMaterial(const std::string& name) {
-	auto it = mMaterials.find(name);
-	if (it != mMaterials.end()) {
-		return it->second;
-	}
-	return nullptr;
-}
-std::shared_ptr<Texture> ResourceImpl::getTexture(const std::string& name) {
-	auto it = mTextures.find(name);
-	if (it != mTextures.end()) {
-		return it->second;
-	}
-	return nullptr;
 }
 
 void ResourceImpl::loadAllMaterial() {

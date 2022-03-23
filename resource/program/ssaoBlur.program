@@ -1,24 +1,38 @@
 vs{
-	#version 300 es
-    layout(location = 0) in vec4 a_position;
-    layout(location = 1) in vec2 a_texCoord;
-    out vec2 v_texCoord;
-    void main()
-    {
-       gl_Position = a_position;
-       v_texCoord = a_texCoord;
-    }
+	#version 330 core
+	layout (location = 0) in vec3 inPos;
+	layout (location = 1) in vec2 inTexcoord;
+
+	out vec2 texcoord;
+
+	void main()
+	{
+		texcoord = inTexcoord;
+		gl_Position = vec4(inPos, 1.0);
+	}
 }
 
 fs{
-	#version 300 es
-	precision mediump float;
-	in vec2 v_texCoord;
-	layout(location = 0) out vec4 outColor;
-	uniform sampler2D s_texture;
-	void main()
+	#version 330 core
+	out float FragColor;
+
+	in vec2 texcoord;
+
+	uniform sampler2D ssaoInput;
+
+	void main() 
 	{
-	  outColor = texture( s_texture, v_texCoord );
+		vec2 texelSize = 1.0 / vec2(textureSize(ssaoInput, 0));
+		float result = 0.0;
+		for (int x = -2; x < 2; ++x) 
+		{
+			for (int y = -2; y < 2; ++y) 
+			{
+				vec2 offset = vec2(float(x), float(y)) * texelSize;
+				result += texture(ssaoInput, texcoord + offset).r;
+			}
+		}
+		FragColor = result / 16.0;
 	}
 }
 
@@ -26,6 +40,6 @@ program:ssaoBlur{
 	posLoc=0
 	texcoordLoc=1
 	sampler{
-		s_texture=none
+		ssaoInput=none
 	}
 }

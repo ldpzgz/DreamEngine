@@ -195,15 +195,15 @@ void Material::setTextureForSampler(int loc, const shared_ptr<Texture>& pTex) {
 	}
 }
 
-void Material::setTextureForSampler(const string& samplerName, const shared_ptr<Texture>& pTex) {
+void Material::setTextureForSampler(const char* samplerName, const shared_ptr<Texture>& pTex) {
 	if (mShader) {
-		int samplerLoc = mShader->getUniformLoc(samplerName.c_str());
+		int samplerLoc = mShader->getUniformLoc(samplerName);
 		if (samplerLoc != -1) {
 			//mShader->setTextureForSampler(samplerLoc,pTex);
 			mSamplerName2Texture[samplerLoc] = pTex;
 		}
 		else {
-			LOGD("no sampler %s,in material %s",samplerName.c_str(),mName.c_str());
+			LOGD("no sampler %s,in material %s",samplerName,mName.c_str());
 		}
 	}
 }

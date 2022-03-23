@@ -62,6 +62,8 @@ public:
 	int getType() {
 		return mType;
 	}
+	//设置过滤和wrap 参数
+	void setParam(int minFilter,int magFilter,int wrapS = GL_CLAMP_TO_EDGE,int wrapT = GL_CLAMP_TO_EDGE,int wrapR = GL_CLAMP_TO_EDGE);
 
 	//创建一个多重采样纹理，用于添加到fbo，
 	bool createMStexture(int width, int height, int samples=4, unsigned int internalformat= GL_RGBA8);
@@ -124,8 +126,13 @@ protected:
 	GLint mInternalFormat{ GL_RGB };//纹理数据上传到显存后的格式
 	GLint mFormat{ GL_RGB };//纹理数据在内存中的格式
 	GLint mType{ GL_UNSIGNED_BYTE };//纹理数据在内存中的格式
-	int mNumOfSamples{ 0 };
+	int mNumOfSamples{ 0 };//多重采样纹理的采样个数
 	int mTarget{ GL_TEXTURE_2D };//GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_2D_ARRAY, or GL_TEXTURE_CUBE_MAP
+	int mMinFilter{ GL_LINEAR };
+	int mMagFilter{ GL_LINEAR };
+	int mWrapParamS{ GL_CLAMP_TO_EDGE };
+	int mWrapParamT{ GL_CLAMP_TO_EDGE };
+	int mWrapParamR{ GL_CLAMP_TO_EDGE };
 	std::string mName;
 };
 

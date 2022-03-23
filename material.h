@@ -57,7 +57,7 @@ public:
 	void restoreRenderOperation();
 
 	//改变shader里面sampler对应的纹理
-	void setTextureForSampler(const string& samplerName, const shared_ptr<Texture>& pTex);
+	void setTextureForSampler(const char* samplerName, const shared_ptr<Texture>& pTex);
 	//改变shader里面sampler对应的纹理
 	void setTextureForSampler(int loc, const shared_ptr<Texture>& pTex);
 

@@ -9,8 +9,9 @@ class Texture;
 class Mesh;
 class Renderable;
 class Node;
+class Material;
 /*
-* 这个camera是一个节点，相当于节点上绑了一个相机，节点的方位就是相机的方位。
+* 这个camera可以监听一个节点，节点方位变化的时候会通知相机，camera根据情况更新自己的相机。
 * 但是camera节点，以及其所有父节点都只能做旋转和平移变换
 */
 class Camera : public NodeListener
@@ -50,6 +51,7 @@ private:
 		const std::shared_ptr<Scene>& pScene, std::vector<glm::vec3>*, std::vector<glm::vec3>*) const;
 	void defferedGeometryPass(const std::shared_ptr<Scene>& pScene) const;
 	void defferedLightingPass(std::vector<glm::vec3>* lightPos,std::vector<glm::vec3>* lightColor);
+	void ssaoPass();
 	int mWidth;
 	int mHeight;
 	float fov{ 45.0f };
@@ -62,11 +64,23 @@ private:
 	glm::vec3 mLookAt{ 0.0f,0.0f,0.0f };
 	glm::vec3 mPosition{ 0.0f,0.0f,1.0f };
 	std::weak_ptr<Scene> mpScene;
-	std::shared_ptr<Fbo> mpFboDefferedGeo;//用于defered Rendering
+	std::shared_ptr<Fbo> mpFboDefferedGeo;//用于defered geometry pass
+	std::shared_ptr<Fbo> mpFboDefferedLighting;//用于defered lighting pass
+	std::shared_ptr<Fbo> mpFboSsao;
+	std::shared_ptr<Fbo> mpFboSsaoBlured;
+	std::shared_ptr<Texture> mpSsaoMap;
 	std::shared_ptr<Texture> mpPosMap;
 	std::shared_ptr<Texture> mpNormal;
 	std::shared_ptr<Texture> mpAlbedoMap;
+	std::shared_ptr<Texture> mpDefferedRenderResult;
+	std::shared_ptr<Texture> mpSsaoNoiseMap;
+	std::shared_ptr<Texture> mpSsaoBluredMap;
 	std::shared_ptr<Mesh> mpMeshQuad;//for defered rendering lighting pass;
+	std::shared_ptr<Material> mpDefLightPassMaterial;//for defered rendering lighting pass;
+	std::shared_ptr<Material> mpSsaoMaterial;//for defered rendering lighting pass;
+	std::shared_ptr<Material> mpSsaoBlurMaterial;//for defered rendering lighting pass;
+	std::shared_ptr<Material> mpDrawQuadMaterial;//for defered rendering lighting pass;
+	std::vector<glm::vec3> mSsaoKernel;
 };
 
 

@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 
 class Texture;
 class Material;
@@ -19,16 +20,17 @@ public:
 	std::shared_ptr<Texture> getTexture(const std::string& name);
 
 	std::shared_ptr<Material> getMaterial(const std::string& name);
-	/*
-	* name: 可以是物体的名字
-	* mInfo：材质信息，根据里面的信息生成或者clone一个material对象
-	*/
+	//get deffered rendering geometry pass shader accord to material info
 	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo);
+	//get deffered rendering lighting pass shader
 	std::shared_ptr<Material> getMaterialDefferedLightPass(bool hasIBL);
 
 	std::shared_ptr<Shader> getShader(const std::string& name);
-
+	//获得某个mesh
 	std::shared_ptr<Node> getNode(const std::string& name);
+
+	//获得所有mesh
+	const std::unordered_map<std::string, std::shared_ptr<Node>>& getAllNode();
 
 	//GL_RGB,GL_RGB,GL_UNSIGNED_BYTE
 	std::shared_ptr<Texture> createTexture(const std::string& name, int width, int height,

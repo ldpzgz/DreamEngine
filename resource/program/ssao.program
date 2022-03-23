@@ -16,11 +16,14 @@ fs{
 	in vec2 texCoord;
 	out vec4 FragColor;
 
-	uniform sampler2D gPosition;
-	uniform sampler2D gNormal;
-	uniform sampler2D texNoise;
+	uniform sampler2D posMap;
+	uniform sampler2D normalMap;
+	uniform sampler2D noiseMap;
 
-	uniform vec3 samples[64];
+	layout (std140) uniform SampleArray
+	{
+		vec3 samples[64];
+	};
 
 	// parameters (you'd probably want to use them as uniforms to more easily tweak the effect)
 	int kernelSize = 64;
@@ -34,12 +37,12 @@ fs{
 
 	void main()
 	{
-		vec2 texSize = vec2(textureSize(gPosition, 0));
+		vec2 texSize = vec2(textureSize(posMap, 0));
 		vec2 noiseScale = texSize/4.0f;
 		// get input for SSAO algorithm
-		vec3 fragPos = texture(gPosition, texCoord).xyz;
-		vec3 normal = normalize(texture(gNormal, texCoord).rgb);
-		vec3 randomVec = normalize(texture(texNoise, texCoord * noiseScale).xyz);
+		vec3 fragPos = texture(posMap, texCoord).xyz;
+		vec3 normal = normalize(texture(normalMap, texCoord).rgb);
+		vec3 randomVec = normalize(texture(noiseMap, texCoord * noiseScale).xyz);
 		// create TBN change-of-basis matrix: from tangent-space to view-space
 		vec3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
 		vec3 bitangent = cross(normal, tangent);
@@ -59,7 +62,7 @@ fs{
 			offset.xyz = offset.xyz * 0.5 + 0.5; // transform to range 0.0 - 1.0
 			
 			// get sample depth
-			float sampleDepth = texture(gPosition, offset.xy).z; // get depth value of kernel sample
+			float sampleDepth = texture(posMap, offset.xy).z; // get depth value of kernel sample
 			
 			// range check & accumulate
 			float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
@@ -76,8 +79,11 @@ program:ssao{
 	texcoordLoc=1
 	projMatrix=projection
 	sampler{
-		gPosition=none
-		gNormal=none
-		texNoise=none
+		posMap=none
+		normalMap=none
+		noiseMap=none
+	}
+	ubo{
+		SampleArray=0
 	}
 }
