@@ -11,6 +11,18 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <random>
 
+constexpr glm::vec2 Halton23[8] =
+{
+	glm::vec2(0.0f, -1.0f / 3.0f),
+	glm::vec2(-1.0f / 2.0f, 1.0f / 3.0f),
+	glm::vec2(1.0f / 2.0f, -7.0f / 9.0f),
+	glm::vec2(-3.0f / 4.0f, -1.0f / 9.0f),
+	glm::vec2(1.0f / 4.0f, 5.0f / 9.0f),
+	glm::vec2(-1.0f / 4.0f, -5.0f / 9.0f),
+	glm::vec2(3.0f / 4.0f, 1.0f / 9.0f),
+	glm::vec2(-7.0f / 8.0f, 7.0f / 9.0f)
+};
+
 Camera::Camera(const shared_ptr<Scene>& ps, int w,int h) :
 	mWidth(w),
 	mHeight(h),
@@ -91,6 +103,18 @@ void Camera::renderScene() {
 			initDefferedRendering(pScene);
 		}
 		if (mpFboDefferedGeo) {
+			float temp[4];
+			temp[0] = mWidth;
+			temp[1] = mHeight;
+			*reinterpret_cast<int*>(&temp[2]) = mTaaFrameCount++;
+			*reinterpret_cast<int*>(&temp[3]) = mTaaOffsetIndex++;
+			mTaaOffsetIndex %= 8;
+			if (mTaaFrameCount > 100000000) {
+				//避免长时间运行溢出
+				mTaaFrameCount = 1;
+			}
+			Ubo::getInstance().update("ScreenWH", temp, sizeof(temp));
+
 			mpFboDefferedGeo->render([this, &pScene] {
 				//deffered rendering geometry pass
 				defferedGeometryPass(pScene);
@@ -118,8 +142,21 @@ void Camera::renderScene() {
 					});
 			}
 			//post-process
-			//todo
+			//taa
+			if (mpTaaMaterial) {
+				//previousColor map is set dynamicly
+				mpTaaMaterial->setTextureForSampler("previousColor", mpTaaPreColorMap[mTaaPreColorMapIndex]);
+				mTaaPreColorMapIndex = (mTaaPreColorMapIndex + 1) % 2;
+				mpFboTaa->replaceColorTexture(mpTaaPreColorMap[mTaaPreColorMapIndex], 0);
+				mpMeshQuad->setMaterial(mpTaaMaterial);
+				mpFboTaa->render([this]() {
+					mpMeshQuad->draw(nullptr, nullptr);
+				});
 
+				if (mpDrawQuadMaterial) {
+					mpDrawQuadMaterial->setTextureForSampler("albedoMap", mpTaaPreColorMap[mTaaPreColorMapIndex]);
+				}
+			}
 			mpMeshQuad->setMaterial(mpDrawQuadMaterial);
 			mpMeshQuad->draw(nullptr, nullptr);
 			//把深度缓冲区copy到窗口系统
@@ -144,6 +181,12 @@ void Camera::renderNode(const shared_ptr<Node>& node,
 		for (const auto& pRen : pRenderables) {
 			//std::shared_ptr<R> pMesh = std::dynamic_pointer_cast<Mesh>(pRen.second);
 			if (pRen.second) {
+				/*auto jitterMvp = mProjMatrix;
+				glm::vec2 jitter{ Halton23[mTaaOffsetIndex].x * 1.0f/mWidth,
+				Halton23[mTaaOffsetIndex].y * 1.0f / mHeight };
+				jitterMvp[0][2] += jitter.x;
+				jitterMvp[1][2] += jitter.y;
+				jitterMvp = jitterMvp * mViewMat * modelMat;*/
 				pRen.second->draw(&mProjMatrix, &modelMat, &mViewMat, nullptr,lightPos, lightColor, &mPosition);
 			}
 		}
@@ -156,31 +199,37 @@ void Camera::renderNode(const shared_ptr<Node>& node,
 }
 
 void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
-	
 	mpFboDefferedGeo = make_shared<Fbo>();
 	mpFboDefferedLighting = make_shared<Fbo>();
 	mpFboSsao = make_shared<Fbo>();
 	mpFboSsaoBlured = make_shared<Fbo>();
+	mpFboTaa = make_shared<Fbo>();
 	mpPosMap = std::make_shared<Texture>();//0
 	mpNormal = std::make_shared<Texture>();//1
 	mpAlbedoMap = std::make_shared<Texture>();//2
 	mpDefferedRenderResult = std::make_shared <Texture>();
-	mpSsaoMap = std::make_shared <Texture>();
-	mpSsaoNoiseMap = std::make_shared <Texture>();
-	mpSsaoBluredMap = std::make_shared <Texture>();
-	if (mpPosMap && mpNormal && mpAlbedoMap) {
+	mpSsaoMap = std::make_shared<Texture>();
+	mpSsaoNoiseMap = std::make_shared<Texture>();
+	mpSsaoBluredMap = std::make_shared<Texture>();
+	mpTaaVelocityMap = std::make_shared<Texture>();
+	mpTaaPreColorMap[0] = std::make_shared<Texture>();
+	mpTaaPreColorMap[1] = std::make_shared<Texture>();
+	if (mpPosMap && mpNormal && mpAlbedoMap && mpTaaVelocityMap) {
 		mpPosMap->setParam(GL_NEAREST, GL_NEAREST);
 		mpPosMap->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
 		mpNormal->setParam(GL_NEAREST, GL_NEAREST);
 		mpNormal->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
 		mpAlbedoMap->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
+		mpTaaVelocityMap->setParam(GL_NEAREST, GL_NEAREST);
+		mpTaaVelocityMap->create2DMap(mWidth, mHeight, nullptr, GL_RG16F, GL_RG, GL_FLOAT);
 		mpFboDefferedGeo->attachColorTexture(mpPosMap, 0);
 		mpFboDefferedGeo->attachColorTexture(mpNormal, 1);
 		mpFboDefferedGeo->attachColorTexture(mpAlbedoMap, 2);
+		mpFboDefferedGeo->attachColorTexture(mpTaaVelocityMap, 3);
 		mpFboDefferedGeo->attachDepthRbo(mWidth, mHeight);//深度缓存
 	}
 	if (mpDefferedRenderResult) {
-		mpDefferedRenderResult->create2DMap(mWidth,mHeight,nullptr, GL_RGBA, GL_RGBA);
+		mpDefferedRenderResult->create2DMap(mWidth,mHeight,nullptr, GL_RGBA16F, GL_RGBA,GL_FLOAT);
 		mpFboDefferedLighting->attachColorTexture(mpDefferedRenderResult);
 		mpFboDefferedLighting->setDepthTest(false);
 	}
@@ -224,6 +273,14 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 		mpSsaoNoiseMap->setParam(GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT);
 		mpSsaoNoiseMap->create2DMap(4, 4, reinterpret_cast<unsigned char*>(ssaoNoise.data()), GL_RGBA32F, GL_RGBA, GL_FLOAT);
 	}
+
+	if (mpFboTaa && mpTaaPreColorMap[0] && mpTaaPreColorMap[1]) {
+		mpTaaPreColorMap[0]->setParam(GL_NEAREST, GL_NEAREST);
+		mpTaaPreColorMap[0]->create2DMap(mWidth, mHeight, nullptr, GL_RGB16F, GL_RGB, GL_FLOAT);
+		mpTaaPreColorMap[1]->setParam(GL_NEAREST, GL_NEAREST);
+		mpTaaPreColorMap[1]->create2DMap(mWidth, mHeight, nullptr, GL_RGB16F, GL_RGB, GL_FLOAT);
+		mpFboTaa->attachColorTexture(mpTaaPreColorMap[1]);
+	}
 		
 	mpMeshQuad = std::make_shared<Mesh>(MeshType::MESH_Quad);
 	if (mpMeshQuad) {
@@ -234,10 +291,7 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 			mpSsaoMaterial->setTextureForSampler("posMap", mpPosMap);
 			mpSsaoMaterial->setTextureForSampler("normalMap", mpNormal);
 			mpSsaoMaterial->setTextureForSampler("noiseMap", mpSsaoNoiseMap);
-			auto& pShader = mpSsaoMaterial->getShader();
-			if (pShader) {
-				pShader->updateUniformBlock("SampleArray", mSsaoKernel.data(), sizeof(glm::vec3) * mSsaoKernel.size());
-			}
+			Ubo::getInstance().update("SampleArray", mSsaoKernel.data(), sizeof(glm::vec3) * mSsaoKernel.size());
 		}
 		mpSsaoBlurMaterial = res.getMaterial("ssaoBlur");
 		if (mpSsaoBlurMaterial) {
@@ -255,6 +309,14 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 				mpDefLightPassMaterial->setTextureForSampler("prefilterMap", skyInfo.mpPrefilterTex);
 			}
 			mpDefLightPassMaterial->setTextureForSampler("brdfLUT", Resource::getInstance().getTexture("brdfLUT"));
+		}
+
+		mpTaaMaterial = res.getMaterial("taa");
+		if (mpTaaMaterial) {
+			//previousColor map is set dynamicly
+			mpTaaMaterial->setTextureForSampler("currentColor", mpDefferedRenderResult);
+			mpTaaMaterial->setTextureForSampler("velocityTexture", mpTaaVelocityMap);
+			mpTaaMaterial->setTextureForSampler("currentDepth", mpPosMap);
 		}
 
 		mpDrawQuadMaterial = res.getMaterial("drawQuad");

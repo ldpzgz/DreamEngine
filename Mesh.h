@@ -136,7 +136,7 @@ public:
 		const glm::mat4* texMat=nullptr,
 		const std::vector<glm::vec3>* lightPos = nullptr, 
 		const std::vector<glm::vec3>* lightColor = nullptr, 
-		const glm::vec3* viewPos = nullptr) override;
+		const glm::vec3* viewPos = nullptr ) override;
 
 	//void render(const glm::mat4& mvpMat, const glm::mat4& mvMat);
 
@@ -241,6 +241,7 @@ protected:
 	unsigned int mId{ 0 };
 	std::shared_ptr<Material> mpMaterial;
 	std::unique_ptr<AABB> mpAabb;
+	std::unique_ptr< glm::mat4> mpPreMvpMatrix;
 	//如果函数内部创建了vao就返回true
 	bool createVaoIfNeed(int posloc=-1, int texloc=-1, int norloc=-1);
 };

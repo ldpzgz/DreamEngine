@@ -37,26 +37,68 @@ config{
 		uniform mat4 projMat;
 		uniform mat4 modelMat;
 		uniform mat4 viewMat;
+
 		out vec3 worldPos;
 		out vec3 worldNormal;
+		#ifdef HAS_TAA
+			layout (std140) uniform ScreenWH
+			{
+				float screenWidth;
+				float screenHeight;
+				int frameCount;
+				int offsetIndex;
+			};
+			uniform mat4 preMvpMat;
+			out vec4 preScreenPos;
+			out vec4 curScreenPos;
+			const vec2 Halton23[8] = vec2[8]
+			(
+				vec2(0.0f, -1.0f / 3.0f),
+				vec2(-1.0f / 2.0f, 1.0f / 3.0f),
+				vec2(1.0f / 2.0f, -7.0f / 9.0f),
+				vec2(-3.0f / 4.0f, -1.0f / 9.0f),
+				vec2(1.0f / 4.0f, 5.0f / 9.0f),
+				vec2(-1.0f / 4.0f, -5.0f / 9.0f),
+				vec2(3.0f / 4.0f, 1.0f / 9.0f),
+				vec2(-7.0f / 8.0f, 7.0f / 9.0f)
+			);
+		#endif
 		#ifdef HAS_MAP
 			out vec2 texcoord;
 		#endif
 		void main(){
 			mat4 mvMat = viewMat * modelMat;
-			gl_Position = projMat * mvMat * vec4(inPos,1.0f);
+			vec4 tempPos = projMat * mvMat * vec4(inPos,1.0f);
 			#ifdef HAS_MAP
 				texcoord = inTexcoord;
 			#endif
 			worldNormal=mat3(mvMat)*inNormal;
 			worldPos = vec3(mvMat * vec4(inPos, 1.0));
+			#ifdef HAS_TAA
+				preScreenPos = preMvpMat * vec4(inPos, 1.0);
+				float deltaWidth = 1.0f/screenWidth;
+				float deltaHeight = 1.0f/screenHeight;
+				vec2 jitter=vec2(Halton23[offsetIndex].x*deltaWidth,
+				Halton23[offsetIndex].y*deltaHeight);
+				mat4 jitterMat = projMat;
+				jitterMat[2][0] += jitter.x;
+				jitterMat[2][1] += jitter.y;
+				gl_Position = jitterMat * viewMat * modelMat * vec4(inPos, 1.0);
+				curScreenPos = projMat * viewMat * modelMat * vec4(inPos, 1.0);
+			#else
+				gl_Position = projMat * mvMat * vec4(inPos,1.0f);
+			#endif
 		}
 	}
 	defferedGeoFs{
 		layout (location = 0) out vec4 outPosMap;
-		layout(location = 1) out vec4 outNormalMap;
-		layout(location = 2) out vec4 outAlbedoMap;
-		
+		layout (location = 1) out vec4 outNormalMap;
+		layout (location = 2) out vec4 outAlbedoMap;
+		#ifdef HAS_TAA
+			layout(location=3) out vec2 outVelocity;
+			in vec4 preScreenPos;
+			in vec4 curScreenPos;
+		#endif
 		#ifdef HAS_MAP
 			in vec2 texcoord;
 		#endif
@@ -146,6 +188,12 @@ config{
 				#else
 					outPosMap.a = ao;
 				#endif
+			#endif
+			#ifdef HAS_TAA
+				// velocity
+				vec2 newPos = ((curScreenPos.xy / curScreenPos.w) * 0.5 + 0.5);
+				vec2 prePos = ((preScreenPos.xy / curScreenPos.w) * 0.5 + 0.5);
+				outVelocity = newPos - prePos;
 			#endif
 		}
 	}
@@ -388,11 +436,11 @@ config{
 			}
 			vec3 envColor = envLight(ao,roughness,metallic,F0,albedo,worldPos,normal,irrMap,prefilterMap,brdfLUT);
 			
-			vec3 color = dirColor + envColor;// HDR tonemapping
+			vec3 color = dirColor + envColor;
 			
-			color = color / (color + vec3(1.0));// gamma correct
+			//color = color / (color + vec3(1.0));// HDR tonemapping
 			
-			color = pow(color, vec3(1.0/2.2)); 
+			//color = pow(color, vec3(1.0/2.2));// gamma correct
 			FragColor = vec4(color , 1.0);
 		}  
 	}

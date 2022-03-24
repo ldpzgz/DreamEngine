@@ -267,7 +267,14 @@ void Shader::setUniform4f(const char* uniformName,float x,float y,float z,float 
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform4f(loc,x,y,z,w);
 }
-
+void Shader::setPreMvpMatrix(const glm::mat4& pMat) {
+	if (mPreMvpMatrixLoc >= 0) {
+		glUniformMatrix4fv(mPreMvpMatrixLoc, 1, GL_FALSE, glm::value_ptr(pMat));
+	}
+	else {
+		LOGD("the mPreMvpMatrixLoc of shader %s has not been got", mName.c_str());
+	}
+}
 void Shader::setMvpMatrix(const glm::mat4& pMatrix) {
 	if (mMvpMatrixLoc >= 0 ) {
 			glUniformMatrix4fv(mMvpMatrixLoc, 1, GL_FALSE, glm::value_ptr(pMatrix));
@@ -374,6 +381,14 @@ void Shader::getMvMatrixLoc(const std::string& mvMatrixNameInShader) {
 		LOGE("the shader %s  has no %s uniform member", mName.c_str(), mvMatrixNameInShader.c_str());
 	}
 }
+
+void Shader::getPreMvpMatrixLoc(const std::string& preMvpMatrixNameInShader) {
+	mPreMvpMatrixLoc = glGetUniformLocation(mProgram, preMvpMatrixNameInShader.c_str());
+	if (mPreMvpMatrixLoc < 0) {
+		LOGE("the shader %s  has no %s uniform member", mName.c_str(), preMvpMatrixNameInShader.c_str());
+	}
+}
+
 void Shader::getViewMatrixLoc(const std::string& viewMatrixNameInShader) {
 	mViewMatrixLoc = glGetUniformLocation(mProgram, viewMatrixNameInShader.c_str());
 	if (mViewMatrixLoc < 0) {
@@ -446,7 +461,6 @@ void Shader::getAoLoc(const std::string& value) {
 		LOGE("the shader %s  has no %s uniform member", mName.c_str(), value.c_str());
 	}
 }
-
 void Shader::deleteShader()
 {
 	if(mProgram>0)
@@ -480,6 +494,6 @@ void Shader::bindUniformBlock(const char* uboName, unsigned int bindPoint) {
 	}
 }
 
-void Shader::updateUniformBlock(const char* uboName, void* pdata, int sizeInByte) {
-	Ubo::getInstance().update(uboName, pdata, sizeInByte);
-}
+//void Shader::updateUniformBlock(const char* uboName, void* pdata, int sizeInByte) {
+//	Ubo::getInstance().update(uboName, pdata, sizeInByte);
+//}

@@ -848,6 +848,15 @@ void Mesh::draw(const glm::mat4* projMat,
 			if (viewPos) {
 				pShader->setViewPos(*viewPos);
 			}
+			if (pShader->hasPreMvpMat()&& projMat!=nullptr && viewMat!=nullptr && modelMat!=nullptr) {
+				if (!mpPreMvpMatrix) {
+					mpPreMvpMatrix = std::make_unique<glm::mat4>((* projMat)*(*viewMat)*(*modelMat));
+				}
+				if(mpPreMvpMatrix) {
+					pShader->setPreMvpMatrix(*mpPreMvpMatrix);
+					*mpPreMvpMatrix = (*projMat) * (*viewMat) * (*modelMat);
+				}
+			}
 			
 			int posloc = -1;
 			int texloc = -1;
@@ -933,22 +942,6 @@ bool Mesh::setTangentData(const GLfloat* tangent, int sizeInbyte, unsigned int d
 	mTangentByteSize = sizeInbyte;
 	return true;
 }
-
-//bool Mesh::setBiTangentData(GLfloat* binormal, int sizeInbyte, unsigned int drawType) {
-//	if (mBiNormalVbo > 0) {
-//		glDeleteBuffers(1, &mBiNormalVbo);
-//		if (mVAO != 0) {
-//			//先删除原来的vao
-//			glDeleteVertexArrays(1, &mVAO);
-//			mVAO = 0;
-//		}
-//	}
-//	glGenBuffers(1, &mBiNormalVbo);
-//	glBindBuffer(GL_ARRAY_BUFFER, mBiNormalVbo);
-//	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, binormal, drawType);
-//	mBiNormalByteSize = sizeInbyte;
-//	return true;
-//}
 
 bool Mesh::setColorData(const GLfloat* nor, int size, unsigned int drawType)
 {

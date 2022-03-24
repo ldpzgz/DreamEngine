@@ -87,6 +87,8 @@ public:
 	bool attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level=0);
 	bool attachDepthTextureMS(const std::shared_ptr<Texture>& texture);
 
+	bool replaceColorTexture(const std::shared_ptr<Texture>& texture, int attachment_n, int cubicFace = 0, GLint level = 0);
+
 	bool attachColorRbo(int attachment_n, int width, int height);
 	bool attachDepthRbo(int width, int height);
 	void detachColorRbo(int attachment_n = 0);

@@ -200,6 +200,7 @@ private:
 	static bool materialAoHandler(Material* pMat, const std::string&);
 	static bool programSamplerHandler(Material* pMat, const std::string&);
 	static bool programUboHandler(Material* pMat, const std::string&);
+	static bool preMvpMatrixHandler(Material* pMat, const std::string&);
 
 	static bool nodeNameHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
 	static bool meshPathHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
@@ -259,6 +260,7 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"op",ResourceImpl::opHandler},
 	{"sampler",ResourceImpl::programSamplerHandler},
 	{"ubo",ResourceImpl::programUboHandler},
+	{"preMvpMatrix",ResourceImpl::preMvpMatrixHandler}
 };
 /*
 * material文件里面：material:testM{...}的处理函数
@@ -642,6 +644,13 @@ bool ResourceImpl::programUboHandler(Material* pMat, const std::string& value) {
 				}
 			}
 		}
+	}
+	return true;
+}
+
+bool ResourceImpl::preMvpMatrixHandler(Material* pMat, const std::string& value) {
+	if (!value.empty()) {
+		pMat->getShader()->getPreMvpMatrixLoc(value);
 	}
 	return true;
 }
@@ -1469,10 +1478,12 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	std::string fs;
 	std::string program;
 	std::string programSampler;
+	std::string programUbo;
 
 	program = "posLoc=0\ntexcoordLoc=1\nnormalLoc=2\n";
-	program += "projMatrix=projMat\nmodelMatrix=modelMat\nviewMatrix=viewMat\n";
+	program += "projMatrix=projMat\nmodelMatrix=modelMat\nviewMatrix=viewMat\npreMvpMatrix=preMvpMat\n";
 	programSampler = "sampler{\n";
+	programUbo = "ubo{\nScreenWH = 1\n}\n";
 
 	//先计算出标志，确定material的名字，然后在gMaterial里面找，能找到就用现成的
 	if (!mInfo.albedoMap.empty()) {
@@ -1548,6 +1559,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	}
 
 	std::string allDefine;
+	std::string_view hasTaa{"#define HAS_TAA 1\n"};
 	std::string_view hasMap{ "#define HAS_MAP 1\n" };
 	std::string_view hasNormalMap{"#define HAS_NORMAL_MAP 1\n"};
 	std::string_view hasAlbedoMap{ "#define HAS_ALBEDO_MAP 1\n" };
@@ -1621,6 +1633,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 
 	programSampler += "}\n";
 	program += programSampler;
+	program += programUbo;
 	fs += mpVersion;
 	fs += mpPrecision;
 	vs += mpVersion;
@@ -1628,6 +1641,8 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	if (materialFlag != 0) {
 		fs += hasMap;
 		vs += hasMap;
+		fs += hasTaa;
+		vs += hasTaa;
 	}
 	fs += allDefine;
 	vs += getKeyAsStr("defferedGeoVs");

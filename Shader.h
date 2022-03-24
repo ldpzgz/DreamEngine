@@ -101,7 +101,7 @@ public:
 	//bindPoint：从0开始的整数，在material的progoram里面配置
 	void bindUniformBlock(const char* ubName, unsigned int bindPoint);
 	//更新本shader里面的名字为ubName的uniform block的值
-	void updateUniformBlock(const char* ubName, void* pdata,int sizeInByte);
+	//void updateUniformBlock(const char* ubName, void* pdata,int sizeInByte);
 
 	void deleteShader();
 	//结果小于0表示错误
@@ -118,6 +118,7 @@ public:
 	void setModelMatrix(const glm::mat4&);
 	void setViewMatrix(const glm::mat4&);
 	void setMvpMatrix(const glm::mat4&);
+	void setPreMvpMatrix(const glm::mat4&);
 	void setTextureMatrix(const glm::mat4&);
 	void setMvMatrix(const glm::mat4&);
 	void setUniformColor(float r, float g, float b, float a);
@@ -144,6 +145,7 @@ public:
 	void getViewMatrixLoc(const std::string& viewMatrixNameInShader);
 	void getMvpMatrixLoc(const std::string& mvpMatrixNameInShader);
 	void getMvMatrixLoc(const std::string& mvMatrixNameInShader);
+	void getPreMvpMatrixLoc(const std::string& preMvpMatrixNameInShader);
 	void getLightCountLoc(const std::string& lightCountNameInShader);
 	void getLightPosLoc(const std::string& lightPosNameInShader);
 	void getViewPosLoc(const std::string& viewPosNameInShader);
@@ -154,8 +156,10 @@ public:
 	void getMetallicLoc(const std::string& value);
 	void getRoughnessLoc(const std::string& value);
 	void getAoLoc(const std::string& value);
-	//void getDiffuseTextureLoc(const std::string& diffuseSamplerInShader);
-	//void getNormalTextureLoc(const std::string& normalSamplerInShader);
+
+	bool hasPreMvpMat() {
+		return mPreMvpMatrixLoc >= 0 ? true : false;
+	}
 
 	std::vector<std::string>& getSamplerNames() {
 		return mSamplerNames;
@@ -190,6 +194,10 @@ private:
 	int mRoughnessLoc{ -1 };
 	int mAlbedoColorLoc{ -1 };
 	int mAoLoc{ -1 };
+
+	//temporal anti-alias
+	int mPreMvpMatrixLoc{ -1 };
+
 	float mMetallic{ 0.5f };
 	float mRoughness{ 0.5f };
 	float mAo{ 0.1f };

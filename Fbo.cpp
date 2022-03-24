@@ -225,6 +225,35 @@ bool Fbo::attachColorTextureMS(const std::shared_ptr<Texture>& texture, int atta
 	return ret;
 }
 
+bool Fbo::replaceColorTexture(const std::shared_ptr<Texture>& texture, int attachment_n, int cubicFace, GLint level) {
+	bool ret = false;
+	if (!texture || texture->getWidth() != mWidth || texture->getHeight() != mHeight)
+	{
+		LOGD("Fbo::replaceColorTexture texture has different size with pre texture");
+		return false;
+	}
+	enable();
+	
+	auto texTarget = texture->getTexTarget();
+	if (texTarget == GL_TEXTURE_CUBE_MAP) {
+		texTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + cubicFace;
+	}
+	else if (texTarget != GL_TEXTURE_2D) {
+		LOGE("ERROR fbo can only atach texture_2d or cubic map face");
+		return false;
+	}
+	glFramebufferTexture2D(
+		GL_FRAMEBUFFER,
+		GL_COLOR_ATTACHMENT0 + attachment_n,
+		texTarget,
+		texture->getId(),
+		level);
+
+	//ret = checkFrameBuffer();
+	disable();
+	return ret;
+}
+
 bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attachment_n, int cubicFace,GLint level)
 {
 	bool ret = false;

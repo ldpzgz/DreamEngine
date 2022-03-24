@@ -68,6 +68,10 @@ private:
 	std::shared_ptr<Fbo> mpFboDefferedLighting;//用于defered lighting pass
 	std::shared_ptr<Fbo> mpFboSsao;
 	std::shared_ptr<Fbo> mpFboSsaoBlured;
+	std::shared_ptr<Fbo> mpFboTaa;//Temporal Anti Aliasing
+	std::shared_ptr<Texture> mpTaaVelocityMap;
+	std::shared_ptr<Texture> mpTaaPreColorMap[2];
+	int mTaaPreColorMapIndex{ 0 };
 	std::shared_ptr<Texture> mpSsaoMap;
 	std::shared_ptr<Texture> mpPosMap;
 	std::shared_ptr<Texture> mpNormal;
@@ -80,7 +84,10 @@ private:
 	std::shared_ptr<Material> mpSsaoMaterial;//for defered rendering lighting pass;
 	std::shared_ptr<Material> mpSsaoBlurMaterial;//for defered rendering lighting pass;
 	std::shared_ptr<Material> mpDrawQuadMaterial;//for defered rendering lighting pass;
+	std::shared_ptr<Material> mpTaaMaterial;//for defered rendering lighting pass;
 	std::vector<glm::vec3> mSsaoKernel;
+	int mTaaFrameCount{0};
+	int mTaaOffsetIndex{ 0 };
 };
 
 
