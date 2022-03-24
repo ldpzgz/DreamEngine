@@ -886,8 +886,8 @@ bool UiRender::drawBackground(View* v){
 						pMat->setTextureForSampler("s_texture", pTexture);
 					}
 				}
-				
-				pMesh->draw(&mProjMatrix, &model);
+				glm::mat4 tempView{ 1.0f };
+				pMesh->draw(&mProjMatrix, &model,&tempView);
 			}
 			
 			if (pBorderMesh && !borderColor.isZero()) {
@@ -896,7 +896,8 @@ bool UiRender::drawBackground(View* v){
 				if (pMat) {
 					pMat->setUniformColor(borderColor);
 				}
-				pBorderMesh->draw(&mProjMatrix, &model);
+				glm::mat4 tempView{ 1.0f };
+				pBorderMesh->draw(&mProjMatrix, &model,&tempView);
 			}
 		}
 	}
