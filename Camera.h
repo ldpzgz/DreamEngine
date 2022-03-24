@@ -50,8 +50,7 @@ private:
 	void renderNode(const std::shared_ptr<Node>& node,
 		const std::shared_ptr<Scene>& pScene, std::vector<glm::vec3>*, std::vector<glm::vec3>*) const;
 	void defferedGeometryPass(const std::shared_ptr<Scene>& pScene) const;
-	void defferedLightingPass(std::vector<glm::vec3>* lightPos,std::vector<glm::vec3>* lightColor);
-	void ssaoPass();
+	
 	int mWidth;
 	int mHeight;
 	float fov{ 45.0f };
@@ -64,30 +63,39 @@ private:
 	glm::vec3 mLookAt{ 0.0f,0.0f,0.0f };
 	glm::vec3 mPosition{ 0.0f,0.0f,1.0f };
 	std::weak_ptr<Scene> mpScene;
-	std::shared_ptr<Fbo> mpFboDefferedGeo;//用于defered geometry pass
-	std::shared_ptr<Fbo> mpFboDefferedLighting;//用于defered lighting pass
-	std::shared_ptr<Fbo> mpFboSsao;
-	std::shared_ptr<Fbo> mpFboSsaoBlured;
-	std::shared_ptr<Fbo> mpFboTaa;//Temporal Anti Aliasing
-	std::shared_ptr<Texture> mpTaaVelocityMap;
-	std::shared_ptr<Texture> mpTaaPreColorMap[2];
-	int mTaaPreColorMapIndex{ 0 };
-	std::shared_ptr<Texture> mpSsaoMap;
+	
+	//for deffered rendering
 	std::shared_ptr<Texture> mpPosMap;
 	std::shared_ptr<Texture> mpNormal;
 	std::shared_ptr<Texture> mpAlbedoMap;
+
+	//deffered rendering
+	std::shared_ptr<Fbo> mpFboDefferedGeo;//用于defered geometry pass
+	std::shared_ptr<Fbo> mpFboDefferedLighting;//用于defered lighting pass
 	std::shared_ptr<Texture> mpDefferedRenderResult;
+	std::shared_ptr<Material> mpDefLightPassMaterial;
+
+	//ssao
+	std::shared_ptr<Fbo> mpFboSsao;
+	std::shared_ptr<Fbo> mpFboSsaoBlured;
+	std::shared_ptr<Material> mpSsaoMaterial;
+	std::shared_ptr<Material> mpSsaoBlurMaterial;
 	std::shared_ptr<Texture> mpSsaoNoiseMap;
 	std::shared_ptr<Texture> mpSsaoBluredMap;
-	std::shared_ptr<Mesh> mpMeshQuad;//for defered rendering lighting pass;
-	std::shared_ptr<Material> mpDefLightPassMaterial;//for defered rendering lighting pass;
-	std::shared_ptr<Material> mpSsaoMaterial;//for defered rendering lighting pass;
-	std::shared_ptr<Material> mpSsaoBlurMaterial;//for defered rendering lighting pass;
-	std::shared_ptr<Material> mpDrawQuadMaterial;//for defered rendering lighting pass;
-	std::shared_ptr<Material> mpTaaMaterial;//for defered rendering lighting pass;
+	std::shared_ptr<Texture> mpSsaoResultMap;
 	std::vector<glm::vec3> mSsaoKernel;
+
+	//Temporal Anti Aliasing
+	std::shared_ptr<Fbo> mpFboTaa;
+	std::shared_ptr<Material> mpTaaMaterial;//for defered rendering lighting pass;
+	std::shared_ptr<Texture> mpTaaVelocityMap;
+	std::shared_ptr<Texture> mpTaaPreColorMap[2];
+	int mTaaPreColorMapIndex{ 0 };
 	int mTaaFrameCount{0};
 	int mTaaOffsetIndex{ 0 };
+
+	std::shared_ptr<Mesh> mpMeshQuad;
+	std::shared_ptr<Material> mpDrawQuadMaterial;
 };
 
 

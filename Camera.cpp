@@ -181,12 +181,6 @@ void Camera::renderNode(const shared_ptr<Node>& node,
 		for (const auto& pRen : pRenderables) {
 			//std::shared_ptr<R> pMesh = std::dynamic_pointer_cast<Mesh>(pRen.second);
 			if (pRen.second) {
-				/*auto jitterMvp = mProjMatrix;
-				glm::vec2 jitter{ Halton23[mTaaOffsetIndex].x * 1.0f/mWidth,
-				Halton23[mTaaOffsetIndex].y * 1.0f / mHeight };
-				jitterMvp[0][2] += jitter.x;
-				jitterMvp[1][2] += jitter.y;
-				jitterMvp = jitterMvp * mViewMat * modelMat;*/
 				pRen.second->draw(&mProjMatrix, &modelMat, &mViewMat, nullptr,lightPos, lightColor, &mPosition);
 			}
 		}
@@ -208,7 +202,7 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 	mpNormal = std::make_shared<Texture>();//1
 	mpAlbedoMap = std::make_shared<Texture>();//2
 	mpDefferedRenderResult = std::make_shared <Texture>();
-	mpSsaoMap = std::make_shared<Texture>();
+	mpSsaoResultMap = std::make_shared<Texture>();
 	mpSsaoNoiseMap = std::make_shared<Texture>();
 	mpSsaoBluredMap = std::make_shared<Texture>();
 	mpTaaVelocityMap = std::make_shared<Texture>();
@@ -233,10 +227,10 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 		mpFboDefferedLighting->attachColorTexture(mpDefferedRenderResult);
 		mpFboDefferedLighting->setDepthTest(false);
 	}
-	if (mpSsaoMap) {
-		mpSsaoMap->setParam(GL_NEAREST, GL_NEAREST);
-		mpSsaoMap->create2DMap(mWidth, mHeight, nullptr, GL_RED, GL_RED,GL_FLOAT);
-		mpFboSsao->attachColorTexture(mpSsaoMap);
+	if (mpSsaoResultMap) {
+		mpSsaoResultMap->setParam(GL_NEAREST, GL_NEAREST);
+		mpSsaoResultMap->create2DMap(mWidth, mHeight, nullptr, GL_RED, GL_RED,GL_FLOAT);
+		mpFboSsao->attachColorTexture(mpSsaoResultMap);
 	}
 	if (mpSsaoBluredMap) {
 		mpSsaoBluredMap->setParam(GL_NEAREST, GL_NEAREST);
@@ -295,7 +289,7 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 		}
 		mpSsaoBlurMaterial = res.getMaterial("ssaoBlur");
 		if (mpSsaoBlurMaterial) {
-			mpSsaoBlurMaterial->setTextureForSampler("ssaoInput", mpSsaoMap);
+			mpSsaoBlurMaterial->setTextureForSampler("ssaoInput", mpSsaoResultMap);
 		}
 		mpDefLightPassMaterial = res.getMaterialDefferedLightPass(true);
 		if (mpDefLightPassMaterial) {
@@ -331,14 +325,6 @@ void Camera::defferedGeometryPass(const std::shared_ptr<Scene>& pScene) const{
 		const auto& rootNode = pScene->getRootDeffered();
 		renderNode(rootNode, pScene, nullptr, nullptr);
 	}
-}
-
-void Camera::ssaoPass() {
-
-}
-
-void Camera::defferedLightingPass(std::vector<glm::vec3>* lightPos,std::vector<glm::vec3>* lightColor) {
-	
 }
 
 void Camera::updateWidthHeight(int w,int h) {
