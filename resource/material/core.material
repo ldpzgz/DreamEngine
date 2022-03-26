@@ -45,6 +45,10 @@ config{
 			{
 				float screenWidth;
 				float screenHeight;
+				
+			};
+			layout (std140) uniform Taa
+			{
 				int frameCount;
 				int offsetIndex;
 			};
@@ -83,8 +87,8 @@ config{
 				mat4 jitterMat = projMat;
 				jitterMat[2][0] += jitter.x;
 				jitterMat[2][1] += jitter.y;
-				gl_Position = jitterMat * viewMat * modelMat * vec4(inPos, 1.0);
-				curScreenPos = projMat * viewMat * modelMat * vec4(inPos, 1.0);
+				gl_Position = jitterMat * mvMat * vec4(inPos, 1.0);
+				curScreenPos = projMat * mvMat * vec4(inPos, 1.0);
 			#else
 				gl_Position = projMat * mvMat * vec4(inPos,1.0f);
 			#endif
@@ -192,7 +196,7 @@ config{
 			#ifdef HAS_TAA
 				// velocity
 				vec2 newPos = ((curScreenPos.xy / curScreenPos.w) * 0.5 + 0.5);
-				vec2 prePos = ((preScreenPos.xy / curScreenPos.w) * 0.5 + 0.5);
+				vec2 prePos = ((preScreenPos.xy / preScreenPos.w) * 0.5 + 0.5);
 				outVelocity = newPos - prePos;
 			#endif
 		}

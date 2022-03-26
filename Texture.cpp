@@ -137,7 +137,10 @@ bool Texture::create2DMap(int width,int height,unsigned char* pdata, GLint inter
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(mTarget, mTextureId);//mTarget是GL_TEXTURE_CUBE_MAP的时候要注意，
 	// Set-up texture properties.
-	mMinFilter = autoMipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
+	if (autoMipmap) {
+		mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
+	}
+	
 	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
 	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,mMagFilter);
 	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);

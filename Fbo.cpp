@@ -301,6 +301,7 @@ bool Fbo::attachDepthTextureMS(const std::shared_ptr<Texture>& texture) {
 		LOGE("ERROR Fbo::attachDepthTextureMS textureTarget is not GL_TEXTURE_2D_MULTISAMPLE");
 		return false;
 	}
+	enable();
 	glFramebufferTexture2D(
 		GL_FRAMEBUFFER,
 		GL_DEPTH_ATTACHMENT,
@@ -311,11 +312,13 @@ bool Fbo::attachDepthTextureMS(const std::shared_ptr<Texture>& texture) {
 	if (bret) {
 		mbEnableDepthTest = true;
 	}
+	disable();
 	return bret;
 }
 
 bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level)
 {
+	enable();
 	if (!texture)
 	{
 		LOGD("Fbo::attachDepthTexture texture == 0");
@@ -328,9 +331,7 @@ bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level
 				texture->getId(),
 				level);
 	bool bret = checkFrameBuffer();
-	if (bret) {
-		mbEnableDepthTest = true;
-	}
+	disable();
 	return bret;
 }
 

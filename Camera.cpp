@@ -103,17 +103,19 @@ void Camera::renderScene() {
 			initDefferedRendering(pScene);
 		}
 		if (mpFboDefferedGeo) {
-			float temp[4];
+			float temp[2];
+			int taaUniform[2];
 			temp[0] = mWidth;
 			temp[1] = mHeight;
-			*reinterpret_cast<int*>(&temp[2]) = mTaaFrameCount++;
-			*reinterpret_cast<int*>(&temp[3]) = mTaaOffsetIndex++;
+			taaUniform[0] = mTaaFrameCount++;
+			taaUniform[1] = mTaaOffsetIndex++;
 			mTaaOffsetIndex %= 8;
 			if (mTaaFrameCount > 100000000) {
 				//避免长时间运行溢出
 				mTaaFrameCount = 1;
 			}
 			Ubo::getInstance().update("ScreenWH", temp, sizeof(temp));
+			Ubo::getInstance().update("Taa", taaUniform, sizeof(taaUniform));
 
 			mpFboDefferedGeo->render([this, &pScene] {
 				//deffered rendering geometry pass
@@ -201,6 +203,7 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 	mpPosMap = std::make_shared<Texture>();//0
 	mpNormal = std::make_shared<Texture>();//1
 	mpAlbedoMap = std::make_shared<Texture>();//2
+	mpDepthMap = std::make_shared<Texture>();
 	mpDefferedRenderResult = std::make_shared <Texture>();
 	mpSsaoResultMap = std::make_shared<Texture>();
 	mpSsaoNoiseMap = std::make_shared<Texture>();
@@ -208,19 +211,21 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 	mpTaaVelocityMap = std::make_shared<Texture>();
 	mpTaaPreColorMap[0] = std::make_shared<Texture>();
 	mpTaaPreColorMap[1] = std::make_shared<Texture>();
-	if (mpPosMap && mpNormal && mpAlbedoMap && mpTaaVelocityMap) {
+	if (mpPosMap && mpNormal && mpAlbedoMap && mpDepthMap && mpTaaVelocityMap) {
 		mpPosMap->setParam(GL_NEAREST, GL_NEAREST);
 		mpPosMap->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
 		mpNormal->setParam(GL_NEAREST, GL_NEAREST);
 		mpNormal->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
 		mpAlbedoMap->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
+		mpDepthMap->setParam(GL_NEAREST, GL_NEAREST);
+		mpDepthMap->create2DMap(mWidth, mHeight, nullptr, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
 		mpTaaVelocityMap->setParam(GL_NEAREST, GL_NEAREST);
 		mpTaaVelocityMap->create2DMap(mWidth, mHeight, nullptr, GL_RG16F, GL_RG, GL_FLOAT);
 		mpFboDefferedGeo->attachColorTexture(mpPosMap, 0);
 		mpFboDefferedGeo->attachColorTexture(mpNormal, 1);
 		mpFboDefferedGeo->attachColorTexture(mpAlbedoMap, 2);
 		mpFboDefferedGeo->attachColorTexture(mpTaaVelocityMap, 3);
-		mpFboDefferedGeo->attachDepthRbo(mWidth, mHeight);//深度缓存
+		mpFboDefferedGeo->attachDepthTexture(mpDepthMap);//深度缓存
 	}
 	if (mpDefferedRenderResult) {
 		mpDefferedRenderResult->create2DMap(mWidth,mHeight,nullptr, GL_RGBA16F, GL_RGBA,GL_FLOAT);
@@ -245,7 +250,7 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 			
 		for (unsigned int i = 0; i < 64; ++i)
 		{
-			glm::vec3 sample(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator) * 2.0 - 1.0, randomFloats(generator));
+			glm::vec4 sample(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator) * 2.0 - 1.0, randomFloats(generator),0.0f);
 			sample = glm::normalize(sample);
 			sample *= randomFloats(generator);
 			float scale = float(i) / 64.0f;
@@ -285,7 +290,7 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 			mpSsaoMaterial->setTextureForSampler("posMap", mpPosMap);
 			mpSsaoMaterial->setTextureForSampler("normalMap", mpNormal);
 			mpSsaoMaterial->setTextureForSampler("noiseMap", mpSsaoNoiseMap);
-			Ubo::getInstance().update("SampleArray", mSsaoKernel.data(), sizeof(glm::vec3) * mSsaoKernel.size());
+			Ubo::getInstance().update("SampleArray", mSsaoKernel.data(), sizeof(glm::vec4) * mSsaoKernel.size());
 		}
 		mpSsaoBlurMaterial = res.getMaterial("ssaoBlur");
 		if (mpSsaoBlurMaterial) {
@@ -310,7 +315,7 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 			//previousColor map is set dynamicly
 			mpTaaMaterial->setTextureForSampler("currentColor", mpDefferedRenderResult);
 			mpTaaMaterial->setTextureForSampler("velocityTexture", mpTaaVelocityMap);
-			mpTaaMaterial->setTextureForSampler("currentDepth", mpPosMap);
+			mpTaaMaterial->setTextureForSampler("currentDepth", mpDepthMap);
 		}
 
 		mpDrawQuadMaterial = res.getMaterial("drawQuad");

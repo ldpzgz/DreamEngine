@@ -1483,7 +1483,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	program = "posLoc=0\ntexcoordLoc=1\nnormalLoc=2\n";
 	program += "projMatrix=projMat\nmodelMatrix=modelMat\nviewMatrix=viewMat\npreMvpMatrix=preMvpMat\n";
 	programSampler = "sampler{\n";
-	programUbo = "ubo{\nScreenWH = 1\n}\n";
+	programUbo = "ubo{\nScreenWH = 1\nTaa=2\n}\n";
 
 	//先计算出标志，确定material的名字，然后在gMaterial里面找，能找到就用现成的
 	if (!mInfo.albedoMap.empty()) {

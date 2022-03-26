@@ -24,6 +24,10 @@ fs{
 	{
 		float screenWidth;
 		float screenHeight;
+
+	};
+	layout (std140) uniform Taa
+	{
 		int frameCount;
 		int offsetIndex;
 	};
@@ -83,7 +87,7 @@ fs{
 			{
 				vec2 newUV = screenPosition + deltaRes * vec2(i, j);
 
-				float depth = texture2D(currentDepth, newUV).b;//currentDepth is a posMap
+				float depth = texture2D(currentDepth, newUV).r;
 
 				if(depth < closestDepth)
 				{
@@ -174,5 +178,6 @@ program:taa{
 	}
 	ubo{
 		ScreenWH=1
+		Taa=2
 	}
 }

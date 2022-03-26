@@ -68,6 +68,7 @@ private:
 	std::shared_ptr<Texture> mpPosMap;
 	std::shared_ptr<Texture> mpNormal;
 	std::shared_ptr<Texture> mpAlbedoMap;
+	std::shared_ptr<Texture> mpDepthMap;
 
 	//deffered rendering
 	std::shared_ptr<Fbo> mpFboDefferedGeo;//用于defered geometry pass
@@ -83,7 +84,7 @@ private:
 	std::shared_ptr<Texture> mpSsaoNoiseMap;
 	std::shared_ptr<Texture> mpSsaoBluredMap;
 	std::shared_ptr<Texture> mpSsaoResultMap;
-	std::vector<glm::vec3> mSsaoKernel;
+	std::vector<glm::vec4> mSsaoKernel;
 
 	//Temporal Anti Aliasing
 	std::shared_ptr<Fbo> mpFboTaa;
