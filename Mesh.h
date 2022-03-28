@@ -33,6 +33,7 @@ enum class MeshType //枚举类型定义加了class就是强类型枚举，不�
 	MESH_Triangle,
 	MESH_Quad,//矩形，坐标范围是[-1，1]
 	MESH_Rectangle,//纯色矩形,坐标范围是[0,1]
+	MESH_TrianglePost,//用于后处理的triangle
 	MESH_FilledRect,//可以填充纯色，可贴图，也可以绘制为线框的矩形
 	MESH_Rounded_Rectangle,//带center color的rounded rectangle
 	MESH_Cuboid,//立方体

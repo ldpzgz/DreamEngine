@@ -8,6 +8,9 @@
 #include "Fbo.h"
 #include "Log.h"
 #include "Resource.h"
+#include "Config.h"
+#include "PostSmaa.h"
+#include "PostToneMap.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <random>
 
@@ -102,6 +105,13 @@ void Camera::renderScene() {
 		if (!mpFboDefferedGeo) {
 			initDefferedRendering(pScene);
 		}
+		if (!mpFboForward) {
+			mpFboForward = std::make_shared<Fbo>();
+			mpFboForward->attachColorTexture(mpRenderResult);
+			mpFboForward->attachDepthTexture(mpDepthMap);//深度缓存
+			mpFboForward->setClearColor(false);
+			mpFboForward->setClearDepth(false);//depth is enable,but do not clear depth at first
+		}
 		if (mpFboDefferedGeo) {
 			float temp[2];
 			int taaUniform[2];
@@ -115,7 +125,9 @@ void Camera::renderScene() {
 				mTaaFrameCount = 1;
 			}
 			Ubo::getInstance().update("ScreenWH", temp, sizeof(temp));
-			Ubo::getInstance().update("Taa", taaUniform, sizeof(taaUniform));
+			if (Config::openTaa) {
+				Ubo::getInstance().update("Taa", taaUniform, sizeof(taaUniform));
+			}
 
 			mpFboDefferedGeo->render([this, &pScene] {
 				//deffered rendering geometry pass
@@ -124,50 +136,70 @@ void Camera::renderScene() {
 			//ssao
 			if (mpFboSsao) {
 				mpFboSsao->render([this] {
-					mpMeshQuad->setMaterial(mpSsaoMaterial);
-					mpMeshQuad->draw(&mProjMatrix,nullptr);
+					mpPostMesh->setMaterial(mpSsaoMaterial);
+					mpPostMesh->draw(&mProjMatrix,nullptr);
 					});
 			}
 			//ssao blur
 			if (mpFboSsaoBlured) {
 				mpFboSsaoBlured->render([this] {
-					mpMeshQuad->setMaterial(mpSsaoBlurMaterial);
-					mpMeshQuad->draw(nullptr, nullptr);
+					mpPostMesh->setMaterial(mpSsaoBlurMaterial);
+					mpPostMesh->draw(nullptr, nullptr);
 					});
 			}
 
 			//deffered render lighting pass
 			if (mpFboDefferedLighting) {
 				mpFboDefferedLighting->render([this, &lightPos, &lightColor]() {
-					mpMeshQuad->setMaterial(mpDefLightPassMaterial);
-					mpMeshQuad->draw(nullptr, nullptr, nullptr, nullptr, &lightPos, &lightColor);
+					mpPostMesh->setMaterial(mpDefLightPassMaterial);
+					mpPostMesh->draw(nullptr, nullptr, nullptr, nullptr, &lightPos, &lightColor);
 					});
 			}
-			//post-process
-			//taa
-			if (mpTaaMaterial) {
-				//previousColor map is set dynamicly
-				mpTaaMaterial->setTextureForSampler("previousColor", mpTaaPreColorMap[mTaaPreColorMapIndex]);
-				mTaaPreColorMapIndex = (mTaaPreColorMapIndex + 1) % 2;
-				mpFboTaa->replaceColorTexture(mpTaaPreColorMap[mTaaPreColorMapIndex], 0);
-				mpMeshQuad->setMaterial(mpTaaMaterial);
-				mpFboTaa->render([this]() {
-					mpMeshQuad->draw(nullptr, nullptr);
-				});
-
-				if (mpDrawQuadMaterial) {
-					mpDrawQuadMaterial->setTextureForSampler("albedoMap", mpTaaPreColorMap[mTaaPreColorMapIndex]);
-				}
-			}
-			mpMeshQuad->setMaterial(mpDrawQuadMaterial);
-			mpMeshQuad->draw(nullptr, nullptr);
-			//把深度缓冲区copy到窗口系统
-			mpFboDefferedGeo->blitDepthBufToWin();
-			
 		}
 		//forward rendering
-		const auto& rootNode = pScene->getRoot();
-		renderNode(rootNode, pScene, &lightPos, &lightColor);
+		mpFboForward->render([this,&pScene,&lightPos, &lightColor]() {
+			const auto& rootNode = pScene->getRoot();
+			renderNode(rootNode, pScene, &lightPos, &lightColor);
+			});
+
+
+		//post-process
+			//taa
+		if (Config::openTaa && mpTaaMaterial) {
+			//previousColor map is set dynamicly
+			mpTaaMaterial->setTextureForSampler("previousColor", mpTaaPreColorMap[mTaaPreColorMapIndex]);
+			mTaaPreColorMapIndex = (mTaaPreColorMapIndex + 1) % 2;
+			mpFboTaa->replaceColorTexture(mpTaaPreColorMap[mTaaPreColorMapIndex], 0);
+			mpPostMesh->setMaterial(mpTaaMaterial);
+			mpFboTaa->render([this]() {
+				mpPostMesh->draw(nullptr, nullptr);
+				});
+
+			if (mpDrawQuadMaterial) {
+				mpDrawQuadMaterial->setTextureForSampler("albedoMap", mpTaaPreColorMap[mTaaPreColorMapIndex]);
+			}
+		}
+
+		if (mpPostTonemap) {
+			mpPostTonemap->process(mpRenderResult, mpPostTex[0]);
+			if (mpDrawQuadMaterial) {
+				mpDrawQuadMaterial->setTextureForSampler("albedoMap", mpPostTex[0]);
+			}
+		}
+
+		if (Config::openSmaa) {
+			mpPostSmaa->process(mpPostTex[0], mpPostTex[1]);
+			if (mpDrawQuadMaterial) {
+				mpDrawQuadMaterial->setTextureForSampler("albedoMap", mpPostTex[1]);
+			}
+		}
+
+		//在窗口系统将最终渲染结果绘制出来
+		mpPostMesh->setMaterial(mpDrawQuadMaterial);
+		mpPostMesh->draw(nullptr, nullptr);
+		
+		//把深度缓冲区copy到窗口系统
+		mpFboForward->blitDepthBufToWin();
 	}
 }
 
@@ -204,13 +236,15 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 	mpNormal = std::make_shared<Texture>();//1
 	mpAlbedoMap = std::make_shared<Texture>();//2
 	mpDepthMap = std::make_shared<Texture>();
-	mpDefferedRenderResult = std::make_shared <Texture>();
+	mpRenderResult = std::make_shared <Texture>();
 	mpSsaoResultMap = std::make_shared<Texture>();
 	mpSsaoNoiseMap = std::make_shared<Texture>();
 	mpSsaoBluredMap = std::make_shared<Texture>();
 	mpTaaVelocityMap = std::make_shared<Texture>();
 	mpTaaPreColorMap[0] = std::make_shared<Texture>();
 	mpTaaPreColorMap[1] = std::make_shared<Texture>();
+	mpPostTex[0] = std::make_shared<Texture>();
+	mpPostTex[1] = std::make_shared<Texture>();
 	if (mpPosMap && mpNormal && mpAlbedoMap && mpDepthMap && mpTaaVelocityMap) {
 		mpPosMap->setParam(GL_NEAREST, GL_NEAREST);
 		mpPosMap->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
@@ -227,9 +261,9 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 		mpFboDefferedGeo->attachColorTexture(mpTaaVelocityMap, 3);
 		mpFboDefferedGeo->attachDepthTexture(mpDepthMap);//深度缓存
 	}
-	if (mpDefferedRenderResult) {
-		mpDefferedRenderResult->create2DMap(mWidth,mHeight,nullptr, GL_RGBA16F, GL_RGBA,GL_FLOAT);
-		mpFboDefferedLighting->attachColorTexture(mpDefferedRenderResult);
+	if (mpRenderResult) {
+		mpRenderResult->create2DMap(mWidth,mHeight,nullptr, GL_RGBA16F, GL_RGBA,GL_FLOAT);
+		mpFboDefferedLighting->attachColorTexture(mpRenderResult);
 		mpFboDefferedLighting->setDepthTest(false);
 	}
 	if (mpSsaoResultMap) {
@@ -281,9 +315,9 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 		mpFboTaa->attachColorTexture(mpTaaPreColorMap[1]);
 	}
 		
-	mpMeshQuad = std::make_shared<Mesh>(MeshType::MESH_Quad);
-	if (mpMeshQuad) {
-		mpMeshQuad->loadMesh();
+	mpPostMesh = std::make_shared<Mesh>(MeshType::MESH_TrianglePost);
+	if (mpPostMesh) {
+		mpPostMesh->loadMesh();
 		Resource& res = Resource::getInstance();
 		mpSsaoMaterial = res.getMaterial("ssao");
 		if (mpSsaoMaterial) {
@@ -310,17 +344,29 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 			mpDefLightPassMaterial->setTextureForSampler("brdfLUT", Resource::getInstance().getTexture("brdfLUT"));
 		}
 
-		mpTaaMaterial = res.getMaterial("taa");
-		if (mpTaaMaterial) {
-			//previousColor map is set dynamicly
-			mpTaaMaterial->setTextureForSampler("currentColor", mpDefferedRenderResult);
-			mpTaaMaterial->setTextureForSampler("velocityTexture", mpTaaVelocityMap);
-			mpTaaMaterial->setTextureForSampler("currentDepth", mpDepthMap);
+		if (Config::openTaa) {
+			mpTaaMaterial = res.getMaterial("taa");
+			if (mpTaaMaterial) {
+				//previousColor map is set dynamicly
+				mpTaaMaterial->setTextureForSampler("currentColor", mpRenderResult);
+				mpTaaMaterial->setTextureForSampler("velocityTexture", mpTaaVelocityMap);
+				mpTaaMaterial->setTextureForSampler("currentDepth", mpDepthMap);
+			}
 		}
+
+		if (mpPostTex[0] && mpPostTex[1]) {
+			mpPostTex[0]->create2DMap(mWidth, mHeight, nullptr, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+			mpPostTex[1]->create2DMap(mWidth, mHeight, nullptr, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+		}
+		
+		mpPostTonemap = std::make_unique<PostToneMap>();
+		mpPostTonemap->initPost(mWidth, mHeight, mpPostMesh);
+		mpPostSmaa = std::make_unique<PostSmaa>();
+		mpPostSmaa->initPost(mWidth, mHeight, mpPostMesh);
 
 		mpDrawQuadMaterial = res.getMaterial("drawQuad");
 		if (mpDrawQuadMaterial) {
-			mpDrawQuadMaterial->setTextureForSampler("albedoMap", mpDefferedRenderResult);
+			mpDrawQuadMaterial->setTextureForSampler("albedoMap", mpRenderResult);
 		}
 	}
 }

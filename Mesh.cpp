@@ -173,6 +173,18 @@ void Mesh::loadMesh()
 			indexes, sizeof(indexes), 
 			tex, sizeof(tex),(GLfloat*)nor.data(), nor.size() * sizeof(glm::vec3));
 	}
+	else if (mMeshType == MeshType::MESH_TrianglePost) {
+		std::vector<glm::vec3> pos{
+			{-1.0f,3.0f,0.0f},
+			{-1.0f,-1.0f,0.0f},
+			{3.0f,-1.0f,0.0f}
+		};
+		GLfloat tex[] = { 0.0f,2.0f,0.0f,0.0f,2.0f,0.0f };
+		GLuint indexes[] = { 0,1,2 };
+		createBufferObject((GLfloat*)pos.data(), pos.size() * sizeof(glm::vec3), 3,
+			indexes, sizeof(indexes),
+			tex, sizeof(tex));
+	}
 	else if (mMeshType == MeshType::MESH_Quad) {
 		std::vector<glm::vec3> pos{
 			{1.0f,1.0f,0.0f},

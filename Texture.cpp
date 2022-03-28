@@ -124,7 +124,7 @@ void Texture::setParam(int minFilter, int magFilter, int wrapS, int wrapT,int wr
 	}
 }
 
-bool Texture::create2DMap(int width,int height,unsigned char* pdata, GLint internalFormat,GLint format,GLenum type, int aligment,bool autoMipmap)
+bool Texture::create2DMap(int width,int height,const unsigned char* pdata, GLint internalFormat,GLint format,GLenum type, int aligment,bool autoMipmap)
 {
 	mFormat = format;
 	mInternalFormat = internalFormat;

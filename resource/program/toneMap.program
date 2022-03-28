@@ -1,0 +1,46 @@
+vs{
+	#version 330 core
+    layout(location = 0) in vec3 inPos;
+	layout(location = 1) in vec2 inTexcoord;
+	out vec2 texcoord;
+    void main()
+    {
+       gl_Position = vec4(inPos,1.0f);
+	   texcoord = inTexcoord;
+    }
+}
+
+fs{
+	#version 330 core
+	precision highp float;
+	in vec2 texcoord;
+	
+	uniform sampler2D inputTexture;
+	out vec4 outputTexture;
+
+	vec3 aces_approx(vec3 v)
+	{
+		v *= 0.6f;
+		float a = 2.51f;
+		float b = 0.03f;
+		float c = 2.43f;
+		float d = 0.59f;
+		float e = 0.14f;
+		return clamp((v*(a*v+b))/(v*(c*v+d)+e), 0.0f, 1.0f);
+	}
+	void main()
+	{
+		vec3 envColor = texture( inputTexture, texcoord ).rgb;
+		envColor = aces_approx(envColor);//tonemap
+		envColor = pow(envColor, vec3(1.0/2.2));
+		outputTexture = vec4(envColor,1.0f);
+	}
+}
+
+program:toneMap{
+	posLoc=0
+	texcoordLoc=1
+	sampler2D{
+		inputTexture=none
+	}
+}

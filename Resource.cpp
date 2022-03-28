@@ -8,6 +8,7 @@
 #include "Utils.h"
 #include "Node.h"
 #include "MeshLoaderAssimp.h"
+#include "Config.h"
 #include <filesystem>
 #include <unordered_map>
 #include <sstream>
@@ -1436,9 +1437,9 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedLightPass(bool hasIBL
 	auto dlfs = getKeyAsStr("defferedLightFs");
 	fs += dlfs;
 	std::string fstemp = fs.c_str();
-	LOGD(" VS:%s", vs.c_str());
-	LOGD(" FS:%s", fs.c_str());
-	LOGD(" program:%s", program.c_str());
+	//LOGD(" VS:%s", vs.c_str());
+	//LOGD(" FS:%s", fs.c_str());
+	//LOGD(" program:%s", program.c_str());
 	if (compileShader(pMaterial, materialName, vs, fs)) {
 		if (parseProgram(pMaterial, program)) {
 			if (!mMaterials.emplace(materialName, pMaterial).second) {
@@ -1481,9 +1482,13 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	std::string programUbo;
 
 	program = "posLoc=0\ntexcoordLoc=1\nnormalLoc=2\n";
-	program += "projMatrix=projMat\nmodelMatrix=modelMat\nviewMatrix=viewMat\npreMvpMatrix=preMvpMat\n";
+	program += "projMatrix=projMat\nmodelMatrix=modelMat\nviewMatrix=viewMat\n";
+	if (Config::openTaa) {
+		program += "preMvpMatrix=preMvpMat\n";
+		programUbo = "ubo{\nScreenWH = 1\nTaa=2\n}\n";
+	}
 	programSampler = "sampler{\n";
-	programUbo = "ubo{\nScreenWH = 1\nTaa=2\n}\n";
+	
 
 	//先计算出标志，确定material的名字，然后在gMaterial里面找，能找到就用现成的
 	if (!mInfo.albedoMap.empty()) {
@@ -1641,8 +1646,10 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	if (materialFlag != 0) {
 		fs += hasMap;
 		vs += hasMap;
-		fs += hasTaa;
-		vs += hasTaa;
+		if (Config::openTaa) {
+			fs += hasTaa;
+			vs += hasTaa;
+		}
 	}
 	fs += allDefine;
 	vs += getKeyAsStr("defferedGeoVs");

@@ -226,6 +226,9 @@ bool Fbo::attachColorTextureMS(const std::shared_ptr<Texture>& texture, int atta
 }
 
 bool Fbo::replaceColorTexture(const std::shared_ptr<Texture>& texture, int attachment_n, int cubicFace, GLint level) {
+	if (mAttachments.size() < attachment_n + 1) {
+		return attachColorTexture(texture, attachment_n, cubicFace, level);
+	}
 	bool ret = false;
 	if (!texture || texture->getWidth() != mWidth || texture->getHeight() != mHeight)
 	{
@@ -411,8 +414,10 @@ void Fbo::render(std::function<void()> func) {
 	if (mbEnableDepthTest) {
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
-		glClearDepthf(1.0f);
-		glClear(GL_DEPTH_BUFFER_BIT);
+		if (mbClearDepth) {
+			glClearDepthf(1.0f);
+			glClear(GL_DEPTH_BUFFER_BIT);
+		}
 	}
 	else {
 		glDisable(GL_DEPTH_TEST);

@@ -80,7 +80,7 @@ public:
 	//internalFormat:该纹理在显存中的格式，GL_RGB,GL_RGBA
 	//format:pdata指向的内存数据的格式，GL_RGB,GL_RGBA
 	//type:pdata指向的内存，比如rgb中的r的类型，GL_UNSIGNED_BYTE
-	bool create2DMap(int width,int height,unsigned char* pdata, GLint internalFormat = GL_RGB, GLint format=GL_RGB,GLenum type =GL_UNSIGNED_BYTE, int aligment = 1,bool autoMipmap=false);
+	bool create2DMap(int width,int height,const unsigned char* pdata, GLint internalFormat = GL_RGB, GLint format=GL_RGB,GLenum type =GL_UNSIGNED_BYTE, int aligment = 1,bool autoMipmap=false);
 	
 	/*
 	* path:指定了六个cubemap文件所在的路径，这个路径里面有"right.jpg","left.jpg","top.jpg","bottom.jpg","front.jpg","back.jpg"

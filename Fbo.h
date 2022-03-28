@@ -60,6 +60,9 @@ public:
 	void setDepthTest(bool b) {
 		mbEnableDepthTest = b;
 	}
+	void setClearDepth(bool b) {
+		mbClearDepth = b;
+	}
 	//blend选项，在material里面也可以设置，每个物体可以根据自身特点单独设置
 	//这里提供全局的blend设置，比如ui渲染，全部ui都是一样的blend配置，避免每个view单独配置
 	void setBlend(bool b);
@@ -111,6 +114,7 @@ private:
 	int mWidth{ 0 }; //render to tex ,tex width
 	int mHeight{ 0 };//render to tex ,tex height
 	bool mbEnableDepthTest{ true };
+	bool mbClearDepth{ true };
 	bool mbClearColor{ true };
 	bool mbClearColorOnlyOnce{ false };
 	float mClearColor[4]{0.0f,0.0f,0.0f,0.0f};

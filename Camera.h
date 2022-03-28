@@ -10,6 +10,7 @@ class Mesh;
 class Renderable;
 class Node;
 class Material;
+class Post;
 /*
 * 这个camera可以监听一个节点，节点方位变化的时候会通知相机，camera根据情况更新自己的相机。
 * 但是camera节点，以及其所有父节点都只能做旋转和平移变换
@@ -73,7 +74,8 @@ private:
 	//deffered rendering
 	std::shared_ptr<Fbo> mpFboDefferedGeo;//用于defered geometry pass
 	std::shared_ptr<Fbo> mpFboDefferedLighting;//用于defered lighting pass
-	std::shared_ptr<Texture> mpDefferedRenderResult;
+	std::shared_ptr<Fbo> mpFboForward;//用于forward render
+	std::shared_ptr<Texture> mpRenderResult;
 	std::shared_ptr<Material> mpDefLightPassMaterial;
 
 	//ssao
@@ -95,8 +97,12 @@ private:
 	int mTaaFrameCount{0};
 	int mTaaOffsetIndex{ 0 };
 
-	std::shared_ptr<Mesh> mpMeshQuad;
+	std::shared_ptr<Mesh> mpPostMesh;
 	std::shared_ptr<Material> mpDrawQuadMaterial;
+
+	std::shared_ptr<Texture> mpPostTex[2];
+	std::unique_ptr<Post> mpPostTonemap;
+	std::unique_ptr<Post> mpPostSmaa;
 };
 
 
