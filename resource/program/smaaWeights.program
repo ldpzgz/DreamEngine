@@ -33,7 +33,7 @@ vs{
 	void main() {
 		vec4 SMAA_RT_METRICS = vec4(1.0 / screenWidth, 1.0 / screenHeight, screenWidth, screenHeight);
 
-		texcoord = vec2((inPos + 1.0) / 2.0);
+		texcoord = inTexcoord;
 
 		pixCoord = texcoord * SMAA_RT_METRICS.zw;
 

@@ -1,4 +1,4 @@
 #include "Config.h"
-int Config::openTaa=1;//temporal aa
+int Config::openTaa=0;//temporal aa
 int Config::openSsao=1;
-int Config::openSmaa=0;
+int Config::openSmaa=1;

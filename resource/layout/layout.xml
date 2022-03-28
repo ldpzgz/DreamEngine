@@ -13,7 +13,7 @@
 		textSize="40"
 		textColor="#000000ff"
 		background="@bk/firstbk"
-		text="我们oklg哈">
+		text="截图">
 	</TextView>
 		
 </LinearLayout>

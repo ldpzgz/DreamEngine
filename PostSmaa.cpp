@@ -24,18 +24,9 @@ void PostSmaa::initPost(int width,int height,std::shared_ptr<Mesh>& pMesh) {
 	
 	mpWeightTex->create2DMap(width, height, nullptr,GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 	mpEdgeTex->create2DMap(width, height, nullptr, GL_RG8, GL_RG, GL_UNSIGNED_BYTE);
-	auto temp = std::make_unique<unsigned char[]>(AREATEX_PITCH * AREATEX_HEIGHT);
-	for (int i = 0; i < AREATEX_HEIGHT; ++i) {
-		std::copy(areaTexBytes + (AREATEX_HEIGHT - 1 - i) * AREATEX_PITCH,
-			areaTexBytes + (AREATEX_HEIGHT - i) * AREATEX_PITCH, temp.get() + i * AREATEX_PITCH);
-	}
-	mpAreaTex->create2DMap(AREATEX_WIDTH, AREATEX_HEIGHT, temp.get(), GL_RG8, GL_RG, GL_UNSIGNED_BYTE);
-	temp = std::make_unique<unsigned char[]>(SEARCHTEX_PITCH * SEARCHTEX_HEIGHT);
-	for (int i = 0; i < SEARCHTEX_HEIGHT; ++i) {
-		std::copy(searchTexBytes + (SEARCHTEX_HEIGHT - 1 - i) * SEARCHTEX_PITCH,
-			searchTexBytes + (SEARCHTEX_HEIGHT - i) * SEARCHTEX_PITCH, temp.get() + i * SEARCHTEX_PITCH);
-	}
-	mpSearchTex->create2DMap(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, temp.get(), GL_R8, GL_RED, GL_UNSIGNED_BYTE);
+
+	mpAreaTex->create2DMap(AREATEX_WIDTH, AREATEX_HEIGHT, areaTexBytes, GL_RG8, GL_RG, GL_UNSIGNED_BYTE);
+	mpSearchTex->create2DMap(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, searchTexBytes, GL_R8, GL_RED, GL_UNSIGNED_BYTE);
 	
 	Resource& res = Resource::getInstance();
 	mpEdgeMaterial = res.getMaterial("smaaEdge");
