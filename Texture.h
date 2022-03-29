@@ -63,7 +63,14 @@ public:
 		return mType;
 	}
 	//设置过滤和wrap 参数
-	void setParam(int minFilter,int magFilter,int wrapS = GL_CLAMP_TO_EDGE,int wrapT = GL_CLAMP_TO_EDGE,int wrapR = GL_CLAMP_TO_EDGE);
+	//boderColor 当wrap参数是GL_CLAMP_TO_BORDER的时候，用于设置boder的颜色
+	void setParam(int minFilter,
+		int magFilter,
+		int wrapS = GL_CLAMP_TO_EDGE,
+		int wrapT = GL_CLAMP_TO_EDGE,
+		float* boderColor=nullptr,
+		int wrapR = GL_CLAMP_TO_EDGE
+		);
 
 	//创建一个多重采样纹理，用于添加到fbo，
 	bool createMStexture(int width, int height, int samples=4, unsigned int internalformat= GL_RGBA8);

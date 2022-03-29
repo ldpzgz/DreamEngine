@@ -105,7 +105,7 @@ bool Texture::createCubicMap(int width, int height, GLint internalFormat, GLenum
 	return true;
 }
 
-void Texture::setParam(int minFilter, int magFilter, int wrapS, int wrapT,int wrapR) {
+void Texture::setParam(int minFilter, int magFilter, int wrapS, int wrapT,float* borderColor,int wrapR ) {
 	mMinFilter = minFilter;
 	mMagFilter = magFilter;
 	mWrapParamS = wrapS;
@@ -119,6 +119,9 @@ void Texture::setParam(int minFilter, int magFilter, int wrapS, int wrapT,int wr
 		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
 		if (mTarget == GL_TEXTURE_CUBE_MAP) {
 			glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mWrapParamR);
+		}
+		if (borderColor != nullptr) {
+			glTexParameterfv(mTarget, GL_TEXTURE_BORDER_COLOR, borderColor);
 		}
 		glBindTexture(mTarget, 0);
 	}
