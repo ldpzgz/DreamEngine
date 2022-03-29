@@ -10,6 +10,7 @@ class Mesh;
 class Renderable;
 class Node;
 class Material;
+class Shader;
 class Post;
 /*
 * 这个camera可以监听一个节点，节点方位变化的时候会通知相机，camera根据情况更新自己的相机。
@@ -47,10 +48,21 @@ public:
 		return mViewMat;
 	}
 private:
-	void initDefferedRendering(const std::shared_ptr<Scene>& pScene);
+	void initDefferedRendering(const std::shared_ptr<Scene>& pScene) noexcept;
+	//如果物体不共用同一个shader，使用这个renderNode
 	void renderNode(const std::shared_ptr<Node>& node,
-		const std::shared_ptr<Scene>& pScene, std::vector<glm::vec3>*, std::vector<glm::vec3>*) const;
-	void defferedGeometryPass(const std::shared_ptr<Scene>& pScene) const;
+		const std::shared_ptr<Scene>& pScene, 
+		std::vector<glm::vec3>*, 
+		std::vector<glm::vec3>*) const noexcept;
+
+	//如果所有物体共用同一个shader，使用这个renderNode
+	void renderNode(const std::shared_ptr<Node>& node, 
+		int posLoc, int texcoordLoc, int normalLoc,
+		std::shared_ptr<Shader>& pShader) const noexcept;
+
+	void defferedGeometryPass(const std::shared_ptr<Scene>& pScene) const noexcept;
+
+	void genShadowMap(std::shared_ptr<Scene>& pScene);
 	
 	int mWidth;
 	int mHeight;
@@ -64,6 +76,11 @@ private:
 	glm::vec3 mLookAt{ 0.0f,0.0f,0.0f };
 	glm::vec3 mPosition{ 0.0f,0.0f,1.0f };
 	std::weak_ptr<Scene> mpScene;
+
+	//shadow map
+	std::unique_ptr<Fbo> mpFboShadowMap;
+	std::shared_ptr<Texture> mpShadowMap;
+	std::shared_ptr<Material> mpGenShadowMaterial;
 	
 	//for deffered rendering
 	std::shared_ptr<Texture> mpPosMap;

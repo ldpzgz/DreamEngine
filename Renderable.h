@@ -8,7 +8,9 @@ public:
 	virtual ~Renderable() {
 
 	}
+	virtual void draw(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1) {
 
+	}
 	virtual void draw(const glm::mat4* projMat, 
 		const glm::mat4* modelMat, 
 		const glm::mat4* viewMat = nullptr,

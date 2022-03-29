@@ -130,7 +130,7 @@ public:
 
 	bool updateTangent(float* normal, int byteOffset, int size);
 
-
+	void draw(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1) override;
 	void draw(const glm::mat4* projMat, 
 		const glm::mat4* modelMat,
 		const glm::mat4* viewMat = nullptr,
@@ -168,11 +168,19 @@ public:
 	std::string& getMaterialName() {
 		return mMaterialName;
 	}
-	//void setTexture(const shared_ptr<Texture>& pTex,const string& samplerName="s_texture") {
-	//	if (mpMaterial) {
-	//		mpMaterial->setTextureForSampler(samplerName, pTex);
-	//	}
-	//}
+	
+	void setCastShadow(bool b) {
+		mbCastShadow = b;
+	}
+	bool getCastShadow() {
+		return mbCastShadow;
+	}
+	void setReceiveShadow(bool b) {
+		mbReceiveShadow = b;
+	}
+	bool getReceiveShadow() {
+		return mbReceiveShadow;
+	}
 
 	//这四个函数都是创建vbo，ebo，并从内存上传数据到vbo的显存,如果之前存在vbo了，先删除
 	bool setPosData(const GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
@@ -208,11 +216,10 @@ protected:
 
 	//当做三角形扇绘制GL_TRIANGLE_FAN
 	//virtual void drawTriangleFan(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1);
-
-	virtual void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc=-1);
 protected:
 	void reset();
-
+	bool mbCastShadow{true};
+	bool mbReceiveShadow{ true };
 	//4个vbo对象
 	GLuint mPosVbo{ 0 };
 	GLuint mTexVbo{ 0 }; 

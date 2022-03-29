@@ -74,6 +74,12 @@ public:
 		mTangentLoc = tangent;
 	}
 
+	void getLocation(int& posLoc, int& texcoordLoc, int& normalLoc) {
+		posLoc = mPosLoc;
+		texcoordLoc = mTexcoordLoc;
+		normalLoc = mNormalLoc;
+	}
+
 	void getLocation(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc, int& tangentLoc) {
 		posLoc = mPosLoc;
 		texcoordLoc = mTexcoordLoc;
@@ -140,6 +146,7 @@ public:
 	}
 
 	void enable();
+	void disable();
 	void getProjMatrixLoc(const std::string& projectMatrixNameInShader);
 	void getModelMatrixLoc(const std::string& modelMatrixNameInShader);
 	void getViewMatrixLoc(const std::string& viewMatrixNameInShader);

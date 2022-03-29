@@ -93,13 +93,15 @@ void Camera::renderScene() {
 		std::vector<glm::vec3> lightColor;
 		const auto& lights = pScene->getLights();
 		for (const auto& pl : lights) {
-			if (pl) {
+			if (pl && pl->isPointLight()) {
 				auto& pos = pl->getPosOrDir();
 				auto tpos = mViewMat * glm::vec4(pos.x, pos.y, pos.z,1.0f);
 				lightPos.emplace_back(glm::vec3(tpos.x,tpos.y,tpos.z));
 				lightColor.emplace_back(pl->getLightColor());
 			}
 		}
+		//render ShadowMap
+		genShadowMap(pScene);
 		
 		//deffered rendering
 		if (!mpFboDefferedGeo) {
@@ -157,9 +159,9 @@ void Camera::renderScene() {
 			}
 		}
 		//forward rendering
-		mpFboForward->render([this,&pScene,&lightPos, &lightColor]() {
+		mpFboForward->render([this,&pScene]() {
 			const auto& rootNode = pScene->getRoot();
-			renderNode(rootNode, pScene, &lightPos, &lightColor);
+			renderNode(rootNode, pScene, nullptr, nullptr);
 			});
 
 
@@ -203,10 +205,32 @@ void Camera::renderScene() {
 	}
 }
 
+void Camera::renderNode(const shared_ptr<Node>& pNode, 
+	int posLoc, int texcoordLoc, int normalLoc, 
+	std::shared_ptr<Shader>& pShader) const noexcept {
+	if (pNode) {
+		const auto& pRenderables = pNode->getRenderables();
+		glm::mat4 modelMat = pNode->getWorldMatrix();
+		if (pShader) {
+			pShader->setModelMatrix(modelMat);
+		}
+		for (const auto& pRen : pRenderables) {
+			if (pRen.second) {
+				pRen.second->draw(posLoc,texcoordLoc,normalLoc);
+			}
+		}
+
+		const auto& pChildNodes = pNode->getChildren();
+		for (const auto& pNode : pChildNodes) {
+			renderNode(pNode.second, posLoc, texcoordLoc, normalLoc,pShader);
+		}
+	}
+}
+
 void Camera::renderNode(const shared_ptr<Node>& node, 
 	const std::shared_ptr<Scene>& pScene,
 	std::vector<glm::vec3>* lightPos, 
-	std::vector<glm::vec3>* lightColor) const
+	std::vector<glm::vec3>* lightColor) const noexcept
 {
 	if (node) {
 		const auto& pRenderables = node->getRenderables();
@@ -215,7 +239,7 @@ void Camera::renderNode(const shared_ptr<Node>& node,
 		for (const auto& pRen : pRenderables) {
 			//std::shared_ptr<R> pMesh = std::dynamic_pointer_cast<Mesh>(pRen.second);
 			if (pRen.second) {
-				pRen.second->draw(&mProjMatrix, &modelMat, &mViewMat, nullptr,lightPos, lightColor, &mPosition);
+				pRen.second->draw(&mProjMatrix, &modelMat, &mViewMat, nullptr, lightPos, lightColor, &mPosition);
 			}
 		}
 		
@@ -226,7 +250,7 @@ void Camera::renderNode(const shared_ptr<Node>& node,
 	}
 }
 
-void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
+void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) noexcept {
 	mpFboDefferedGeo = make_shared<Fbo>();
 	mpFboDefferedLighting = make_shared<Fbo>();
 	mpFboSsao = make_shared<Fbo>();
@@ -371,7 +395,65 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) {
 	}
 }
 
-void Camera::defferedGeometryPass(const std::shared_ptr<Scene>& pScene) const{
+void Camera::genShadowMap(std::shared_ptr<Scene>& pScene) {
+	if (Config::openShadowMap == 0) {
+		return;
+	}
+	if (!mpShadowMap) {
+		constexpr int SM_WIDTH = 1024;
+		constexpr int SM_HEIGHT = 1024;
+		mpShadowMap = std::make_shared<Texture>();
+		float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		mpShadowMap->setParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_BORDER, GL_CLAMP_TO_BORDER, borderColor);
+		mpShadowMap->create2DMap(SM_WIDTH, SM_HEIGHT, nullptr, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
+		mpGenShadowMaterial = Resource::getInstance().cloneMaterial("genShadowMap");
+		assert(mpGenShadowMaterial);
+		mpFboShadowMap = std::make_unique<Fbo>();
+		mpFboShadowMap->attachDepthTexture(mpShadowMap,0,true); 
+	}
+	if (pScene) {
+		//找到投射阴影的灯光，建立projection Matrix，viewMat
+		auto& lights = pScene->getLights();
+		std::shared_ptr<Light> pLight;
+		for (auto& pl : lights) {
+			if (pl && pl->isDirectionalLight() && pl->getCastShadow())
+				pLight = pl;
+		}
+		if (pLight) {
+			auto& direction = pLight->getPosOrDir();
+			glm::mat4 projMat{ 1.0f };
+			glm::vec3 lightpos(0.0f, 300.0f, -100.0f);
+			glm::vec3 lookat = lightpos+direction;
+			glm::vec3 up = glm::cross(direction, glm::vec3(0.0f, -1.0f, 0.0f));
+			up = glm::cross(direction, up);
+			glm::mat4 lightViewMat{1.0f};
+			lightViewMat = glm::lookAt(lightpos, lookat, up);
+			lightViewMat = lightViewMat*mViewMat;
+			projMat = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f,0.1f,1000.0f);
+			
+			auto& pShader = mpGenShadowMaterial->getShader();
+			if (pShader) {
+				pShader->enable();
+				pShader->setProjMatrix(projMat);
+				pShader->setViewMatrix(lightViewMat);
+				const auto& rootNode = pScene->getRootDeffered();
+				mpFboShadowMap->render([this,&pShader,&rootNode](){
+					int posLoc = -1;
+					int texcoordLoc = -1;
+					int normalLoc = -1;
+					pShader->getLocation(posLoc, texcoordLoc,  normalLoc);
+					renderNode(rootNode, posLoc, texcoordLoc, normalLoc, pShader);
+				});
+				pShader->disable();
+			}
+		}
+		else {
+			return;
+		}
+	}
+}
+
+void Camera::defferedGeometryPass(const std::shared_ptr<Scene>& pScene) const noexcept{
 	if (pScene) {
 		const auto& rootNode = pScene->getRootDeffered();
 		renderNode(rootNode, pScene, nullptr, nullptr);

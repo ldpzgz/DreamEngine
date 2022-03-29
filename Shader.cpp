@@ -185,7 +185,9 @@ GLuint Shader::loadShader(GLenum type, const char *shaderSrc)
 	return shader;
 }
 
-
+void Shader::disable() {
+	glUseProgram(0);
+}
 void Shader::enable()
 {
 	glUseProgram ( mProgram );

@@ -1,0 +1,24 @@
+vs{
+	#version 330 core
+    layout(location = 0) in vec3 inPos;
+	uniform mat4 projMat;
+	uniform mat4 viewMat;
+	uniform mat4 modelMat;
+    void main()
+    {
+       gl_Position = projMat * viewMat * modelMat * vec4(inPos,1.0f);
+    }
+}
+fs{
+	#version 330 core
+	precision highp float;
+	void main()
+	{             
+	}  	
+}
+program:genShadowMap{
+	posLoc=0
+	projMatrix=projMat
+	viewMatrix=viewMat
+	modelMatrix=modelMat
+}
