@@ -63,6 +63,7 @@ public:
 	void setClearDepth(bool b) {
 		mbClearDepth = b;
 	}
+
 	//blend选项，在material里面也可以设置，每个物体可以根据自身特点单独设置
 	//这里提供全局的blend设置，比如ui渲染，全部ui都是一样的blend配置，避免每个view单独配置
 	void setBlend(bool b);
@@ -87,7 +88,7 @@ public:
 	*/
 	bool attachColorTexture(const std::shared_ptr<Texture>& texture,int attachment_n = 0, int cubicFace = 0,GLint level=0);
 	bool attachColorTextureMS(const std::shared_ptr<Texture>& texture, int attachment_n = 0);
-	bool attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level=0);
+	bool attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level=0,bool noColorBuffer = false);
 	bool attachDepthTextureMS(const std::shared_ptr<Texture>& texture);
 
 	bool replaceColorTexture(const std::shared_ptr<Texture>& texture, int attachment_n, int cubicFace = 0, GLint level = 0);

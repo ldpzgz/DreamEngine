@@ -319,7 +319,7 @@ bool Fbo::attachDepthTextureMS(const std::shared_ptr<Texture>& texture) {
 	return bret;
 }
 
-bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level)
+bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level, bool noColorBuffer)
 {
 	enable();
 	if (!texture)
@@ -333,6 +333,10 @@ bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level
 				GL_TEXTURE_2D,
 				texture->getId(),
 				level);
+	if (noColorBuffer) {
+		glDrawBuffer(GL_NONE);
+		glReadBuffer(GL_NONE);
+	}
 	bool bret = checkFrameBuffer();
 	disable();
 	return bret;
