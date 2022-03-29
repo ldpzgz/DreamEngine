@@ -11,7 +11,18 @@ enum class LightType {
 class Light :public Renderable {
 public:
 	explicit Light(LightType type);
+	Light(LightType type,bool bCastShadow);
 	Light() = default;
+
+	bool isDirectionalLight() {
+		return mType == LightType::Directional;
+	}
+	bool isPointLight() {
+		return mType == LightType::Point;
+	}
+	bool isSpotLight() {
+		return mType == LightType::SpotLight;
+	}
 	void setPosOrDir(const glm::vec3& pd) noexcept{
 		mPosOrDir = pd;
 	}
@@ -36,6 +47,13 @@ public:
 		return mLightColor;
 	}
 
+	void setCastShadow(bool b) {
+		mbCastShadow = b;
+	}
+	bool getCastShadow() {
+		return mbCastShadow;
+	}
+
 	void draw(const glm::mat4* projMat,
 		const glm::mat4* modelMat,
 		const glm::mat4* viewMat=nullptr,
@@ -45,6 +63,7 @@ public:
 		const glm::vec3* viewPos = nullptr) override;
 
 private:
+	bool mbCastShadow{false};
 	LightType mType{ LightType::Point };
 	glm::vec3 mPosOrDir{-1.0f,-1.0f,0.0f};
 	glm::vec3 mLightColor{1.0f,1.0f,1.0f};
