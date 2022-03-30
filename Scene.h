@@ -9,6 +9,7 @@ class Camera;
 class Light;
 class Mesh;
 class Texture;
+enum class LightType;
 //场景里面有相机，灯光，天空盒
 class Scene : public enable_shared_from_this<Scene> {
 public:
@@ -31,7 +32,7 @@ public:
 
 	shared_ptr<Camera> createACamera(int w,int h);
 
-	shared_ptr<Light> createALight(glm::vec3 pos, glm::vec3 color);
+	shared_ptr<Light> createALight(glm::vec3 pos, glm::vec3 color, LightType type=LightType::Point);
 
 	shared_ptr<Node> createSkybox();
 

@@ -1,8 +1,8 @@
+#include "Light.h"
 #include"Scene.h"
 #include "Node.h"
 #include "Rect.h"
 #include "Camera.h"
-#include "Light.h"
 #include "Mesh.h"
 #include "Material.h"
 #include "helper.h"
@@ -22,8 +22,8 @@ shared_ptr<Camera> Scene::createACamera(int w,int h) {
 	return camera;
 }
 
-shared_ptr<Light> Scene::createALight(glm::vec3 pos, glm::vec3 color) {
-	auto light = make_shared<Light>();
+shared_ptr<Light> Scene::createALight(glm::vec3 pos, glm::vec3 color, LightType type) {
+	auto light = make_shared<Light>(type);
 	mLights.emplace_back(light);
 	light->setPosOrDir(pos);
 	light->setLightColor(color);
