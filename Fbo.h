@@ -88,7 +88,7 @@ public:
 	*/
 	bool attachColorTexture(const std::shared_ptr<Texture>& texture,int attachment_n = 0, int cubicFace = 0,GLint level=0);
 	bool attachColorTextureMS(const std::shared_ptr<Texture>& texture, int attachment_n = 0);
-	bool attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level=0,bool noColorBuffer = false);
+	bool attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level=0,bool noColorBuffer = false,int cubicFace=0);
 	bool attachDepthTextureMS(const std::shared_ptr<Texture>& texture);
 
 	bool replaceColorTexture(const std::shared_ptr<Texture>& texture, int attachment_n, int cubicFace = 0, GLint level = 0);
@@ -114,6 +114,7 @@ private:
 	GLboolean mPrebDepthTest{ true };
 	int mWidth{ 0 }; //render to tex ,tex width
 	int mHeight{ 0 };//render to tex ,tex height
+	bool mbNoColorBuffer{false};
 	bool mbEnableDepthTest{ true };
 	bool mbClearDepth{ true };
 	bool mbClearColor{ true };

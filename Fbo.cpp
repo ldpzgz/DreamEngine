@@ -33,6 +33,10 @@ void Fbo::enable()
 	}
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &mPreFrameBuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER,mFboId);
+	if (mbNoColorBuffer) {
+		glDrawBuffers(0,nullptr);
+		//glReadBuffer(GL_NONE);
+	}
 }
 
 void Fbo::detachColorTextureMS(unsigned int attachment_n) {
@@ -267,8 +271,18 @@ bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attach
 	}
 	enable();
 
-	mWidth = texture->getWidth();
-	mHeight = texture->getHeight();
+	int dw = texture->getWidth();
+	int dh = texture->getHeight();
+	if (mWidth == 0 && mHeight == 0) {
+		mWidth = dw;
+		mHeight = dh;
+	}
+	else {
+		if (mWidth != dw || mHeight != dh) {
+			LOGE("fbo to attach depthMap,the width or height is wrong");
+			return false;
+		}
+	}
 	auto texTarget = texture->getTexTarget();
 	if (texTarget == GL_TEXTURE_CUBE_MAP) {
 		texTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + cubicFace;
@@ -304,6 +318,18 @@ bool Fbo::attachDepthTextureMS(const std::shared_ptr<Texture>& texture) {
 		LOGE("ERROR Fbo::attachDepthTextureMS textureTarget is not GL_TEXTURE_2D_MULTISAMPLE");
 		return false;
 	}
+	int dw = texture->getWidth();
+	int dh = texture->getHeight();
+	if (mWidth == 0 && mHeight == 0) {
+		mWidth = dw;
+		mHeight = dh;
+	}
+	else {
+		if (mWidth != dw || mHeight != dh) {
+			LOGE("fbo to attach depthMap,the width or height is wrong");
+			return false;
+		}
+	}
 	enable();
 	glFramebufferTexture2D(
 		GL_FRAMEBUFFER,
@@ -319,7 +345,7 @@ bool Fbo::attachDepthTextureMS(const std::shared_ptr<Texture>& texture) {
 	return bret;
 }
 
-bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level, bool noColorBuffer)
+bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level, bool noColorBuffer, int cubicFace)
 {
 	enable();
 	if (!texture)
@@ -327,15 +353,36 @@ bool Fbo::attachDepthTexture(const std::shared_ptr<Texture>& texture,GLint level
 		LOGD("Fbo::attachDepthTexture texture == 0");
 		return false;
 	}
+	int dw = texture->getWidth();
+	int dh = texture->getHeight();
+	if (mWidth == 0 && mHeight == 0) {
+		mWidth = dw;
+		mHeight = dh;
+	}
+	else {
+		if (mWidth != dw || mHeight!=dh) {
+			LOGE("fbo to attach depthMap,the width or height is wrong");
+			return false;
+		}
+	}
+	auto texTarget = texture->getTexTarget();
+	if (texTarget == GL_TEXTURE_CUBE_MAP) {
+		texTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + cubicFace;
+	}
+	else if (texTarget != GL_TEXTURE_2D) {
+		LOGE("ERROR fbo can only atach texture_2d or cubic map face");
+		return false;
+	}
 	glFramebufferTexture2D(
 				GL_FRAMEBUFFER,
 				GL_DEPTH_ATTACHMENT,
-				GL_TEXTURE_2D,
+				texTarget,
 				texture->getId(),
 				level);
-	if (noColorBuffer) {
-		glDrawBuffer(GL_NONE);
-		glReadBuffer(GL_NONE);
+	mbNoColorBuffer = noColorBuffer;
+	if (mbNoColorBuffer) {
+		glDrawBuffers(0, nullptr);
+		//glReadBuffer(GL_NONE);
 	}
 	bool bret = checkFrameBuffer();
 	disable();
