@@ -234,6 +234,7 @@ protected:
 	int mposLocation{ -1 };//顶点的位置属性在shader中的location
 	int mnorLocation{ -1 };//顶点的法向量属性在shader中的location
 	int mtexLocation{ -1 };//顶点的纹理坐标属性在shader中的location
+	int mColorLoc{ -1 };
 	
 	int mPosByteSize{ 0 };
 	int mTexByteSize{ 0 };
@@ -251,7 +252,7 @@ protected:
 	std::unique_ptr<AABB> mpAabb;
 	std::unique_ptr< glm::mat4> mpPreMvpMatrix;
 	//如果函数内部创建了vao就返回true
-	bool createVaoIfNeed(int posloc=-1, int texloc=-1, int norloc=-1);
+	bool createVaoIfNeed(int posloc=-1, int texloc=-1, int norloc=-1,int colorLoc=-1);
 };
 using MeshSP = std::shared_ptr<Mesh>;
 

@@ -728,7 +728,7 @@ void Mesh::drawLineStrip(int posloc)
 
 void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc, int tangentloc)
 {
-	if (createVaoIfNeed(posloc)) {
+	if (createVaoIfNeed(posloc,texloc,norloc,colorloc)) {
 		glBindVertexArray(mVAO);
 		if (posloc >= 0)
 		{
@@ -1037,8 +1037,9 @@ void Mesh::unLoadMesh()
 	mCountOfVertex = 0;
 }
 
-bool Mesh::createVaoIfNeed(int posloc, int texloc, int norloc) {
-	if (mposLocation != posloc || mtexLocation != texloc || mnorLocation != norloc) {
+bool Mesh::createVaoIfNeed(int posloc, int texloc, int norloc, int colorLoc) {
+	if (mposLocation != posloc || mtexLocation != texloc 
+		|| mnorLocation != norloc || mColorLoc!=colorLoc) {
 		if (mVAO != 0) {
 			//location有变化，先删除原来的vao
 			glDeleteVertexArrays(1, &mVAO);
@@ -1048,6 +1049,7 @@ bool Mesh::createVaoIfNeed(int posloc, int texloc, int norloc) {
 		mposLocation = posloc;
 		mtexLocation = texloc;
 		mnorLocation = norloc;
+		mColorLoc = colorLoc;
 
 		//使用vao把设置顶点属性的流程打包。
 		glGenVertexArrays(1, &mVAO);
