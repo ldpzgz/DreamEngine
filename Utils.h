@@ -12,6 +12,7 @@
 #include <vector>
 #include <map>
 #include <filesystem>
+#include <string_view>
 #include "Log.h"
 
 using namespace std::filesystem;
@@ -29,14 +30,15 @@ namespace Utils {
 	* 以separator为分界分割字符串，
 	* 返回找到的子串的个数
 	*/
-	int splitStr(const std::string& str, const std::string& Separator, std::vector<std::string>& result);
+	int splitStr(const std::string& str, const std::string_view Separator, std::vector<std::string>& result);
 
 	void forEachFile(const std::string pathName, const std::string suffix, std::function<void(const std::string& path)> func);
 
 	/*
-	* 拆分这种形式的字符串：key:name
+	* 拆分这种形式的字符串：key:value
+	* 成功返回true，不是key:value形式的字符串，返回false
 	*/
-	void splitKeyAndName(const std::string& key, std::string& realKey, std::string& keyName);
+	bool splitKeyValue(const std::string& content, std::string& key, std::string& value);
 
 	bool parseItem(const std::string& value, std::vector<std::pair<std::string, std::string>>& vec);
 

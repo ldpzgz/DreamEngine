@@ -80,18 +80,32 @@ namespace Utils {
 		}
 	}
 
-	void splitKeyAndName(const string& key, string& realKey, string& keyName) {
-		auto pos = key.find(':');
+	bool splitKeyValue(const std::string& content, std::string& key, std::string& value) {
+		auto pos = content.find(':');
 		if (pos != string::npos) {
-			realKey = key.substr(0, pos);
-			keyName = key.substr(pos + 1);
+			auto keyEndPos = content.find_last_not_of("\20",pos-1);
+			if (keyEndPos != std::string::npos) {
+				keyEndPos += 1;
+			}
+			else {
+				keyEndPos = pos;
+			}
+			key = content.substr(0, keyEndPos);
+			auto valueStartPos = content.find_first_not_of("\20", pos + 1);
+			if (valueStartPos == std::string::npos) {
+				valueStartPos = pos;
+			}
+			value = content.substr(valueStartPos);
+			return true;
 		}
 		else {
-			realKey = key;
+			key = content;
+			value.clear();
+			return false;
 		}
 	}
 
-	int splitStr(const std::string& str, const std::string& separator, std::vector<std::string>& result) {
+	int splitStr(const std::string& str, const std::string_view separator, std::vector<std::string>& result) {
 		int count = 0;
 		if (!str.empty() && !separator.empty()) {
 			size_t startPos = str.find_first_not_of(separator);
