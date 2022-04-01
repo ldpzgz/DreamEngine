@@ -11,6 +11,26 @@
 #include <glad/glad.h>
 #endif
 
+class TexParams {
+public:
+	TexParams() = default;
+	TexParams(const TexParams& other) = default;
+	TexParams& operator=(const TexParams& other) = default;
+	TexParams(int minF, int magF, int wrapS, int wrapT, int wrapR) :
+		mMinFilter(minF),
+		mMagFilter(magF),
+		mWrapParamS(wrapS),
+		mWrapParamT(wrapT),
+		mWrapParamR(wrapR)
+	{
+	}
+	int mMinFilter{ GL_LINEAR };
+	int mMagFilter{ GL_LINEAR };
+	int mWrapParamS{ GL_CLAMP_TO_EDGE };
+	int mWrapParamT{ GL_CLAMP_TO_EDGE };
+	int mWrapParamR{ GL_CLAMP_TO_EDGE };
+};
+
 class Texture : public std::enable_shared_from_this<Texture>
 {
 public:
@@ -71,6 +91,7 @@ public:
 		float* boderColor=nullptr,
 		int wrapR = GL_CLAMP_TO_EDGE
 		);
+	void setParam(const TexParams& param);
 
 	//创建一个多重采样纹理，用于添加到fbo，
 	bool createMStexture(int width, int height, int samples=4, unsigned int internalformat= GL_RGBA8);
@@ -135,11 +156,7 @@ protected:
 	GLint mType{ GL_UNSIGNED_BYTE };//纹理数据在内存中的格式
 	int mNumOfSamples{ 0 };//多重采样纹理的采样个数
 	int mTarget{ GL_TEXTURE_2D };//GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_2D_ARRAY, or GL_TEXTURE_CUBE_MAP
-	int mMinFilter{ GL_LINEAR };
-	int mMagFilter{ GL_LINEAR };
-	int mWrapParamS{ GL_CLAMP_TO_EDGE };
-	int mWrapParamT{ GL_CLAMP_TO_EDGE };
-	int mWrapParamR{ GL_CLAMP_TO_EDGE };
+	TexParams mTexParams;
 	std::string mName;
 };
 

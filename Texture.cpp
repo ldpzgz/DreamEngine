@@ -47,7 +47,7 @@ bool Texture::createMStexture(int width,int height,int samples,unsigned int inte
 	}
 	unload();
 	glGenTextures(1, &mTextureId);
-	glActiveTexture(GL_TEXTURE0);
+	//glActiveTexture(GL_TEXTURE0);
 	glBindTexture(mTarget, mTextureId);
 	checkglerror();
 	// 多重采样纹理，opengl3.3如果设置这些属性会报错，"无效枚举值"(es3.1不会报错），
@@ -76,7 +76,7 @@ bool Texture::createCubicMap(int width, int height, GLint internalFormat, GLenum
 	mHeight = height;
 	unload();
 	glGenTextures(1, &mTextureId);
-	glActiveTexture(GL_TEXTURE0);
+	//glActiveTexture(GL_TEXTURE0);
 	glBindTexture(mTarget, mTextureId);
 	for (unsigned int i = 0; i < 6; ++i)
 	{
@@ -91,14 +91,14 @@ bool Texture::createCubicMap(int width, int height, GLint internalFormat, GLenum
 	}
 	if (autoMipmap) {
 		glGenerateMipmap(mTarget);
-		mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
+		mTexParams.mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
 	}
 
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
-	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mMagFilter);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mWrapParamR);
+	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
+	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mTexParams.mWrapParamR);
 
 	
 	checkglerror();
@@ -106,22 +106,37 @@ bool Texture::createCubicMap(int width, int height, GLint internalFormat, GLenum
 }
 
 void Texture::setParam(int minFilter, int magFilter, int wrapS, int wrapT,float* borderColor,int wrapR ) {
-	mMinFilter = minFilter;
-	mMagFilter = magFilter;
-	mWrapParamS = wrapS;
-	mWrapParamT = wrapT;
-	mWrapParamR = wrapR;
+	mTexParams.mMinFilter = minFilter;
+	mTexParams.mMagFilter = magFilter;
+	mTexParams.mWrapParamS = wrapS;
+	mTexParams.mWrapParamT = wrapT;
+	mTexParams.mWrapParamR = wrapR;
 	if (mTextureId > 0) {
 		glBindTexture(mTarget, mTextureId);
-		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mMagFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
+		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
 		if (mTarget == GL_TEXTURE_CUBE_MAP) {
-			glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mWrapParamR);
+			glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mTexParams.mWrapParamR);
 		}
 		if (borderColor != nullptr) {
 			glTexParameterfv(mTarget, GL_TEXTURE_BORDER_COLOR, borderColor);
+		}
+		glBindTexture(mTarget, 0);
+	}
+}
+
+void Texture::setParam(const TexParams& param) {
+	mTexParams = param;
+	if (mTextureId > 0) {
+		glBindTexture(mTarget, mTextureId);
+		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
+		if (mTarget == GL_TEXTURE_CUBE_MAP) {
+			glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mTexParams.mWrapParamR);
 		}
 		glBindTexture(mTarget, 0);
 	}
@@ -137,17 +152,17 @@ bool Texture::create2DMap(int width,int height,const unsigned char* pdata, GLint
 	mType = type;
 	unload();
 	glGenTextures(1, &mTextureId);
-	glActiveTexture(GL_TEXTURE0);
+	//glActiveTexture(GL_TEXTURE0);
 	glBindTexture(mTarget, mTextureId);//mTarget是GL_TEXTURE_CUBE_MAP的时候要注意，
 	// Set-up texture properties.
 	if (autoMipmap) {
-		mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
+		mTexParams.mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
 	}
 	
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
-	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER,mMagFilter);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
+	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
+	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
 	// Loads image data into OpenGL.
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, aligment);
@@ -207,14 +222,14 @@ bool Texture::loadHdrFile(const std::string& path) {
 		mType = GL_FLOAT;
 		unload();
 		glGenTextures(1, &mTextureId);
-		glActiveTexture(GL_TEXTURE0);
+		//glActiveTexture(GL_TEXTURE0);
 		glBindTexture(mTarget, mTextureId);
 		glTexImage2D(GL_TEXTURE_2D, 0, mInternalFormat, mWidth, mHeight, 0, mFormat, mType, data);
 
-		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mMagFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
+		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
 
 		stbi_image_free(data);
 		return true;
@@ -235,7 +250,7 @@ bool Texture::loadFromFile(const std::string& path) {
 		mTarget = GL_TEXTURE_2D;
 		unload();
 		glGenTextures(1, &mTextureId);
-		glActiveTexture(GL_TEXTURE0);
+		//glActiveTexture(GL_TEXTURE0);
 		glBindTexture(mTarget, mTextureId);
 		if (nrChannels == 3) {
 			mFormat = GL_RGB;
@@ -251,11 +266,11 @@ bool Texture::loadFromFile(const std::string& path) {
 		}
 		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, mType, data);
 		glGenerateMipmap(mTarget);
-		mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
-		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mMagFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
+		mTexParams.mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
+		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
+		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
 		checkglerror();
 		stbi_image_free(data);
 		return true;
@@ -272,7 +287,7 @@ bool Texture::loadCubemap(const std::string& path) {
 	unload();
 	mTarget = GL_TEXTURE_CUBE_MAP;
 	glGenTextures(1, &mTextureId);
-	glActiveTexture(GL_TEXTURE0);
+	//glActiveTexture(GL_TEXTURE0);
 	glBindTexture(mTarget, mTextureId);
 
 	std::vector<std::string> filename{ "/right.jpg","/left.jpg","/top.jpg","/bottom.jpg","/front.jpg","/back.jpg" };
@@ -315,12 +330,12 @@ bool Texture::loadCubemap(const std::string& path) {
 	//glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);//默认是4，the alignment requirements for the start of each pixel row in memory
 
 	// Set-up texture properties.
-	mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mMinFilter);
-	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mMagFilter);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mWrapParamS);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mWrapParamT);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mWrapParamR);
+	mTexParams.mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
+	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
+	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
+	glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mTexParams.mWrapParamR);
 
 	if (glGetError() != GL_NO_ERROR)
 	{

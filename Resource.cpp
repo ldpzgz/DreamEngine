@@ -14,6 +14,7 @@
 #include <sstream>
 #include <fstream>
 #include <any>
+#include <string_view>
 
 using namespace std;
 using namespace std::filesystem;
@@ -26,6 +27,77 @@ extern void checkglerror();
 static const string gMaterialPath = "./opengles3/resource/material";
 static const string gProgramPath = "./opengles3/resource/program";
 static const string gDrawablePath = "./opengles3/resource/drawable";
+
+//解析出纹理路径以及纹理属性
+static void parseTexParams(const std::string& content, std::string& path, TexParams& params) {
+	std::vector<std::string> splitStr;
+	std::string pKey;
+	std::string pValue;
+	TexParams texParams;
+	if (Utils::splitStr(content, ",", splitStr) == 1) {
+		path = content;
+	}
+	else {
+		auto filterFun = [](const std::string& pValue) {
+			int minFilter = GL_LINEAR;
+			if (pValue == std::string_view("l")) {
+				minFilter = GL_LINEAR;
+			}
+			else if (pValue == std::string_view("n")) {
+				minFilter = GL_NEAREST;
+			}
+			else if (pValue == std::string_view("nn")) {
+				minFilter = GL_NEAREST_MIPMAP_NEAREST;
+			}
+			else if (pValue == std::string_view("ll")) {
+				minFilter = GL_LINEAR_MIPMAP_LINEAR;
+			}
+			else if (pValue == std::string_view("nl")) {
+				minFilter = GL_NEAREST_MIPMAP_LINEAR;
+			}
+			else if (pValue == std::string_view("ln")) {
+				minFilter = GL_LINEAR_MIPMAP_NEAREST;
+			}
+			return minFilter;
+		};
+		auto wrapFun = [](const std::string& pValue) {
+			int wrapFilter = GL_REPEAT;
+			if (pValue == std::string_view("repeat")) {
+
+			}
+			else if (pValue == std::string_view("clampToEdge")) {
+				wrapFilter = GL_CLAMP_TO_EDGE;
+			}
+			else if (pValue == std::string_view("clampToBoder")) {
+				wrapFilter = GL_CLAMP_TO_BORDER;
+			}
+			return wrapFilter;
+		};
+		for (const auto& str : splitStr) {
+			if (Utils::splitKeyValue(str, pKey, pValue)) {
+				if (pKey == std::string_view("path")) {
+					path = pValue;
+				}
+				else if (pKey == std::string_view("minF")) {
+					texParams.mMinFilter = filterFun(pValue);
+				}
+				else if (pKey == std::string_view("magF")) {
+					texParams.mMagFilter = filterFun(pValue);
+				}
+				else if (pKey == std::string_view("wrapS")) {
+					texParams.mWrapParamS = wrapFun(pValue);
+				}
+				else if (pKey == std::string_view("wrapT")) {
+					texParams.mWrapParamT = wrapFun(pValue);
+				}
+				else if (pKey == std::string_view("wrapR")) {
+					texParams.mWrapParamR = wrapFun(pValue);
+				}
+			}
+		}
+	}
+}
+
 
 static std::unordered_map<std::string, unsigned int> gBlendFuncMap{
 	{"1",GL_ONE},
@@ -1100,7 +1172,7 @@ bool ResourceImpl::parseMaterialFile(const string& filePath) {
 		//analsys，store key-value to mpContents;
 		if (!key.empty()&&!value.empty()) {
 			string realKey, keyName;
-			Utils::splitKeyAndName(key, realKey, keyName);
+			Utils::splitKeyValue(key, realKey, keyName);
 			if (!mContents.try_emplace(key, value).second) {
 				LOGE("double key %s,in %s material file", key.c_str(), filePath.c_str());
 			}
@@ -1173,7 +1245,7 @@ bool ResourceImpl::parseMaterialFile(const string& filePath) {
 		auto it = mContents.find(key);
 		if (it != mContents.end()) {
 			string material, matName;
-			Utils::splitKeyAndName(key, material, matName);
+			Utils::splitKeyValue(key, material, matName);
 			bParseSuccess = parseMaterial(matName, it->second);
 		}
 	}
@@ -1280,24 +1352,28 @@ bool ResourceImpl::parseConfig( const string& value) {
 
 bool ResourceImpl::parseTexture(const string& textureName, const string& texture) {
 	Umapss umap;
-	int width;
-	int height;
-	int depth;
+	int width{ 0 };
+	int height{ 0 };
+	int depth{ 0 };
+	TextureSP pTex;
 	if (Utils::parseItem(texture, umap)) {
 		const auto pPath = umap.find("path");
 		if (pPath != umap.cend()) {
-			auto pTex = Texture::loadImageFromFile(gDrawablePath + "/" + pPath->second);
+			pTex = Texture::loadImageFromFile(gDrawablePath + "/" + pPath->second);
 			if (!pTex) {
 				LOGE("failed to load texture from path %s", pPath->second.c_str());
+				return false;
 			}
 			if (!mTextures.emplace(textureName, pTex).second) {
 				LOGE("there already has %s in gTextures", textureName.c_str());
+				return false;
 			}
 		}
 		else {
 			const auto pWidth = umap.find("width");
 			const auto pHeight = umap.find("height");
 			const auto pDepth = umap.find("depth");
+
 			if (pWidth != umap.cend() && pHeight != umap.cend() && pDepth != umap.cend()) {
 				try {
 					width = std::stoi(pWidth->second);
@@ -1323,14 +1399,25 @@ bool ResourceImpl::parseTexture(const string& textureName, const string& texture
 					return false;
 				}
 
-				auto pTex = std::make_shared<Texture>();
+				pTex = std::make_shared<Texture>();
 				if (pTex->create2DMap(width, height, nullptr, internalFormat, format) &&
 					mTextures.try_emplace(textureName, pTex).second) {
 					LOGD("success to create texture %s", textureName.c_str());
+					return false;
 				}
 				else {
 					LOGE("error to create texture %s", textureName.c_str());
+					return false;
 				}
+			}
+		}
+		if (pTex) {
+			const auto pParams = umap.find("params");
+			if (pParams != umap.cend()) {
+				std::string realPath;
+				TexParams texParams;
+				parseTexParams(pParams->second, realPath, texParams);
+				pTex->setParam(texParams);
 			}
 		}
 	}
@@ -1385,14 +1472,20 @@ std::shared_ptr<Texture> ResourceImpl::loadImageFromFile(const std::string& path
 	return pTexture;
 }
 
+
 std::shared_ptr<Texture> ResourceImpl::getOrLoadTextureFromFile(const std::string& path, const std::string& texName)
 {
-	if (texName == "none") {
+	if (texName == std::string_view("none")) {
 		return nullptr;
 	}
 	std::string RealTexName = texName;
+	
+	std::string realPath;
+	TexParams texParams;
+	parseTexParams(path, realPath, texParams);
+
 	if (RealTexName.empty()) {
-		RealTexName = Utils::getFileName(path);
+		RealTexName = Utils::getFileName(realPath);
 	}
 	auto pTexture = mTextures.find(RealTexName);
 	if (pTexture != mTextures.end()) {
@@ -1400,8 +1493,9 @@ std::shared_ptr<Texture> ResourceImpl::getOrLoadTextureFromFile(const std::strin
 	}
 	else {
 		//如果写的是drawable文件夹里面的某个文件
-		auto filePath = gDrawablePath + "/" + path;
+		auto filePath = gDrawablePath + "/" + realPath;
 		auto pTex = loadImageFromFile(filePath, RealTexName);
+		pTex->setParam(texParams);
 		return pTex;
 	}
 }
