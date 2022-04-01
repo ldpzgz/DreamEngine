@@ -32,7 +32,7 @@ shared_ptr<Light> Scene::createALight(glm::vec3 pos, glm::vec3 color, LightType 
 
 shared_ptr<Node> Scene::createSkybox() {
 	//天空盒
-	mSkyboxInfo.mpMesh = make_shared<Mesh>(MeshType::MESH_Cuboid);
+	mSkyboxInfo.mpMesh = make_shared<Mesh>(MeshType::Cuboid);
 	mSkyboxInfo.mpMesh->loadMesh();
 	auto& pSkyboxMaterial = Resource::getInstance().getMaterial("skyboxHdr1");
 	auto& pHdrTex = pSkyboxMaterial->getTextureOfSampler("skybox");

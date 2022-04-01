@@ -3,7 +3,7 @@
 MeshCircle::MeshCircle():
 	MeshFilledRect()
 {
-	mMeshType = MeshType::MESH_Circle;
+	mMeshType = MeshType::Circle;
 }
 
 MeshCircle::~MeshCircle() {

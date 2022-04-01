@@ -1,7 +1,7 @@
 #include "MeshNurbs.h"
 #include "Log.h"
 MeshNurbs::MeshNurbs():
-	Mesh(MeshType::MESH_NURBS)
+	Mesh(MeshType::NURBS)
 {
 
 }

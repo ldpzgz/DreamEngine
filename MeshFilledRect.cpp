@@ -4,7 +4,7 @@
 MeshFilledRect::MeshFilledRect():
 	Mesh()
 {
-	mMeshType = MeshType::MESH_FilledRect;
+	mMeshType = MeshType::FilledRect;
 	mDrawType = DrawType::TriangleFan;
 }
 

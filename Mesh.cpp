@@ -69,7 +69,7 @@ void Mesh::reset() {
 	mIndexByteSize = 0;
 	mTangentByteSize = 0;
 	mBiNormalByteSize = 0;
-	mMeshType = MeshType::MESH_None;
+	mMeshType = MeshType::None;
 	mCountOfVertex = 0;
 	mDrawType = DrawType::Triangles;
 }
@@ -103,7 +103,7 @@ Mesh::~Mesh()
 }
 
 //void Mesh::loadUBS(const std::vector<float>& points) {
-//	if (mMeshType == MeshType::MESH_Uniform_B_Curves) {
+//	if (mMeshType == MeshType::UniformBCurves) {
 //		int index = 1;
 //		auto size = points.size();
 //		auto endIndex = size / 3;
@@ -153,7 +153,7 @@ Mesh::~Mesh()
 
 void Mesh::loadMesh()
 {
-	if (mMeshType == MeshType::MESH_Rectangle)
+	if (mMeshType == MeshType::Rectangle)
 	{
 		std::vector<glm::vec3> pos{ 
 			{1.0f,1.0f,0.0f},
@@ -173,7 +173,7 @@ void Mesh::loadMesh()
 			indexes, sizeof(indexes), 
 			tex, sizeof(tex),(GLfloat*)nor.data(), nor.size() * sizeof(glm::vec3));
 	}
-	else if (mMeshType == MeshType::MESH_TrianglePost) {
+	else if (mMeshType == MeshType::TrianglePost) {
 		std::vector<glm::vec3> pos{
 			{-1.0f,3.0f,0.0f},
 			{-1.0f,-1.0f,0.0f},
@@ -185,7 +185,7 @@ void Mesh::loadMesh()
 			indexes, sizeof(indexes),
 			tex, sizeof(tex));
 	}
-	else if (mMeshType == MeshType::MESH_Quad) {
+	else if (mMeshType == MeshType::Quad) {
 		std::vector<glm::vec3> pos{
 			{1.0f,1.0f,0.0f},
 			{-1.0f,1.0f,0.0f},
@@ -204,7 +204,7 @@ void Mesh::loadMesh()
 			indexes, sizeof(indexes),
 			tex, sizeof(tex), (GLfloat*)nor.data(), nor.size() * sizeof(glm::vec3));
 	}
-	else if (mMeshType == MeshType::MESH_Triangle) {
+	else if (mMeshType == MeshType::Triangle) {
 		GLfloat pos[] = { 0.0f,1.0f,0.0f,
 			-1.0f,-1.0f,0.0f,
 			1.0f,-1.0f,0.0f};
@@ -212,7 +212,7 @@ void Mesh::loadMesh()
 		GLfloat tex[] = { 0.5f,1.0f,0.0f,0.0f,1.0f,0.0f };
 		createBufferObject(pos, sizeof(pos), 3,indexes, sizeof(indexes), tex, sizeof(tex));
 	}
-	else if (mMeshType == MeshType::MESH_Cuboid) {
+	else if (mMeshType == MeshType::Cuboid) {
 		GLfloat pos[] = { 
 			-1.0f,-1.0f,1.0f,
 			1.0f,-1.0f,1.0f,
@@ -262,7 +262,7 @@ void Mesh::loadMesh()
 		};
 		createBufferObject(pos, sizeof(pos), 24,indexes, sizeof(indexes), tex, sizeof(tex));
 	}
-	else if (mMeshType == MeshType::Mesh_Shpere) {
+	else if (mMeshType == MeshType::Shpere) {
 		mDrawType = DrawType::TriangleStrip;
 		std::vector<glm::vec3> positions;
 		std::vector<glm::vec2> uv;

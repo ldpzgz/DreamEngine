@@ -36,7 +36,7 @@ bool FontManager::initFontManager(const shared_ptr<Texture>& pTex, const shared_
 		mTextureHeight = pTex->getHeight();
 	}
 
-	mpCharMesh = make_shared<Mesh>(MeshType::MESH_Rectangle);
+	mpCharMesh = make_shared<Mesh>(MeshType::Rectangle);
 	if (mpCharMesh) {
 		mpCharMesh->loadMesh();
 		mpCharMesh->setMaterial(pMaterial);
@@ -210,7 +210,7 @@ unique_ptr<UiRender> UiRender::gInstance = make_unique<UiRender>();
 void UiRender::initUiRender() {
 	initTextView(gSavedFontFile, gFontFile, gFontMaterialName);
 	mpLastMaterial = Resource::getInstance().getMaterial("posDiffMS");
-	mpLastMesh = make_shared<Mesh>(MeshType::MESH_Quad);
+	mpLastMesh = make_shared<Mesh>(MeshType::Quad);
 	if (mpLastMesh) {
 		mpLastMesh->loadMesh();
 		mpLastMesh->setMaterial(mpLastMaterial);

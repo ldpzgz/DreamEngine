@@ -1,7 +1,7 @@
 #include "MeshLineStrip.h"
 #include "Log.h"
 MeshLineStrip::MeshLineStrip():
-	Mesh(MeshType::MESH_Line_strip,DrawType::LineStrip)
+	Mesh(MeshType::LineStrip,DrawType::LineStrip)
 {
 
 }

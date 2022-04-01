@@ -12,7 +12,7 @@ using namespace std;
 MeshRoundedRectangle::MeshRoundedRectangle():
 	MeshFilledRect()
 {
-	mMeshType = MeshType::MESH_Rounded_Rectangle;
+	mMeshType = MeshType::RoundedRectangle;
 }
 
 MeshRoundedRectangle::~MeshRoundedRectangle() {

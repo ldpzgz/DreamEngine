@@ -26,36 +26,37 @@
 #include "Renderable.h"
 #include "Rect.h"
 #include <memory>
+#include <string_view>
 #include "aabb.h"
 enum class MeshType //枚举类型定义加了class就是强类型枚举，不能隐式转换为其他类型，
 {
-	MESH_None,
-	MESH_Triangle,
-	MESH_Quad,//矩形，坐标范围是[-1，1]
-	MESH_Rectangle,//纯色矩形,坐标范围是[0,1]
-	MESH_TrianglePost,//用于后处理的triangle
-	MESH_FilledRect,//可以填充纯色，可贴图，也可以绘制为线框的矩形
-	MESH_Rounded_Rectangle,//带center color的rounded rectangle
-	MESH_Cuboid,//立方体
-	MESH_Circle,//填充的圆，或者圆圈
-	Mesh_Shpere,
-	MESH_Line_strip,
-	MESH_Cubic_Spline,
-	MESH_Cubic_Hermiter_Curves,//hermiter曲线，后面的贝塞尔曲线，cr_spline都可以由这个曲线实现
+	None,
+	Triangle,
+	Quad,//矩形，坐标范围是[-1，1]
+	Rectangle,//纯色矩形,坐标范围是[0,1]
+	TrianglePost,//用于后处理的triangle
+	FilledRect,//可以填充纯色，可贴图，也可以绘制为线框的矩形
+	RoundedRectangle,//带center color的rounded rectangle
+	Cuboid,//立方体
+	Circle,//填充的圆，或者圆圈
+	Shpere,
+	LineStrip,
+	CubicSpline,
+	CubicHermiterCurves,//hermiter曲线，后面的贝塞尔曲线，cr_spline都可以由这个曲线实现
 		//一段3次hermiter曲线，由两个顶点，以及这两个顶点处的切线经过cubic插值而成。曲线会经过这两个顶点
 		//切线有方向和大小，用于控制曲线的形状。如果两段hermiter曲线需要平滑连接，连接处的顶点的切线方向必须相同。
-	MESH_Catmull_Rom_Splines, 
+	CatmullRomSplines, 
 		//这个是过n点，具有C1连续性质的曲线，在hermiter曲线原理的基础上，其几何矩阵由4个顶点组成，根据c1连续，推导出基矩阵，
 		//给定点集[P0,P1,P2.....Pn],绘制出过点[P1,P2.....P(n-1)]的曲线
 		//这种曲线，改变其中一个点的位置，只影响邻近的两个点之间的曲线。
-	MESH_Bezier_Curves,
+	BezierCurves,
 		//n个控制点[P1,P2,....Pn]，通过控制点生成一段曲线，曲线会经过P1,Pn,逼近P2,P3...Pn-1。
 		//顶点越多，阶数越高
-	MESH_Uniform_B_Curves,
+	UniformBCurves,
 		//通过n个控制点，绘制n-3条曲线，曲线不经过任何控制点，只逼近但是曲线之间是C2连续的
-	MESH_NURBS,
+	NURBS,
 		//这个在设计软件中最通用
-	MESH_DIY,
+	DIY,
 };
 
 enum class DrawType {
@@ -77,7 +78,7 @@ public:
 	Mesh & operator = (const Mesh&) = delete; //防止赋值
 	virtual ~Mesh();
 
-	//MESH_Rectangle_Tex,+MESH_Circle,调用这个函数初始化
+	//MESH_Rectangle_Tex,+Circle,调用这个函数初始化
 	virtual void loadMesh();
 
 	//nurbs
@@ -165,7 +166,10 @@ public:
 	std::unique_ptr<AABB>& getAabb() {
 		return mpAabb;
 	}
-	std::string& getMaterialName() {
+	void setMaterialName(std::string_view name) {
+		mMaterialName = name;
+	}
+	std::string_view getMaterialName() {
 		return mMaterialName;
 	}
 	
@@ -244,7 +248,7 @@ protected:
 	int mColorByteSize{ 0 };
 	int mIndexByteSize{ 0 };
 	std::string mMaterialName;
-	MeshType mMeshType{ MeshType::MESH_None };
+	MeshType mMeshType{ MeshType::None };
 	DrawType mDrawType{ DrawType::Triangles };
 	int mCountOfVertex{ 0 };//vertex的个数，这里默认pos，texcoord，normal，color等属性的顶点个数都是一样的;
 	unsigned int mId{ 0 };

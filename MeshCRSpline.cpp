@@ -1,7 +1,7 @@
 #include "MeshCRSpline.h"
 #include "Log.h"
 MeshCRSpline::MeshCRSpline():
-	Mesh(MeshType::MESH_Catmull_Rom_Splines)
+	Mesh(MeshType::CatmullRomSplines)
 {
 
 }

@@ -60,23 +60,12 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 		auto primitivType = mesh->mPrimitiveTypes;
 		if (primitivType == aiPrimitiveType_TRIANGLE) {
 			/*
-			* getMaterial
+			* getMaterial,diffuse map的文件名作为material name
 			*/
-			MaterialSP pMaterial;
 			aiString textureFilePath;
 			pMeshMaterial->GetTexture((aiTextureType)1, 0, &textureFilePath);
 			std::string pathStr(textureFilePath.C_Str());
-			if (!pathStr.empty()) {
-				auto matName = Utils::getFileName(pathStr);
-				if (!matName.empty()) {
-					pMaterial = Resource::getInstance().getMaterial(matName);
-				}
-			}
-			else {
-				LOGD("a mesh has no material");
-				MaterialInfo info;
-				pMaterial = Resource::getInstance().getMaterialDefferedGeoPass(info);
-			}
+			std::string_view materialName = Utils::getFileName(pathStr);
 
 			unsigned int index = 0;
 			for (t = 0; t < mesh->mNumFaces; ++t) {
@@ -108,12 +97,10 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 				}
 
 			}
-			MeshSP pMesh = make_shared<Mesh>(MeshType::MESH_DIY);
+			MeshSP pMesh = make_shared<Mesh>(MeshType::DIY);
 			if (pMesh->loadMesh(mPos, mTexcoords, mNormals, mIndexes)) {
 				pRootNode->addRenderable(pMesh);
-				if (pMaterial) {
-					pMesh->setMaterial(pMaterial);
-				}
+				pMesh->setMaterialName(materialName);
 			}
 			else {
 				LOGE("%s load mesh failed", __func__);
