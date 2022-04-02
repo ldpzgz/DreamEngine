@@ -23,14 +23,14 @@ using MapSTexture = unordered_map<string, shared_ptr<Texture>>;
 using MapSShader = unordered_map<string, shared_ptr<Shader>>;
 using MapSNode = unordered_map<string, NodeSP>;
 using Umapss = unordered_map<string, string>;
-extern void checkglerror();
+
 static const string gMaterialPath = "./opengles3/resource/material";
 static const string gProgramPath = "./opengles3/resource/program";
 static const string gDrawablePath = "./opengles3/resource/drawable";
 
 //解析出纹理路径以及纹理属性
 static void parseTexParams(const std::string& content, std::string& path, TexParams& params) {
-	std::vector<std::string> splitStr;
+	std::vector<std::string_view> splitStr;
 	std::string pKey;
 	std::string pValue;
 	TexParams texParams;
@@ -99,7 +99,7 @@ static void parseTexParams(const std::string& content, std::string& path, TexPar
 }
 
 
-static std::unordered_map<std::string, unsigned int> gBlendFuncMap{
+static std::unordered_map<std::string_view, unsigned int> gBlendFuncMap{
 	{"1",GL_ONE},
 	{"0",GL_ZERO},
 	{"sc",GL_SRC_COLOR},
@@ -112,7 +112,7 @@ static std::unordered_map<std::string, unsigned int> gBlendFuncMap{
 	{"1-da",GL_ONE_MINUS_DST_ALPHA}
 };
 
-static std::unordered_map<std::string, unsigned int> gBlendEquationMap{
+static std::unordered_map<std::string_view, unsigned int> gBlendEquationMap{
 	{"add",GL_FUNC_ADD},
 	{"sub",GL_FUNC_SUBTRACT},
 	{"rsub",GL_FUNC_REVERSE_SUBTRACT},
@@ -187,7 +187,7 @@ public:
 		return pTex;
 	}
 
-	static std::shared_ptr<Texture> getOrLoadTextureFromFile(const std::string& path, const std::string& texName="");
+	static std::shared_ptr<Texture> getOrLoadTextureFromFile(const std::string& path, const std::string_view texName="");
 
 	static std::shared_ptr<Texture> loadImageFromFile(const std::string& path, const std::string& texName);
 
@@ -251,20 +251,12 @@ private:
 	static bool normalLocHandler(Material* pMat, const std::string&);
 	static bool texcoordLocHandler(Material* pMat, const std::string&);
 	static bool tangentLocHandler(Material* pMat, const std::string&);
-	static bool projMatrixHandler(Material* pMat, const std::string&);
 	static bool modelMatrixHandler(Material* pMat, const std::string&);
-	static bool mvpMatrixHandler(Material* pMat, const std::string&);
-	static bool mvMatrixHandler(Material* pMat, const std::string&);
-	static bool viewMatrixHandler(Material* pMat, const std::string&);
 	static bool texMatrixHandler(Material* pMat, const std::string&);
 	static bool uniformColorHandler(Material* pMat, const std::string&);
 	static bool materialUniformColorHandler(Material* pMat, const std::string&);
 	static bool materialAlbedoColorHandler(Material* pMat, const std::string&);
 	static bool albedoColorHandler(Material* pMat, const std::string&);
-	static bool viewPosHandler(Material* pMat, const std::string&);
-	static bool lightCountHandler(Material* pMat, const std::string&);
-	static bool lightPosHandler(Material* pMat, const std::string&);
-	static bool lightColorHandler(Material* pMat, const std::string&);
 	static bool metallicHandler(Material* pMat, const std::string&);
 	static bool roughnessHandler(Material* pMat, const std::string&);
 	static bool aoHandler(Material* pMat, const std::string&);
@@ -284,7 +276,9 @@ private:
 	static bool meshRoughnessMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
 	static bool meshAoMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
 	static bool meshMatInfoHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
-	static bool meshMatInfoNameHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool meshMaterialNameHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool meshTypeHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool meshScaleHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
 
 	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gMaterialHandlers;
 	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gProgramKeyValueHandlers;
@@ -315,16 +309,8 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"colorLoc",ResourceImpl::colorLocHandler},
 	{"normalLoc",ResourceImpl::normalLocHandler},
 	{"tangentLoc",ResourceImpl::tangentLocHandler},
-	{"projMatrix",ResourceImpl::projMatrixHandler},
 	{"modelMatrix",ResourceImpl::modelMatrixHandler},
-	{"mvpMatrix",ResourceImpl::mvpMatrixHandler},
-	{"mvMatrix",ResourceImpl::mvMatrixHandler},
-	{"viewMatrix",ResourceImpl::viewMatrixHandler},
 	{"textureMatrix",ResourceImpl::texMatrixHandler},
-	{"lightCount",ResourceImpl::lightCountHandler},
-	{"lightPos",ResourceImpl::lightPosHandler},
-	{"lightColor",ResourceImpl::lightColorHandler},
-	{"viewPos",ResourceImpl::viewPosHandler},
 	{"uniformColor",ResourceImpl::uniformColorHandler},
 	{"albedo",ResourceImpl::albedoColorHandler},
 	{"metallic",ResourceImpl::metallicHandler},
@@ -352,22 +338,75 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"roughness",ResourceImpl::materialRoughnessHandler},
 	{"ao",ResourceImpl::materialAoHandler}
 };
-
+//.meshCfg文件的解析，解析这个文件加载mesh，
+//meshCfg文件里面有mesh项，里面有matInfo，matInfo有个名字，约定使用albedoMap的文件名作为名字
+//加载mesh的时候，一般的mesh文件里面也有材质信息，也指定了albedoMap/diffuseMap的文件名，
+//就是通过这个albedo名字，让mesh匹配到自己的material
 std::unordered_map<std::string, std::function<bool(NodeSP& pNode, MaterialInfo& info, const std::string&)>> ResourceImpl::gMeshKeyValueHandlers{
 	{"nodeName",ResourceImpl::nodeNameHander},
+	{"path",ResourceImpl::meshPathHander},
 	{"matInfo",ResourceImpl::meshMatInfoHander},
-	{"matInfoName",ResourceImpl::meshMatInfoNameHander},
+	{"materialName",ResourceImpl::meshMaterialNameHander},
 	{"armMap",ResourceImpl::meshArmMapHander},
 	{"albedoMap",ResourceImpl::meshAlbedoMapHander},
 	{"normalMap",ResourceImpl::meshNormalMapHander},
 	{"metallicMap",ResourceImpl::meshMetallicMapHander},
 	{"roughnessMap",ResourceImpl::meshRoughnessMapHander},
-	{"aoMap",ResourceImpl::meshAoMapHander}
+	{"aoMap",ResourceImpl::meshAoMapHander},
+	{"meshType",ResourceImpl::meshTypeHander},
+	{"scale",ResourceImpl::meshScaleHander}
 };
 
 bool ResourceImpl::nodeNameHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
 	if (pNode && !value.empty()) {
 		mNodes.emplace(value, pNode);
+	}
+	return true;
+}
+
+bool ResourceImpl::meshTypeHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+	if (pNode && !value.empty()) {
+		MeshType type = MeshType::Quad;
+		if (value == "quad") {
+			type = MeshType::Quad;
+		}
+		else if (value == "cuboid") {
+			type = MeshType::Cuboid;
+		}
+		else if (value == "shpere") {
+			type = MeshType::Shpere;
+		}
+		else if (value == "cuboid") {
+			type = MeshType::Cuboid;
+		}
+		auto pMesh = std::make_shared<Mesh>(MeshType::Quad);
+		if (pMesh) {
+			pMesh->loadMesh();
+			pNode->addRenderable(pMesh);
+		}
+	}
+	return true;
+}
+
+bool ResourceImpl::meshScaleHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+	if (pNode && !value.empty()) {
+		std::vector<std::string_view> scaleValue;
+		Utils::splitStr(value, ",", scaleValue);
+		if (scaleValue.size() != 3) {
+			LOGE("meshScaleHander parse scale value error");
+			return false;
+		}
+		try {
+			float x, y, z;
+			x = std::stof(std::string(scaleValue[0]));
+			y = std::stof(std::string(scaleValue[1]));
+			z = std::stof(std::string(scaleValue[2]));
+			pNode->scale(glm::vec3(x, y, z));
+		}
+		catch (...) {
+			LOGE("meshScaleHander parse scale value error");
+			return false;
+		}
 	}
 	return true;
 }
@@ -442,13 +481,14 @@ bool ResourceImpl::meshMatInfoHander(NodeSP& pNode, MaterialInfo& info, const st
 			if (pMat && !info1.name.empty()) {
 				mMaterials.emplace(info1.name, pMat);
 			}
+			info.name = info1.name;
 		}
 		return true;
 	}
 	return false;
 }
 
-bool ResourceImpl::meshMatInfoNameHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshMaterialNameHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.name = value;
 		return true;
@@ -512,37 +552,10 @@ bool ResourceImpl::tangentLocHandler(Material* pMat, const std::string& value) {
 	return true;
 }
 
-bool ResourceImpl::projMatrixHandler(Material* pMat, const std::string& value) {
-	if (!value.empty()) {
-		pMat->getShader()->getProjMatrixLoc(value);
-	}
-	return true;
-}
 
 bool ResourceImpl::modelMatrixHandler(Material* pMat, const std::string& value) {
 	if (!value.empty()) {
 		pMat->getShader()->getModelMatrixLoc(value);
-	}
-	return true;
-}
-
-bool ResourceImpl::mvpMatrixHandler(Material* pMat, const std::string& value) {
-	if (!value.empty()) {
-		pMat->getShader()->getMvpMatrixLoc(value);
-	}
-	return true;
-}
-
-bool ResourceImpl::mvMatrixHandler(Material* pMat, const std::string& value) {
-	if (!value.empty()) {
-		pMat->getShader()->getMvMatrixLoc(value);
-	}
-	return true;
-}
-
-bool ResourceImpl::viewMatrixHandler(Material* pMat, const std::string& value) {
-	if (!value.empty()) {
-		pMat->getShader()->getViewMatrixLoc(value);
 	}
 	return true;
 }
@@ -646,35 +659,6 @@ bool ResourceImpl::materialAoHandler(Material* pMat, const std::string& value) {
 		}
 	}
 	return false;
-}
-
-
-bool ResourceImpl::viewPosHandler(Material* pMat, const std::string& value) {
-	if (!value.empty()) {
-		pMat->getShader()->getViewPosLoc(value);
-	}
-	return true;
-}
-
-bool ResourceImpl::lightCountHandler(Material* pMat, const std::string& value) {
-	if (!value.empty()) {
-		pMat->getShader()->getLightCountLoc(value);
-	}
-	return true;
-}
-
-bool ResourceImpl::lightPosHandler(Material* pMat, const std::string& value) {
-	if (!value.empty()) {
-		pMat->getShader()->getLightPosLoc(value);
-	}
-	return true;
-}
-
-bool ResourceImpl::lightColorHandler(Material* pMat, const std::string& value) {
-	if (!value.empty()) {
-		pMat->getShader()->getLightColorLoc(value);
-	}
-	return true;
 }
 
 bool ResourceImpl::metallicHandler(Material* pMat, const std::string& value) {
@@ -845,7 +829,7 @@ bool ResourceImpl::opBlendHandler(Material* pMaterial, const std::string& value)
 	bool hasError = false;
 	do {
 		if (value != "false") {
-			std::vector<std::string> findResult;
+			std::vector<std::string_view> findResult;
 			auto count = Utils::splitStr(value, ",", findResult);
 			if (count != 4 && count != 7) {
 				LOGE("blend op spell error,int material %s", pMaterial->getName().c_str());
@@ -1123,7 +1107,6 @@ bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 			//解析出来的material也会放在全局变量里面，所在这三个都不会自动被释放。
 		NodeSP pNode = std::make_shared<Node>();
 		MaterialInfo info;
-		string pathStr;
 		if (Utils::parseItem(cfgValue, meshValue)) {
 			//处理mesh{}里面的nodeName,matInfo等两项。
 			for (const auto& p : meshValue) {
@@ -1131,21 +1114,31 @@ bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 				if (itHandler != gMeshKeyValueHandlers.cend()) {
 					itHandler->second(pNode, info, p.second);
 				}
-				else if (p.first == "path") {
-					pathStr = p.second;
-				}
 			}
 		}
-		//加载mesh，内部会设置好material
-		if (!pathStr.empty()) {
-			MeshLoaderAssimp loader;
-			if (loader.loadFromFile(pathStr, pNode)) {
-				LOGD("success load mesh from %s", pathStr.c_str());
-				return true;
-			}
-			else {
-				LOGE(" to load mesh from path %s", pathStr.c_str());
-				return false;
+		
+		//为mesh设置材质
+		auto& res = Resource::getInstance();
+		auto& pRend = pNode->getRenderables();
+		auto meshSize = pRend.size();
+		
+		for (const auto& it : pRend) {
+			MeshSP pMesh = std::dynamic_pointer_cast<Mesh>(it.second);
+			if (pMesh) {
+				if (meshSize == 1) {
+					pMesh->setMaterial(res.getMaterial(info.name));
+					break;
+				}
+				std::string_view matName = pMesh->getMaterialName();
+				if (matName.empty()) {
+					//给一个默认的材质
+					MaterialInfo info;
+					auto pMaterial = res.getMaterialDefferedGeoPass(info);
+					pMesh->setMaterial(pMaterial);
+				}
+				else {
+					pMesh->setMaterial(res.getMaterial(std::string(matName)));
+				}
 			}
 		}
 	}
@@ -1473,12 +1466,12 @@ std::shared_ptr<Texture> ResourceImpl::loadImageFromFile(const std::string& path
 }
 
 
-std::shared_ptr<Texture> ResourceImpl::getOrLoadTextureFromFile(const std::string& path, const std::string& texName)
+std::shared_ptr<Texture> ResourceImpl::getOrLoadTextureFromFile(const std::string& path, const std::string_view texName)
 {
 	if (texName == std::string_view("none")) {
 		return nullptr;
 	}
-	std::string RealTexName = texName;
+	std::string RealTexName(texName);
 	
 	std::string realPath;
 	TexParams texParams;
@@ -1514,9 +1507,11 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedLightPass(bool hasIBL
 		pMaterial = make_shared<Material>();
 	}
 	std::string_view hasIBLMap{"#define HAS_IBL 1\n"};
+	std::string_view hasShadowMap{ "#define HAS_SHADOW 1\n" };
 	std::string vs;
 	std::string fs;
-	std::string program{"posLoc=0\ntexcoordLoc=1\nlightCount=lightCount\nlightPos=lightPos\nlightColor=lightColor\n"};
+	std::string program{"posLoc=0\ntexcoordLoc=1\n"};
+	std::string ubo{"ubo{\nLights=1\n"};
 	fs += mpVersion;
 	fs += mpPrecision;
 
@@ -1525,7 +1520,14 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedLightPass(bool hasIBL
 		fs += hasIBLMap;
 		program += "irrMap=none\nprefilterMap=none\nbrdfLUT=none\n";
 	}
+	if (Config::openShadowMap) {
+		fs += hasShadowMap;
+		ubo += "Matrixes=0\n";
+		program += "shadowMap=none\n";
+	}
 	program += "}\n";
+	ubo += "}\n";
+	program += ubo;
 
 	vs = getKeyAsStr("defferedLightVs");
 	auto dlfs = getKeyAsStr("defferedLightFs");
@@ -1573,13 +1575,16 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	std::string fs;
 	std::string program;
 	std::string programSampler;
-	std::string programUbo;
+	std::string programUbo{ "ubo{\nMatrixes=0\n" };
 
 	program = "posLoc=0\ntexcoordLoc=1\nnormalLoc=2\n";
-	program += "projMatrix=projMat\nmodelMatrix=modelMat\nviewMatrix=viewMat\n";
+	program += "\nmodelMatrix=modelMat\n";
 	if (Config::openTaa) {
 		program += "preMvpMatrix=preMvpMat\n";
-		programUbo = "ubo{\nScreenWH = 1\nTaa=2\n}\n";
+		programUbo += "ScreenWH = 2\nTaa=3\n}\n";
+	}
+	else {
+		programUbo += "}\n";
 	}
 	programSampler = "sampler{\n";
 	

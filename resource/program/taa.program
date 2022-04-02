@@ -23,7 +23,6 @@ fs{
 	{
 		float screenWidth;
 		float screenHeight;
-
 	};
 	layout (std140) uniform Taa
 	{
@@ -176,7 +175,7 @@ program:taa{
 		currentDepth=none	
 	}
 	ubo{
-		ScreenWH=1
-		Taa=2
+		ScreenWH=2
+		Taa=3
 	}
 }

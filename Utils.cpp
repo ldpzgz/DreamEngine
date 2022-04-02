@@ -4,6 +4,28 @@
 //#include "opencv2/imgproc/imgproc.hpp"
 //#include "opencv2/imgproc/types_c.h"
 using namespace std;
+
+void checkglerror()
+{
+	/*
+	GL_INVALID_ENUM, 0x0500-----1280
+	GL_INVALID_VALUE, 0x0501
+	GL_INVALID_OPERATION, 0x0502
+	GL_STACK_OVERFLOW, 0x0503
+	GL_STACK_UNDERFLOW, 0x0504
+	GL_OUT_OF_MEMORY, 0x0505
+	GL_INVALID_FRAMEBUFFER_OPERATION, 0x0506
+	GL_CONTEXT_LOST, 0x0507 (with OpenGL 4.5 or ARB_KHR_robustness)
+	GL_TABLE_TOO_LARGE1, 0x8031
+	*/
+	int error = 0;
+	for (error = glGetError(); error != GL_NO_ERROR; error = glGetError())
+	{
+		LOGD("gl error is %d\n", error);
+	}
+
+}
+
 namespace Utils {
 
 	std::string nowTime()
@@ -28,7 +50,7 @@ namespace Utils {
 		}
 	}
 
-	string getFileName(const string& path) {
+	string_view getFileName(const string_view path) {
 		auto startpos = path.find_last_of("/\\");
 		if (startpos != string::npos) {
 			auto endpos = path.find_last_of(".");
@@ -50,13 +72,12 @@ namespace Utils {
 		}
 	}
 
-	string getFileSuffix(const string& path) {
-		string temp;
+	string_view getFileSuffix(const string_view path) {
 		auto startpos = path.find_last_of(".");
 		if (startpos != string::npos) {
 			return path.substr(startpos+1);
 		}
-		return temp;
+		return string_view();
 	}
 
 	void forEachFile(const std::string pathName, const std::string suffix, std::function<void(const std::string& path)> func) {
@@ -80,7 +101,7 @@ namespace Utils {
 		}
 	}
 
-	bool splitKeyValue(const std::string& content, std::string& key, std::string& value) {
+	bool splitKeyValue(const std::string_view content, std::string& key, std::string& value) {
 		auto pos = content.find(':');
 		if (pos != string::npos) {
 			auto keyEndPos = content.find_last_not_of("\20",pos-1);
@@ -105,7 +126,7 @@ namespace Utils {
 		}
 	}
 
-	int splitStr(const std::string& str, const std::string_view separator, std::vector<std::string>& result) {
+	int splitStr(const std::string_view str, const std::string_view separator, std::vector<std::string_view>& result) {
 		int count = 0;
 		if (!str.empty() && !separator.empty()) {
 			size_t startPos = str.find_first_not_of(separator);

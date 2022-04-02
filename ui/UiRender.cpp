@@ -5,6 +5,7 @@
 #include "../MeshRoundedRectangle.h"
 #include "../MeshCircle.h"
 #include "../Resource.h"
+#include "../Ubo.h"
 
 using namespace std;
 int FontManager::gMyFontFileVersion = 1;
@@ -765,7 +766,7 @@ void UiRender::calcTextPosition(TextView* tv) {
 		info.matrix = moveToScreenMatrix * info.matrix;
 	}
 }
-extern void checkglerror();
+
 void UiRender::drawTextView(TextView* tv) {
 	if (tv != nullptr) {
 		drawBackground(tv);
@@ -796,8 +797,8 @@ void UiRender::drawTextView(TextView* tv) {
 				glm::mat4 tempMat(1.0f);
 				tempMat = glm::translate(tempMat, glm::vec3(moveVec.x, -moveVec.y, 0.0f));
 				tempMat = tempMat * charPos.matrix;
-				//tempMat = mProjMatrix * tempMat;
-				mpFontManager->mpCharMesh->draw(&mProjMatrix,&tempMat,nullptr,&charPos.texMatrix);
+				Ubo::getInstance().update("Matrixes", &mProjMatrix, sizeof(glm::mat4), 0);
+				mpFontManager->mpCharMesh->draw(&tempMat,&charPos.texMatrix,nullptr);
 			}
 		}
 		if (!bScissorTest) {
@@ -886,8 +887,9 @@ bool UiRender::drawBackground(View* v){
 						pMat->setTextureForSampler("s_texture", pTexture);
 					}
 				}
-				glm::mat4 tempView{ 1.0f };
-				pMesh->draw(&mProjMatrix, &model,&tempView);
+				glm::mat4 projView[2]{ mProjMatrix,glm::mat4{ 1.0f } };
+				Ubo::getInstance().update("Matrixes", projView, 2 * sizeof(glm::mat4), 0);
+				pMesh->draw(&model);
 			}
 			
 			if (pBorderMesh && !borderColor.isZero()) {
@@ -896,8 +898,9 @@ bool UiRender::drawBackground(View* v){
 				if (pMat) {
 					pMat->setUniformColor(borderColor);
 				}
-				glm::mat4 tempView{ 1.0f };
-				pBorderMesh->draw(&mProjMatrix, &model,&tempView);
+				glm::mat4 projView[2]{ mProjMatrix,glm::mat4{ 1.0f } };
+				Ubo::getInstance().update("Matrixes", projView, 2 * sizeof(glm::mat4), 0);
+				pBorderMesh->draw(&model);
 			}
 		}
 	}

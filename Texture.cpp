@@ -6,8 +6,6 @@
 #include "stb_image.h"
 #include <iostream>
 
-extern void checkglerror();
-
 Texture::Texture()
 {
 

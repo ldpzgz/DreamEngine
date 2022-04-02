@@ -1,8 +1,12 @@
 vs{
 	#version 330 core
     layout(location = 0) in vec3 inPos;
-	uniform mat4 projMat;
-	uniform mat4 viewMat;
+	layout (std140) uniform Matrixes
+	{
+		mat4 projMat;
+		mat4 viewMat;
+		mat4 shadowMat;
+	};
 	uniform mat4 modelMat;
     void main()
     {
@@ -18,7 +22,8 @@ fs{
 }
 program:genShadowMap{
 	posLoc=0
-	projMatrix=projMat
-	viewMatrix=viewMat
 	modelMatrix=modelMat
+	ubo{
+		Matrixes=0
+	}
 }

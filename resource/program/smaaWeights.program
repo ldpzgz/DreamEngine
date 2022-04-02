@@ -527,6 +527,6 @@ program:smaaWeights{
 		searchTex=none
 	}
 	ubo{
-		ScreenWH=1
+		ScreenWH=2
 	}
 }

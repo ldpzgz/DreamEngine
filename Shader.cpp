@@ -12,7 +12,6 @@
 #include "Log.h"
 #include <string>
 #include <fstream>
-extern void checkglerror();
 
 Shader::Shader(const std::string& name) :
 	mName(name)

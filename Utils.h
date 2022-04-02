@@ -16,6 +16,7 @@
 #include "Log.h"
 
 using namespace std::filesystem;
+
 namespace Utils {
 	//std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
 
@@ -23,14 +24,14 @@ namespace Utils {
 	/*
 	* 返回path中的文件名，如果path没有路径信息也没有后缀，直接返回path
 	*/
-	std::string getFileName(const std::string& path);
+	std::string_view getFileName(const std::string_view path);
 	std::string getFileNameWithPath(const std::string& path);
-	std::string getFileSuffix(const std::string& path);
+	std::string_view getFileSuffix(const std::string_view path);
 	/*
 	* 以separator为分界分割字符串，
 	* 返回找到的子串的个数
 	*/
-	int splitStr(const std::string& str, const std::string_view Separator, std::vector<std::string>& result);
+	int splitStr(const std::string_view str, const std::string_view Separator, std::vector<std::string_view>& result);
 
 	void forEachFile(const std::string pathName, const std::string suffix, std::function<void(const std::string& path)> func);
 
@@ -38,7 +39,7 @@ namespace Utils {
 	* 拆分这种形式的字符串：key:value
 	* 成功返回true，不是key:value形式的字符串，返回false
 	*/
-	bool splitKeyValue(const std::string& content, std::string& key, std::string& value);
+	bool splitKeyValue(const std::string_view content, std::string& key, std::string& value);
 
 	bool parseItem(const std::string& value, std::vector<std::pair<std::string, std::string>>& vec);
 

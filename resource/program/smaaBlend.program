@@ -101,6 +101,6 @@ program:smaaBlend{
 		blendTex=none
 	}
 	ubo{
-		ScreenWH=1
+		ScreenWH=2
 	}
 }

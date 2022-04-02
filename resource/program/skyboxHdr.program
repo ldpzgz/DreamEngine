@@ -1,7 +1,12 @@
 vs{
 	#version 300 es
     layout(location = 0) in vec3 a_position;
-	uniform mat4 projMat;
+	layout (std140) uniform Matrixes
+	{
+		mat4 projMat;
+		mat4 viewMat;
+		mat4 shadowMat;
+	};
 	uniform mat4 modelMat;
     out vec3 v_texCoord;
     void main()
@@ -25,9 +30,11 @@ fs{
 
 program:skyboxHdr{
 	posLoc=0
-	projMatrix=projMat
 	modelMatrix=modelMat
 	sampler{
 		skybox=none
+	}
+	ubo{
+		Matrixes=0
 	}
 }

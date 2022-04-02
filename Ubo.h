@@ -15,11 +15,11 @@
 
 class Ubo {
 public:
-	static constexpr int totalUboSize = 2048;
+	static constexpr int totalUboSize = 4096;
 	Ubo();
 	~Ubo();
 	void bind(const char* ubName, int sizeInByte, int bindPoint) noexcept;
-	void update(const std::string& ubName, void* pdata, int sizeInByte) noexcept;
+	void update(const std::string& ubName, void* pdata, int sizeInByte, int offset = 0) noexcept;
 	//获取系统的最大bindPoint个数，最少有24个bindpoint
 	static int getMaxBindPoint();
 	inline static Ubo& getInstance() {

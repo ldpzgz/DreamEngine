@@ -1,6 +1,53 @@
 #include "Ubo.h"
 #include "Log.h"
-extern void checkglerror();
+
+/*
+* shader里面出现的uniform block如下
+//16*4*3=192字节，3个mat4，一个mat4占64字节
+layout(std140) uniform Matrixes
+{
+	mat4 projMat;
+	mat4 viewMat;
+	mat4 shadowMat;
+};
+layout(std140) uniform Lights
+{
+	vec3 lightPositions[15];
+	vec3 lightColors[15];
+	int lightCounts;
+}
+//这个占了一个vec4 16个字节
+layout(std140) uniform ScreenWH
+{
+	float screenWidth;
+	float screenHeight;
+};
+//这个占了一个vec4 16个字节
+layout(std140) uniform Taa
+{
+	int frameCount;
+	int offsetIndex;
+};
+
+//64*16=1024,64个vec4
+layout(std140) uniform SampleArray
+{
+	vec3 samples[64];
+};
+
+ubo{
+	Matrixes = 0
+	Lights = 1
+}
+ubo{
+	ScreenWH = 2
+	Taa = 3
+}
+ubo{
+	SampleArray = 4
+}
+*/
+
 //注释
 Ubo::Ubo() = default;
 
@@ -35,7 +82,7 @@ void Ubo::bind(const char* ubName, int sizeInByte, int bindPoint)  noexcept{
 	}
 }
 
-void Ubo::update(const std::string& ubName, void* pdata, int sizeInByte)  noexcept{
+void Ubo::update(const std::string& ubName, void* pdata, int sizeInByte, int offset)  noexcept{
 	auto it = mUniformBlocks.find(ubName);
 	if (it != mUniformBlocks.end()) {
 		if (sizeInByte > it->second.second) {
@@ -43,7 +90,8 @@ void Ubo::update(const std::string& ubName, void* pdata, int sizeInByte)  noexce
 			return;
 		}
 		glBindBuffer(GL_UNIFORM_BUFFER, mId);
-		glBufferSubData(GL_UNIFORM_BUFFER, it->second.first, sizeInByte, pdata);
+		//第二个参数是偏移
+		glBufferSubData(GL_UNIFORM_BUFFER, it->second.first + offset, sizeInByte, pdata);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 	else {

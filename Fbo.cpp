@@ -9,7 +9,6 @@
 #include "Fbo.h"
 #include "Log.h"
 
-extern void checkglerror();
 Fbo::Fbo()
 {
 	// TODO Auto-generated constructor stub

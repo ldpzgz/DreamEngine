@@ -12,6 +12,7 @@
 
 #define KPLAYERLOGLEVEL LOG_DEBUG
 
+extern void checkglerror();
 
 #ifdef _WIN32
 void OutputDebugPrintf(const char* strOutputString, ...);

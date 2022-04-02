@@ -18,7 +18,8 @@ fs{
 	uniform sampler2D albedoMap;
 	void main()
 	{
-	  outColor = texture( albedoMap, texCoord );  
+	  outColor = texture( albedoMap, texCoord ); 
+		//outColor = vec4(vec3(d),1.0f);
 	}
 }
 

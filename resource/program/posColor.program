@@ -2,8 +2,12 @@ vs{
 	#version 300 es
     layout(location = 0) in vec4 a_position;
 	layout(location = 1) in vec4 a_color;
-	uniform mat4 projMat;
-	uniform mat4 viewMat;
+	layout (std140) uniform Matrixes
+	{
+		mat4 projMat;
+		mat4 viewMat;
+		mat4 shadowMat;
+	};
 	uniform mat4 modelMat;
 	out vec4 v_color;
     void main()
@@ -27,7 +31,8 @@ fs{
 program:posColor{
 	posLoc=0
 	colorLoc=1
-	projMatrix=projMat
 	modelMatrix=modelMat
-	viewMatrix=viewMat
+	ubo{
+		Matrixes=0
+	}
 }

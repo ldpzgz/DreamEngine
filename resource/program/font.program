@@ -2,7 +2,12 @@ vs{
 	#version 300 es
     layout(location = 0) in vec4 a_position;
 	layout(location = 1) in vec2 a_tex;
-	uniform mat4 projMat;
+	layout (std140) uniform Matrixes
+	{
+		mat4 projMat;
+		mat4 viewMat;
+		mat4 shadowMat;
+	};
 	uniform mat4 modelMat;
 	uniform mat4 texture_matrix;
 	out vec2 v_texCoord;
@@ -37,7 +42,6 @@ texture:fontsTexture{
 program:fontsBasic{
 	posLoc=0
 	texcoordLoc=1
-	projMatrix=projMat
 	modelMatrix=modelMat
 	textureMatrix=texture_matrix
 	uniformColor=color
@@ -46,6 +50,9 @@ program:fontsBasic{
 	}
 	op{
 		blend=true,sa,1-sa,add,0,1,add
+	}
+	ubo{
+		Matrixes=0
 	}
 }
 config{

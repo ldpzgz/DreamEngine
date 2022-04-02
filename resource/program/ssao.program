@@ -24,6 +24,12 @@ fs{
 	{
 		vec3 samples[64];
 	};
+	layout (std140) uniform Matrixes
+	{
+		mat4 projMat;
+		mat4 viewMat;
+		mat4 shadowMat;
+	};
 
 	// parameters (you'd probably want to use them as uniforms to more easily tweak the effect)
 	int kernelSize = 64;
@@ -32,8 +38,6 @@ fs{
 
 	// tile noise texture over screen based on screen dimensions divided by noise size
 	//const vec2 noiseScale = vec2(800.0/4.0, 600.0/4.0); 
-
-	uniform mat4 projection;
 
 	void main()
 	{
@@ -57,7 +61,7 @@ fs{
 			
 			// project sample position (to sample texture) (to get position on screen/texture)
 			vec4 offset = vec4(samplePos, 1.0);
-			offset = projection * offset; // from view to clip-space
+			offset = projMat * offset; // from view to clip-space
 			offset.xyz /= offset.w; // perspective divide
 			offset.xyz = offset.xyz * 0.5 + 0.5; // transform to range 0.0 - 1.0
 			
@@ -77,13 +81,13 @@ fs{
 program:ssao{
 	posLoc=0
 	texcoordLoc=1
-	projMatrix=projection
 	sampler{
 		posMap=none
 		normalMap=none
 		noiseMap=none
 	}
 	ubo{
-		SampleArray=0
+		Matrixes=0
+		SampleArray=4
 	}
 }

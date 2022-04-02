@@ -47,6 +47,8 @@ public:
 	const glm::mat4& getViewMatrix() {
 		return mViewMat;
 	}
+
+	void updateUboForShader();
 private:
 	void initDefferedRendering(const std::shared_ptr<Scene>& pScene) noexcept;
 	//如果物体不共用同一个shader，使用这个renderNode
@@ -72,6 +74,7 @@ private:
 	glm::mat4 mProjMatrix{ 1.0f };
 	glm::mat4 mWorldMat{ 1.0f };
 	glm::mat4 mViewMat{ 1.0f };
+	glm::mat4 mProjViewMatShadow{ 1.0f };
 	glm::vec3 mUp{ 0.0f,1.0f,0.0f };
 	glm::vec3 mLookAt{ 0.0f,0.0f,0.0f };
 	glm::vec3 mPosition{ 0.0f,0.0f,1.0f };

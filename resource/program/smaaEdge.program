@@ -110,6 +110,6 @@ program:smaaEdge{
 		colorTex=none
 	}
 	ubo{
-		ScreenWH=1
+		ScreenWH=2
 	}
 }

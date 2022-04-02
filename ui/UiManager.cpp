@@ -82,7 +82,8 @@ void UiManager::loadAllUiImage() {
 			if (is_regular_file(filePath)) {
 				//是文件
 				auto filePathString = filePath.string();
-				auto texName = "ui"+Utils::getFileName(filePathString);
+				std::string texName = "ui";
+				texName += Utils::getFileName(filePathString);
 				Resource::getInstance().loadImageFromFile(filePathString,texName);
 			}
 		}
@@ -99,7 +100,7 @@ void UiManager::parseRShape(const string& path) {
 		return;
 	}
 	if (pfdoc && pfdoc->size() > 0) {
-		string shapeName = Utils::getFileName(path);
+		string shapeName(Utils::getFileName(path));
 		auto pDoc = make_unique< rapidxml::xml_document<> >();// character type defaults to char
 		pDoc->parse<0>(pfdoc->data());// 0 means default parse flags
 		auto pResNode = pDoc->first_node("shape");
@@ -247,7 +248,7 @@ void UiManager::parseRBackground(const string& path) {
 		return ;
 	}
 	if (pfdoc && pfdoc->size() > 0) {
-		string bkName = Utils::getFileName(path);
+		string bkName(Utils::getFileName(path));
 		auto pDoc = make_unique< rapidxml::xml_document<> >();// character type defaults to char
 		pDoc->parse<0>(pfdoc->data());// 0 means default parse flags
 		auto pNode = pDoc->first_node("background");

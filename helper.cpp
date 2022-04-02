@@ -4,6 +4,7 @@
 #include "Pbo.h"
 #include "Mesh.h"
 #include "Resource.h"
+#include "Ubo.h"
 
 std::shared_ptr<Texture> genBrdfLut() {
 	TextureSP lut = std::make_shared<Texture>();
@@ -66,9 +67,10 @@ TextureSP genSpecularFilterMap(const std::shared_ptr<Texture>& pCube) {
 		fbo.attachColorTexture(floatB, 2);
 
 		for (int i = 0; i < 6; ++i) {
-			//auto mvpMat = captureProjection * captureViews[i];
-			fbo.render([&mesh, &captureProjection, &captureViews, &floatCubeSpec, &pbo, mipWidth, i, mip] {
-				mesh.draw(&captureProjection, &captureViews[i]);
+			glm::mat4 projView[2]{ captureProjection,captureViews[i] };
+			Ubo::getInstance().update("Matrixes", projView, 2 * sizeof(glm::mat4), 0);
+			fbo.render([&mesh, &floatCubeSpec, &pbo, mipWidth, i, mip] {
+				mesh.draw(nullptr);
 				//将渲染得到的三张rgba转换成一张rgb32f
 				std::vector<unsigned char> pRGB[3];
 				std::vector<float> resultRGB;
@@ -153,9 +155,10 @@ TextureSP genDiffuseIrrMap(const std::shared_ptr<Texture>& pCube) {
 	fbo.attachColorTexture(floatB, 2);
 
 	for (int i = 0; i < 6; ++i) {
-		//auto mvpMat = captureProjection * captureViews[i];
-		fbo.render([&mesh, &captureProjection, &captureViews, &floatCubeIrr, &pbo, irrWidth, i] {
-			mesh.draw(&captureProjection, &captureViews[i]);
+		glm::mat4 projView[2]{ captureProjection,captureViews[i] };
+		Ubo::getInstance().update("Matrixes", projView, 2 * sizeof(glm::mat4), 0);
+		fbo.render([&mesh, &floatCubeIrr, &pbo, irrWidth, i] {
+			mesh.draw(nullptr);
 			//将渲染得到的三张rgba转换成一张rgb32f
 			std::vector<unsigned char> pRGB[3];
 			std::vector<float> resultRGB;
@@ -239,9 +242,10 @@ TextureSP convertHdrToCubicmap(const std::shared_ptr<Texture>& pHdr) {
 	Pbo pbo;
 	pbo.initPbo(width, width);
 	for (int i = 0; i < 6; ++i) {
-		//auto mvpMat = captureProjection * captureViews[i];
-		fbo.render([&mesh, &captureProjection, &captureViews, &floatCube, &pbo, width, i] {
-			mesh.draw(&captureProjection, &captureViews[i]);
+		glm::mat4 projView[2]{ captureProjection,captureViews[i]};
+		Ubo::getInstance().update("Matrixes", projView, 2 * sizeof(glm::mat4), 0);
+		fbo.render([&mesh, &floatCube, &pbo, width, i] {
+			mesh.draw(nullptr);
 			//将渲染得到的三张rgba转换成一张rgb32f
 			std::vector<unsigned char> pRGB[3];
 			std::vector<float> resultRGB;

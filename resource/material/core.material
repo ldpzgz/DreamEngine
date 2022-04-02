@@ -34,9 +34,14 @@ config{
 		layout(location = 0) in vec3 inPos;
 		layout(location = 1) in vec2 inTexcoord;
 		layout(location = 2) in vec3 inNormal;
-		uniform mat4 projMat;
+		
+		layout (std140) uniform Matrixes
+		{
+			mat4 projMat;
+			mat4 viewMat;
+			mat4 shadowMat;
+		};
 		uniform mat4 modelMat;
-		uniform mat4 viewMat;
 
 		out vec3 worldPos;
 		out vec3 worldNormal;
@@ -229,9 +234,22 @@ config{
 			uniform sampler2D brdfLUT;
 		#endif
 		
-		uniform int lightCount;
-		uniform vec3 lightPos[4];
-		uniform vec3 lightColor[4];
+		#ifdef HAS_SHADOW
+			uniform sampler2D shadowMap;
+			layout (std140) uniform Matrixes
+			{
+				mat4 projMat;
+				mat4 viewMat;
+				mat4 shadowMat;
+			};
+		#endif
+		
+		layout (std140) uniform Lights
+		{
+			vec3 lightPositions[15];
+			vec3 lightColors[15];
+			int lightCounts;
+		};
 		
 		
 		uniform float clearCoatRoughness;
@@ -434,16 +452,13 @@ config{
 			vec3 F0 = vec3(0.04); 
 			F0 = mix(F0, albedo, metallic);
 			vec3 dirColor = vec3(0.0);
-			for(int i=0; i<lightCount; ++i){
-				dirColor += directLight(roughness,metallic,F0,albedo,worldPos,normal,lightPos[i],lightColor[i]);
+			for(int i=0; i<lightCounts; ++i){
+				dirColor += directLight(roughness,metallic,F0,albedo,worldPos,normal,lightPositions[i],lightColors[i]);
 			}
 			vec3 envColor = envLight(ao,roughness,metallic,F0,albedo,worldPos,normal,irrMap,prefilterMap,brdfLUT);
 			
 			vec3 color = dirColor + envColor;
 			
-			//color = color / (color + vec3(1.0));// HDR tonemapping
-			
-			//color = pow(color, vec3(1.0/2.2));// gamma correct
 			FragColor = vec4(color , 1.0);
 		}  
 	}

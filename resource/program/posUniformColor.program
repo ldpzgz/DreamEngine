@@ -1,9 +1,13 @@
 vs{
 	#version 300 es
     layout(location = 0) in vec4 a_position;
-	uniform mat4 projMat;
 	uniform mat4 modelMat;
-	uniform mat4 viewMat;
+	layout (std140) uniform Matrixes
+	{
+		mat4 projMat;
+		mat4 viewMat;
+		mat4 shadowMat;
+	};
     void main()
     {
        gl_Position = projMat * viewMat * modelMat * a_position;
@@ -23,8 +27,9 @@ fs{
 
 program:posUniformColor{
 	posLoc=0
-	projMatrix=projMat
 	modelMatrix=modelMat
-	viewMatrix=viewMat
 	uniformColor=color
+	ubo{
+		Matrixes=0
+	}
 }

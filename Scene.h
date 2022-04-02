@@ -22,6 +22,7 @@ public:
 	};
 	Scene();
 	~Scene();
+	
 	shared_ptr<Node>& getRoot() noexcept{
 		return mpRootNode;
 	}
@@ -43,6 +44,8 @@ public:
 	const vector<shared_ptr<Light>>& getLights() const {
 		return mLights;
 	}
+
+	void updateLightsForShader(const glm::mat4& viewMat);
 private:
 	shared_ptr<Node> mpRootNode;
 	shared_ptr<Node> mpRootNodeDeffered;//走deffered rendering

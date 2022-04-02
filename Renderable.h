@@ -11,13 +11,9 @@ public:
 	virtual void draw(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1) {
 
 	}
-	virtual void draw(const glm::mat4* projMat, 
-		const glm::mat4* modelMat, 
-		const glm::mat4* viewMat = nullptr,
+	virtual void draw(const glm::mat4* modelMat,
 		const glm::mat4* texMat = nullptr,
-		const std::vector<glm::vec3>* lightPos = nullptr, 
-		const std::vector<glm::vec3>* lightColor = nullptr, 
-		const glm::vec3* viewPos = nullptr) = 0;
+		const glm::mat4* projViewMat = nullptr) = 0;
 
 	unsigned int getRid() {
 		return mId;

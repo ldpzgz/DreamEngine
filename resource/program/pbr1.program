@@ -5,8 +5,12 @@ vs{
 	layout (location = 1) in vec3 aNormal;
 	layout (location = 2) in vec2 aTexCoord;
 	//layout (location = 3) in vec3 aTangent;
-	uniform mat4 projMat;
-	uniform mat4 viewMat;
+	layout (std140) uniform Matrixes
+	{
+		mat4 projMat;
+		mat4 viewMat;
+		mat4 shadowMat;
+	};
 	uniform mat4 modelMat;
     out vec2 TexCoords;
 	out vec3 Normal;
@@ -32,15 +36,18 @@ fs{
 	uniform sampler2D normalMap;
 	
 	// lights
-	uniform vec3 lightPositions[4];
-	uniform vec3 lightColors[4];
+	layout (std140) uniform Lights
+	{
+		uniform vec3 lightPositions[15];
+		uniform vec3 lightColors[15];
+		int lightCounts;
+	};
 
-	uniform vec3 camPos;
 	uniform float metallic;
 	uniform float roughness;
 
 	const float PI = 3.14159265359f;
-	  
+	const vec3 camPos=vec3(0.0f,0.0f,0.0f); 
 	vec3 getNormalFromMap()
 	{
 		vec3 tangentNormal = texture(normalMap, TexCoords).xyz * 2.0 - 1.0;
@@ -115,20 +122,7 @@ fs{
 	
 	void main()
 	{
-		//vec3 albedo     = pow(texture(albedoMap, TexCoords).rgb, vec3(2.2f));
 		vec3 albedo     = texture(albedoMap, TexCoords).rgb;
-		//float metallic  = texture(metallicMap, TexCoords).r;
-		//float roughness = texture(roughnessMap, TexCoords).r;
-		//float ao        = texture(aoMap, TexCoords).r;
-		
-		//vec3 T = normalize(Tangent);
-		//vec3 nor = normalize(Normal);
-		//T = normalize(T - dot(T, nor) * nor);
-		//vec3 B = cross(nor, T);
-		//mat3 TBN = mat3(T, B, nor);
-		//vec3 N = texture( normalMap, TexCoords ).rgb;
-		//N = normalize(N * 2.0f - 1.0f);
-		//N = normalize(TBN*N);
 		vec3 N = getNormalFromMap();
 		vec3 V = normalize(camPos - WorldPos);
 
@@ -178,16 +172,15 @@ program:pbr1{
 	posLoc=0
 	normalLoc=1
 	texcoordLoc=2
-	projMatrix=projMat
 	modelMatrix=modelMat
-	viewMatrix=viewMat
-	viewPos=camPos
-	lightPos=lightPositions
-	lightColor=lightColors
 	metallic=metallic
 	roughness=roughness
 	sampler{
 		albedoMap=none
 		normalMap=none
+	}
+	ubo{
+		Matrixes=0
+		Lights=1
 	}
 }

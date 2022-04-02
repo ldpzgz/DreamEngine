@@ -8,6 +8,8 @@ enum class LightType {
 	SpotLight
 };
 
+constexpr int MaxNumberOfLights=15;
+
 class Light :public Renderable {
 public:
 	explicit Light(LightType type);
@@ -54,14 +56,10 @@ public:
 		return mbCastShadow;
 	}
 
-	void draw(const glm::mat4* projMat,
-		const glm::mat4* modelMat,
-		const glm::mat4* viewMat=nullptr,
+	void draw(const glm::mat4* modelMat,
 		const glm::mat4* texMat = nullptr,
-		const std::vector<glm::vec3>* lightPos = nullptr,
-		const std::vector<glm::vec3>* lightColor = nullptr,
-		const glm::vec3* viewPos = nullptr) override;
-
+		const glm::mat4* projViewMat = nullptr) override;
+	
 private:
 	bool mbCastShadow{false};
 	LightType mType{ LightType::Point };

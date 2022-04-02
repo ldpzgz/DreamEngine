@@ -13,28 +13,6 @@
 #include <cmath>
 #include <fstream>
 
-//extern void checkglerror();
-void checkglerror()
-{
-	/*
-	GL_INVALID_ENUM, 0x0500-----1280
-	GL_INVALID_VALUE, 0x0501
-	GL_INVALID_OPERATION, 0x0502
-	GL_STACK_OVERFLOW, 0x0503
-	GL_STACK_UNDERFLOW, 0x0504
-	GL_OUT_OF_MEMORY, 0x0505
-	GL_INVALID_FRAMEBUFFER_OPERATION, 0x0506
-	GL_CONTEXT_LOST, 0x0507 (with OpenGL 4.5 or ARB_KHR_robustness)
-	GL_TABLE_TOO_LARGE1, 0x8031
-	*/
-	int error = 0;
-	for (error = glGetError(); error != GL_NO_ERROR; error = glGetError())
-	{
-		LOGD("gl error is %d\n", error);
-	}
-
-}
-
 Mesh::Mesh(MeshType meshType) noexcept:
 	mMeshType(meshType)
 {
@@ -826,47 +804,25 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc
 	}
 }
 
-void Mesh::draw(const glm::mat4* projMat,
-	const glm::mat4* modelMat, 
-	const glm::mat4* viewMat,
-	const glm::mat4* texMat,
-	const std::vector<glm::vec3>* lightPos, 
-	const std::vector<glm::vec3>* lightColor, 
-	const glm::vec3* viewPos) {
+void Mesh::draw(const glm::mat4* modelMat, const glm::mat4* texMat, const glm::mat4* projViewMat) {
 	if (mpMaterial) {
 		auto& pShader = mpMaterial->getShader();
 		if (pShader) {
 			mpMaterial->enable();
 			mpMaterial->setMyRenderOperation();
-			if (projMat) {
-				pShader->setProjMatrix(*projMat);
-			}
 			if (modelMat) {
 				pShader->setModelMatrix(*modelMat);
-			}
-			if (viewMat) {
-				pShader->setViewMatrix(*viewMat);
 			}
 			if (texMat) {
 				pShader->setTextureMatrix(*texMat);
 			}
-			if (lightPos) {
-				pShader->setLightPos(*lightPos);
-				pShader->setLightCount(lightPos->size());
-			}
-			if (lightColor) {
-				pShader->setLightColor(*lightColor);
-			}
-			if (viewPos) {
-				pShader->setViewPos(*viewPos);
-			}
-			if (pShader->hasPreMvpMat()&& projMat!=nullptr && viewMat!=nullptr && modelMat!=nullptr) {
+			if (pShader->hasPreMvpMat()&& modelMat!=nullptr && projViewMat!=nullptr) {
 				if (!mpPreMvpMatrix) {
-					mpPreMvpMatrix = std::make_unique<glm::mat4>((* projMat)*(*viewMat)*(*modelMat));
+					mpPreMvpMatrix = std::make_unique<glm::mat4>((*projViewMat) * (*modelMat));
 				}
 				if(mpPreMvpMatrix) {
 					pShader->setPreMvpMatrix(*mpPreMvpMatrix);
-					*mpPreMvpMatrix = (*projMat) * (*viewMat) * (*modelMat);
+					*mpPreMvpMatrix = (*projViewMat) * (*modelMat);
 				}
 			}
 			

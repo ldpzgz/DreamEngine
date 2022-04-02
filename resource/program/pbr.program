@@ -8,8 +8,12 @@ vs{
 	out vec3 WorldPos;
 	out vec3 Normal;
 
-	uniform mat4 projMat;
-	uniform mat4 viewMat;
+	layout (std140) uniform Matrixes
+	{
+		mat4 projMat;
+		mat4 viewMat;
+		mat4 shadowMat;
+	};
 	uniform mat4 modelMat;
 
 	void main()
@@ -41,11 +45,12 @@ fs{
 	uniform sampler2D brdfLUT;
 
 	// lights
-	uniform vec3 lightPositions[4];
-	uniform vec3 lightColors[4];
-
-	uniform vec3 camPos;
-
+	layout (std140) uniform Lights
+	{
+		vec3 lightPositions[15];
+		vec3 lightColors[15];
+		int lightCounts;
+	};
 	const float PI = 3.14159265359;
 	// ----------------------------------------------------------------------------
 	float DistributionGGX(vec3 N, vec3 H, float roughness)
@@ -93,8 +98,10 @@ fs{
 		return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 	}   
 	// ----------------------------------------------------------------------------
+	
 	void main()
-	{		
+	{
+		vec3 camPos = vec3(0.0f,0.0f,0.0f);
 		vec3 N = Normal;
 		vec3 V = normalize(camPos - WorldPos);
 		vec3 R = reflect(-V, N); 
@@ -174,12 +181,7 @@ program:pbr{
 	posLoc=0
 	normalLoc=1
 	texcoordLoc=2
-	projMatrix=projMat
 	modelMatrix=modelMat
-	viewMatrix=viewMat
-	viewPos=camPos
-	lightPos=lightPositions
-	lightColor=lightColors
 	metallic=metallic
 	roughness=roughness
 	albedo=albedo
@@ -188,5 +190,9 @@ program:pbr{
 		irradianceMap=none
 		prefilterMap=none
 		brdfLUT=none
+	}
+	ubo{
+		Matrixes=0
+		Lights=1
 	}
 }
