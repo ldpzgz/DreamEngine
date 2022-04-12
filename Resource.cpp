@@ -476,7 +476,7 @@ bool ResourceImpl::meshMatInfoHander(NodeSP& pNode, MaterialInfo& info, const st
 				}
 			}
 
-			//解析并创建material，
+			//解析并创建组合出来的material，组合出来的material也有个名字，
 			MaterialSP pMat = Resource::getInstance().getMaterialDefferedGeoPass(info1);
 			if (pMat && !info1.name.empty()) {
 				mMaterials.emplace(info1.name, pMat);
@@ -1099,12 +1099,16 @@ bool ResourceImpl::parseMeshCfgFile(const string& filePath) {
 	}
 	return true;
 }
-
+/*
+* 解析.meshcfg文件里面的一块mesh{};
+* 一个mesh{}块，会生成一个node，node下面会挂诺干个mesh。
+* 每个mesh会有一个material
+*/
 bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 	if (!cfgValue.empty()) {
 		vector<pair<string,string>> meshValue;
 		//这个node会放在全局变量里面，这个node attach了mesh
-			//解析出来的material也会放在全局变量里面，所在这三个都不会自动被释放。
+		//解析出来的material也会放在全局变量里面，所在这三个都不会自动被释放。
 		NodeSP pNode = std::make_shared<Node>();
 		MaterialInfo info;
 		if (Utils::parseItem(cfgValue, meshValue)) {
@@ -1511,7 +1515,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedLightPass(bool hasIBL
 	std::string vs;
 	std::string fs;
 	std::string program{"posLoc=0\ntexcoordLoc=1\n"};
-	std::string ubo{"ubo{\nLights=1\n"};
+	std::string ubo{"ubo{\nLights=1\n}"};
 	fs += mpVersion;
 	fs += mpPrecision;
 
@@ -1522,11 +1526,9 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedLightPass(bool hasIBL
 	}
 	if (Config::openShadowMap) {
 		fs += hasShadowMap;
-		ubo += "Matrixes=0\n";
-		program += "shadowMap=none\n";
+		program += "shadowResult=none\n";
 	}
 	program += "}\n";
-	ubo += "}\n";
 	program += ubo;
 
 	vs = getKeyAsStr("defferedLightVs");
@@ -1671,6 +1673,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	std::string_view hasMetallicMap{ "#define HAS_METALLIC_MAP 1\n" };
 	std::string_view hasRoughnessMap{ "#define HAS_ROUGHNESS_MAP 1\n" };
 	std::string_view hasAoMap{ "#define HAS_AO_MAP 1\n" };
+	std::string_view hasShadow{ "#define HAS_SHADOW 1\n" };
 
 	if (!mInfo.albedoMap.empty()) {
 		materialFlag |= 0x02;
@@ -1734,6 +1737,11 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 			program += "ao=ao\n";
 		}
 	}
+	if (Config::openShadowMap) {
+		programSampler += "shadowMap=";
+		programSampler += "none";
+		programSampler += "\n";
+	}
 
 	programSampler += "}\n";
 	program += programSampler;
@@ -1749,6 +1757,10 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 			fs += hasTaa;
 			vs += hasTaa;
 		}
+	}
+	if (Config::openShadowMap) {
+		fs += hasShadow;
+		vs += hasShadow;
 	}
 	fs += allDefine;
 	vs += getKeyAsStr("defferedGeoVs");

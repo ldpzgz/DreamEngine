@@ -207,3 +207,9 @@ void Material::setTextureForSampler(const char* samplerName, const shared_ptr<Te
 		}
 	}
 }
+
+void Material::setUniform1fv(const std::string& name, int count, float* pdata) {
+	if (mShader && !name.empty()) {
+		mShader->setUniform1fv(name.c_str(), count, pdata);
+	}
+}

@@ -45,6 +45,10 @@ config{
 
 		out vec3 worldPos;
 		out vec3 worldNormal;
+		#ifdef HAS_SHADOW
+			out vec4 shadowPos;
+		#endif
+		
 		#ifdef HAS_TAA
 			layout (std140) uniform ScreenWH
 			{
@@ -96,12 +100,17 @@ config{
 			#else
 				gl_Position = projMat * mvMat * vec4(inPos,1.0f);
 			#endif
+			#ifdef HAS_SHADOW
+				shadowPos = shadowMat * mvMat * vec4(inPos, 1.0);
+			#endif
 		}
 	}
 	defferedGeoFs{
 		layout (location = 0) out vec4 outPosMap;
 		layout (location = 1) out vec4 outNormalMap;
 		layout (location = 2) out vec4 outAlbedoMap;
+		in vec3 worldPos;
+		in vec3 worldNormal;
 		#ifdef HAS_TAA
 			layout(location=3) out vec2 outVelocity;
 			in vec4 preScreenPos;
@@ -109,6 +118,52 @@ config{
 		#endif
 		#ifdef HAS_MAP
 			in vec2 texcoord;
+		#endif
+		
+		#ifdef HAS_SHADOW
+			#ifdef HAS_TAA
+				layout (location = 4) out float outShadowMap;
+			#else
+				layout (location = 3) out float outShadowMap;
+			#endif
+			in vec4 shadowPos;
+			uniform sampler2DShadow shadowMap;
+			vec2 poissonDisk[16] = vec2[]( 
+			   vec2( -0.94201624, -0.39906216 ), 
+			   vec2( 0.94558609, -0.76890725 ), 
+			   vec2( -0.094184101, -0.92938870 ), 
+			   vec2( 0.34495938, 0.29387760 ), 
+			   vec2( -0.91588581, 0.45771432 ), 
+			   vec2( -0.81544232, -0.87912464 ), 
+			   vec2( -0.38277543, 0.27676845 ), 
+			   vec2( 0.97484398, 0.75648379 ), 
+			   vec2( 0.44323325, -0.97511554 ), 
+			   vec2( 0.53742981, -0.47373420 ), 
+			   vec2( -0.26496911, -0.41893023 ), 
+			   vec2( 0.79197514, 0.19090188 ), 
+			   vec2( -0.24188840, 0.99706507 ), 
+			   vec2( -0.81409955, 0.91437590 ), 
+			   vec2( 0.19984126, 0.78641367 ), 
+			   vec2( 0.14383161, -0.14100790 ) 
+			);
+			// Returns a random number based on a vec3 and an int.
+			float random(vec3 seed, int i){
+				vec4 seed4 = vec4(seed,i);
+				float dot_product = dot(seed4, vec4(12.9898,78.233,45.164,94.673));
+				return fract(sin(dot_product) * 43758.5453);
+			}
+			float ShadowCalculation(vec4 fragPosLightSpace)
+			{
+				vec4 projCoords = fragPosLightSpace * 0.5 + 0.5;
+				float visibility=1.0;
+				projCoords.z -= 0.005*projCoords.w;
+				for (int i=0;i<4;i++){
+					int index = int(16.0*random(floor(worldPos*1000.0), i))%16;
+					projCoords.xy += poissonDisk[index]/700.0;
+					visibility -= 0.2 * ( 1.0 - textureProj(shadowMap, projCoords) );
+				}
+				return visibility;
+			}
 		#endif
 		
 		#ifdef HAS_ALBEDO_MAP
@@ -142,9 +197,6 @@ config{
 		#ifdef HAS_NORMAL_MAP
 			uniform sampler2D normalMap;
 		#endif
-		
-		in vec3 worldPos;
-		in vec3 worldNormal;
 		
 		#ifdef HAS_NORMAL_MAP
 			vec3 getNormalFromMap(sampler2D nmap,vec2 texcoord,vec3 worldPos,vec3 normal){
@@ -203,6 +255,10 @@ config{
 				vec2 prePos = ((preScreenPos.xy / preScreenPos.w) * 0.5 + 0.5);
 				outVelocity = newPos - prePos;
 			#endif
+			
+			#ifdef HAS_SHADOW
+				outShadowMap = 0.2 + ShadowCalculation(shadowPos);
+			#endif
 		}
 	}
 	
@@ -233,15 +289,8 @@ config{
 			uniform samplerCube prefilterMap;
 			uniform sampler2D brdfLUT;
 		#endif
-		
 		#ifdef HAS_SHADOW
-			uniform sampler2D shadowMap;
-			layout (std140) uniform Matrixes
-			{
-				mat4 projMat;
-				mat4 viewMat;
-				mat4 shadowMat;
-			};
+			uniform sampler2D shadowResult;
 		#endif
 		
 		layout (std140) uniform Lights
@@ -447,6 +496,9 @@ config{
 			float metallic = normalRgba.a;
 			float roughness = albedoRgba.a;
 			float ao = posRgba.a*ssao;
+			#ifdef HAS_SHADOW
+				ao = texture(shadowResult, texcoord).r;
+			#endif
 			// calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
 			// of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
 			vec3 F0 = vec3(0.04); 

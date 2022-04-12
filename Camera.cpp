@@ -11,6 +11,7 @@
 #include "Config.h"
 #include "PostSmaa.h"
 #include "PostToneMap.h"
+#include "PostGsBlur.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <random>
 
@@ -149,6 +150,10 @@ void Camera::renderScene() {
 					});
 			}
 
+			//blur the shadowResult
+			mpPostGsBlur->process(mpShadowResult, mpShadowResult1);
+			mpPostGsBlur->process(mpShadowResult1, mpShadowResult);
+
 			//deffered render lighting pass
 			if (mpFboDefferedLighting) {
 				mpFboDefferedLighting->render([this]() {
@@ -195,8 +200,9 @@ void Camera::renderScene() {
 			}
 		}
 		
+		
 		if (mpDrawQuadMaterial) {
-			//mpDrawQuadMaterial->setTextureForSampler("albedoMap", mpShadowMap);
+			mpDrawQuadMaterial->setTextureForSampler("albedoMap", mpPostTex[1]);
 		}
 		//在窗口系统将最终渲染结果绘制出来
 		mpPostMesh->setMaterial(mpDrawQuadMaterial);
@@ -239,8 +245,17 @@ void Camera::renderNode(const shared_ptr<Node>& node,
 		glm::mat4 modelMat = node->getWorldMatrix();
 
 		for (const auto& pRen : pRenderables) {
-			//std::shared_ptr<R> pMesh = std::dynamic_pointer_cast<Mesh>(pRen.second);
+			
 			if (pRen.second) {
+				if (Config::openShadowMap) {
+					std::shared_ptr<Mesh> pMesh = std::dynamic_pointer_cast<Mesh>(pRen.second);
+					if (pMesh && pMesh->getReceiveShadow()) {
+						auto& pMaterial = pMesh->getMaterial();
+						if (pMaterial) {
+							pMaterial->setTextureForSampler("shadowMap", mpShadowMap);
+						}
+					}
+				}
 				if (Config::openTaa) {
 					glm::mat4 projView = mProjMatrix * mViewMat;
 					pRen.second->draw(&modelMat, nullptr, &projView);
@@ -291,7 +306,26 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) noexcep
 		mpFboDefferedGeo->attachColorTexture(mpPosMap, 0);
 		mpFboDefferedGeo->attachColorTexture(mpNormal, 1);
 		mpFboDefferedGeo->attachColorTexture(mpAlbedoMap, 2);
-		mpFboDefferedGeo->attachColorTexture(mpTaaVelocityMap, 3);
+		if (Config::openShadowMap) {
+			mpShadowResult = std::make_shared<Texture>();
+			mpShadowResult->setParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_BORDER, GL_CLAMP_TO_BORDER);
+			mpShadowResult->create2DMap(mWidth, mHeight, nullptr, GL_R8, GL_RED, GL_UNSIGNED_BYTE);
+			mpShadowResult1 = std::make_shared<Texture>();
+			mpShadowResult1->setParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_BORDER, GL_CLAMP_TO_BORDER);
+			mpShadowResult1->create2DMap(mWidth, mHeight, nullptr, GL_R8, GL_RED, GL_UNSIGNED_BYTE);
+		}
+		if (Config::openTaa) {
+			mpFboDefferedGeo->attachColorTexture(mpTaaVelocityMap, 3);
+			if (Config::openShadowMap) {
+				mpFboDefferedGeo->attachColorTexture(mpShadowResult, 4);
+			}
+		}
+		else {
+			if (Config::openShadowMap) {
+				mpFboDefferedGeo->attachColorTexture(mpShadowResult, 3);
+			}
+		}
+		
 		mpFboDefferedGeo->attachDepthTexture(mpDepthMap);//深度缓存
 	}
 	if (mpRenderResult) {
@@ -375,6 +409,9 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) noexcep
 				mpDefLightPassMaterial->setTextureForSampler("prefilterMap", skyInfo.mpPrefilterTex);
 			}
 			mpDefLightPassMaterial->setTextureForSampler("brdfLUT", Resource::getInstance().getTexture("brdfLUT"));
+			if (Config::openShadowMap) {
+				mpDefLightPassMaterial->setTextureForSampler("shadowResult", mpShadowResult);
+			}
 		}
 
 		if (Config::openTaa) {
@@ -397,6 +434,9 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) noexcep
 		mpPostSmaa = std::make_unique<PostSmaa>();
 		mpPostSmaa->initPost(mWidth, mHeight, mpPostMesh);
 
+		mpPostGsBlur = std::make_unique<PostGsBlur>();
+		mpPostGsBlur->initPost(mWidth, mHeight, mpPostMesh);
+
 		mpDrawQuadMaterial = res.getMaterial("drawQuad");
 		if (mpDrawQuadMaterial) {
 			mpDrawQuadMaterial->setTextureForSampler("albedoMap", mpRenderResult);
@@ -413,7 +453,8 @@ void Camera::genShadowMap(std::shared_ptr<Scene>& pScene) {
 		constexpr int SM_HEIGHT = 1024;
 		mpShadowMap = std::make_shared<Texture>();
 		float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-		mpShadowMap->setParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_BORDER, GL_CLAMP_TO_BORDER, borderColor);
+		mpShadowMap->setParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_BORDER, GL_CLAMP_TO_BORDER, 
+			GL_CLAMP_TO_EDGE,borderColor, GL_COMPARE_REF_TO_TEXTURE, GL_LEQUAL);
 		mpShadowMap->create2DMap(SM_WIDTH, SM_HEIGHT, nullptr, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
 		mpGenShadowMaterial = Resource::getInstance().cloneMaterial("genShadowMap");
 		assert(mpGenShadowMaterial);
@@ -438,11 +479,11 @@ void Camera::genShadowMap(std::shared_ptr<Scene>& pScene) {
 			up = glm::cross(direction, up);
 			glm::mat4 lightViewMat{1.0f};
 			lightViewMat = glm::lookAt(lightpos, lookat, up);
-			lightViewMat = lightViewMat*mViewMat;//
+			//lightViewMat = lightViewMat*mViewMat;
 			projMat = glm::ortho(-3.0f,3.0f,-3.0f,3.0f,2.0f,7.0f);
 			mProjViewMatShadow = projMat * lightViewMat;
-			glm::mat4 tempMat[3]{ projMat ,lightViewMat, mProjViewMatShadow };
-			Ubo::getInstance().update("Matrixes", tempMat, 3 *sizeof(glm::mat4), 0);
+			glm::mat4 tempMat[2]{ mViewMat, mProjViewMatShadow };
+			Ubo::getInstance().update("Matrixes", tempMat, 2 *sizeof(glm::mat4), sizeof(glm::mat4));
 			const auto& rootNode = pScene->getRootDeffered();
 			mpFboShadowMap->render([this, &rootNode](){
 				if (mpGenShadowMaterial) {

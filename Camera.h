@@ -83,6 +83,8 @@ private:
 	//shadow map
 	std::unique_ptr<Fbo> mpFboShadowMap;
 	std::shared_ptr<Texture> mpShadowMap;
+	std::shared_ptr<Texture> mpShadowResult;
+	std::shared_ptr<Texture> mpShadowResult1;
 	std::shared_ptr<Material> mpGenShadowMaterial;
 	
 	//for deffered rendering
@@ -123,6 +125,7 @@ private:
 	std::shared_ptr<Texture> mpPostTex[2];
 	std::unique_ptr<Post> mpPostTonemap;
 	std::unique_ptr<Post> mpPostSmaa;
+	std::unique_ptr<Post> mpPostGsBlur;
 };
 
 

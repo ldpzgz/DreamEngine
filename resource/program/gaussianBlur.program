@@ -1,0 +1,39 @@
+vs{
+	#version 330 core
+    layout(location = 0) in vec3 inPos;
+	layout(location = 1) in vec2 inTexcoord;
+	out vec2 texcoord;
+	void main(){
+		texcoord = inTexcoord;
+		gl_Position = vec4(inPos, 1.0f);
+	}
+}
+fs{
+	#version 330 core
+	precision mediump float;
+	in vec2 texcoord;
+	uniform float w[5];
+	uniform float offset[5];
+	uniform float isVertical;
+	uniform sampler2D texForFilt;
+	out float outColor;
+	void main(){
+		float tempColor = 0.0f;//vec3(0.0,0.0,0.0);
+		for(int i=0; i<5; ++i){
+			if(isVertical<0.5){
+				tempColor += w[i]*texture( texForFilt, vec2(texcoord.x+offset[i],texcoord.y)).r;
+			}
+			else{
+				tempColor += w[i]*texture( texForFilt, vec2(texcoord.x,texcoord.y+offset[i])).r;
+			}
+		}
+		outColor = tempColor;//vec4(tempColor,1.0f);
+	}
+}
+program:gaussianBlur{
+	posLoc=0
+	texcoordLoc=1
+	sampler2D{
+		texForFilt=none
+	}
+}

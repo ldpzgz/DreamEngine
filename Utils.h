@@ -88,14 +88,14 @@ public:
 		}
 	}
 	//自start以来，过了多少时间，如果还没有调用过start，返回0
-	int64_t elapse() {
+	int64_t elapseFromStart() {
 		if (mbStart) {
 			if (mbPause) {
 				return mElapseWhenPause;
 			}
 			else {
 				auto curTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
-				auto count = (curTime - mPreTime).count();
+				auto count = (curTime - mStartTime).count();
 				return count;
 			}
 		}
@@ -104,9 +104,29 @@ public:
 			return 0;
 		}
 	}
+	//距离上次调用elapse，过了多少时间，返回0
+	int64_t elapseFromLast() {
+		if (mbStart) {
+			if (mbPause) {
+				return mElapseWhenPause;
+			}
+			else {
+				auto curTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+				auto count = (curTime - mPreTime).count();
+				mPreTime = curTime;
+				return count;
+			}
+		}
+		else {
+			//LOGD("warning the timercount is not start");
+			start();
+			return 0;
+		}
+	}
 
 	void start() {
-		mPreTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+		mStartTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+		mPreTime = mStartTime;
 		mbStart = true;
 	}
 
@@ -131,6 +151,7 @@ public:
 	}
 private:
 	TimePoint mPreTime;
+	TimePoint mStartTime;
 	int64_t mElapseWhenPause{ 0 };
 	bool mbStart{ false };
 	bool mbPause{ false };

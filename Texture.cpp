@@ -91,52 +91,58 @@ bool Texture::createCubicMap(int width, int height, GLint internalFormat, GLenum
 		glGenerateMipmap(mTarget);
 		mTexParams.mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
 	}
-
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
-	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mTexParams.mWrapParamR);
-
-	
-	checkglerror();
+	setParamInner();
 	return true;
 }
 
-void Texture::setParam(int minFilter, int magFilter, int wrapS, int wrapT,float* borderColor,int wrapR ) {
+void Texture::setParam(int minFilter, int magFilter, 
+	int wrapS, int wrapT,int wrapR,float* borderColor,
+	int compareMode,int compareFunc) {
 	mTexParams.mMinFilter = minFilter;
 	mTexParams.mMagFilter = magFilter;
 	mTexParams.mWrapParamS = wrapS;
 	mTexParams.mWrapParamT = wrapT;
 	mTexParams.mWrapParamR = wrapR;
-	if (mTextureId > 0) {
-		glBindTexture(mTarget, mTextureId);
-		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
-		if (mTarget == GL_TEXTURE_CUBE_MAP) {
-			glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mTexParams.mWrapParamR);
-		}
-		if (borderColor != nullptr) {
-			glTexParameterfv(mTarget, GL_TEXTURE_BORDER_COLOR, borderColor);
-		}
-		glBindTexture(mTarget, 0);
+	mTexParams.mCompareMode = compareMode;
+	mTexParams.mCompareFunc = compareFunc;
+	if (borderColor != nullptr) {
+		mTexParams.mBoderColor[0] = borderColor[0];
+		mTexParams.mBoderColor[1] = borderColor[1];
+		mTexParams.mBoderColor[2] = borderColor[2];
+		mTexParams.mBoderColor[3] = borderColor[3];
 	}
+	setParamInner();
 }
 
 void Texture::setParam(const TexParams& param) {
 	mTexParams = param;
+	setParamInner();
+}
+
+void Texture::setParamInner() {
 	if (mTextureId > 0) {
 		glBindTexture(mTarget, mTextureId);
 		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
 		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
 		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
 		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
+		checkglerror();
 		if (mTarget == GL_TEXTURE_CUBE_MAP) {
 			glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mTexParams.mWrapParamR);
 		}
-		glBindTexture(mTarget, 0);
+		checkglerror();
+		if (mTexParams.mWrapParamS == GL_CLAMP_TO_BORDER ||
+			mTexParams.mWrapParamT == GL_CLAMP_TO_BORDER ||
+			mTexParams.mWrapParamR == GL_CLAMP_TO_BORDER) {
+			glTexParameterfv(mTarget, GL_TEXTURE_BORDER_COLOR, mTexParams.mBoderColor);
+		}
+		checkglerror();
+		if (mTexParams.mCompareMode != GL_NONE) {
+			glTexParameteri(mTarget, GL_TEXTURE_COMPARE_MODE, mTexParams.mCompareMode);
+			glTexParameteri(mTarget, GL_TEXTURE_COMPARE_FUNC, mTexParams.mCompareFunc);
+		}
+		checkglerror();
+		//glBindTexture(mTarget, 0);
 	}
 }
 
@@ -157,12 +163,9 @@ bool Texture::create2DMap(int width,int height,const unsigned char* pdata, GLint
 		mTexParams.mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
 	}
 	
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
-	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
+	setParamInner();
 	// Loads image data into OpenGL.
-
+	
 	glPixelStorei(GL_UNPACK_ALIGNMENT, aligment);
 	
 	glTexImage2D(mTarget, 0, mInternalFormat, mWidth, mHeight, 0,
@@ -224,10 +227,7 @@ bool Texture::loadHdrFile(const std::string& path) {
 		glBindTexture(mTarget, mTextureId);
 		glTexImage2D(GL_TEXTURE_2D, 0, mInternalFormat, mWidth, mHeight, 0, mFormat, mType, data);
 
-		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
+		setParamInner();
 
 		stbi_image_free(data);
 		return true;
@@ -265,11 +265,7 @@ bool Texture::loadFromFile(const std::string& path) {
 		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, mType, data);
 		glGenerateMipmap(mTarget);
 		mTexParams.mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
-		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
-		checkglerror();
+		setParamInner();
 		stbi_image_free(data);
 		return true;
 	}
@@ -329,11 +325,7 @@ bool Texture::loadCubemap(const std::string& path) {
 
 	// Set-up texture properties.
 	mTexParams.mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
-	glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
-	glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
-	glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mTexParams.mWrapParamR);
+	setParamInner();
 
 	if (glGetError() != GL_NO_ERROR)
 	{

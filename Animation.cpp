@@ -38,7 +38,7 @@ void Animation::setControlPoints(const std::vector<glm::vec3>& cPoints) {
 }
 
 float Animation::getCurX() {
-	auto curTime = mTimer.elapse();
+	auto curTime = mTimer.elapseFromStart();
 	if (mLoopMode == LoopMode::None) {
 		if (curTime >= mAnimationTime) {
 			return mSplineX(mAnimationTime);
@@ -64,7 +64,7 @@ float Animation::getCurX() {
 }
 
 glm::vec2 Animation::getCurXY() {
-	auto curTime = mTimer.elapse();
+	auto curTime = mTimer.elapseFromStart();
 	glm::vec2 ret(0.0f,0.0f);
 	if (mLoopMode == LoopMode::None) {
 		if (curTime >= mAnimationTime) {

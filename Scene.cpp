@@ -43,6 +43,8 @@ shared_ptr<Node> Scene::createSkybox() {
 	//天空盒
 	mSkyboxInfo.mpMesh = make_shared<Mesh>(MeshType::Cuboid);
 	mSkyboxInfo.mpMesh->loadMesh();
+	mSkyboxInfo.mpMesh->setCastShadow(false);
+	mSkyboxInfo.mpMesh->setReceiveShadow(false);
 	auto& pSkyboxMaterial = Resource::getInstance().getMaterial("skyboxHdr1");
 	auto& pHdrTex = pSkyboxMaterial->getTextureOfSampler("skybox");
 	if (pHdrTex) {

@@ -503,21 +503,6 @@ bool Mesh::updateNormal(float* normal, int byteOffset, int size) {
 	return true;
 }
 
-//bool Mesh::updateBiNormal(float* biNormal, int byteOffset, int size) {
-//	if (size + byteOffset > mBiNormalByteSize)
-//	{
-//		if (byteOffset > 0) {
-//			LOGE("ERROR to update mesh normal data, the size + byteOffset is greater then vbo size");
-//			return false;
-//		}
-//		setBiTangentData(biNormal, size);
-//	}
-//	glBindBuffer(GL_ARRAY_BUFFER, mBiNormalVbo);
-//	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, biNormal);
-//	glBindBuffer(GL_ARRAY_BUFFER, 0);
-//	return true;
-//}
-
 bool Mesh::updateTangent(float* tangent, int byteOffset, int size) {
 	if (size + byteOffset > mTangentByteSize)
 	{

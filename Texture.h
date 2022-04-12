@@ -29,6 +29,10 @@ public:
 	int mWrapParamS{ GL_CLAMP_TO_EDGE };
 	int mWrapParamT{ GL_CLAMP_TO_EDGE };
 	int mWrapParamR{ GL_CLAMP_TO_EDGE };
+	int mCompareMode{ GL_NONE };
+	int mCompareFunc{ GL_NEVER };
+	float mBoderColor[4]{ 0.0f,0.0f,0.0f,0.0f };
+
 };
 
 class Texture : public std::enable_shared_from_this<Texture>
@@ -88,8 +92,10 @@ public:
 		int magFilter,
 		int wrapS = GL_CLAMP_TO_EDGE,
 		int wrapT = GL_CLAMP_TO_EDGE,
-		float* boderColor=nullptr,
-		int wrapR = GL_CLAMP_TO_EDGE
+		int wrapR = GL_CLAMP_TO_EDGE,
+		float* boderColor = nullptr,
+		int compareMode = GL_NONE,
+		int compareFunc = GL_NEVER
 		);
 	void setParam(const TexParams& param);
 
@@ -148,6 +154,7 @@ public:
 
 	static std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
 protected:
+	void setParamInner();
 	GLuint mTextureId{ 0 };
 	int mWidth{ 0 };
 	int mHeight{ 0 };

@@ -162,6 +162,7 @@ public:
 	std::unique_ptr<AABB>& getAabb() {
 		return mpAabb;
 	}
+
 	void setMaterialName(std::string_view name) {
 		mMaterialName = name;
 	}
@@ -243,7 +244,9 @@ protected:
 	int mBiNormalByteSize{ 0 };
 	int mColorByteSize{ 0 };
 	int mIndexByteSize{ 0 };
-	std::string mMaterialName;
+	std::string mMaterialName;//解析第三方的mesh格式的时候会设置这个名字，一个mesh文件里面可能会有多个mesh
+							//每个mesh的material是不一样的，默认把mesh的albedoMap文件的名字作为material名字，
+							//解析完了mesh文件之后，再遍历一遍mesh，根据名字找到对应的material。
 	MeshType mMeshType{ MeshType::None };
 	DrawType mDrawType{ DrawType::Triangles };
 	int mCountOfVertex{ 0 };//vertex的个数，这里默认pos，texcoord，normal，color等属性的顶点个数都是一样的;

@@ -10,7 +10,7 @@ vs{
 	uniform mat4 modelMat;
     void main()
     {
-       gl_Position = projMat * viewMat * modelMat * vec4(inPos,1.0f);
+       gl_Position = shadowMat * viewMat * modelMat * vec4(inPos,1.0f);
     }
 }
 fs{

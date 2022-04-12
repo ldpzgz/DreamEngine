@@ -120,6 +120,7 @@ public:
 	void setUniform2f(const char* uniformName, float x, float y);
 	void setUniform3f(const char* uniformName, float x, float y, float z);
 	void setUniform4f(const char* uniformName, float x, float y, float z, float w);
+	void setUniform1fv(const char* uniformName, int count,float* pdata);
 	void setProjMatrix(const glm::mat4&);
 	void setModelMatrix(const glm::mat4&);
 	void setViewMatrix(const glm::mat4&);

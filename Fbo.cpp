@@ -564,11 +564,13 @@ bool Fbo::blitFbo(const Fbo& src, const Rect<int>& srcRect,
 		srcRect.x+srcRect.width, srcRect.y+srcRect.height,
 		dstRect.x, dstRect.y,
 		dstRect.x+dstRect.width, dstRect.y+dstRect.height,
-		GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		GL_COLOR_BUFFER_BIT, GL_LINEAR);
 	checkglerror();
 	return true;
 }
-
+//GL_LINEAR is only a valid interpolation method for the color buffer
+//If filter is not GL_NEAREST and mask includes GL_DEPTH_BUFFER_BIT or GL_STENCIL_BUFFER_BIT, 
+//no data is transferred and a GL_INVALID_OPERATION error is generated
 bool Fbo::blitFbo(const Fbo& src, const Fbo& dst) {
 	// set the default framebuffer for writing
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER,
@@ -582,7 +584,7 @@ bool Fbo::blitFbo(const Fbo& src, const Fbo& dst) {
 		src.mWidth, src.mHeight,
 		0, 0,
 		dst.mWidth, dst.mHeight,
-		GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		GL_COLOR_BUFFER_BIT, GL_LINEAR);
 	checkglerror();
 	return true;
 }

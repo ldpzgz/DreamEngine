@@ -65,17 +65,20 @@ void Node::setMatrix(const glm::mat4& matrix) noexcept {
 
 
 void Node::translate(float x, float y, float z) noexcept {
-	mMat = glm::translate(mMat, glm::vec3(x, y, z));
+	glm::mat4 temp{ 1.0f };
+	mMat = glm::translate(temp, glm::vec3(x, y, z)) * mMat;
 	updateChildWorldMatrix();
 }
 
 void Node::rotate(float angle, const glm::vec3& vec) noexcept {
-	mMat = glm::rotate(mMat, angle, vec);
+	glm::mat4 temp{ 1.0f };
+	mMat = glm::rotate(temp, angle, vec) * mMat;
 	updateChildWorldMatrix();
 }
 
 void Node::scale(const glm::vec3& scaleVec) noexcept {
-	mMat = glm::scale(mMat, scaleVec);
+	glm::mat4 temp{ 1.0f };
+	mMat = glm::scale(temp, scaleVec) * mMat;
 	updateChildWorldMatrix();
 }
 

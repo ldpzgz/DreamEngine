@@ -55,6 +55,7 @@ mesh{
 mesh{
 	nodeName=plane
 	meshType=quad
+	scale=2.0,2.0,1.0
 	matInfo{
 		materialName=ceilDiff
 		albedoMap=ceilDiff.tga

@@ -268,6 +268,13 @@ void Shader::setUniform4f(const char* uniformName,float x,float y,float z,float 
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform4f(loc,x,y,z,w);
 }
+void Shader::setUniform1fv(const char* uniformName, int count, float* pdata) {
+	glUseProgram(mProgram);
+	int loc = glGetUniformLocation(mProgram, uniformName);
+	glUniform1fv(loc, count,pdata);
+	glUseProgram(0);
+	checkglerror();
+}
 void Shader::setPreMvpMatrix(const glm::mat4& pMat) {
 	if (mPreMvpMatrixLoc >= 0) {
 		glUniformMatrix4fv(mPreMvpMatrixLoc, 1, GL_FALSE, glm::value_ptr(pMat));

@@ -6,6 +6,7 @@
 #include <functional>
 #include <unordered_map>
 #include <any>
+#include <string_view>
 #include "Rect.h"
 
 using namespace std;
@@ -101,6 +102,8 @@ public:
 	void setAo(float ao) {
 		mAo = ao;
 	}
+
+	void setUniform1fv(const std::string& name, int count, float* pdata);
 
 	void setName(const std::string name) {
 		mName = name;
