@@ -127,10 +127,6 @@ public:
 	//更新法向量 vbo，如果要更新的数据超过原来vbo的大小，先删除vbo，再创建一个新的vbo
 	bool updateNormal(float* normal, int byteOffset, int size);
 
-	//bool updateBiNormal(float* normal, int byteOffset, int size);
-
-	bool updateTangent(float* normal, int byteOffset, int size);
-
 	void draw(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1) override;
 	void draw(const glm::mat4* modelMat, 
 		const glm::mat4* texMat=nullptr, 
@@ -187,7 +183,7 @@ public:
 	bool setPosData(const GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setTexcoordData(const GLfloat* tex, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setNormalData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	bool setTangentData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	//bool setTangentData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	//bool setBiTangentData(GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setColorData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setIndexData(const GLuint* index, int indexByteSize, unsigned int drawType = GL_STATIC_DRAW);
@@ -225,8 +221,6 @@ protected:
 	GLuint mPosVbo{ 0 };
 	GLuint mTexVbo{ 0 }; 
 	GLuint mNorVbo{ 0 };
-	GLuint mTangentVbo{ 0 };
-	GLuint mBiNormalVbo{ 0 };
 	GLuint mColorVbo{ 0 };
 	GLuint mIndexVbo{ 0 }; 
 	GLuint mVAO{ 0 };//这个是vao，顶点数组对象，opengles3.0才支持，是一个集合。把设定顶点属性的过程打包到一起，简化绘制流程。
@@ -240,8 +234,6 @@ protected:
 	int mPosByteSize{ 0 };
 	int mTexByteSize{ 0 };
 	int mNorByteSize{ 0 };
-	int mTangentByteSize{ 0 };
-	int mBiNormalByteSize{ 0 };
 	int mColorByteSize{ 0 };
 	int mIndexByteSize{ 0 };
 	std::string mMaterialName;//解析第三方的mesh格式的时候会设置这个名字，一个mesh文件里面可能会有多个mesh

@@ -31,8 +31,6 @@ void Mesh::reset() {
 	mPosVbo = 0;
 	mTexVbo = 0;
 	mNorVbo = 0;
-	mTangentVbo = 0;
-	mBiNormalVbo = 0;
 	mColorVbo = 0;
 	mIndexVbo = 0;
 	mposLocation = 0;
@@ -45,8 +43,6 @@ void Mesh::reset() {
 	mColorByteSize = 0;
 	mTexByteSize = 0;
 	mIndexByteSize = 0;
-	mTangentByteSize = 0;
-	mBiNormalByteSize = 0;
 	mMeshType = MeshType::None;
 	mCountOfVertex = 0;
 	mDrawType = DrawType::Triangles;
@@ -438,9 +434,6 @@ bool Mesh::createBufferObject(const GLfloat* pos,int posByteSize, int countOfVer
 	if (color != nullptr && colorByteSize > 0) {
 		setColorData(color, colorByteSize, drawType);
 	}
-	if (tangent != nullptr && tangentByteSize > 0) {
-		setTangentData(tangent, tangentByteSize, drawType);
-	}
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	if(index!=0)
@@ -503,20 +496,6 @@ bool Mesh::updateNormal(float* normal, int byteOffset, int size) {
 	return true;
 }
 
-bool Mesh::updateTangent(float* tangent, int byteOffset, int size) {
-	if (size + byteOffset > mTangentByteSize)
-	{
-		if (byteOffset > 0) {
-			LOGE("ERROR to update mesh normal data, the size + byteOffset is greater then vbo size");
-			return false;
-		}
-		setNormalData(tangent, size);
-	}
-	glBindBuffer(GL_ARRAY_BUFFER, mTangentVbo);
-	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, tangent);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	return true;
-}
 //更新纹理坐标vbo
 bool Mesh::updataTexcoord(float* tex, int byteOffset, int size)
 {
@@ -722,12 +701,6 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc, int tang
 
 		}
 
-		if (tangentloc > 0) {
-			glBindBuffer(GL_ARRAY_BUFFER, mTangentVbo);
-			glEnableVertexAttribArray(tangentloc);
-			int componentOfTangent = mTangentByteSize / (sizeof(GLfloat) * mCountOfVertex);
-			glVertexAttribPointer(tangentloc, componentOfTangent, GL_FLOAT, GL_FALSE, 0, 0);
-		}
 		if (mDrawType == DrawType::Triangles || mDrawType == DrawType::TriangleStrip) {
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);//glDrawElements会用到这个
 		}
@@ -880,22 +853,6 @@ bool Mesh::setNormalData(const GLfloat* nor, int sizeInbyte, unsigned int drawTy
 	return true;
 }
 
-bool Mesh::setTangentData(const GLfloat* tangent, int sizeInbyte, unsigned int drawType) {
-	if (mTangentVbo > 0) {
-		glDeleteBuffers(1, &mTangentVbo);
-		if (mVAO != 0) {
-			//先删除原来的vao
-			glDeleteVertexArrays(1, &mVAO);
-			mVAO = 0;
-		}
-	}
-	glGenBuffers(1, &mTangentVbo);
-	glBindBuffer(GL_ARRAY_BUFFER, mTangentVbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, tangent, drawType);
-	mTangentByteSize = sizeInbyte;
-	return true;
-}
-
 bool Mesh::setColorData(const GLfloat* nor, int size, unsigned int drawType)
 {
 	if (mColorVbo > 0) {
@@ -938,20 +895,6 @@ void Mesh::unLoadMesh()
 		glDeleteBuffers(1, &mNorVbo);
 		mNorVbo = 0;
 		mNorByteSize = 0;
-	}
-
-	if (mTangentVbo != 0)
-	{
-		glDeleteBuffers(1, &mTangentVbo);
-		mTangentVbo = 0;
-		mTangentByteSize = 0;
-	}
-
-	if (mBiNormalVbo != 0)
-	{
-		glDeleteBuffers(1, &mBiNormalVbo);
-		mBiNormalVbo = 0;
-		mBiNormalByteSize = 0;
 	}
 
 	if (mTexVbo != 0)
