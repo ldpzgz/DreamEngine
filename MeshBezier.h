@@ -15,7 +15,7 @@ public:
 
 	static void getBezierPoints(const std::vector<glm::vec3>& p, int num, std::vector<glm::vec3>& result);
 protected:
-	void draw(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1,int tangentloc=-1) override;
+	void draw(int posloc = -1) override;
 };
 
 #endif

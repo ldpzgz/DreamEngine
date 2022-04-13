@@ -385,11 +385,6 @@ bool Mesh::loadMesh(const std::string meshFilePath) {
 				assert(infile.gcount() == mesh.tangentsLength);
 			}
 
-			/*if (mesh.bitangentsLength > 0) {
-				bitangent.reserve(mesh.vertexCount * 3);
-				infile.read((char*)bitangent.data(), mesh.bitangentsLength);
-				assert(infile.gcount() == mesh.bitangentsLength);
-			}*/
 			//读取索引数据
 			if (mesh.indexLength > 0) {
 				index.reserve(mesh.indexLength/sizeof(unsigned int));
@@ -492,6 +487,36 @@ bool Mesh::updateNormal(float* normal, int byteOffset, int size) {
 	}
 	glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
 	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, normal);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	return true;
+}
+
+bool Mesh::updateBoneId(GLint* pId, int byteOffset, int size) {
+	if (size + byteOffset > mBoneIdByteSize)
+	{
+		if (byteOffset > 0) {
+			LOGE("ERROR to update mesh BoneId data, the size + byteOffset is greater then vbo size");
+			return false;
+		}
+		setBoneIdData(pId, size);
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, mBoneIdVbo);
+	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, pId);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	return true;
+}
+
+bool Mesh::updateBoneWeight(float* pWeight, int byteOffset, int size) {
+	if (size + byteOffset > mBoneWeightByteSize)
+	{
+		if (byteOffset > 0) {
+			LOGE("ERROR to update mesh normal data, the size + byteOffset is greater then vbo size");
+			return false;
+		}
+		setBoneWeightData(pWeight, size);
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, mBoneWeightVbo);
+	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, pWeight);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	return true;
 }
@@ -668,7 +693,7 @@ void Mesh::drawLineStrip(int posloc)
 //	glBindVertexArray(0);
 //}
 
-void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc, int tangentloc)
+void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneIdLoc,int boneWeightLoc)
 {
 	if (createVaoIfNeed(posloc,texloc,norloc,colorloc)) {
 		glBindVertexArray(mVAO);
@@ -746,13 +771,13 @@ void Mesh::getPointSizeRange() {
 	LOGD("gl global Param: GL_ALIASED_POINT_SIZE_RANGE %f,%f", pointSizeRange[0], pointSizeRange[1]);
 }
 
-void Mesh::draw(int posloc, int texloc, int norloc, int colorloc, int tangentloc)
+void Mesh::draw(int posloc, int texloc, int norloc, int colorloc,int boneIdLoc,int boneWeightLoc)
 {
 	switch (mDrawType) {
 	case DrawType::Triangles:
 	case DrawType::TriangleFan:
 	case DrawType::TriangleStrip:
-		drawTriangles(posloc, texloc, norloc, colorloc, tangentloc);
+		drawTriangles(posloc, texloc, norloc, colorloc,boneIdLoc, boneWeightLoc);
 		break;
 	case DrawType::LineStrip:
 		drawLineStrip(posloc);
@@ -788,9 +813,10 @@ void Mesh::draw(const glm::mat4* modelMat, const glm::mat4* texMat, const glm::m
 			int texloc = -1;
 			int norloc = -1;
 			int colorloc = -1;
-			int tangentloc = -1;
-			pShader->getLocation(posloc, texloc, colorloc, norloc,tangentloc);
-			draw(posloc, texloc, norloc, colorloc,tangentloc);
+			int boneIdLoc = -1;
+			int boneWeightLoc = -1;
+			pShader->getLocation(posloc, texloc, colorloc, norloc, boneIdLoc, boneWeightLoc);
+			draw(posloc, texloc, norloc, colorloc, boneIdLoc,boneWeightLoc);
 			mpMaterial->restoreRenderOperation();
 		}
 		else {
@@ -850,6 +876,38 @@ bool Mesh::setNormalData(const GLfloat* nor, int sizeInbyte, unsigned int drawTy
 	glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, nor, drawType);
 	mNorByteSize = sizeInbyte;
+	return true;
+}
+
+bool Mesh::setBoneIdData(const int* boneIds, int sizeInbyte, unsigned int drawType) {
+	if(mBoneIdVbo>0){
+		glDeleteBuffers(1, &mBoneIdVbo);
+		if (mVAO != 0) {
+			//先删除原来的vao
+			glDeleteVertexArrays(1, &mVAO);
+			mVAO = 0;
+		}
+	}
+	glGenBuffers(1, &mBoneIdVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, mBoneIdVbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, boneIds, drawType);
+	mBoneIdByteSize = sizeInbyte;
+	return true;
+}
+
+bool Mesh::setBoneWeightData(GLfloat* weight, int sizeInbyte, unsigned int drawType) {
+	if (mBoneWeightVbo > 0) {
+		glDeleteBuffers(1, &mBoneWeightVbo);
+		if (mVAO != 0) {
+			//先删除原来的vao
+			glDeleteVertexArrays(1, &mVAO);
+			mVAO = 0;
+		}
+	}
+	glGenBuffers(1, &mBoneWeightVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, mBoneWeightVbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, weight, drawType);
+	mBoneWeightByteSize = sizeInbyte;
 	return true;
 }
 

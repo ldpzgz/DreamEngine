@@ -10,7 +10,7 @@ MeshCRSpline::~MeshCRSpline() {
 
 }
 
-void MeshCRSpline::draw(int posloc, int texloc, int norloc, int colorloc,int tangentloc) {
+void MeshCRSpline::draw(int posloc) {
 	drawLineStrip(posloc);
 }
 

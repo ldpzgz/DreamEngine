@@ -186,11 +186,12 @@ GLuint Shader::loadShader(GLenum type, const char *shaderSrc)
 
 void Shader::disable() {
 	glUseProgram(0);
+	mbEnabled = false;
 }
 void Shader::enable()
 {
 	glUseProgram ( mProgram );
-
+	mbEnabled = true;
 	if (mUniformColorLoc >= 0) {
 		glUniform4f(mUniformColorLoc, mUniformColor[0], mUniformColor[1], mUniformColor[2], mUniformColor[3]);
 	}
@@ -242,6 +243,9 @@ int Shader::getUniformLoc(const std::string& uniformName)
 
 void Shader::setUniform1i(const char* uniformName,int value)
 {
+	if (!mbEnabled) {
+		LOGE("before setUniform1i, you should first enable the shader");
+	}
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform1i(loc,value);
 
@@ -249,22 +253,34 @@ void Shader::setUniform1i(const char* uniformName,int value)
 }
 void Shader::setUniform1f(const char* uniformName,float x)
 {
+	if (!mbEnabled) {
+		LOGE("before setUniform1f, you should first enable the shader");
+	}
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform1f(loc,x);
 	checkglerror();
 }
 void Shader::setUniform2f(const char* uniformName,float x,float y)
 {
+	if (!mbEnabled) {
+		LOGE("before setUniform2f, you should first enable the shader");
+	}
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform2f(loc,x,y);
 }
 void Shader::setUniform3f(const char* uniformName,float x,float y,float z)
 {
+	if (!mbEnabled) {
+		LOGE("before setUniform3f, you should first enable the shader");
+	}
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform3f(loc,x,y,z);
 }
 void Shader::setUniform4f(const char* uniformName,float x,float y,float z,float w)
 {
+	if (!mbEnabled) {
+		LOGE("before setUniform4f, you should first enable the shader");
+	}
 	int loc = glGetUniformLocation(mProgram, uniformName);
 	glUniform4f(loc,x,y,z,w);
 }
@@ -276,6 +292,9 @@ void Shader::setUniform1fv(const char* uniformName, int count, float* pdata) {
 	checkglerror();
 }
 void Shader::setPreMvpMatrix(const glm::mat4& pMat) {
+	if (!mbEnabled) {
+		LOGE("before setPreMvpMatrix, you should first enable the shader");
+	}
 	if (mPreMvpMatrixLoc >= 0) {
 		glUniformMatrix4fv(mPreMvpMatrixLoc, 1, GL_FALSE, glm::value_ptr(pMat));
 	}
@@ -284,6 +303,9 @@ void Shader::setPreMvpMatrix(const glm::mat4& pMat) {
 	}
 }
 void Shader::setMvpMatrix(const glm::mat4& pMatrix) {
+	if (!mbEnabled) {
+		LOGE("before setMvpMatrix, you should first enable the shader");
+	}
 	if (mMvpMatrixLoc >= 0 ) {
 			glUniformMatrix4fv(mMvpMatrixLoc, 1, GL_FALSE, glm::value_ptr(pMatrix));
 	}
@@ -293,6 +315,9 @@ void Shader::setMvpMatrix(const glm::mat4& pMatrix) {
 }
 
 void Shader::setTextureMatrix(const glm::mat4& pMatrix) {
+	if (!mbEnabled) {
+		LOGE("before setTextureMatrix, you should first enable the shader");
+	}
 	if (mTextureMatrixLoc >= 0) {
 		glUniformMatrix4fv(mTextureMatrixLoc, 1, GL_FALSE, glm::value_ptr(pMatrix));
 	}
@@ -321,43 +346,67 @@ void Shader::setUniformColor(Color color) {
 }
 void Shader::setLightCount(int count) {
 	if (mLightCountLoc >= 0) {
+		if (!mbEnabled) {
+			LOGE("before setLightCount, you should first enable the shader");
+		}
 		glUniform1i(mLightCountLoc,count);
 	}
 }
 void Shader::setLightPos(const std::vector<glm::vec3>& lightPos) {
 	if (mLightPosLoc >= 0) {
+		if (!mbEnabled) {
+			LOGE("before setLightPos, you should first enable the shader");
+		}
 		glUniform3fv(mLightPosLoc, lightPos.size(), (const float*)lightPos.data());
 	}
 }
 void Shader::setViewPos(const glm::vec3& viewPos) {
 	if (mViewPosLoc >= 0) {
+		if (!mbEnabled) {
+			LOGE("before setViewPos, you should first enable the shader");
+		}
 		glUniform3f(mViewPosLoc, viewPos.x, viewPos.y, viewPos.z);
 	}
 }
 void Shader::setLightColor(const std::vector<glm::vec3>& lightColor) {
 	if (mLightColorLoc >= 0) {
+		if (!mbEnabled) {
+			LOGE("before setLightColor, you should first enable the shader");
+		}
 		glUniform3fv(mLightColorLoc, lightColor.size(), (const float*)lightColor.data());
 	}
 }
 void Shader::setMvMatrix(const glm::mat4& m) {
 	if (mMvMatrixLoc >= 0) {
+		if (!mbEnabled) {
+			LOGE("before setMvMatrix, you should first enable the shader");
+		}
 		glUniformMatrix4fv(mMvMatrixLoc, 1, GL_FALSE, glm::value_ptr(m));
 	}
 }
 void Shader::setViewMatrix(const glm::mat4& m) {
 	if (mViewMatrixLoc >= 0) {
+		if (!mbEnabled) {
+			LOGE("before setViewMatrix, you should first enable the shader");
+		}
 		glUniformMatrix4fv(mViewMatrixLoc, 1, GL_FALSE, glm::value_ptr(m));
 	}
 }
 
 void Shader::setProjMatrix(const glm::mat4& m) {
 	if (mProjMatrixLoc >= 0) {
+		if (!mbEnabled) {
+			LOGE("before setProjMatrix, you should first enable the shader");
+		}
 		glUniformMatrix4fv(mProjMatrixLoc, 1, GL_FALSE, glm::value_ptr(m));
 	}
 }
 
 void Shader::setModelMatrix(const glm::mat4& m) {
 	if (mModelMatrixLoc >= 0) {
+		if (!mbEnabled) {
+			LOGE("before setModelMatrix, you should first enable the shader");
+		}
 		glUniformMatrix4fv(mModelMatrixLoc, 1, GL_FALSE, glm::value_ptr(m));
 	}
 }

@@ -213,64 +213,61 @@ void Camera::renderScene() {
 	}
 }
 
-void Camera::renderNode(const shared_ptr<Node>& pNode, 
+void Camera::renderNode(const shared_ptr<Node>& pRootNode, 
 	int posLoc, int texcoordLoc, int normalLoc, 
 	std::shared_ptr<Shader>& pShader) const noexcept {
-	if (pNode) {
-		const auto& pRenderables = pNode->getRenderables();
-		glm::mat4 modelMat = pNode->getWorldMatrix();
-		if (pShader &&!pRenderables.empty()) {
-			pShader->setModelMatrix(modelMat);
-		}
-		for (const auto& pRen : pRenderables) {
-			if (pRen.second) {
-				pRen.second->draw(posLoc,texcoordLoc,normalLoc);
+	if (pRootNode) {
+		pRootNode->visitNode([posLoc, texcoordLoc, normalLoc,&pShader](Node* pNode) {
+			const auto& pRenderables = pNode->getRenderables();
+			if (pRenderables.empty()) {
+				return;
 			}
-		}
-
-		const auto& pChildNodes = pNode->getChildren();
-		for (const auto& pNode : pChildNodes) {
-			renderNode(pNode.second, posLoc, texcoordLoc, normalLoc,pShader);
-		}
+			glm::mat4 modelMat = pNode->getWorldMatrix();
+			if (pShader && !pRenderables.empty()) {
+				pShader->setModelMatrix(modelMat);
+			}
+			for (const auto& pRen : pRenderables) {
+				if (pRen.second) {
+					pRen.second->draw(posLoc, texcoordLoc, normalLoc);
+				}
+			}
+		});
 	}
 }
 
-void Camera::renderNode(const shared_ptr<Node>& node, 
+void Camera::renderNode(const shared_ptr<Node>& pRootNode, 
 	const std::shared_ptr<Scene>& pScene,
 	std::vector<glm::vec3>* lightPos, 
 	std::vector<glm::vec3>* lightColor) const noexcept
 {
-	if (node) {
-		const auto& pRenderables = node->getRenderables();
-		glm::mat4 modelMat = node->getWorldMatrix();
-
-		for (const auto& pRen : pRenderables) {
-			
-			if (pRen.second) {
-				if (Config::openShadowMap) {
-					std::shared_ptr<Mesh> pMesh = std::dynamic_pointer_cast<Mesh>(pRen.second);
-					if (pMesh && pMesh->getReceiveShadow()) {
-						auto& pMaterial = pMesh->getMaterial();
-						if (pMaterial) {
-							pMaterial->setTextureForSampler("shadowMap", mpShadowMap);
+	if (pRootNode) {
+		pRootNode->visitNode([this, lightPos, lightColor, &pScene](Node* node) {
+			const auto& pRenderables = node->getRenderables();
+			if (pRenderables.empty()) {
+				return;
+			}
+			glm::mat4 modelMat = node->getWorldMatrix();
+			for (const auto& pRen : pRenderables) {
+				if (pRen.second) {
+					if (Config::openShadowMap) {
+						std::shared_ptr<Mesh> pMesh = std::dynamic_pointer_cast<Mesh>(pRen.second);
+						if (pMesh && pMesh->getReceiveShadow()) {
+							auto& pMaterial = pMesh->getMaterial();
+							if (pMaterial) {
+								pMaterial->setTextureForSampler("shadowMap", mpShadowMap);
+							}
 						}
 					}
+					if (Config::openTaa) {
+						glm::mat4 projView = mProjMatrix * mViewMat;
+						pRen.second->draw(&modelMat, nullptr, &projView);
+					}
+					else {
+						pRen.second->draw(&modelMat, nullptr, nullptr);
+					}
 				}
-				if (Config::openTaa) {
-					glm::mat4 projView = mProjMatrix * mViewMat;
-					pRen.second->draw(&modelMat, nullptr, &projView);
-				}
-				else {
-					pRen.second->draw(&modelMat, nullptr, nullptr);
-				}
-				
 			}
-		}
-		
-		const auto& pChildNodes = node->getChildren();
-		for (const auto& pNode : pChildNodes) {
-			renderNode(pNode.second,pScene, lightPos, lightColor);
-		}
+		});
 	}
 }
 

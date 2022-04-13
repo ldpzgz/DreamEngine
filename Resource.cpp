@@ -250,7 +250,6 @@ private:
 	static bool colorLocHandler(Material* pMat, const std::string&);
 	static bool normalLocHandler(Material* pMat, const std::string&);
 	static bool texcoordLocHandler(Material* pMat, const std::string&);
-	static bool tangentLocHandler(Material* pMat, const std::string&);
 	static bool modelMatrixHandler(Material* pMat, const std::string&);
 	static bool texMatrixHandler(Material* pMat, const std::string&);
 	static bool uniformColorHandler(Material* pMat, const std::string&);
@@ -308,7 +307,6 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"texcoordLoc",ResourceImpl::texcoordLocHandler},
 	{"colorLoc",ResourceImpl::colorLocHandler},
 	{"normalLoc",ResourceImpl::normalLocHandler},
-	{"tangentLoc",ResourceImpl::tangentLocHandler},
 	{"modelMatrix",ResourceImpl::modelMatrixHandler},
 	{"textureMatrix",ResourceImpl::texMatrixHandler},
 	{"uniformColor",ResourceImpl::uniformColorHandler},
@@ -345,16 +343,17 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 std::unordered_map<std::string, std::function<bool(NodeSP& pNode, MaterialInfo& info, const std::string&)>> ResourceImpl::gMeshKeyValueHandlers{
 	{"nodeName",ResourceImpl::nodeNameHander},
 	{"path",ResourceImpl::meshPathHander},
+	{"meshType",ResourceImpl::meshTypeHander},
+	{"scale",ResourceImpl::meshScaleHander},
 	{"matInfo",ResourceImpl::meshMatInfoHander},
+
 	{"materialName",ResourceImpl::meshMaterialNameHander},
 	{"armMap",ResourceImpl::meshArmMapHander},
 	{"albedoMap",ResourceImpl::meshAlbedoMapHander},
 	{"normalMap",ResourceImpl::meshNormalMapHander},
 	{"metallicMap",ResourceImpl::meshMetallicMapHander},
 	{"roughnessMap",ResourceImpl::meshRoughnessMapHander},
-	{"aoMap",ResourceImpl::meshAoMapHander},
-	{"meshType",ResourceImpl::meshTypeHander},
-	{"scale",ResourceImpl::meshScaleHander}
+	{"aoMap",ResourceImpl::meshAoMapHander}
 };
 
 bool ResourceImpl::nodeNameHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
@@ -537,17 +536,6 @@ bool ResourceImpl::texcoordLocHandler(Material* pMat, const std::string& value) 
 	}
 	catch (exception e) {
 		LOGE("error to stoi texcoordLoc,in material %s", pMat->getName().c_str());
-	}
-	return true;
-}
-
-bool ResourceImpl::tangentLocHandler(Material* pMat, const std::string& value) {
-	try {
-		int norLoc = std::stoi(value);
-		pMat->getShader()->setTangentLoc(norLoc);
-	}
-	catch (exception e) {
-		LOGE("error to stoi tangentLoc,in material %s", pMat->getName().c_str());
 	}
 	return true;
 }
@@ -1099,6 +1087,7 @@ bool ResourceImpl::parseMeshCfgFile(const string& filePath) {
 	}
 	return true;
 }
+
 /*
 * 解析.meshcfg文件里面的一块mesh{};
 * 一个mesh{}块，会生成一个node，node下面会挂诺干个mesh。
@@ -1106,7 +1095,7 @@ bool ResourceImpl::parseMeshCfgFile(const string& filePath) {
 */
 bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 	if (!cfgValue.empty()) {
-		vector<pair<string,string>> meshValue;
+		vector<pair<string, string>> meshValue;
 		//这个node会放在全局变量里面，这个node attach了mesh
 		//解析出来的material也会放在全局变量里面，所在这三个都不会自动被释放。
 		NodeSP pNode = std::make_shared<Node>();
@@ -1120,31 +1109,30 @@ bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 				}
 			}
 		}
-		
-		//为mesh设置材质
 		auto& res = Resource::getInstance();
-		auto& pRend = pNode->getRenderables();
-		auto meshSize = pRend.size();
-		
-		for (const auto& it : pRend) {
-			MeshSP pMesh = std::dynamic_pointer_cast<Mesh>(it.second);
-			if (pMesh) {
-				if (meshSize == 1) {
-					pMesh->setMaterial(res.getMaterial(info.name));
-					break;
+		pNode->visitNode([&res](Node* pNode) {
+			if (pNode!=nullptr) {
+				auto& pRend = pNode->getRenderables();
+				if (pRend.empty()) {
+					return;
 				}
-				std::string_view matName = pMesh->getMaterialName();
-				if (matName.empty()) {
-					//给一个默认的材质
-					MaterialInfo info;
-					auto pMaterial = res.getMaterialDefferedGeoPass(info);
-					pMesh->setMaterial(pMaterial);
-				}
-				else {
-					pMesh->setMaterial(res.getMaterial(std::string(matName)));
+				for (const auto& it : pRend) {
+					MeshSP pMesh = std::dynamic_pointer_cast<Mesh>(it.second);
+					if (pMesh) {
+						std::string_view matName = pMesh->getMaterialName();
+						if (matName.empty()) {
+							//给一个默认的材质
+							MaterialInfo info;
+							auto pMaterial = res.getMaterialDefferedGeoPass(info);
+							pMesh->setMaterial(pMaterial);
+						}
+						else {
+							pMesh->setMaterial(res.getMaterial(std::string(matName)));
+						}
+					}
 				}
 			}
-		}
+		});
 	}
 	return true;
 }

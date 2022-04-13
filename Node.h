@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <atomic>
+#include <functional>
 
 #include <glm/vec3.hpp>           // vec3
 #include <glm/mat4x4.hpp>         // mat4
@@ -48,7 +49,7 @@ public:
 
 	bool addChild(shared_ptr<Node>& child);
 
-	bool removeChild(unsigned int childId) noexcept;
+	bool removeChild(shared_ptr<Node>& child) noexcept;
 
 	bool addRenderable(const shared_ptr<Renderable>& temp);
 
@@ -76,8 +77,11 @@ public:
 		return mRenderables;
 	}
 
-	auto& getChildren() const noexcept {
-		return mChildren;
+	auto& getFirstChild() const noexcept {
+		return mpFirstChild;
+	}
+	auto& getNextSibling() const noexcept {
+		return mpNextSibling;
 	}
 	/*
 	* 根据x,y,z构造一个moveMat
@@ -100,6 +104,8 @@ public:
 	*/
 	void scale(const glm::vec3& scaleVec) noexcept;
 
+	void visitNode(const std::function<void(Node*)>& func);
+
 	/*
 	* 根据eyepos,center,up构造一个lookMat
 	* 最终mMat矩阵与直觉相反：mMat=lookMat
@@ -116,12 +122,15 @@ protected:
 	void setParentWorldMatrix(const glm::mat4& matrix) noexcept {
 		mParentWorldMat = matrix;
 	}
-	virtual void updateChildWorldMatrix()noexcept;
+	virtual void updateMatrix( glm::mat4& mat)noexcept;
 private:
 	unsigned int mId;
 	weak_ptr<Node> mpParent;	//使用weak_ptr防止父子node循环引用导致内存泄漏
-	unordered_map<unsigned int, shared_ptr<Node>> mChildren;
 	unordered_map<unsigned int, shared_ptr<Renderable>> mRenderables;
+	shared_ptr<Node> mpFirstChild;
+	shared_ptr<Node> mpLastChild;
+	shared_ptr<Node> mpNextSibling;
+	weak_ptr<Node> mpPreSibling;
 	std::vector<shared_ptr<NodeListener>> mListeners;
 
 	static atomic_uint sCurChildId;

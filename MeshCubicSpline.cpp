@@ -11,7 +11,7 @@ MeshCubicSpline::~MeshCubicSpline() {
 
 }
 
-void MeshCubicSpline::draw(int posloc, int texloc, int norloc, int colorloc,int tangentloc) {
+void MeshCubicSpline::draw(int posloc) {
 	drawLineStrip(posloc);
 }
 

@@ -127,7 +127,10 @@ public:
 	//更新法向量 vbo，如果要更新的数据超过原来vbo的大小，先删除vbo，再创建一个新的vbo
 	bool updateNormal(float* normal, int byteOffset, int size);
 
-	void draw(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1) override;
+	bool updateBoneId(GLint* pId, int byteOffset, int size);
+	bool updateBoneWeight(float* pWeight, int byteOffset, int size);
+
+	void draw(int posloc, int texloc, int norloc = -1, int colorloc = -1, int boneIdLoc = -1, int boneWeightLoc = -1) override;
 	void draw(const glm::mat4* modelMat, 
 		const glm::mat4* texMat=nullptr, 
 		const glm::mat4* projViewMat = nullptr ) override;
@@ -183,8 +186,8 @@ public:
 	bool setPosData(const GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setTexcoordData(const GLfloat* tex, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setNormalData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	//bool setTangentData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	//bool setBiTangentData(GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	bool setBoneIdData(const int* boneIds, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	bool setBoneWeightData(GLfloat* weight, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setColorData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setIndexData(const GLuint* index, int indexByteSize, unsigned int drawType = GL_STATIC_DRAW);
 
@@ -203,7 +206,7 @@ protected:
 		int drawType = GL_STATIC_DRAW);
 
 	//当做三角形绘制GL_TRIANGLES
-	void drawTriangles(int posloc = -1, int texloc = -1, int norloc = -1,int colorloc = -1, int tangentloc = -1);
+	void drawTriangles(int posloc = -1, int texloc = -1, int norloc = -1,int colorloc = -1, int boneIdLoc = -1, int boneWeightLoc = -1);
 
 	//当做三角形绘制GL_TRIANGLE_strip
 	//void drawTriangleStrip(int posloc = -1, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1);
@@ -222,19 +225,25 @@ protected:
 	GLuint mTexVbo{ 0 }; 
 	GLuint mNorVbo{ 0 };
 	GLuint mColorVbo{ 0 };
-	GLuint mIndexVbo{ 0 }; 
+	GLuint mIndexVbo{ 0 };
+	GLuint mBoneIdVbo{ 0 };//骨骼数据
+	GLuint mBoneWeightVbo{ 0 };//骨骼数据
 	GLuint mVAO{ 0 };//这个是vao，顶点数组对象，opengles3.0才支持，是一个集合。把设定顶点属性的过程打包到一起，简化绘制流程。
 	GLfloat mLineWidth{ 1.0f };
 
 	int mposLocation{ -1 };//顶点的位置属性在shader中的location
 	int mnorLocation{ -1 };//顶点的法向量属性在shader中的location
 	int mtexLocation{ -1 };//顶点的纹理坐标属性在shader中的location
+	int mBoneIdLocation{ -1 };
+	int mBoneWeightLocation{ -1 };
 	int mColorLoc{ -1 };
 	
 	int mPosByteSize{ 0 };
 	int mTexByteSize{ 0 };
 	int mNorByteSize{ 0 };
 	int mColorByteSize{ 0 };
+	int mBoneIdByteSize{ 0 };
+	int mBoneWeightByteSize{ 0 };
 	int mIndexByteSize{ 0 };
 	std::string mMaterialName;//解析第三方的mesh格式的时候会设置这个名字，一个mesh文件里面可能会有多个mesh
 							//每个mesh的material是不一样的，默认把mesh的albedoMap文件的名字作为material名字，

@@ -63,15 +63,21 @@ public:
 	void setNormalLoc(int nor) {
 		mNormalLoc = nor;
 	}
-	void setTangentLoc(int tangent) {
-		mTangentLoc = tangent;
-	}
-	void setLocation(int pos, int tex = -1, int color = -1, int nor = -1, int tangent = -1) {
+	void setLocation(int pos, int tex = -1, int color = -1, int nor = -1) {
 		mPosLoc = pos;
 		mTexcoordLoc = tex;
 		mColorLoc = color;
 		mNormalLoc = nor;
-		mTangentLoc = tangent;
+	}
+
+	void setLocation(int pos, int tex = -1, int color = -1, int nor = -1,
+		int boneId=-1,int boneWeight= -1) {
+		mPosLoc = pos;
+		mTexcoordLoc = tex;
+		mColorLoc = color;
+		mNormalLoc = nor;
+		mBoneIdLoc = boneId;
+		mBoneWeightLoc = boneWeight;
 	}
 
 	void getLocation(int& posLoc, int& texcoordLoc, int& normalLoc) {
@@ -80,12 +86,21 @@ public:
 		normalLoc = mNormalLoc;
 	}
 
-	void getLocation(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc, int& tangentLoc) {
+	void getLocation(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc) {
 		posLoc = mPosLoc;
 		texcoordLoc = mTexcoordLoc;
 		colorLoc = mColorLoc;
 		normalLoc = mNormalLoc;
-		tangentLoc = mTangentLoc;
+	}
+
+	void getLocation(int& posLoc, int& texcoordLoc, int& colorLoc, int& normalLoc,
+		int& boneIdLoc,int &boneWeightLoc) {
+		posLoc = mPosLoc;
+		texcoordLoc = mTexcoordLoc;
+		colorLoc = mColorLoc;
+		normalLoc = mNormalLoc;
+		boneIdLoc = mBoneIdLoc;
+		boneWeightLoc = mBoneWeightLoc;
 	}
 
 	int getPosLoc() {
@@ -181,11 +196,13 @@ private:
 	GLuint mVs{ 0 };
 	GLuint mFs{ 0 };
 	GLuint mProgram{ 0 };
+	bool mbEnabled{ false };
 	int mPosLoc{ -1 };
 	int mTexcoordLoc{ -1 };
 	int mColorLoc{ -1 };
 	int mNormalLoc{ -1 };
-	int mTangentLoc{ -1 };
+	int mBoneIdLoc{ -1 };
+	int mBoneWeightLoc{ -1 };
 
 	int mProjMatrixLoc{ -1 };
 	int mModelMatrixLoc{ -1 };

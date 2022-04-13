@@ -33,7 +33,7 @@ public:
 };
 
 
-void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struct aiNode* nd,std::shared_ptr<Node>& pRootNode) {
+void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struct aiNode* nd,std::shared_ptr<Node>& pNode) {
 
 	if (nd == nullptr) {
 		return;
@@ -42,6 +42,10 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 	unsigned int t = 0;
 	aiMatrix4x4 model = nd->mTransformation;//本节点的model矩阵
 	if (!model.IsIdentity()) {
+		pNode->setMatrix(glm::mat4{ model.a1,model.b1,model.c1,model.d1,
+			model.a2,model.b2,model.c2,model.d2 ,
+			model.a3,model.b3,model.c3,model.d3 ,
+			model.a4,model.b4,model.c4,model.d4 });
 		std::cout << "node transform is not identity" << std::endl;
 	}
 
@@ -58,7 +62,7 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 		int texCount = 0;
 		std::unordered_map<unsigned int,unsigned int> indexMap;
 		auto primitivType = mesh->mPrimitiveTypes;
-		if (primitivType == aiPrimitiveType_TRIANGLE) {
+		if (primitivType && aiPrimitiveType_TRIANGLE) {
 			/*
 			* getMaterial,diffuse map的文件名作为material name
 			*/
@@ -99,7 +103,7 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 			}
 			MeshSP pMesh = make_shared<Mesh>(MeshType::DIY);
 			if (pMesh->loadMesh(mPos, mTexcoords, mNormals, mIndexes)) {
-				pRootNode->addRenderable(pMesh);
+				pNode->addRenderable(pMesh);
 				pMesh->setMaterialName(materialName);
 			}
 			else {
@@ -115,7 +119,8 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 	// recursive all children
 	for (n = 0; n < nd->mNumChildren; ++n)
 	{
-		recursive_parse(sc, nd->mChildren[n], pRootNode);
+		auto pChildNode = pNode->newAChild();
+		recursive_parse(sc, nd->mChildren[n], pChildNode);
 	}
 }
 

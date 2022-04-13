@@ -8,12 +8,17 @@ public:
 	virtual ~Renderable() {
 
 	}
-	virtual void draw(int posloc, int texloc = -1, int norloc = -1, int colorloc = -1, int tangentloc = -1) {
+	virtual void draw(int posloc, int texloc, int norloc = -1, int colorloc = -1,int boneIdLoc=-1,int boneWeightLoc = -1) {
+
+	}
+	virtual void draw(int posloc = -1) {
 
 	}
 	virtual void draw(const glm::mat4* modelMat,
 		const glm::mat4* texMat = nullptr,
-		const glm::mat4* projViewMat = nullptr) = 0;
+		const glm::mat4* projViewMat = nullptr) {
+
+	}
 
 	unsigned int getRid() {
 		return mId;
