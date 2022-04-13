@@ -54,8 +54,11 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 		vector<float> mPos;//保存顶点坐标
 		vector<float> mNormals;//保存normal
 		vector<float> mTexcoords;//保存纹理坐标值
+		vector<int> mBoneIds;//保存影响顶点的骨头id，一个顶点最多被4个骨头影响。
+		vector<float> mBoneWeight;//保存骨头对顶点影响的权重，4个权重加起来要==1
 		vector<unsigned int> mIndexes;//保存索引值
 		unordered_map<unsigned int, unsigned int> mIndexMap;
+		vector<int> boneCounts;
 
 		const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
 		auto pMeshMaterial = sc->mMaterials[mesh->mMaterialIndex];
@@ -89,7 +92,6 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 								mTexcoords.emplace_back(mesh->mTextureCoords[0][vertexIndex].x);
 								mTexcoords.emplace_back(mesh->mTextureCoords[0][vertexIndex].y);
 							}
-
 						}
 						mIndexes.emplace_back(index);
 						indexMap.emplace(vertexIndex,index);
@@ -101,8 +103,44 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 				}
 
 			}
+
+			if (mesh->HasBones()) {
+				mBoneIds.assign(index * 4,0);
+				mBoneWeight.assign(index * 4,0.0f);
+				boneCounts.assign(index,0);
+				//一个mesh被多少根骨头影响
+				for (int i = 0; i < mesh->mNumBones; ++i) {
+					auto pBone = mesh->mBones[i];
+					if (pBone != nullptr && pBone->mWeights!=nullptr) {
+						//每个骨头影响多少个顶点：mNumWeights
+						for (int j = 0; j < pBone->mNumWeights; ++j) {
+							int vertexIndex = pBone->mWeights[j].mVertexId;
+							auto it = indexMap.find(vertexIndex);
+							if (it != indexMap.end()) {
+								//目前的shader设计，一个顶点最多只能被4个骨头影响
+								//超过4个不支持
+								int boneCount = boneCounts[it->second];
+								mBoneIds[4 * it->second + boneCount] = i;
+								mBoneWeight[4 * it->second + boneCount] = pBone->mWeights[j].mWeight;
+								boneCounts[it->second] += 1;
+								if (boneCounts[it->second] > 4) {
+									LOGE("bones per vertex is exceed 4");
+								}
+							}
+							else {
+								LOGE("bone vs vexter error,cannot find the vertex index");
+							}
+						}
+					}
+				}
+			}
+
 			MeshSP pMesh = make_shared<Mesh>(MeshType::DIY);
 			if (pMesh->loadMesh(mPos, mTexcoords, mNormals, mIndexes)) {
+				if (!mBoneIds.empty()) {
+					pMesh->loadBoneData(mBoneIds.data(), mBoneIds.size() * sizeof(int),
+						mBoneWeight.data(), mBoneWeight.size() * sizeof(float));
+				}
 				pNode->addRenderable(pMesh);
 				pMesh->setMaterialName(materialName);
 			}

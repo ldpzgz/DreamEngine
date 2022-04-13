@@ -63,6 +63,12 @@ public:
 	void setNormalLoc(int nor) {
 		mNormalLoc = nor;
 	}
+	void setBoneIdLoc(int loc) {
+		mBoneIdLoc = loc;
+	}
+	void setBoneWeightLoc(int loc) {
+		mBoneWeightLoc = loc;
+	}
 	void setLocation(int pos, int tex = -1, int color = -1, int nor = -1) {
 		mPosLoc = pos;
 		mTexcoordLoc = tex;

@@ -182,12 +182,15 @@ public:
 		return mbReceiveShadow;
 	}
 
+	bool loadBoneData(const int* pBoneIds, int idByteSize,
+		const GLfloat* pWeights, int wByteSize, int drawType = GL_STATIC_DRAW);
+
 	//这四个函数都是创建vbo，ebo，并从内存上传数据到vbo的显存,如果之前存在vbo了，先删除
 	bool setPosData(const GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setTexcoordData(const GLfloat* tex, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setNormalData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setBoneIdData(const int* boneIds, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	bool setBoneWeightData(GLfloat* weight, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	bool setBoneWeightData(const GLfloat* weight, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setColorData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setIndexData(const GLuint* index, int indexByteSize, unsigned int drawType = GL_STATIC_DRAW);
 
@@ -204,6 +207,8 @@ protected:
 		const GLfloat* color = 0, int colorByteSize = 0,
 		const GLfloat* tangent = 0, int tangentByteSize = 0,
 		int drawType = GL_STATIC_DRAW);
+
+	
 
 	//当做三角形绘制GL_TRIANGLES
 	void drawTriangles(int posloc = -1, int texloc = -1, int norloc = -1,int colorloc = -1, int boneIdLoc = -1, int boneWeightLoc = -1);

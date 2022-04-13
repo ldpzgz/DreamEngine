@@ -249,6 +249,8 @@ private:
 	static bool posLocHandler(Material* pMat, const std::string&);
 	static bool colorLocHandler(Material* pMat, const std::string&);
 	static bool normalLocHandler(Material* pMat, const std::string&);
+	static bool boneIdLocHandler(Material* pMat, const std::string&);
+	static bool boneWeightLocHandler(Material* pMat, const std::string&);
 	static bool texcoordLocHandler(Material* pMat, const std::string&);
 	static bool modelMatrixHandler(Material* pMat, const std::string&);
 	static bool texMatrixHandler(Material* pMat, const std::string&);
@@ -307,6 +309,8 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 	{"texcoordLoc",ResourceImpl::texcoordLocHandler},
 	{"colorLoc",ResourceImpl::colorLocHandler},
 	{"normalLoc",ResourceImpl::normalLocHandler},
+	{"boneIdLoc",ResourceImpl::boneIdLocHandler},
+	{"boneWeightLoc",ResourceImpl::boneWeightLocHandler},
 	{"modelMatrix",ResourceImpl::modelMatrixHandler},
 	{"textureMatrix",ResourceImpl::texMatrixHandler},
 	{"uniformColor",ResourceImpl::uniformColorHandler},
@@ -528,6 +532,28 @@ bool ResourceImpl::normalLocHandler(Material* pMat, const std::string& value) {
 	}
 	return true;
 }
+
+bool ResourceImpl::boneIdLocHandler(Material* pMat, const std::string& value) {
+	try {
+		int loc = std::stoi(value);
+		pMat->getShader()->setBoneIdLoc(loc);
+	}
+	catch (exception e) {
+		LOGE("error to stoi boneIdLoc,in material %s", pMat->getName().c_str());
+	}
+	return true;
+}
+bool ResourceImpl::boneWeightLocHandler(Material* pMat, const std::string& value) {
+	try {
+		int loc = std::stoi(value);
+		pMat->getShader()->setBoneWeightLoc(loc);
+	}
+	catch (exception e) {
+		LOGE("error to stoi BoneWeightLoc,in material %s", pMat->getName().c_str());
+	}
+	return true;
+}
+
 
 bool ResourceImpl::texcoordLocHandler(Material* pMat, const std::string& value) {
 	try {

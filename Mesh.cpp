@@ -404,6 +404,22 @@ bool Mesh::loadMesh(const std::string meshFilePath) {
 	return false;
 }
 
+bool Mesh::loadBoneData(const int* pBoneIds, int idByteSize,
+	const GLfloat* pWeights, int wByteSize, int drawType) {
+	if (pBoneIds != nullptr && idByteSize > 0)
+	{
+		setBoneIdData(pBoneIds, idByteSize, drawType);
+		checkglerror();
+	}
+	if (pWeights != nullptr && wByteSize > 0)
+	{
+		setBoneWeightData(pWeights, wByteSize, drawType);
+		checkglerror();
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	return true;
+}
+
 bool Mesh::createBufferObject(const GLfloat* pos,int posByteSize, int countOfVertex, 
 	const GLuint* index,int indexByteSize,
 	const GLfloat* tex,int texByteSize,
@@ -715,7 +731,6 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 			int componentOfTexcoord = mTexByteSize / (sizeof(GLfloat) * mCountOfVertex);
 			//indicate a vertexAttrib space 2*float,in mTexVbo
 			glVertexAttribPointer(texloc, componentOfTexcoord, GL_FLOAT, GL_FALSE, 0, 0);
-
 		}
 		if (norloc >= 0)
 		{
@@ -723,7 +738,18 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 			glEnableVertexAttribArray(norloc);
 			int componentOfNormal = mNorByteSize / (sizeof(GLfloat) * mCountOfVertex);
 			glVertexAttribPointer(norloc, componentOfNormal, GL_FLOAT, GL_FALSE, 0, 0);
-
+		}
+		if (boneIdLoc >= 0) {
+			glBindBuffer(GL_ARRAY_BUFFER, mBoneIdVbo);
+			glEnableVertexAttribArray(boneIdLoc);
+			int componentNum = mBoneIdByteSize / (sizeof(int) * mCountOfVertex);
+			glVertexAttribIPointer(boneIdLoc, componentNum, GL_INT, 0, 0);
+		}
+		if (boneWeightLoc>=0) {
+			glBindBuffer(GL_ARRAY_BUFFER, mBoneWeightVbo);
+			glEnableVertexAttribArray(boneWeightLoc);
+			int componentNum = mBoneWeightByteSize / (sizeof(GLfloat) * mCountOfVertex);
+			glVertexAttribPointer(boneWeightLoc, componentNum, GL_FLOAT, GL_FALSE, 0, 0);
 		}
 
 		if (mDrawType == DrawType::Triangles || mDrawType == DrawType::TriangleStrip) {
@@ -895,7 +921,7 @@ bool Mesh::setBoneIdData(const int* boneIds, int sizeInbyte, unsigned int drawTy
 	return true;
 }
 
-bool Mesh::setBoneWeightData(GLfloat* weight, int sizeInbyte, unsigned int drawType) {
+bool Mesh::setBoneWeightData(const GLfloat* weight, int sizeInbyte, unsigned int drawType) {
 	if (mBoneWeightVbo > 0) {
 		glDeleteBuffers(1, &mBoneWeightVbo);
 		if (mVAO != 0) {
