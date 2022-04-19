@@ -63,7 +63,7 @@ T	std::chrono::milliseconds,std::chrono::microseconds,..等时间单位。
 template<typename T>
 class TimeCounter {
 public:
-	using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock, T>;
+	using TimePoint = std::chrono::time_point<std::chrono::steady_clock, T>;
 	
 	/*
 	功能：本次调用elapse与上次调用elapse的时间差是否超过了deltaCount，
@@ -76,7 +76,7 @@ public:
 			return std::make_pair<bool, int64_t>(false,0ll);
 		}
 		else {
-			auto curTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+			auto curTime = std::chrono::time_point_cast<T>(std::chrono::steady_clock::now());
 			auto count = (curTime - mPreTime).count();
 			if (count >= deltaCount) {
 				mPreTime = curTime;
@@ -94,7 +94,7 @@ public:
 				return mElapseWhenPause;
 			}
 			else {
-				auto curTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+				auto curTime = std::chrono::time_point_cast<T>(std::chrono::steady_clock::now());
 				auto count = (curTime - mStartTime).count();
 				return count;
 			}
@@ -111,7 +111,7 @@ public:
 				return mElapseWhenPause;
 			}
 			else {
-				auto curTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+				auto curTime = std::chrono::time_point_cast<T>(std::chrono::steady_clock::now());
 				auto count = (curTime - mPreTime).count();
 				mPreTime = curTime;
 				return count;
@@ -125,7 +125,7 @@ public:
 	}
 
 	void start() {
-		mStartTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+		mStartTime = std::chrono::time_point_cast<T>(std::chrono::steady_clock::now());
 		mPreTime = mStartTime;
 		mbStart = true;
 	}
@@ -136,7 +136,7 @@ public:
 
 	void pause() {
 		if (mbStart) {
-			auto curTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+			auto curTime = std::chrono::time_point_cast<T>(std::chrono::steady_clock::now());
 			mElapseWhenPause = (curTime - mPreTime).count();
 			mbPause = true;
 		}
@@ -144,7 +144,7 @@ public:
 
 	void resume() {
 		if (mbPause) {
-			mPreTime = std::chrono::time_point_cast<T>(std::chrono::high_resolution_clock::now());
+			mPreTime = std::chrono::time_point_cast<T>(std::chrono::steady_clock::now());
 			mPreTime -= T(mElapseWhenPause);
 			mbPause = false;
 		}
