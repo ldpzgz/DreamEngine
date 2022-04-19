@@ -15,7 +15,7 @@
 
 class Ubo {
 public:
-	static constexpr int totalUboSize = 4096;
+	static constexpr int totalUboSize = 4096+8192;
 	Ubo();
 	~Ubo();
 	void bind(const char* ubName, int sizeInByte, int bindPoint) noexcept;

@@ -10,6 +10,7 @@
 #include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
 #include <glm/gtc/type_ptr.hpp> // value_ptr
 #include "Log.h"
+#include "Ubo.h"
 #include <string>
 #include <fstream>
 
@@ -384,6 +385,7 @@ void Shader::setMvMatrix(const glm::mat4& m) {
 		glUniformMatrix4fv(mMvMatrixLoc, 1, GL_FALSE, glm::value_ptr(m));
 	}
 }
+
 void Shader::setViewMatrix(const glm::mat4& m) {
 	if (mViewMatrixLoc >= 0) {
 		if (!mbEnabled) {

@@ -2,6 +2,7 @@
 #define _AABB_H_
 #include <utility>
 #include <glm/vec3.hpp>
+#include <array>
 class AABB {
 public:
 	AABB()=default;

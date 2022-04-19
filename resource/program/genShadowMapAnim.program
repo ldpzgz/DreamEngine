@@ -1,0 +1,45 @@
+vs{
+	#version 330 core
+    layout(location = 0) in vec3 inPos;
+	layout (location = 1) in ivec4 boneIDs;
+	layout (location = 2) in vec4 weights;
+	layout(std140) uniform Bones
+	{
+		mat4 bones[128];
+	};
+	layout (std140) uniform Matrixes
+	{
+		mat4 projMat;
+		mat4 viewMat;
+		mat4 shadowMat;
+	};
+	uniform mat4 modelMat;
+    void main()
+    {
+		vec4 animatedPos = vec4(inPos, 1.0);
+		mat4 BoneTransform = bones[boneIDs[0]] * weights[0];
+		BoneTransform += bones[boneIDs[1]] * weights[1];
+		BoneTransform += bones[boneIDs[2]] * weights[2];
+		BoneTransform += bones[boneIDs[3]] * weights[3];
+		animatedPos = BoneTransform * animatedPos;
+		
+		gl_Position = shadowMat * viewMat * modelMat * animatedPos;
+    }
+}
+fs{
+	#version 330 core
+	precision highp float;
+	void main()
+	{             
+	}  	
+}
+program:genShadowMapAnim{
+	posLoc=0
+	boneIdLoc=1
+	boneWeightLoc=2
+	modelMatrix=modelMat
+	ubo{
+		Matrixes=0
+		Bones=5
+	}
+}

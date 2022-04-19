@@ -8,6 +8,7 @@
 #include <any>
 #include <string_view>
 #include "Rect.h"
+#include "Color.h"
 
 using namespace std;
 class Texture;
@@ -28,11 +29,11 @@ public:
 	std::string normalMap;
 
 	//aoMap不为0，就有
-	float ao{ 0.5f };
+	float ao{ 0.2f };
 	std::string aoMap;
 
 	//粗糙度，要么是一个固定值，要么是map
-	float roughness{ 0.5f };
+	float roughness{ 0.8f };
 	std::string roughnessMap;
 
 	//金属性，要么是一个固定值，要么是map

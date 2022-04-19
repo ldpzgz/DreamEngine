@@ -79,15 +79,34 @@ config{
 		#ifdef HAS_MAP
 			out vec2 texcoord;
 		#endif
+		#ifdef HAS_NODE_ANIMATION
+			layout (location = 3) in ivec4 boneIDs;
+			layout (location = 4) in vec4 weights;
+			layout(std140) uniform Bones
+			{
+				mat4 bones[128];
+			};
+		#endif
 		void main(){
 			mat4 mvMat = viewMat * modelMat;
 			#ifdef HAS_MAP
 				texcoord = inTexcoord;
 			#endif
-			worldNormal=mat3(mvMat)*inNormal;
-			worldPos = vec3(mvMat * vec4(inPos, 1.0));
+			vec4 animatedPos = vec4(inPos, 1.0);
+			vec4 animatedNormal = vec4(inNormal, 0.0);
+			#ifdef HAS_NODE_ANIMATION
+				mat4 BoneTransform = bones[boneIDs[0]] * weights[0];
+				BoneTransform += bones[boneIDs[1]] * weights[1];
+				BoneTransform += bones[boneIDs[2]] * weights[2];
+				BoneTransform += bones[boneIDs[3]] * weights[3];
+				animatedPos = BoneTransform * animatedPos;
+				animatedNormal = BoneTransform * animatedNormal;
+			#endif
+			
+			worldNormal = vec3(mvMat * animatedNormal);
+			worldPos = vec3(mvMat * animatedPos);
 			#ifdef HAS_TAA
-				preScreenPos = preMvpMat * vec4(inPos, 1.0);
+				preScreenPos = preMvpMat * animatedPos;
 				float deltaWidth = 1.0f/screenWidth;
 				float deltaHeight = 1.0f/screenHeight;
 				vec2 jitter=vec2(Halton23[offsetIndex].x*deltaWidth,
@@ -95,13 +114,13 @@ config{
 				mat4 jitterMat = projMat;
 				jitterMat[2][0] += jitter.x;
 				jitterMat[2][1] += jitter.y;
-				gl_Position = jitterMat * mvMat * vec4(inPos, 1.0);
-				curScreenPos = projMat * mvMat * vec4(inPos, 1.0);
+				gl_Position = jitterMat * mvMat * animatedPos;
+				curScreenPos = projMat * mvMat * animatedPos;
 			#else
-				gl_Position = projMat * mvMat * vec4(inPos,1.0f);
+				gl_Position = projMat * mvMat * animatedPos;
 			#endif
 			#ifdef HAS_SHADOW
-				shadowPos = shadowMat * mvMat * vec4(inPos, 1.0);
+				shadowPos = shadowMat * mvMat * animatedPos;
 			#endif
 		}
 	}

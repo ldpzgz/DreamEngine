@@ -1,6 +1,7 @@
 #include "MeshFilledRect.h"
 #include <cassert>
 #include "Log.h"
+using namespace std;
 MeshFilledRect::MeshFilledRect():
 	Mesh()
 {
@@ -16,7 +17,7 @@ MeshFilledRect::~MeshFilledRect() {
 }
 
 unsigned int MeshFilledRect::createAColorData(float angle, const Color& startColor, const Color& endColor, const Color& centerColor) {
-	vector<glm::vec4> colors;
+	std::vector<glm::vec4> colors;
 	glm::vec4 start(startColor.r, startColor.g, startColor.b, startColor.a);
 	glm::vec4 end(endColor.r, endColor.g, endColor.b, endColor.a);
 	glm::vec4 center(centerColor.r, centerColor.g, centerColor.b, centerColor.a);

@@ -7,6 +7,7 @@
 #include "helper.h"
 #include "Utils.h"
 #include "Node.h"
+#include "Animation.h"
 #include "MeshLoaderAssimp.h"
 #include "Config.h"
 #include <filesystem>
@@ -15,6 +16,9 @@
 #include <fstream>
 #include <any>
 #include <string_view>
+#include <rapidxml.hpp>
+#include <rapidxml_utils.hpp>  //rapidxml::file
+#include <rapidxml_print.hpp>  //rapidxml::print
 
 using namespace std;
 using namespace std::filesystem;
@@ -22,8 +26,10 @@ using MapSMaterial = unordered_map<string, shared_ptr<Material>>;
 using MapSTexture = unordered_map<string, shared_ptr<Texture>>;
 using MapSShader = unordered_map<string, shared_ptr<Shader>>;
 using MapSNode = unordered_map<string, NodeSP>;
+using MapSAnimation = unordered_map<string, AnimationSP>;
+using MapSMaterialInfo = unordered_map<string, MaterialInfo>;
 using Umapss = unordered_map<string, string>;
-
+static const string gColorsPath = "./opengles3/resource/colors.xml";
 static const string gMaterialPath = "./opengles3/resource/material";
 static const string gProgramPath = "./opengles3/resource/program";
 static const string gDrawablePath = "./opengles3/resource/drawable";
@@ -126,6 +132,17 @@ public:
 
 	void loadAllMaterial();
 
+	Color getColor(const std::string& name) {
+		auto it = gRColors.find(name);
+		if (it != gRColors.end()) {
+			return it->second;
+		}
+		else {
+			LOGE("cannot find %s color in color resource", name.c_str());
+			return Color(0.0f,0.0f,0.0f,0.0f);
+		}
+	}
+
 	std::shared_ptr<Texture> getTexture(const std::string& name) {
 		auto it = mTextures.find(name);
 		if (it != mTextures.end()) {
@@ -142,7 +159,7 @@ public:
 		return nullptr;
 	}
 
-	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo);
+	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo,bool hasNodeAnimation=false);
 
 	std::shared_ptr<Material> getMaterialDefferedLightPass(bool hasIBL);
 
@@ -157,6 +174,14 @@ public:
 	std::shared_ptr<Node> getNode(const std::string& name) {
 		auto pit = mNodes.find(name);
 		if (pit != mNodes.end()) {
+			return pit->second;
+		}
+		return nullptr;
+	}
+
+	std::shared_ptr<Animation> getAnimation(const std::string& name) {
+		auto pit = gAnimations.find(name);
+		if (pit != gAnimations.end()) {
 			return pit->second;
 		}
 		return nullptr;
@@ -193,6 +218,7 @@ public:
 
 	std::shared_ptr<Material> cloneMaterial(const std::string&);
 
+	void parseRColors(const string& path);
 	/*
 	* 分析.material / .program文件
 	* 每个.material / .program文件都会自动生成一个Material对象
@@ -237,7 +263,7 @@ public:
 	
 	int getKeyAsInt(const string& key);
 
-	const std::string_view getKeyAsStr(const std::string& key);
+	const std::string_view getKeyAsStr(std::string_view key);
 private:
 	static bool programHandler(Material* pMat, const std::string& programName);
 	static bool samplerHandler(Material* pMat, const std::string& samplerContent);
@@ -268,38 +294,44 @@ private:
 	static bool programUboHandler(Material* pMat, const std::string&);
 	static bool preMvpMatrixHandler(Material* pMat, const std::string&);
 
-	static bool nodeNameHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
-	static bool meshPathHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
-	static bool meshArmMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
-	static bool meshAlbedoMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
-	static bool meshNormalMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
-	static bool meshMetallicMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
-	static bool meshRoughnessMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
-	static bool meshAoMapHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
-	static bool meshMatInfoHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
-	static bool meshMaterialNameHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
-	static bool meshTypeHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
-	static bool meshScaleHander(NodeSP& pNode, MaterialInfo& info, const std::string&);
+	static bool nodeNameHander(NodeSP& pNode, const std::string&);
+	static bool meshPathHander(NodeSP& pNode, const std::string&);
+	static bool meshTypeHander(NodeSP& pNode, const std::string&);
+	static bool meshScaleHander(NodeSP& pNode, const std::string&);
+	static bool meshMatInfoHander(NodeSP& pNode, const std::string&);
+	static bool meshArmMapHander(MaterialInfo& info, const std::string&);
+	static bool meshAlbedoMapHander(MaterialInfo& info, const std::string&);
+	static bool meshNormalMapHander(MaterialInfo& info, const std::string&);
+	static bool meshMetallicMapHander(MaterialInfo& info, const std::string&);
+	static bool meshRoughnessMapHander( MaterialInfo& info, const std::string&);
+	static bool meshAoMapHander(MaterialInfo& info, const std::string&);
+	//static bool meshMaterialNameHander(MaterialInfo& info, const std::string&);
+	
 
 	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gMaterialHandlers;
 	static std::unordered_map<std::string, std::function<bool(Material* pMat, const std::string&)>> gProgramKeyValueHandlers;
-	static std::unordered_map<std::string, std::function<bool(NodeSP& pNode, MaterialInfo& info,const std::string&)>> gMeshKeyValueHandlers;
-
+	static std::unordered_map<std::string, std::function<bool(NodeSP& pNode,const std::string&)>> gMeshKeyValueHandlers;
+	static std::unordered_map<std::string, std::function<bool(MaterialInfo& info, const std::string&)>> gMaterialInfoHandlers;
+	static unordered_map<string, Color> gRColors;
 	static MapSMaterial mMaterials;
 	static MapSTexture mTextures;
 	static MapSShader mShaders;
 	static MapSNode mNodes;
+	static MapSAnimation gAnimations;
+	static MapSMaterialInfo gMaterialInfos;
 	std::unordered_map<std::string, std::string> mContents;//保存的是材质文件里面形如key{value}的key-value对
 	std::unordered_map<std::string, std::string> mConfigValues;
 	std::string_view mpVersion{ "#version 330 core\n" };
 	std::string_view mpPrecision{ "precision highp float;\n" };
 };
 
+unordered_map<string, Color> ResourceImpl::gRColors;
 MapSMaterial ResourceImpl::mMaterials;
 MapSTexture ResourceImpl::mTextures;
 MapSShader ResourceImpl::mShaders;
 MapSNode ResourceImpl::mNodes;
-
+MapSAnimation ResourceImpl::gAnimations;
+MapSMaterialInfo ResourceImpl::gMaterialInfos;
 
 /*
 * program文件里面：program:testM{...}的处理函数
@@ -344,14 +376,16 @@ std::unordered_map<std::string, std::function<bool(Material* pMat, const std::st
 //meshCfg文件里面有mesh项，里面有matInfo，matInfo有个名字，约定使用albedoMap的文件名作为名字
 //加载mesh的时候，一般的mesh文件里面也有材质信息，也指定了albedoMap/diffuseMap的文件名，
 //就是通过这个albedo名字，让mesh匹配到自己的material
-std::unordered_map<std::string, std::function<bool(NodeSP& pNode, MaterialInfo& info, const std::string&)>> ResourceImpl::gMeshKeyValueHandlers{
+std::unordered_map<std::string, std::function<bool(NodeSP& pNode,const std::string&)>> ResourceImpl::gMeshKeyValueHandlers{
 	{"nodeName",ResourceImpl::nodeNameHander},
 	{"path",ResourceImpl::meshPathHander},
 	{"meshType",ResourceImpl::meshTypeHander},
 	{"scale",ResourceImpl::meshScaleHander},
 	{"matInfo",ResourceImpl::meshMatInfoHander},
+};
 
-	{"materialName",ResourceImpl::meshMaterialNameHander},
+std::unordered_map<std::string, std::function<bool(MaterialInfo& info, const std::string&)>> ResourceImpl::gMaterialInfoHandlers{
+	//{"materialName",ResourceImpl::meshMaterialNameHander},
 	{"armMap",ResourceImpl::meshArmMapHander},
 	{"albedoMap",ResourceImpl::meshAlbedoMapHander},
 	{"normalMap",ResourceImpl::meshNormalMapHander},
@@ -360,14 +394,14 @@ std::unordered_map<std::string, std::function<bool(NodeSP& pNode, MaterialInfo& 
 	{"aoMap",ResourceImpl::meshAoMapHander}
 };
 
-bool ResourceImpl::nodeNameHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::nodeNameHander(NodeSP& pNode,const std::string& value) {
 	if (pNode && !value.empty()) {
 		mNodes.emplace(value, pNode);
 	}
 	return true;
 }
 
-bool ResourceImpl::meshTypeHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshTypeHander(NodeSP& pNode, const std::string& value) {
 	if (pNode && !value.empty()) {
 		MeshType type = MeshType::Quad;
 		if (value == "quad") {
@@ -391,7 +425,7 @@ bool ResourceImpl::meshTypeHander(NodeSP& pNode, MaterialInfo& info, const std::
 	return true;
 }
 
-bool ResourceImpl::meshScaleHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshScaleHander(NodeSP& pNode,const std::string& value) {
 	if (pNode && !value.empty()) {
 		std::vector<std::string_view> scaleValue;
 		Utils::splitStr(value, ",", scaleValue);
@@ -413,7 +447,7 @@ bool ResourceImpl::meshScaleHander(NodeSP& pNode, MaterialInfo& info, const std:
 	}
 	return true;
 }
-bool ResourceImpl::meshPathHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshPathHander(NodeSP& pNode,const std::string& value) {
 	if (pNode && !value.empty()) {
 		MeshLoaderAssimp loader;
 		if (loader.loadFromFile(value, pNode)) {
@@ -427,77 +461,77 @@ bool ResourceImpl::meshPathHander(NodeSP& pNode, MaterialInfo& info, const std::
 	}
 	return false;
 }
-bool ResourceImpl::meshArmMapHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshArmMapHander(MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.armMap = value;
 	}
 	return true;
 }
-bool ResourceImpl::meshAlbedoMapHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshAlbedoMapHander(MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.albedoMap = value;
+		info.name = Utils::getFileName(value);
 	}
 	return true;
 }
-bool ResourceImpl::meshNormalMapHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshNormalMapHander(MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.normalMap = value;
 	}
 	return true;
 }
 
-bool ResourceImpl::meshMetallicMapHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshMetallicMapHander(MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.metallicMap = value;
 	}
 	return true;
 }
 
-bool ResourceImpl::meshRoughnessMapHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshRoughnessMapHander(MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.roughnessMap = value;
 	}
 	return true;
 }
 
-bool ResourceImpl::meshAoMapHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshAoMapHander(MaterialInfo& info, const std::string& value) {
 	if (!value.empty()) {
 		info.aoMap = value;
 	}
 	return true;
 }
 
-bool ResourceImpl::meshMatInfoHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
+bool ResourceImpl::meshMatInfoHander(NodeSP& pNode,const std::string& value) {
 	if (!value.empty()) {
 		vector<pair<std::string, std::string>> matInfoValue;
 		MaterialInfo info1;
 		if (Utils::parseItem(value, matInfoValue)) {
 			for (const auto& pa : matInfoValue) {
-				const auto itHandler = gMeshKeyValueHandlers.find(pa.first);
-				if (itHandler != gMeshKeyValueHandlers.cend()) {
-					itHandler->second(pNode, info1, pa.second);
+				const auto itHandler = gMaterialInfoHandlers.find(pa.first);
+				if (itHandler != gMaterialInfoHandlers.cend()) {
+					itHandler->second(info1, pa.second);
 				}
 			}
-
-			//解析并创建组合出来的material，组合出来的material也有个名字，
-			MaterialSP pMat = Resource::getInstance().getMaterialDefferedGeoPass(info1);
-			if (pMat && !info1.name.empty()) {
-				mMaterials.emplace(info1.name, pMat);
+			
+			if (!gMaterialInfos.try_emplace(info1.name, info1).second) {
+				LOGE("matInfo name duplicate in meshCfg file");
 			}
-			info.name = info1.name;
+			
+			//info.name = info1.name;
 		}
 		return true;
 	}
 	return false;
 }
 
-bool ResourceImpl::meshMaterialNameHander(NodeSP& pNode, MaterialInfo& info, const std::string& value) {
-	if (!value.empty()) {
-		info.name = value;
-		return true;
-	}
-	return false;
-}
+//bool ResourceImpl::meshMaterialNameHander(MaterialInfo& info, const std::string& value) {
+//	if (!value.empty()) {
+//		info.name = value;
+//		return true;
+//	}
+//	return false;
+//}
 
 
 bool ResourceImpl::posLocHandler(Material* pMat, const std::string& value) {
@@ -1011,6 +1045,10 @@ void Resource::loadAllMaterial() {
 	mpImpl->loadAllMaterial();
 }
 
+Color Resource::getColor(const std::string& name) {
+	return mpImpl->getColor(name);
+}
+
 std::shared_ptr<Texture> Resource::getTexture(const std::string& name) {
 	return mpImpl->getTexture(name);
 }
@@ -1022,8 +1060,8 @@ std::shared_ptr<Material> Resource::getMaterial(const std::string& name) {
 * name: 可以是物体的名字
 * mInfo：材质信息，根据里面的信息生成或者clone一个material对象
 */
-std::shared_ptr<Material> Resource::getMaterialDefferedGeoPass(const MaterialInfo& mInfo) {
-	return mpImpl->getMaterialDefferedGeoPass(mInfo);
+std::shared_ptr<Material> Resource::getMaterialDefferedGeoPass(const MaterialInfo& mInfo, bool hasNodeAnimation) {
+	return mpImpl->getMaterialDefferedGeoPass(mInfo, hasNodeAnimation);
 }
 
 std::shared_ptr<Material> Resource::getMaterialDefferedLightPass(bool hasIBL) {
@@ -1086,7 +1124,7 @@ int Resource::getKeyAsInt(const string& key) {
 	return mpImpl->getKeyAsInt(key);
 }
 
-const std::string_view Resource::getKeyAsStr(const std::string& key) {
+const std::string_view Resource::getKeyAsStr(std::string_view key) {
 	return mpImpl->getKeyAsStr(key);
 }
 
@@ -1125,13 +1163,13 @@ bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 		//这个node会放在全局变量里面，这个node attach了mesh
 		//解析出来的material也会放在全局变量里面，所在这三个都不会自动被释放。
 		NodeSP pNode = std::make_shared<Node>();
-		MaterialInfo info;
+		//MaterialInfo info;
 		if (Utils::parseItem(cfgValue, meshValue)) {
 			//处理mesh{}里面的nodeName,matInfo等两项。
 			for (const auto& p : meshValue) {
 				const auto itHandler = gMeshKeyValueHandlers.find(p.first);
 				if (itHandler != gMeshKeyValueHandlers.cend()) {
-					itHandler->second(pNode, info, p.second);
+					itHandler->second(pNode, p.second);
 				}
 			}
 		}
@@ -1145,15 +1183,24 @@ bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 				for (const auto& it : pRend) {
 					MeshSP pMesh = std::dynamic_pointer_cast<Mesh>(it.second);
 					if (pMesh) {
-						std::string_view matName = pMesh->getMaterialName();
-						if (matName.empty()) {
+						const std::string& matName = pMesh->getMaterialName();
+						auto it = gMaterialInfos.find(matName);
+						if (matName.empty() || it == gMaterialInfos.end()) {
 							//给一个默认的材质
 							MaterialInfo info;
-							auto pMaterial = res.getMaterialDefferedGeoPass(info);
+							auto pMaterial = res.getMaterialDefferedGeoPass(info, pMesh->hasAnimation());
 							pMesh->setMaterial(pMaterial);
 						}
 						else {
-							pMesh->setMaterial(res.getMaterial(std::string(matName)));
+							//解析并创建组合出来的material，组合出来的material也有个名字，
+							//getMaterialDefferedGeoPass会把组合出来的shader按照组合出来的名字insert到map
+							auto& matInfo = it->second;
+							MaterialSP pMat = Resource::getInstance().getMaterialDefferedGeoPass(matInfo,pMesh->hasAnimation());
+							if (pMat && !matInfo.name.empty()) {
+								//按照配置文件里面的名字再insert到map
+								mMaterials.emplace(matInfo.name, pMat);
+							}
+							pMesh->setMaterial(pMat);
 						}
 					}
 				}
@@ -1161,6 +1208,48 @@ bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 		});
 	}
 	return true;
+}
+
+void ResourceImpl::parseRColors(const string& path) {
+	unique_ptr<rapidxml::file<>> pfdoc;
+	try {
+		pfdoc = make_unique<rapidxml::file<>>(path.c_str());
+	}
+	catch (std::exception e) {
+		LOGE("error to parseRStrings %s file,error %s", path.c_str(), e.what());
+		return;
+	}
+	if (pfdoc && pfdoc->size() > 0) {
+		rapidxml::xml_document<> doc;// character type defaults to char
+		doc.parse<0>(pfdoc->data());// 0 means default parse flags
+		auto pResNode = doc.first_node("resources");
+		if (pResNode != nullptr) {
+			auto pColorNode = pResNode->first_node("color");
+			while (pColorNode != nullptr) {
+				auto attribute = pColorNode->first_attribute("name");
+				if (attribute != nullptr) {
+					string key = attribute->value();
+					string value = pColorNode->value();//value is like #ffffffaa
+					if (!key.empty() && !value.empty()) {
+						Color color;
+						if (Color::parseColor(value, color)) {
+							auto ret = gRColors.try_emplace(key, color);
+							if (!ret.second) {
+								LOGD("there already has color who's name is %s in gRColors", key.c_str());
+							}
+						}
+						else {
+							LOGE("parse color %s in colors.xml", key.c_str());
+						}
+					}
+				}
+				pColorNode = pColorNode->next_sibling();
+			}
+		}
+	}
+	else {
+		LOGE("error to parse resource string file %s", path.c_str());
+	}
 }
 
 bool ResourceImpl::parseMaterialFile(const string& filePath) {
@@ -1439,8 +1528,8 @@ bool ResourceImpl::parseTexture(const string& textureName, const string& texture
 	return true;
 }
 
-const std::string_view ResourceImpl::getKeyAsStr(const std::string& key) {
-	auto it = mConfigValues.find(key);
+const std::string_view ResourceImpl::getKeyAsStr(std::string_view key) {
+	auto it = mConfigValues.find(std::string(key));
 	if (it != mConfigValues.end()) {
 		return it->second;
 	}
@@ -1571,7 +1660,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedLightPass(bool hasIBL
 	return pMaterial;
 }
 
-std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const MaterialInfo& mInfo) {
+std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const MaterialInfo& mInfo, bool hasNodeAnimation) {
 	/*
 	* 材质信息标志
 	* 0: 表示是否有纹理
@@ -1580,6 +1669,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	* 3：metellic标志，0表示固定值，1表示metellic map
 	* 4: roughness表示，0表示固定值，1表示roughness map
 	* 5：ao标志，0表示固定值，1表示ao map
+	* 6: nodeAnimation flag,1 has nodeAnimation,0 no
 	*
 	* 根据mInfo里面的信息计算出materialFlag，然后看看名字“defferedGeomertry_标志位”的纹理是否已经存在，
 	* 如果已经存在就clone这个material，然后为它设置好各种纹理
@@ -1593,16 +1683,20 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	std::string programSampler;
 	std::string programUbo{ "ubo{\nMatrixes=0\n" };
 
-	program = "posLoc=0\ntexcoordLoc=1\nnormalLoc=2\n";
-	program += "\nmodelMatrix=modelMat\n";
+	program = string_view("posLoc=0\n");
+	program += string_view("\nmodelMatrix=modelMat\n");
+	if (hasNodeAnimation) {
+		program += string_view("boneIdLoc=3\nboneWeightLoc=4\n");
+		programUbo += string_view("Bones=5\n");
+	}
 	if (Config::openTaa) {
-		program += "preMvpMatrix=preMvpMat\n";
-		programUbo += "ScreenWH = 2\nTaa=3\n}\n";
+		program += string_view("preMvpMatrix=preMvpMat\n");
+		programUbo += string_view("ScreenWH = 2\nTaa=3\n}\n");
 	}
 	else {
-		programUbo += "}\n";
+		programUbo += string_view("}\n");
 	}
-	programSampler = "sampler{\n";
+	programSampler = string_view("sampler{\n");
 	
 
 	//先计算出标志，确定material的名字，然后在gMaterial里面找，能找到就用现成的
@@ -1627,6 +1721,9 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		if (!mInfo.aoMap.empty()) {
 			materialFlag |= 0x20;
 		}
+	}
+	if (hasNodeAnimation) {
+		materialFlag |= 0x40;
 	}
 
 	std::stringstream tempss;
@@ -1688,32 +1785,33 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	std::string_view hasRoughnessMap{ "#define HAS_ROUGHNESS_MAP 1\n" };
 	std::string_view hasAoMap{ "#define HAS_AO_MAP 1\n" };
 	std::string_view hasShadow{ "#define HAS_SHADOW 1\n" };
+	std::string_view hasNodeAnimationDef{ "#define HAS_NODE_ANIMATION 1\n" };
 
 	if (!mInfo.albedoMap.empty()) {
 		materialFlag |= 0x02;
 		allDefine += hasAlbedoMap;
-		programSampler += "albedoMap=";
+		programSampler += "albedoMap="sv;
 		programSampler += mInfo.albedoMap;
-		programSampler += "\n";
+		programSampler += "\n"sv;
 	}
 	else {
-		program += "albedo=albedo\n";
+		program += "albedo=albedo\n"sv;
 	}
 
 	if (!mInfo.normalMap.empty()) {
 		allDefine += hasNormalMap;
 		
-		programSampler += "normalMap=";
+		programSampler += "normalMap="sv;
 		programSampler += mInfo.normalMap;
-		programSampler += "\n";
+		programSampler += "\n"sv;
 		materialFlag |= 0x04;
 	}
 
 	if (!mInfo.armMap.empty()) {
 		allDefine += hasArmMap;
-		programSampler += "armMap=";
+		programSampler += "armMap="sv;
 		programSampler += mInfo.armMap;
-		programSampler += "\n";
+		programSampler += "\n"sv;
 		materialFlag |= 0x08;
 		materialFlag |= 0x10;
 		materialFlag |= 0x20;
@@ -1721,45 +1819,44 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	else {
 		if (!mInfo.metallicMap.empty()) {
 			allDefine += hasMetallicMap;
-			programSampler += "metallicMap=";
+			programSampler += "metallicMap="sv;
 			programSampler += mInfo.metallicMap;
-			programSampler += "\n";
+			programSampler += "\n"sv;
 			materialFlag |= 0x08;
 		}
 		else {
-			program += "metallic=metallic\n";
+			program += "metallic=metallic\n"sv;
 		}
 
 		if (!mInfo.roughnessMap.empty()) {
 			allDefine += hasRoughnessMap;
-			programSampler += "roughnessMap=";
+			programSampler += "roughnessMap="sv;
 			programSampler += mInfo.roughnessMap;
-			programSampler += "\n";
+			programSampler += "\n"sv;
 			materialFlag |= 0x10;
 		}
 		else {
-			program += "roughness=roughness\n";
+			program += "roughness=roughness\n"sv;
 		}
 		if (!mInfo.aoMap.empty()) {
 			allDefine += hasAoMap;
-			programSampler += "aoMap=";
+			programSampler += "aoMap="sv;
 			programSampler += mInfo.aoMap;
-			programSampler += "\n";
+			programSampler += "\n"sv;
 			materialFlag |= 0x20;
 		}
 		else {
-			program += "ao=ao\n";
+			program += "ao=ao\n"sv;
 		}
 	}
 	if (Config::openShadowMap) {
-		programSampler += "shadowMap=";
-		programSampler += "none";
-		programSampler += "\n";
+		programSampler += "shadowMap="sv;
+		programSampler += "none"sv;
+		programSampler += "\n"sv;
 	}
 
-	programSampler += "}\n";
-	program += programSampler;
-	program += programUbo;
+	programSampler += "}\n"sv;
+	
 	fs += mpVersion;
 	fs += mpPrecision;
 	vs += mpVersion;
@@ -1767,14 +1864,23 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	if (materialFlag != 0) {
 		fs += hasMap;
 		vs += hasMap;
+		program += "texcoordLoc=1\nnormalLoc=2\n"sv;
 		if (Config::openTaa) {
 			fs += hasTaa;
 			vs += hasTaa;
 		}
 	}
+	else {
+		program += "normalLoc=1\n"sv;
+	}
+	program += programSampler;
+	program += programUbo;
 	if (Config::openShadowMap) {
 		fs += hasShadow;
 		vs += hasShadow;
+	}
+	if (hasNodeAnimation) {
+		vs += hasNodeAnimationDef;
 	}
 	fs += allDefine;
 	vs += getKeyAsStr("defferedGeoVs");
@@ -1808,6 +1914,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 }
 
 void ResourceImpl::loadAllMaterial() {
+	parseRColors(gColorsPath);
 	path programPath(gProgramPath);
 	if (!exists(gProgramPath)) {
 		LOGE("ERROR the program path %s is not exist", gMaterialPath.c_str());

@@ -10,18 +10,21 @@ layout(std140) uniform Matrixes
 	mat4 viewMat;
 	mat4 shadowMat;
 };
+
 layout(std140) uniform Lights
 {
 	vec3 lightPositions[15];
 	vec3 lightColors[15];
 	int lightCounts;
 }
+
 //这个占了一个vec4 16个字节
 layout(std140) uniform ScreenWH
 {
 	float screenWidth;
 	float screenHeight;
 };
+
 //这个占了一个vec4 16个字节
 layout(std140) uniform Taa
 {
@@ -35,16 +38,19 @@ layout(std140) uniform SampleArray
 	vec3 samples[64];
 };
 
+//128*64 bytes
+layout(std140) uniform Bones
+{
+	mat4 bones[128];
+};
+
 ubo{
 	Matrixes = 0
 	Lights = 1
-}
-ubo{
 	ScreenWH = 2
 	Taa = 3
-}
-ubo{
 	SampleArray = 4
+	Bones = 5
 }
 */
 
@@ -62,8 +68,8 @@ void Ubo::bind(const char* ubName, int sizeInByte, int bindPoint)  noexcept{
 	if (alignment == -1) {
 		glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
 	}
-	if (mCurSize+sizeInByte <= totalUboSize) {
-		if (mUniformBlocks.emplace(ubName, std::make_pair(mCurSize, sizeInByte)).second) {
+	if (mUniformBlocks.emplace(ubName, std::make_pair(mCurSize, sizeInByte)).second) {
+		if (mCurSize + sizeInByte <= totalUboSize) {
 			glBindBufferRange(GL_UNIFORM_BUFFER, bindPoint, mId, mCurSize, sizeInByte);
 			mCurSize += sizeInByte;
 			int left = mCurSize % alignment;
@@ -72,13 +78,9 @@ void Ubo::bind(const char* ubName, int sizeInByte, int bindPoint)  noexcept{
 			}
 			checkglerror();
 		}
-		else {
-			LOGD("duplicate ubo binding, the uniform block % s has bound to bindPoint % d", ubName,bindPoint);
-		}
-		
 	}
 	else {
-		LOGE("the memory of ubo is not enough ,failed to bound the uniform block %s ", ubName);
+		LOGD("duplicate ubo binding, the uniform block % s has bound to bindPoint % d", ubName, bindPoint);
 	}
 }
 

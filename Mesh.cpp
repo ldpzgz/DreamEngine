@@ -10,6 +10,15 @@
 #include "LdpMesh.h"
 #include "Shader.h"
 #include "Resource.h"
+#include "aabb.h"
+#include "Material.h"
+#include "Ubo.h"
+#include "animation/NodeAnimation.h"
+
+#include <glm/trigonometric.hpp>  //sin cos,tan,radians,degree
+#include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
+#include <glm/gtc/type_ptr.hpp> // value_ptr,make_vec,make_mat
+
 #include <cmath>
 #include <fstream>
 
@@ -403,7 +412,13 @@ bool Mesh::loadMesh(const std::string meshFilePath) {
 	}
 	return false;
 }
+//初始化bone matrix size，bone name-id map
+void Mesh::initBoneInfo(vector<glm::mat4>&& offsetMatrix, unordered_map<std::string, int>&& nameIndexMap) {
+	mBonesOffsetMatrix = std::move(offsetMatrix);
+	mBoneNameIndex = std::move(nameIndexMap);
+}
 
+//初始化boneInfo per vertex
 bool Mesh::loadBoneData(const int* pBoneIds, int idByteSize,
 	const GLfloat* pWeights, int wByteSize, int drawType) {
 	if (pBoneIds != nullptr && idByteSize > 0)
@@ -731,6 +746,9 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 			int componentOfTexcoord = mTexByteSize / (sizeof(GLfloat) * mCountOfVertex);
 			//indicate a vertexAttrib space 2*float,in mTexVbo
 			glVertexAttribPointer(texloc, componentOfTexcoord, GL_FLOAT, GL_FALSE, 0, 0);
+			if (mTexByteSize == 0) {
+				LOGE("render mesh,the shader has texcoord attribute,but there are no texccord data");
+			}
 		}
 		if (norloc >= 0)
 		{
@@ -738,18 +756,27 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 			glEnableVertexAttribArray(norloc);
 			int componentOfNormal = mNorByteSize / (sizeof(GLfloat) * mCountOfVertex);
 			glVertexAttribPointer(norloc, componentOfNormal, GL_FLOAT, GL_FALSE, 0, 0);
+			if (mNorByteSize == 0) {
+				LOGE("render mesh,the shader has normal attribute,but there are no normal data");
+			}
 		}
 		if (boneIdLoc >= 0) {
 			glBindBuffer(GL_ARRAY_BUFFER, mBoneIdVbo);
 			glEnableVertexAttribArray(boneIdLoc);
 			int componentNum = mBoneIdByteSize / (sizeof(int) * mCountOfVertex);
 			glVertexAttribIPointer(boneIdLoc, componentNum, GL_INT, 0, 0);
+			if (mBoneIdByteSize == 0) {
+				LOGE("render mesh,the shader has boneId attribute,but there are no boneId data");
+			}
 		}
 		if (boneWeightLoc>=0) {
 			glBindBuffer(GL_ARRAY_BUFFER, mBoneWeightVbo);
 			glEnableVertexAttribArray(boneWeightLoc);
 			int componentNum = mBoneWeightByteSize / (sizeof(GLfloat) * mCountOfVertex);
 			glVertexAttribPointer(boneWeightLoc, componentNum, GL_FLOAT, GL_FALSE, 0, 0);
+			if (mBoneWeightByteSize == 0) {
+				LOGE("render mesh,the shader has boneWeight attribute,but there are no boneWeight data");
+			}
 		}
 
 		if (mDrawType == DrawType::Triangles || mDrawType == DrawType::TriangleStrip) {
@@ -764,6 +791,9 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 		glEnableVertexAttribArray(colorloc);
 		int componentOfColor = mColorByteSize / (sizeof(GLfloat) * mCountOfVertex);
 		glVertexAttribPointer(colorloc, componentOfColor, GL_FLOAT, GL_FALSE, 0, 0);
+		if (mColorByteSize == 0) {
+			LOGE("render mesh,the shader has color attribute,but there are no color data");
+		}
 	}
 	if (mDrawType == DrawType::Triangles) {
 		glDrawElements(GL_TRIANGLES, mIndexByteSize / sizeof(GLuint), GL_UNSIGNED_INT, (const void*)0);
@@ -799,6 +829,10 @@ void Mesh::getPointSizeRange() {
 
 void Mesh::draw(int posloc, int texloc, int norloc, int colorloc,int boneIdLoc,int boneWeightLoc)
 {
+	//shader has boneid vertex attribute
+	if (boneIdLoc != -1 && !mBonesFinalMatrix.empty()) {
+		Ubo::getInstance().update("Bones", mBonesFinalMatrix.data(), mBonesFinalMatrix.size() * sizeof(glm::mat4));
+	}
 	switch (mDrawType) {
 	case DrawType::Triangles:
 	case DrawType::TriangleFan:
@@ -810,6 +844,22 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc,int boneIdLoc,i
 		break;
 	default:
 		break;
+	}
+}
+
+void Mesh::updateBones() {
+	//update node animation data
+	if (!mBonesOffsetMatrix.empty()) {
+		mBonesFinalMatrix.assign(mBonesOffsetMatrix.size(), glm::mat4{ 1.0f });
+		if (!mNodeAnimations.empty()) {
+			auto it = mNodeAnimations.begin();
+			if (!it->second->isStarted()) {
+				it->second->start();
+			}
+		}
+		for (auto& pair : mNodeAnimations) {
+			pair.second->animate(this);
+		}
 	}
 }
 
@@ -848,7 +898,6 @@ void Mesh::draw(const glm::mat4* modelMat, const glm::mat4* texMat, const glm::m
 		else {
 			LOGE("mesh has no shader,can't render");
 		}
-		
 	}
 	else {
 		LOGE("mesh has no material,can't render");

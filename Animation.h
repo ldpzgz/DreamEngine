@@ -1,72 +1,92 @@
 #ifndef _ANIMATION_H_
 #define _ANIMATION_H_
 //#include <glm/glm.hpp>
-#include <glm/vec2.hpp>           // vec3
-#include <glm/vec3.hpp>           // vec3
+//#include <glm/vec2.hpp>           // vec3
+//#include <glm/vec3.hpp>           // vec3
 
-#include "Rect.h"
+//#include "Rect.h"
 #include "Utils.h"
 #include <vector>
-#include "Spline.h"
+//#include "Spline.h"
 
-enum class LoopMode {
-	None,
-	ReturnBack,
-	Loop
-};
+//enum class LoopMode {
+//	None,
+//	ReturnBack,
+//	Loop
+//};
+//
+//enum class InterpolateType {
+//	Linear,
+//	Cubic
+//};
 
-enum class InterpolateType {
-	Linear,
-	Cubic
+enum class AnimationState {
+	Idle,
+	Started,
+	Paused
 };
 
 class Animation {
 public:
 	Animation() = default;
-	~Animation() = default;
+	virtual ~Animation() = default;
 	void start() {
 		mTimer.start();
+		mState = AnimationState::Started;
 	}
 
 	void stop() {
 		mTimer.stop();
+		mState = AnimationState::Idle;
 	}
 
 	void pause() {
 		mTimer.pause();
+		mState = AnimationState::Paused;
 	}
 
 	void resume() {
 		mTimer.resume();
+		mState = AnimationState::Started;
 	}
 
-	void setLoopModel(LoopMode mode) {
+	AnimationState getStatus() {
+		return mState;
+	}
+
+	bool isStarted() {
+		return mState == AnimationState::Started;
+	}
+
+	/*void setLoopModel(LoopMode mode) {
 		mLoopMode = mode;
 	}
 
 	void setInterpolateType(InterpolateType type) {
 		mInterpolateType = type;
-	}
+	}*/
 	/*
 	* glm::vec2: x是要做插值的坐标，y是时间值
 	*/
-	void setControlPoints(const std::vector<glm::vec2>& cPoints);
+	//void setControlPoints(const std::vector<glm::vec2>& cPoints);
 	/*
 	* Vec3: x，y是要做插值的坐标，z是时间值
 	*/
-	void setControlPoints(const std::vector<glm::vec3>& cPoints);
+	//void setControlPoints(const std::vector<glm::vec3>& cPoints);
 
-	float getCurX();
+	//float getCurX();
 
-	glm::vec2 getCurXY();
+	//glm::vec2 getCurXY();
 protected:
 	int64_t mAnimationTime{ 0 };
-	int64_t mCurTime;
-	LoopMode mLoopMode{ LoopMode::None };
-	InterpolateType mInterpolateType{InterpolateType::Cubic};
+	int64_t mCurTime{0};
 	TimeCounterMil mTimer;
+	AnimationState mState{ AnimationState::Idle };
+	/*LoopMode mLoopMode{ LoopMode::None };
+	InterpolateType mInterpolateType{InterpolateType::Cubic};
+	
 	tk::spline mSplineX;
-	tk::spline mSplineY;
+	tk::spline mSplineY;*/
 };
-
+using AnimationSP = std::shared_ptr<Animation>;
 #endif

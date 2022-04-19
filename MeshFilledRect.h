@@ -2,6 +2,9 @@
 #define _MESH_FILLED_RECT_H_
 #include "Mesh.h"
 #include "Rect.h"
+#include <glm/ext/vector_float3.hpp>                // vec3
+#include <vector>
+#include "Color.h"
 /*
 可填充的矩形mesh，内部生成了纹理坐标
 可以绘制为填充的，或者是线圈
@@ -47,8 +50,8 @@ protected:
 	float mCenterY{ 0.0f };
 	float mWidth{ 0.0f };
 	float mHeight{ 0.0f };
-	vector<glm::vec3> mPoints;
-	vector<GLuint> mExtraColorVbos;
+	std::vector<glm::vec3> mPoints;
+	std::vector<GLuint> mExtraColorVbos;
 };
 
 #endif

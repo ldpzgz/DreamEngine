@@ -39,11 +39,11 @@ void NodeRoamer::rotate(int x, int y) {
 			//view矩阵左上角的旋转矩阵一般都是正交矩阵
 			tempUd = glm::rotate(tempUd, b / 100.0f, glm::vec3(tempMat[0][0], tempMat[1][0], tempMat[2][0]));
 		}
-		const auto& myMat = mpNode->getMatrix();
+		const auto& myMat = mpNode->getLocalMatrix();
 		const auto& myParentMat = mpNode->getParentWorldMat();
 		
 		//模仿blender查看物体的方式
-		mpNode->setMatrix(tempUd * myMat * tempLr);
+		mpNode->setLocalMatrix(tempUd * myMat * tempLr);
 
 		mStartRotateX = x;
 		mStartRotateY = y;
@@ -71,7 +71,7 @@ void NodeRoamer::move(bool front) {
 		else {
 			tempM = glm::translate(tempM, glm::vec3(0.0f, 0.0f, 5.0f));
 		}
-		auto& oMat = mpNode->getMatrix();
+		auto& oMat = mpNode->getLocalMatrix();
 		oMat = tempM * oMat;
 	}
 }

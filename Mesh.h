@@ -14,21 +14,21 @@
 #else
 #include <glad/glad.h>
 #endif
-#include "material.h"
 
 #include <glm/vec3.hpp>           // vec3
 #include <glm/vec4.hpp>           // vec3
 #include <glm/mat4x4.hpp>         // mat4
-#include <glm/trigonometric.hpp>  //sin cos,tan,radians,degree
-#include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
-#include <glm/gtc/type_ptr.hpp> // value_ptr,make_vec,make_mat
-
+#include "aabb.h"
 #include "Renderable.h"
-#include "Rect.h"
 #include <memory>
 #include <string_view>
-#include "aabb.h"
-enum class MeshType //枚举类型定义加了class就是强类型枚举，不能隐式转换为其他类型，
+#include <unordered_map>
+
+
+class Material;
+class NodeAnimation;
+
+enum class MeshType
 {
 	None,
 	Triangle,
@@ -55,7 +55,6 @@ enum class MeshType //枚举类型定义加了class就是强类型枚举，不�
 	UniformBCurves,
 		//通过n个控制点，绘制n-3条曲线，曲线不经过任何控制点，只逼近但是曲线之间是C2连续的
 	NURBS,
-		//这个在设计软件中最通用
 	DIY,
 };
 
@@ -165,7 +164,8 @@ public:
 	void setMaterialName(std::string_view name) {
 		mMaterialName = name;
 	}
-	std::string_view getMaterialName() {
+
+	const std::string& getMaterialName() {
 		return mMaterialName;
 	}
 	
@@ -182,8 +182,48 @@ public:
 		return mbReceiveShadow;
 	}
 
+	//load bone id and bone weight into vbo
 	bool loadBoneData(const int* pBoneIds, int idByteSize,
 		const GLfloat* pWeights, int wByteSize, int drawType = GL_STATIC_DRAW);
+	/*
+	* offsetMatrix: bone offsetMatrix
+	* nameIndexMap: get bone id from bone name(node name)
+	*/
+	void initBoneInfo(std::vector<glm::mat4>&& offsetMatrix, std::unordered_map<std::string, int>&& nameIndexMap);
+	/*
+	* add NodeAnimation which can affect this mesh
+	*/
+	void addNodeAnimation(const std::pair<std::string, std::shared_ptr<NodeAnimation>>& pair) {
+		mNodeAnimations.emplace(pair);
+	}
+
+	std::shared_ptr<NodeAnimation> getAnimation(const std::string& name) {
+		auto it = mNodeAnimations.find(name);
+		if (it != mNodeAnimations.end()) {
+			return it->second;
+		}
+		else {
+			return nullptr;
+		}
+	}
+
+	virtual bool hasAnimation() {
+		return !mBonesOffsetMatrix.empty();
+	}
+
+	const std::unordered_map<std::string, int>& getBoneNameIndex() {
+		return mBoneNameIndex;
+	}
+
+	const std::vector<glm::mat4>& getBonesOffsetMatrix() {
+		return mBonesOffsetMatrix;
+	}
+
+	std::vector<glm::mat4>& getBonesFinalMatrix() {
+		return mBonesFinalMatrix;
+	}
+
+	void updateBones() override;
 
 	//这四个函数都是创建vbo，ebo，并从内存上传数据到vbo的显存,如果之前存在vbo了，先删除
 	bool setPosData(const GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
@@ -260,6 +300,12 @@ protected:
 	std::shared_ptr<Material> mpMaterial;
 	std::unique_ptr<AABB> mpAabb;
 	std::unique_ptr< glm::mat4> mpPreMvpMatrix;
+	//for node animation
+	std::unordered_map<std::string, int> mBoneNameIndex;
+	std::vector<glm::mat4> mBonesOffsetMatrix;
+	std::vector<glm::mat4> mBonesFinalMatrix;
+	std::unordered_map<std::string, std::shared_ptr<NodeAnimation>> mNodeAnimations;
+
 	//如果函数内部创建了vao就返回true
 	bool createVaoIfNeed(int posloc=-1, int texloc=-1, int norloc=-1,int colorLoc=-1);
 };

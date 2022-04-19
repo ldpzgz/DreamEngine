@@ -57,11 +57,6 @@ private:
 		std::vector<glm::vec3>*, 
 		std::vector<glm::vec3>*) const noexcept;
 
-	//如果所有物体共用同一个shader，使用这个renderNode
-	void renderNode(const std::shared_ptr<Node>& node, 
-		int posLoc, int texcoordLoc, int normalLoc,
-		std::shared_ptr<Shader>& pShader) const noexcept;
-
 	void defferedGeometryPass(const std::shared_ptr<Scene>& pScene) const noexcept;
 
 	void genShadowMap(std::shared_ptr<Scene>& pScene);
@@ -86,6 +81,7 @@ private:
 	std::shared_ptr<Texture> mpShadowResult;
 	std::shared_ptr<Texture> mpShadowResult1;
 	std::shared_ptr<Material> mpGenShadowMaterial;
+	std::shared_ptr<Material> mpGenShadowAnimMaterial;
 	
 	//for deffered rendering
 	std::shared_ptr<Texture> mpPosMap;

@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
-
+#include "Color.h"
 class Texture;
 class Material;
 class MaterialInfo;
@@ -11,17 +11,20 @@ class Shader;
 class ResourceImpl;
 class MaterialInfo;
 class Node;
+class Animation;
 
 class Resource {
 public:
 	static Resource& getInstance();
 	void loadAllMaterial();
 
+	Color getColor(const std::string& name);
+
 	std::shared_ptr<Texture> getTexture(const std::string& name);
 
 	std::shared_ptr<Material> getMaterial(const std::string& name);
 	//get deffered rendering geometry pass shader accord to material info
-	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo);
+	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo,bool hasNodeAnimation = false);
 	//get deffered rendering lighting pass shader
 	std::shared_ptr<Material> getMaterialDefferedLightPass(bool hasIBL);
 
@@ -60,7 +63,7 @@ public:
 
 	//将config配置里面的某个key对应的value转换为int，
 	int getKeyAsInt(const std::string& key);
-	const std::string_view getKeyAsStr(const std::string& key);
+	const std::string_view getKeyAsStr(std::string_view key);
 private:
 	Resource();
 	std::unique_ptr<ResourceImpl> mpImpl;

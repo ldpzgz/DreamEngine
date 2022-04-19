@@ -1,6 +1,7 @@
 #include "Node.h"
 #include "Rect.h"
 #include "Camera.h"
+#include "Material.h"
 #include "Mesh.h"
 #include "Light.h"
 #include "Scene.h"
@@ -12,7 +13,10 @@
 #include "PostSmaa.h"
 #include "PostToneMap.h"
 #include "PostGsBlur.h"
+#include "Ubo.h"
+//#include <glm/trigonometric.hpp>  //sin cos,tan,radians,degree
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp> // value_ptr,make_vec,make_mat
 #include <random>
 
 constexpr glm::vec2 Halton23[8] =
@@ -210,28 +214,6 @@ void Camera::renderScene() {
 		
 		//把深度缓冲区copy到窗口系统
 		mpFboForward->blitDepthBufToWin();
-	}
-}
-
-void Camera::renderNode(const shared_ptr<Node>& pRootNode, 
-	int posLoc, int texcoordLoc, int normalLoc, 
-	std::shared_ptr<Shader>& pShader) const noexcept {
-	if (pRootNode) {
-		pRootNode->visitNode([posLoc, texcoordLoc, normalLoc,&pShader](Node* pNode) {
-			const auto& pRenderables = pNode->getRenderables();
-			if (pRenderables.empty()) {
-				return;
-			}
-			glm::mat4 modelMat = pNode->getWorldMatrix();
-			if (pShader && !pRenderables.empty()) {
-				pShader->setModelMatrix(modelMat);
-			}
-			for (const auto& pRen : pRenderables) {
-				if (pRen.second) {
-					pRen.second->draw(posLoc, texcoordLoc, normalLoc);
-				}
-			}
-		});
 	}
 }
 
@@ -454,7 +436,9 @@ void Camera::genShadowMap(std::shared_ptr<Scene>& pScene) {
 			GL_CLAMP_TO_EDGE,borderColor, GL_COMPARE_REF_TO_TEXTURE, GL_LEQUAL);
 		mpShadowMap->create2DMap(SM_WIDTH, SM_HEIGHT, nullptr, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);
 		mpGenShadowMaterial = Resource::getInstance().cloneMaterial("genShadowMap");
+		mpGenShadowAnimMaterial = Resource::getInstance().cloneMaterial("genShadowMapAnim");
 		assert(mpGenShadowMaterial);
+		assert(mpGenShadowAnimMaterial);
 		mpFboShadowMap = std::make_unique<Fbo>();
 		mpFboShadowMap->attachDepthTexture(mpShadowMap,0,true); 
 	}
@@ -484,15 +468,32 @@ void Camera::genShadowMap(std::shared_ptr<Scene>& pScene) {
 			const auto& rootNode = pScene->getRootDeffered();
 			mpFboShadowMap->render([this, &rootNode](){
 				if (mpGenShadowMaterial) {
-					mpGenShadowMaterial->enable();
-					mpGenShadowMaterial->setMyRenderOperation();
-					auto& pShader = mpGenShadowMaterial->getShader();
-					int posLoc = -1;
-					int texcoordLoc = -1;
-					int normalLoc = -1;
-					pShader->getLocation(posLoc, texcoordLoc, normalLoc);
-					renderNode(rootNode, posLoc, texcoordLoc, normalLoc, pShader);
-					mpGenShadowMaterial->restoreRenderOperation();
+					auto& pMat = mpGenShadowMaterial;
+					auto& pMatA = mpGenShadowAnimMaterial;
+					rootNode->visitNode([&pMat,&pMatA](Node* pNode) {
+						const auto& pRenderables = pNode->getRenderables();
+						if (pRenderables.empty()) {
+							return;
+						}
+						glm::mat4 modelMat = pNode->getWorldMatrix();
+						for (const auto& pRen : pRenderables) {
+							auto& renderable = pRen.second;
+							if (renderable) {
+								if (renderable->hasAnimation()) {
+									pMatA->enable();
+									pMatA->getShader()->setModelMatrix(modelMat);
+									renderable->updateBones();
+									renderable->draw(0, -1, -1, -1, 1, 2);
+								}
+								else {
+									pMat->enable();
+									pMat->getShader()->setModelMatrix(modelMat);
+									renderable->draw(0, -1, -1, -1, -1, -1);
+								}
+								
+							}
+						}
+					});
 				}
 			});
 		}

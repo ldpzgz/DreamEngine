@@ -2,62 +2,60 @@
 #define _RECT_H_
 #include <array>
 #include <string>
-#include <glm/vec2.hpp>           // vec3
-
-class Color {
+template<typename T>
+class Rect {
 public:
-	Color(float r1, float g1, float b1, float a1):
-		r(r1),g(g1),b(b1),a(a1)
+	Rect(T x1, T y1, T w, T h) :
+		x(x1), y(y1), width(w), height(h)
 	{
+
 	}
 
-	Color(float r1, float g1, float b1):
-		r(r1), g(g1), b(b1), a(1.0f)
-	{
-	}
+	Rect() = default;
 
-	Color(unsigned char r1, unsigned char g1, unsigned char b1, unsigned char a1):
-		r(r1/255.0f), g(g1 / 255.0f), b(b1 / 255.0f), a(a1 / 255.0f)
-	{
-	}
+	Rect(const Rect& c) = default;
 
-	Color(unsigned char r1, unsigned char g1, unsigned char b1) :
-		r(r1 / 255.0f), g(g1 / 255.0f), b(b1 / 255.0f), a(1.0f)
-	{
-	}
-
-	Color() :r(0.0f),g(0.0f),b(0.0f),a(1.0f){
-	};
-
-	Color(const Color& c) = default;
-
-	float& operator[](int index) {
-		return rgba[index];
-	}
-
-	bool operator==(const Color& c) {
-		return (r == c.r && g == c.g && b == c.b && a == c.a);
-	}
-
-	bool operator!=(const Color& c) {
-		return (r != c.r || g != c.g || b != c.b || a != c.a);
-	}
-
-	bool isZero() const{
-		if (r == 0.0f && g == 0.0f && b == 0.0f) {
+	bool isInside(T x1, T y1) {
+		if (x1 >= x && x1 <= x + width && y1 >= y && y1 <= y + height) {
 			return true;
 		}
-		return false;
+		else {
+			return false;
+		}
 	}
 
+	bool intersect(const Rect& other) {
+		if (other.x >= (x + width)) {
+			return false;
+		}
+		else if ((other.x + other.width) <= x) {
+			return false;
+		}
+		else if ((other.y + other.height) <= y) {
+			return false;
+		}
+		else if (other.y >= (y + height)) {
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+
+	T& operator[](int i) {
+		return rect[i];
+	}
+	template<typename U>
+	void translate(const U& vec) {
+		x += vec.x;
+		y += vec.y;
+	}
+public:
 	union {
-		struct { float r, g, b, a; };
-		std::array<float, 4> rgba;
+		struct { T x, y, width, height; };
+		std::array<T, 4> rect;
 	};
-
-	static bool parseColor(const std::string& value, Color& color);
 };
-
 //template<typename T>
 //class Vector3 {
 //public:
@@ -336,60 +334,5 @@ public:
 //using Vec4 = Vector4<float>;
 //using Vec2 = Vector2<float>;
 //using Vec2i = Vector2<int>;
-
-template<typename T>
-class Rect {
-public:
-	Rect(T x1, T y1, T w, T h) :
-		x(x1), y(y1), width(w), height(h)
-	{
-
-	}
-
-	Rect() = default;
-
-	Rect(const Rect& c) = default;
-
-	bool isInside(T x1, T y1) {
-		if (x1 >= x && x1 <= x + width && y1 >= y && y1 <= y + height) {
-			return true;
-		}
-		else {
-			return false;
-		}
-	}
-
-	bool intersect(const Rect& other) {
-		if (other.x >= (x + width)) {
-			return false;
-		}
-		else if ((other.x + other.width) <= x) {
-			return false;
-		}
-		else if ((other.y + other.height) <= y) {
-			return false;
-		}
-		else if (other.y >= (y + height)) {
-			return false;
-		}
-		else {
-			return true;
-		}
-	}
-
-	T& operator[](int i) {
-		return rect[i];
-	}
-	template<typename U>
-	void translate(const U& vec) {
-		x += vec.x;
-		y += vec.y;
-	}
-public:
-	union {
-		struct { T x, y, width, height; };
-		std::array<T, 4> rect;
-	};
-};
 
 #endif
