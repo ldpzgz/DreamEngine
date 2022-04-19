@@ -1,7 +1,6 @@
 #ifndef _BACKGROUND_H_
 #define _BACKGROUND_H_
 #include "../Texture.h"
-#include "../Mesh.h"
 #include "Shape.h"
 #include <memory>
 
@@ -114,7 +113,7 @@ public:
 	};
 
 	Background() {
-		mpNormalStyle = make_unique<BackgroundStyle>();
+		mpNormalStyle = std::make_unique<BackgroundStyle>();
 		mpNormalStyle->mpShape = std::make_shared<Shape>();
 	}
 

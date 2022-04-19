@@ -1,5 +1,6 @@
 #include "TextView.h"
 #include "UiRender.h"
+#include <stdexcept>
 
 void TextView::draw() {
 	UiRender::getInstance()->drawTextView(this);

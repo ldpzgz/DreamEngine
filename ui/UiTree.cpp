@@ -8,7 +8,16 @@
 #include "UiTree.h"
 #include "UiRender.h"
 #include "../Log.h"
+#include "../Fbo.h"
+#include "../Texture.h"
 using namespace std;
+UiTree::UiTree() :
+	mpFboForRender(make_unique<Fbo>())
+{
+
+}
+
+UiTree::~UiTree() = default;
 
 bool UiTree::draw() {
 	if (!mViewsToBeDrawing.empty()) {
@@ -17,15 +26,15 @@ bool UiTree::draw() {
 			mbRedraw = true;
 		}
 		if (mbRedraw) {
-			mFboForRender.setClearColorValue(0.0f, 0.0f, 0.0f, 0.0f);
-			mFboForRender.setClearColor(true);
+			mpFboForRender->setClearColorValue(0.0f, 0.0f, 0.0f, 0.0f);
+			mpFboForRender->setClearColor(true);
 			mbRedraw = false;
 		}
 		else {
-			mFboForRender.setClearColor(false);
+			mpFboForRender->setClearColor(false);
 		}
 		
-		mFboForRender.render([this]() {
+		mpFboForRender->render([this]() {
 			for (auto& pView : mViewsToBeDrawing) {
 				auto pV = pView.lock();
 				if (pV) {
@@ -52,17 +61,17 @@ void UiTree::addDirtyView(const shared_ptr<View>& pView) {
 	mViewsToBeDrawing.emplace_back(pView);
 }
 void UiTree::updateWidthHeight(float width, float height) {
-	//mFboForRender.detachColorRbo();
+	//mpFboForRender.detachColorRbo();
 	if (!mpTexture) {
 		mpTexture = make_shared<Texture>();
 	}
 	mpTexture->unload();
 	mpTexture->createMStexture(static_cast<int>(width), static_cast<int>(height));
 	UiRender::getInstance()->setTexture(mpTexture);
-	mFboForRender.attachColorTextureMS(mpTexture);
-	mFboForRender.setDepthTest(false);
-	mFboForRender.setBlend(true);
-	mFboForRender.setBlendValue(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO, GL_FUNC_ADD, GL_FUNC_ADD);
+	mpFboForRender->attachColorTextureMS(mpTexture);
+	mpFboForRender->setDepthTest(false);
+	mpFboForRender->setBlend(true);
+	mpFboForRender->setBlendValue(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO, GL_FUNC_ADD, GL_FUNC_ADD);
 
 	//ui重绘
 	mbRedraw = true;

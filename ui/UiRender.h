@@ -3,11 +3,6 @@
 #include "FreetypeUtils.h"
 #include "CharPosition.h"
 #include "CharInfo.h"
-#include "../Utils.h"
-#include "../Mesh.h"
-#include "../Node.h"
-#include "../Pbo.h"
-#include "../Texture.h"
 #include "View.h"
 #include "TextView.h"
 #include "Button.h"
@@ -15,9 +10,12 @@
 #include "ScrollView.h"
 #include "ListView.h"
 #include "Shape.h"
+#include <glm/ext/matrix_float4x4.hpp>
 
 using namespace std;
-
+class Mesh;
+class Material;
+class Texture;
 /*
 这个类不要自己单独创建，UiRender::initUiRender函数里面会创建它。
 */
@@ -102,11 +100,7 @@ public:
 	void drawListView(ListView* psv);
 
 	//指定最后要显示出来的纹理，当前uitree的纹理，每棵ui树都会渲染到它自己的纹理上面。
-	void setTexture(const shared_ptr<Texture>& pTex) {
-		if (mpLastMaterial) {
-			mpLastMaterial->setTextureForSampler("s_texture", pTex);
-		}
-	}
+	void setTexture(const shared_ptr<Texture>& pTex);
 
 	//完成最后的ui绘制工作，先前已经将uitree绘制到纹理里面了
 	void drawUi();

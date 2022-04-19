@@ -1,12 +1,11 @@
 #ifndef _SHAPE_H_
 #define _SHAPE_H_
-#include "../Rect.h"
 #include "../Log.h"
+#include "../Color.h"
 #include <string>
 #include <functional>
 #include <unordered_map>
 #include <memory>
-#include "../MeshFilledRect.h"
 enum class ShapeType : int {
 	Rectangle,
 	RoundedRectangle,
@@ -28,7 +27,8 @@ enum class GradientType:int{
 * 可以有边框：
 *	设置了：strokeColor，就会有一个边框，否则没有边框。
 */
-
+class MeshFilledRect;
+class Texture;
 class Shape {
 public:
 	explicit Shape(ShapeType type) :

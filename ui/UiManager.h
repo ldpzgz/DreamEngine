@@ -1,17 +1,16 @@
 ﻿#ifndef _UI_MANAGER_H_
 #define _UI_MANAGER_H_
-#include "../Utils.h"
-#include "../Mesh.h"
-#include "../Node.h"
-#include "../Fbo.h"
-#include "../Texture.h"
 #include "UiTree.h"
 #include "UiRender.h"
 #include "Shape.h"
+#include "../Color.h"
 
 using namespace std;
 using UnicodeType = char32_t;
-
+class Mesh;
+class Node;
+class Fbo;
+class Texture;
 /*
 这个类有一颗ui树，ui树上每个node可以挂一堆view，
 遍历这棵树，调用每个view的render函数，绘制出ui。
@@ -76,7 +75,7 @@ public:
 	//在程序退出的时候，opengl环境销毁之前，需要做一些事情
 	void onDestroy();
 
-	static Color& getColor(const std::string& name);
+	//static Color& getColor(const std::string& name);
 	static std::shared_ptr<Shape>& getShape(const std::string& name);
 	static std::string& getString(const std::string& name);
 	static std::shared_ptr<Texture> getTexture(const std::string& name);
@@ -98,7 +97,7 @@ private:
 	static unordered_map<string, std::shared_ptr<Shape>> gRShapes;
 	static unordered_map<string, std::shared_ptr<Background>> gRBackground;
 	static void parseRStrings(const string& path);
-	static void parseRColors(const string& path);
+	//static void parseRColors(const string& path);
 	static void parseRShape(const string& path);
 	static void parseRBackground(const string& path);
 	static void loadAllUiImage();

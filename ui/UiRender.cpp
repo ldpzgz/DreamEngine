@@ -1,12 +1,18 @@
-﻿#include "UiRender.h"
-#include "../Log.h"
-#include <fstream>
+﻿#include <fstream>
 #include <vector>
+#include "../Log.h"
 #include "../MeshRoundedRectangle.h"
 #include "../MeshCircle.h"
 #include "../Resource.h"
 #include "../Ubo.h"
-
+#include "../Material.h"
+#include "../Utils.h"
+#include "../Mesh.h"
+#include "../Pbo.h"
+#include "../Texture.h"
+#include <glm/ext/matrix_transform.hpp> //translate, rotate, scale, identity
+#include <glm/ext/matrix_clip_space.hpp> // perspective
+#include "UiRender.h"
 using namespace std;
 int FontManager::gMyFontFileVersion = 1;
 const string CharSizeKey("charSize");		//一个字占用的宽高
@@ -1002,6 +1008,12 @@ void UiRender::drawListView(ListView* plv) {
 	}
 	else {
 		glScissor(preScissorBox.x, preScissorBox.y, preScissorBox.width, preScissorBox.height);
+	}
+}
+
+void UiRender::setTexture(const shared_ptr<Texture>& pTex) {
+	if (mpLastMaterial) {
+		mpLastMaterial->setTextureForSampler("s_texture", pTex);
 	}
 }
 

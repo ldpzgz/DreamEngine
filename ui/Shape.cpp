@@ -1,6 +1,8 @@
 #include <stdexcept>
 #include "Shape.h"
 #include "../Material.h"
+#include "../Texture.h"
+#include "../MeshFilledRect.h"
 #include "../Resource.h"
 using namespace std;
 

@@ -1,12 +1,15 @@
 ﻿#include "UiManager.h"
 #include "Background.h"
-#include "../Log.h"
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>  //rapidxml::file
 #include <rapidxml_print.hpp>  //rapidxml::print
 #include <filesystem>
 #include "../Utils.h"
 #include "../Resource.h"
+#include "../Mesh.h"
+#include "../Node.h"
+#include "../Fbo.h"
+#include "../Texture.h"
 using namespace std::filesystem;
 using namespace std;
 
@@ -19,7 +22,7 @@ static const string gUiLayoutPath("./opengles3/resource/layout");
 
 unique_ptr<UiManager> UiManager::gInstance = make_unique<UiManager>();
 unordered_map<string, string> UiManager::gRStrings;
-unordered_map<string, Color> UiManager::gRColors;
+//unordered_map<string, Color> UiManager::gRColors;
 unordered_map<string, std::shared_ptr<Shape>> UiManager::gRShapes;
 unordered_map<string, std::shared_ptr<Background>> UiManager::gRBackground;
 
@@ -289,47 +292,47 @@ void UiManager::parseRBackground(const string& path) {
 	}
 }
 
-void UiManager::parseRColors(const string& path) {
-	unique_ptr<rapidxml::file<>> pfdoc;
-	try {
-		pfdoc = make_unique<rapidxml::file<>>(path.c_str());
-	}
-	catch (std::exception e) {
-		LOGE("error to parseRStrings %s file,error %s", path.c_str(), e.what());
-		return;
-	}
-	if (pfdoc && pfdoc->size() > 0) {
-		rapidxml::xml_document<> doc;// character type defaults to char
-		doc.parse<0>(pfdoc->data());// 0 means default parse flags
-		auto pResNode = doc.first_node("resources");
-		if (pResNode != nullptr) {
-			auto pColorNode = pResNode->first_node("color");
-			while (pColorNode != nullptr) {
-				auto attribute = pColorNode->first_attribute("name");
-				if (attribute != nullptr) {
-					string key = attribute->value();
-					string value = pColorNode->value();//value is like #ffffffaa
-					if (!key.empty() && !value.empty()) {
-						Color color;
-						if (Color::parseColor(value, color)) {
-							auto ret = gRColors.try_emplace(key, color);
-							if (!ret.second) {
-								LOGD("there already has color who's name is %s in gRColors", key.c_str());
-							}
-						}
-						else {
-							LOGE("parse color %s in colors.xml", key.c_str());
-						}
-					}
-				}
-				pColorNode = pColorNode->next_sibling();
-			}
-		}
-	}
-	else {
-		LOGE("error to parse resource string file %s",path.c_str());
-	}
-}
+//void UiManager::parseRColors(const string& path) {
+//	unique_ptr<rapidxml::file<>> pfdoc;
+//	try {
+//		pfdoc = make_unique<rapidxml::file<>>(path.c_str());
+//	}
+//	catch (std::exception e) {
+//		LOGE("error to parseRStrings %s file,error %s", path.c_str(), e.what());
+//		return;
+//	}
+//	if (pfdoc && pfdoc->size() > 0) {
+//		rapidxml::xml_document<> doc;// character type defaults to char
+//		doc.parse<0>(pfdoc->data());// 0 means default parse flags
+//		auto pResNode = doc.first_node("resources");
+//		if (pResNode != nullptr) {
+//			auto pColorNode = pResNode->first_node("color");
+//			while (pColorNode != nullptr) {
+//				auto attribute = pColorNode->first_attribute("name");
+//				if (attribute != nullptr) {
+//					string key = attribute->value();
+//					string value = pColorNode->value();//value is like #ffffffaa
+//					if (!key.empty() && !value.empty()) {
+//						Color color;
+//						if (Color::parseColor(value, color)) {
+//							auto ret = gRColors.try_emplace(key, color);
+//							if (!ret.second) {
+//								LOGD("there already has color who's name is %s in gRColors", key.c_str());
+//							}
+//						}
+//						else {
+//							LOGE("parse color %s in colors.xml", key.c_str());
+//						}
+//					}
+//				}
+//				pColorNode = pColorNode->next_sibling();
+//			}
+//		}
+//	}
+//	else {
+//		LOGE("error to parse resource string file %s",path.c_str());
+//	}
+//}
 
 void UiManager::parseRStrings(const string& path) {
 	unique_ptr<rapidxml::file<>> pfdoc;
@@ -488,62 +491,17 @@ void UiManager::onDestroy() {
 	UiRender::getInstance()->saveFonts();
 }
 
-bool Color::parseColor(const std::string& value, Color& color)
-{
-	const string temp = "@color/";
-	auto index1 = value.find(temp);
-	auto size = value.size();
-	if ( index1 == 0) {
-		auto colorName = value.substr(temp.size());
-		color = UiManager::getColor(colorName);
-		return true;
-	}
-	else if (value.empty() || size > 9 || value[0] != '#') {
-		return false;
-	}
-	int index = 0;
-	int relIndex = 1 + 2 * index;
-	bool hasError = false;
-	while (index < 4 && relIndex < size) {
-		auto Rstr = value.substr(relIndex, 2);
-		try {
-			color[index] = (float)std::stoi(Rstr, nullptr, 16) / 255.0f;
-		}
-		catch (.../*const logic_error& e*/) {
-			hasError = true;
-			break;
-		}
-		++index;
-		relIndex = 1 + 2 * index;
-	}
-	if (!hasError) {
-		if (size == 7) {
-			color.a = 1.0f;
-		}
-		else if (size == 5) {
-			color.b = 0.0f;
-			color.a = 1.0f;
-		}
-		else if (size == 3) {
-			color.g = 0.0f;
-			color.b = 0.0f;
-			color.a = 1.0f;
-		}
-	}
-	return !hasError;
-}
-
-Color& UiManager::getColor(const std::string& name) {
-	static Color temp;
-	auto it = gRColors.find(name);
-	if (it != gRColors.end()) {
-		return it->second;
-	}
-	else {
-		LOGE("cannot find %s color in color resource", name.c_str());
-		return temp;
-	}
-}
+//Color& UiManager::getColor(const std::string& name) {
+//	static Color temp;
+//	auto it = gRColors.find(name);
+//	if (it != gRColors.end()) {
+//		return it->second;
+//	}
+//	else {
+//		LOGE("cannot find %s color in color resource", name.c_str());
+//		return temp;
+//	}
+//}
 
 std::shared_ptr<Shape>& UiManager::getShape(const std::string& name) {
 	static std::shared_ptr<Shape> temp;
@@ -587,7 +545,7 @@ std::string& UiManager::getString(const std::string& name) {
 bool UiManager::initUi(int w, int h) {
 	//加载ui string和color配置
 	parseRStrings(gStringFile);
-	parseRColors(gColorFile);
+	//parseRColors(gColorFile);
 	//加载ui中需要用到的图片
 	loadAllUiImage();
 	loadAllShape();
@@ -604,7 +562,7 @@ void UiManager::draw() {
 		//这个是将uitree绘制到纹理
 		if (mpUiTree->draw()) {
 			//把uitree渲染的结果拷贝到mpTexture里面，mpTexture已经设置给了uiRender
-			//Fbo::blitFbo(mpUiTree->mFboForRender, mFboForCopy);
+			//Fbo::blitFbo(mpUiTree->mpFboForRender, mFboForCopy);
 		}
 		//这个是把纹理显示出来
 		UiRender::getInstance()->drawUi();
