@@ -44,7 +44,7 @@ public:
 
 	std::shared_ptr<Scene> getScene();
 
-	const glm::mat4& getViewMatrix() {
+	glm::mat4& getViewMatrix() {
 		return mViewMat;
 	}
 

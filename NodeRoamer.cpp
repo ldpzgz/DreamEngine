@@ -1,6 +1,8 @@
 #include "Camera.h"
 #include "Node.h"
 #include "NodeRoamer.h"
+#include "Mesh.h"
+#include "aabb.h"
 #include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
 /*
 * 操纵节点漫游
@@ -12,6 +14,26 @@ void NodeRoamer::setTarget(std::shared_ptr<Node>& pNode,std::shared_ptr<Camera>&
 	mStartRotateX = 0;
 	mStartRotateY = 0;
 	mIsStartRotate = false;
+	AABB aabb;
+	if (mpNode) {
+		mpNode->visitNode([&aabb](Node* pNode) {
+			if (pNode) {
+				for (const auto& pMesh : pNode->getRenderables()) {
+					auto pM = std::dynamic_pointer_cast<Mesh>(pMesh.second);
+					if (pM) {
+						auto& pab = pM->getAabb();
+						if (pab) {
+							aabb += *pab;
+						}
+					}
+				}
+			}
+			});
+	}
+	mLengthBase = glm::length(aabb.length());
+	if (mLengthBase < 0.0001f) {
+		mLengthBase = 1.0f;
+	}
 }
 void NodeRoamer::startRotate(int x, int y) {
 	if (mpNode) {
@@ -47,31 +69,22 @@ void NodeRoamer::rotate(int x, int y) {
 
 		mStartRotateX = x;
 		mStartRotateY = y;
-
-		/*if (len > 0.99f) {
-			glm::mat4 tempM{ 1.0f };
-			tempM = glm::rotate(tempM, len / 100.0f, glm::vec3(b, a, 0.0f));
-			auto& oMat = mpNode->getMatrix();
-			oMat = tempM * oMat;
-			mpNode->updateChildWorldMatrix();
-			mStartRotateX = x;
-			mStartRotateY = y;
-		}*/
 	}
 }
 void NodeRoamer::endRotate(int x, int y) {
 	mIsStartRotate = false;
 }
 void NodeRoamer::move(bool front) {
-	if (mpNode) {
+	if (mpView) {
 		glm::mat4 tempM{ 1.0f };
+		float delta = mLengthBase / 10.0f;
 		if (front) {
-			tempM = glm::translate(tempM, glm::vec3(0.0f, 0.0f, -5.0f));
+			tempM = glm::translate(tempM, glm::vec3(0.0f, 0.0f, -delta));
 		}
 		else {
-			tempM = glm::translate(tempM, glm::vec3(0.0f, 0.0f, 5.0f));
+			tempM = glm::translate(tempM, glm::vec3(0.0f, 0.0f, delta));
 		}
-		auto& oMat = mpNode->getLocalMatrix();
+		auto& oMat = mpView->getViewMatrix();
 		oMat = tempM * oMat;
 	}
 }

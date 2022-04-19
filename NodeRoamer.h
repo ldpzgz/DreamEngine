@@ -15,6 +15,7 @@ public:
 protected:
 	int mStartRotateX{ 0 };
 	int mStartRotateY{ 0 };
+	float mLengthBase{ 1.0 };
 	bool mIsStartRotate{ false };
 	std::shared_ptr<Node> mpNode;
 	std::shared_ptr<Camera> mpView;
