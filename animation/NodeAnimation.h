@@ -31,18 +31,10 @@ public:
 	};
 
 	NodeAnimation(const std::string& name, std::shared_ptr<Node> pRootNode) :
-		mName(name),
+		Animation(name),
 		mpRootNode(pRootNode)
 	{
 
-	}
-
-	void setName(const std::string& name) {
-		mName = name;
-	}
-
-	const std::string& getName() {
-		return mName;
 	}
 
 	void setDuration(int64_t dur) {
@@ -55,34 +47,43 @@ public:
 
 	void addPosKeyFrame(const std::string& nodeName,
 		std::unique_ptr<std::vector<KeyFrameVec3Time>>& info) {
-		if (!mNodesPosKeyFrameInfo.emplace(nodeName, std::move(info)).second) {
+		if (!mNodesPosKeyFrameInfo.try_emplace(nodeName, std::move(info)).second) {
 			LOGE("addPosKeyFrame,the Node is already has pos keyframe info");
 		}
 	}
 	void addScaleKeyFrame(const std::string& nodeName,
 		std::unique_ptr<std::vector<KeyFrameVec3Time>>& info) {
-		if (!mNodesScaleKeyFrameInfo.emplace(nodeName, std::move(info)).second) {
+		if (!mNodesScaleKeyFrameInfo.try_emplace(nodeName, std::move(info)).second) {
 			LOGE("addScaleKeyFrame,the Node is already has scale keyframe info");
 		}
 	}
 	void addRotateKeyFrame(const std::string& nodeName,
 		std::unique_ptr<std::vector<KeyFrameQuatTime>>& info) {
-		if (!mNodesRotateKeyFrameInfo.emplace(nodeName, std::move(info)).second) {
+		if (!mNodesRotateKeyFrameInfo.try_emplace(nodeName, std::move(info)).second) {
 			LOGE("addRotateKeyFrame,the Node is already has rotate keyframe info");
 		}
 	}
 
-	void addNodeName(const std::string& name) {
-		if (!mNodesNameSet.emplace(name).second) {
-			LOGE("duplicate node name in NodeAnimation");
+	void addAffectedNode(const std::string& name) {
+		if (!mNameNodeMap.try_emplace(name,std::shared_ptr<Node>()).second) {
 		}
 	}
 
-	void animate(Mesh* pMesh);
+	void addAffectedNode(const std::string& name, const std::shared_ptr<Node>& pNode) {
+		if (mNameNodeMap.find(name) != mNameNodeMap.end()) {
+			mNameNodeMap[name] = pNode;
+		}
+	}
+
+	void addAffectedMesh(const std::shared_ptr<Mesh>& pMesh) {
+		mAffectedMeshes.emplace_back(pMesh);
+	}
+
+	void animate() override;
 
 	bool findBone(const std::string& name);
 private:
-	std::string mName;
+	void updateAffectedMesh();
 	std::shared_ptr<Node> mpRootNode;
 	int64_t mDuration{ 0 };//in ms
 	//the animation key frame info
@@ -90,5 +91,6 @@ private:
 	std::unordered_map < std::string, std::unique_ptr< std::vector<KeyFrameVec3Time> > > mNodesPosKeyFrameInfo;
 	std::unordered_map < std::string, std::unique_ptr< std::vector<KeyFrameVec3Time> > > mNodesScaleKeyFrameInfo;
 	std::unordered_map < std::string, std::unique_ptr< std::vector<KeyFrameQuatTime> > > mNodesRotateKeyFrameInfo;
-	std::unordered_set<std::string> mNodesNameSet;
+	std::unordered_map<std::string, std::shared_ptr<Node>> mNameNodeMap;
+	std::vector<std::shared_ptr<Mesh>> mAffectedMeshes;
 };

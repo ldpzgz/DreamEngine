@@ -18,6 +18,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp> // value_ptr,make_vec,make_mat
 #include <random>
+#include "AnimationManager.h"
 
 constexpr glm::vec2 Halton23[8] =
 {
@@ -470,6 +471,7 @@ void Camera::genShadowMap(std::shared_ptr<Scene>& pScene) {
 				if (mpGenShadowMaterial) {
 					auto& pMat = mpGenShadowMaterial;
 					auto& pMatA = mpGenShadowAnimMaterial;
+					AnimationManager::getInstance().updateActiveAnimation();
 					rootNode->visitNode([&pMat,&pMatA](Node* pNode) {
 						const auto& pRenderables = pNode->getRenderables();
 						if (pRenderables.empty()) {
@@ -482,7 +484,6 @@ void Camera::genShadowMap(std::shared_ptr<Scene>& pScene) {
 								if (renderable->hasAnimation()) {
 									pMatA->enable();
 									pMatA->getShader()->setModelMatrix(modelMat);
-									renderable->updateBones();
 									renderable->draw(0, -1, -1, -1, 1, 2);
 								}
 								else {

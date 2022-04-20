@@ -416,6 +416,7 @@ bool Mesh::loadMesh(const std::string meshFilePath) {
 void Mesh::initBoneInfo(vector<glm::mat4>&& offsetMatrix, unordered_map<std::string, int>&& nameIndexMap) {
 	mBonesOffsetMatrix = std::move(offsetMatrix);
 	mBoneNameIndex = std::move(nameIndexMap);
+	mBonesFinalMatrix.resize(mBonesOffsetMatrix.size());
 }
 
 //初始化boneInfo per vertex
@@ -844,22 +845,6 @@ void Mesh::draw(int posloc, int texloc, int norloc, int colorloc,int boneIdLoc,i
 		break;
 	default:
 		break;
-	}
-}
-
-void Mesh::updateBones() {
-	//update node animation data
-	if (!mBonesOffsetMatrix.empty()) {
-		mBonesFinalMatrix.assign(mBonesOffsetMatrix.size(), glm::mat4{ 1.0f });
-		if (!mNodeAnimations.empty()) {
-			auto it = mNodeAnimations.begin();
-			if (!it->second->isStarted()) {
-				it->second->start();
-			}
-		}
-		for (auto& pair : mNodeAnimations) {
-			pair.second->animate(this);
-		}
 	}
 }
 

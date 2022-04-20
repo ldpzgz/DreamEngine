@@ -193,18 +193,12 @@ public:
 	/*
 	* add NodeAnimation which can affect this mesh
 	*/
-	void addNodeAnimation(const std::pair<std::string, std::shared_ptr<NodeAnimation>>& pair) {
-		mNodeAnimations.emplace(pair);
+	void addNodeAnimationAffectMe(const std::string& animatName) {
+		mNodeAnimationsAffectMe.emplace_back(animatName);
 	}
 
-	std::shared_ptr<NodeAnimation> getAnimation(const std::string& name) {
-		auto it = mNodeAnimations.find(name);
-		if (it != mNodeAnimations.end()) {
-			return it->second;
-		}
-		else {
-			return nullptr;
-		}
+	const auto& getNodeAnimationAffectMe() {
+		return mNodeAnimationsAffectMe;
 	}
 
 	virtual bool hasAnimation() {
@@ -222,8 +216,6 @@ public:
 	std::vector<glm::mat4>& getBonesFinalMatrix() {
 		return mBonesFinalMatrix;
 	}
-
-	void updateBones() override;
 
 	//这四个函数都是创建vbo，ebo，并从内存上传数据到vbo的显存,如果之前存在vbo了，先删除
 	bool setPosData(const GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
@@ -304,7 +296,7 @@ protected:
 	std::unordered_map<std::string, int> mBoneNameIndex;
 	std::vector<glm::mat4> mBonesOffsetMatrix;
 	std::vector<glm::mat4> mBonesFinalMatrix;
-	std::unordered_map<std::string, std::shared_ptr<NodeAnimation>> mNodeAnimations;
+	std::vector<std::string> mNodeAnimationsAffectMe;
 
 	//如果函数内部创建了vao就返回true
 	bool createVaoIfNeed(int posloc=-1, int texloc=-1, int norloc=-1,int colorLoc=-1);

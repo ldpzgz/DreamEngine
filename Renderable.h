@@ -20,10 +20,6 @@ public:
 
 	}
 
-	virtual void updateBones() {
-
-	}
-
 	virtual bool hasAnimation() {
 		return false;
 	}

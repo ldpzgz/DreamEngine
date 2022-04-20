@@ -29,7 +29,20 @@ enum class AnimationState {
 class Animation {
 public:
 	Animation() = default;
+	explicit Animation(const std::string& name) :
+		mName(name) {
+
+	}
 	virtual ~Animation() = default;
+
+	void setName(const std::string& name) {
+		mName = name;
+	}
+
+	const std::string& getName() {
+		return mName;
+	}
+
 	void start() {
 		mTimer.start();
 		mState = AnimationState::Started;
@@ -58,6 +71,9 @@ public:
 		return mState == AnimationState::Started;
 	}
 
+	virtual void animate() {
+
+	}
 	/*void setLoopModel(LoopMode mode) {
 		mLoopMode = mode;
 	}
@@ -78,6 +94,7 @@ public:
 
 	//glm::vec2 getCurXY();
 protected:
+	std::string mName;
 	int64_t mAnimationTime{ 0 };
 	int64_t mCurTime{0};
 	TimeCounterMil mTimer;

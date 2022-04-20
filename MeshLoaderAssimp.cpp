@@ -23,6 +23,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include "animation/NodeAnimation.h"
+#include "AnimationManager.h"
 
 class MeshLoaderAssimpImpl {
 public:
@@ -49,13 +50,17 @@ void MeshLoaderAssimpImpl::parseAnimationInfo(const struct aiScene* pScene,
 				if (!mAnimations.emplace(name, pNodeAnimation).second) {
 					LOGE("duplicate animation name in mesh file MeshLoaderAssimp");
 				}
+				else {
+					LOGD("get a nodeAnimation %s",name.c_str());
+				}
+				AnimationManager::getInstance().addAnimation(name, pNodeAnimation);
 				//how many nodes affected by this animation
 				unsigned int num = pAnimation->mNumChannels;
 				for (unsigned int j = 0; j < num; ++j) {
 					aiNodeAnim* pNodeAnim = pAnimation->mChannels[j];
 					if (pNodeAnim != nullptr) {
 						std::string nodeName(pNodeAnim->mNodeName.data);
-						pNodeAnimation->addNodeName(nodeName);
+						pNodeAnimation->addAffectedNode(nodeName);
 						auto numPos = pNodeAnim->mNumPositionKeys;
 						auto* pPosKey = pNodeAnim->mPositionKeys;
 						auto pPosKeys = std::make_unique<std::vector<NodeAnimation::KeyFrameVec3Time>>();
@@ -115,7 +120,9 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 
 	std::string nodeName(nd->mName.data);
 	pNode->setName(nodeName);
-
+	if (!nodeName.empty()) {
+		AnimationManager::getInstance().addAffectedNode(nodeName,pNode);
+	}
 	unsigned int n = 0;
 	unsigned int t = 0;
 	aiMatrix4x4 model = nd->mTransformation;//本节点的model矩阵
@@ -250,10 +257,12 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 			MeshSP pMesh = make_shared<Mesh>(MeshType::DIY);
 			if (pMesh->loadMesh(mPos, mTexcoords, mNormals, mIndexes)) {
 				if (!mBoneIds.empty()) {
+					//find animations which affected me
 					for (const auto& pair : mAnimations) {
 						for (const auto& nameId : mBonesNameIdMap) {
 							if (pair.second->findBone(nameId.first)) {
-								pMesh->addNodeAnimation(pair);
+								pair.second->addAffectedMesh(pMesh);
+								pMesh->addNodeAnimationAffectMe(pair.first);
 								break;
 							}
 						}
