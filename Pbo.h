@@ -119,7 +119,7 @@ private:
 
 	/*using TimePoint = std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds>;
 	TimePoint mPreTime;*/
-	/*TimeCounter<std::chrono::milliseconds> mTimeCounter;
+	/*Timer<std::chrono::milliseconds> mTimeCounter;
 	int mFrameRate{ 25 };
 	int mReadIndex{ -1 };
 	int mWriteIndex{ -1 };

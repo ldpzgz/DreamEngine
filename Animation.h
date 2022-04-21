@@ -97,7 +97,7 @@ protected:
 	std::string mName;
 	int64_t mAnimationTime{ 0 };
 	int64_t mCurTime{0};
-	TimeCounterMil mTimer;
+	TimerMil mTimer;
 	AnimationState mState{ AnimationState::Idle };
 	/*LoopMode mLoopMode{ LoopMode::None };
 	InterpolateType mInterpolateType{InterpolateType::Cubic};

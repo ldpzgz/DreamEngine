@@ -13,12 +13,27 @@
 #include <map>
 #include <filesystem>
 #include <string_view>
+#include <random>
 #include "Log.h"
 
 using namespace std::filesystem;
 
 namespace Utils {
 	//std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
+
+	inline float uniformRandom(float start,float end)
+	{
+		static std::default_random_engine generator;
+		static std::uniform_real_distribution<float> distribution(start, end);
+		return distribution(generator);
+	}
+
+	inline float normalRandom(float mu = 0.0f, float sigma = 1.0f)
+	{
+		static std::default_random_engine generator;
+		static std::normal_distribution<float> distribution(mu, sigma);
+		return distribution(generator);
+	}
 
 	std::string nowTime();
 	/*
@@ -61,7 +76,7 @@ namespace Utils {
 T	std::chrono::milliseconds,std::chrono::microseconds,..等时间单位。
 */
 template<typename T>
-class TimeCounter {
+class Timer {
 public:
 	using TimePoint = std::chrono::time_point<std::chrono::steady_clock, T>;
 	
@@ -157,8 +172,8 @@ private:
 	bool mbPause{ false };
 };
 
-using TimeCounterMil = TimeCounter<std::chrono::milliseconds>;
-using TimeCounterMic = TimeCounter<std::chrono::microseconds>;
+using TimerMil = Timer<std::chrono::milliseconds>;
+using TimerMic = Timer<std::chrono::microseconds>;
 
 namespace UtfConvert
 {
