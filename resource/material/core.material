@@ -32,9 +32,13 @@ material:skyboxHdr1{
 config{
 	defferedGeoVs{
 		layout(location = 0) in vec3 inPos;
-		layout(location = 1) in vec2 inTexcoord;
-		layout(location = 2) in vec3 inNormal;
-		
+		#ifdef HAS_MAP
+			layout(location = 1) in vec2 inTexcoord;
+			layout(location = 2) in vec3 inNormal;
+			out vec2 texcoord;
+		#else
+			layout(location = 1) in vec3 inNormal;
+		#endif
 		layout (std140) uniform Matrixes
 		{
 			mat4 projMat;
@@ -47,6 +51,7 @@ config{
 		out vec3 worldNormal;
 		#ifdef HAS_SHADOW
 			out vec4 shadowPos;
+			out vec3 shadowNormal;
 		#endif
 		
 		#ifdef HAS_TAA
@@ -76,9 +81,7 @@ config{
 				vec2(-7.0f / 8.0f, 7.0f / 9.0f)
 			);
 		#endif
-		#ifdef HAS_MAP
-			out vec2 texcoord;
-		#endif
+		
 		#ifdef HAS_NODE_ANIMATION
 			layout (location = 3) in ivec4 boneIDs;
 			layout (location = 4) in vec4 weights;
@@ -121,6 +124,7 @@ config{
 			#endif
 			#ifdef HAS_SHADOW
 				shadowPos = shadowMat * mvMat * animatedPos;
+				shadowNormal = vec3(shadowMat * mvMat * animatedNormal);
 			#endif
 		}
 	}
@@ -146,6 +150,7 @@ config{
 				layout (location = 3) out float outShadowMap;
 			#endif
 			in vec4 shadowPos;
+			in vec3 shadowNormal;
 			uniform sampler2DShadow shadowMap;
 			vec2 poissonDisk[16] = vec2[]( 
 			   vec2( -0.94201624, -0.39906216 ), 
@@ -174,8 +179,10 @@ config{
 			float ShadowCalculation(vec4 fragPosLightSpace)
 			{
 				vec4 projCoords = fragPosLightSpace * 0.5 + 0.5;
+				float cosNL=clamp(dot(vec3(0.0f,0.0f,1.0f),shadowNormal),0.0f,1.0f);
+				float bias = 0.005f*tan(acos(cosNL));
 				float visibility=1.0;
-				projCoords.z -= 0.005*projCoords.w;
+				projCoords.z -= bias*projCoords.w;
 				for (int i=0;i<4;i++){
 					int index = int(16.0*random(floor(worldPos*1000.0), i))%16;
 					projCoords.xy += poissonDisk[index]/700.0;
