@@ -147,7 +147,7 @@ void Node::addListener(const shared_ptr<NodeListener>& lis) {
 	mListeners.emplace_back(lis);
 }
 /*
-* for situation: only parent is moved,and all descendant node of parent is static
+* for situation: only parent is moveing,and all the descendant node of parent is static
 */
 void Node::updateMatrixHierarchy(glm::mat4& parentMat) noexcept {
 	setParentWorldMatrix(parentMat);
@@ -167,7 +167,7 @@ void Node::updateMatrixHierarchy(glm::mat4& parentMat) noexcept {
 }
 
 /*
-* for situation: parent is moved, and descendant node of parent will be moved,
+* for situation: parent is moving, and the descendant of parent node will be moving,
 * thus It is not necessary to update all descendant
 */
 void Node::updateMatrixMeAndSibling(glm::mat4& parentMat) noexcept {

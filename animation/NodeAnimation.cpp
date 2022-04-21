@@ -114,9 +114,6 @@ void NodeAnimation::animate() {
 							glm::quat curRotate = glm::slerp(preTimeIt->rotate, nextTimeIt->rotate, blendFactor);
 							rotateMatrix = glm::toMat4(curRotate);
 						}
-						else if (nextTimeIt == rotateArray.end()) {
-							LOGD("HAHAHA");
-						}
 					}
 				}
 				auto myLocalMat = posMatrix * rotateMatrix * scaleMatrix;
