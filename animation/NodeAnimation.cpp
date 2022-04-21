@@ -120,10 +120,9 @@ void NodeAnimation::animate() {
 				auto myWorldMat = pNode->getParentWorldMat() * myLocalMat;
 				pNode->setLocalMatrix(myLocalMat);
 				//update the parentWorldMatrix of pNode's all direct children
-				auto pChild = pNode->getFirstChild();
-				while (pChild) {
-					pChild->setParentWorldMatrix(myWorldMat);
-					pChild = pChild->getNextSibling();
+				auto& children = pNode->getChildren();
+				for(auto& pChild: children){
+					pChild->setParentWorldMatrix(myWorldMat,false);
 				}
 
 				++completeCount;
@@ -134,10 +133,9 @@ void NodeAnimation::animate() {
 			else {
 				auto myWorldMat = pNode->getWorldMatrix();
 				//update the parentWorldMatrix of pNode's all direct children
-				auto pChild = pNode->getFirstChild();
-				while (pChild) {
-					pChild->setParentWorldMatrix(myWorldMat);
-					pChild = pChild->getNextSibling();
+				auto& children = pNode->getChildren();
+				for (auto& pChild : children){
+					pChild->setParentWorldMatrix(myWorldMat, false);
 				}
 			}
 			return false;

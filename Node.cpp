@@ -18,12 +18,13 @@ shared_ptr<Node> Node::newAChild() {
 	return child;
 }
 
-bool Node::addChild(shared_ptr<Node>& child) {
+void Node::addChild(shared_ptr<Node>& child) {
 	if (child) {
 		child->setParent(shared_from_this());
 		child->setParentWorldMatrix(getWorldMatrix());
+		mChildren.emplace_back(child);
 	}
-	if (!mpFirstChild) {
+	/*if (!mpFirstChild) {
 		mpFirstChild = child;
 		mpLastChild = child;
 	}
@@ -32,38 +33,39 @@ bool Node::addChild(shared_ptr<Node>& child) {
 		child->mpPreSibling = mpLastChild;
 		mpLastChild = child;
 	}
-	return true;
+	return true;*/
 }
 
-bool Node::removeChild(shared_ptr<Node>& child) noexcept{
-	auto p = mpFirstChild;
-	while (p && p != child) {
-		p = p->mpNextSibling;
-	}
-	if (p) {
-		auto& pre = p->mpPreSibling.lock();
-		auto& next = p->mpNextSibling;
-		if (pre) {
-			pre->mpNextSibling = next;
-		}
-		else {
-			//remove first child;
-			mpFirstChild = next;
-		}
+void Node::removeChild(shared_ptr<Node>& child) noexcept{
+	mChildren.remove(child);
+	//auto p = mpFirstChild;
+	//while (p && p != child) {
+	//	p = p->mpNextSibling;
+	//}
+	//if (p) {
+	//	auto& pre = p->mpPreSibling.lock();
+	//	auto& next = p->mpNextSibling;
+	//	if (pre) {
+	//		pre->mpNextSibling = next;
+	//	}
+	//	else {
+	//		//remove first child;
+	//		mpFirstChild = next;
+	//	}
 
-		if (next) {
-			next->mpPreSibling = pre;
-		}
-		else {
-			//remove last child;
-			mpLastChild = pre;
-		}
-		child->mpNextSibling.reset();
-		child->mpPreSibling.reset();
-		child.reset();
-		return true;
-	}
-	return false;
+	//	if (next) {
+	//		next->mpPreSibling = pre;
+	//	}
+	//	else {
+	//		//remove last child;
+	//		mpLastChild = pre;
+	//	}
+	//	child->mpNextSibling.reset();
+	//	child->mpPreSibling.reset();
+	//	child.reset();
+	//	return true;
+	//}
+	//return false;
 }
 
 bool Node::addRenderable(const shared_ptr<Renderable>& temp) {
@@ -73,42 +75,56 @@ bool Node::addRenderable(const shared_ptr<Renderable>& temp) {
 	return true;
 }
 
-
-void Node::setLocalMatrix(const glm::mat4& matrix) noexcept {
-	mLocalMat = matrix;
-	if (mpFirstChild) {
-		mpFirstChild->updateMatrixHierarchy(mParentWorldMat * mLocalMat);
+void Node::setParentWorldMatrix(const glm::mat4& matrix, bool updateChild, bool notify) noexcept {
+	mParentWorldMat = matrix;
+	if (notify) {
+		updateListener();
+	}
+	if (updateChild) {
+		updateChildrenMatrix();
 	}
 }
 
-void Node::setLocalMatrixOnlyChild(const glm::mat4& matrix) noexcept {
+void Node::setLocalMatrix(const glm::mat4& matrix,bool updateChild, bool notify) noexcept {
 	mLocalMat = matrix;
-	if (mpFirstChild) {
-		mpFirstChild->updateMatrixMeAndSibling(mParentWorldMat * mLocalMat);
+	if (notify) {
+		updateListener();
+	}
+	if (updateChild) {
+		updateChildrenMatrix();
 	}
 }
 
-void Node::translate(float x, float y, float z) noexcept {
+void Node::translate(float x, float y, float z, bool updateChild, bool notify) noexcept {
 	glm::mat4 temp{ 1.0f };
 	mLocalMat = glm::translate(temp, glm::vec3(x, y, z)) * mLocalMat;
-	if (mpFirstChild) {
-		mpFirstChild->updateMatrixHierarchy(mParentWorldMat * mLocalMat);
+	if (notify) {
+		updateListener();
+	}
+	if (updateChild) {
+		updateChildrenMatrix();
 	}
 }
 
-void Node::rotate(float angle, const glm::vec3& vec) noexcept {
+void Node::rotate(float angle, const glm::vec3& vec, bool updateChild, bool notify) noexcept {
 	glm::mat4 temp{ 1.0f };
 	mLocalMat = glm::rotate(temp, angle, vec) * mLocalMat;
-	if (mpFirstChild) {
-		mpFirstChild->updateMatrixHierarchy(mParentWorldMat * mLocalMat);
+	if (notify) {
+		updateListener();
+	}
+	if (updateChild) {
+		updateChildrenMatrix();
 	}
 }
 
-void Node::scale(const glm::vec3& scaleVec) noexcept {
+void Node::scale(const glm::vec3& scaleVec, bool updateChild, bool notify) noexcept {
 	glm::mat4 temp{ 1.0f };
 	mLocalMat = glm::scale(temp, scaleVec) * mLocalMat;
-	if (mpFirstChild) {
-		mpFirstChild->updateMatrixHierarchy(mParentWorldMat * mLocalMat);
+	if (notify) {
+		updateListener();
+	}
+	if (updateChild) {
+		updateChildrenMatrix();
 	}
 }
 
@@ -116,11 +132,10 @@ void Node::visitNode(const std::function<void(Node*)>& func) {
 	if (func) {
 		func(this);
 	}
-	if (mpNextSibling) {
-		mpNextSibling->visitNode(func);
-	}
-	if (mpFirstChild) {
-		mpFirstChild->visitNode(func);
+	for (auto& pChild : mChildren) {
+		if (pChild) {
+			pChild->visitNode(func);
+		}
 	}
 }
 //visit node£¬can be break
@@ -128,57 +143,47 @@ void Node::visitNode(const std::function<bool(Node*)>& func, bool& isOver) {
 	if (func) {
 		isOver = func(this);
 	}
-	if (mpNextSibling && !isOver) {
-		mpNextSibling->visitNode(func, isOver);
-	}
-	if (mpFirstChild && !isOver) {
-		mpFirstChild->visitNode(func, isOver);
+
+	for (auto& pChild : mChildren) {
+		if (isOver)
+			return;
+		if (pChild) {
+			pChild->visitNode(func,isOver);
+		}
 	}
 }
 
-void Node::lookAt(const glm::vec3& eyepos, const glm::vec3& center, const glm::vec3& up) noexcept {
+void Node::lookAt(const glm::vec3& eyepos, const glm::vec3& center, 
+	const glm::vec3& up, bool updateChild, bool notify) noexcept {
 	mLocalMat = glm::lookAt(eyepos, center, up);
-	if (mpFirstChild) {
-		mpFirstChild->updateMatrixHierarchy(mParentWorldMat*mLocalMat);
+	if (notify) {
+		updateListener();
+	}
+	if (updateChild) {
+		updateChildrenMatrix();
 	}
 }
 
 void Node::addListener(const shared_ptr<NodeListener>& lis) {
 	mListeners.emplace_back(lis);
 }
-/*
-* for situation: only parent is moveing,and all the descendant node of parent is static
-*/
-void Node::updateMatrixHierarchy(glm::mat4& parentMat) noexcept {
-	setParentWorldMatrix(parentMat);
-	//update sibling node
-	if (mpNextSibling) {
-		mpNextSibling->updateMatrixHierarchy(parentMat);
-	}
-	if (mpFirstChild) {
-		//update all my descendant
-		mpFirstChild->updateMatrixHierarchy(mParentWorldMat * mLocalMat);
-	}
-	for (auto& listener : mListeners) {
-		if (listener) {
-			listener->update(mParentWorldMat * mLocalMat);
+
+void Node::updateChildrenMatrix(bool notify) noexcept {
+	if (!mChildren.empty()) {
+		auto myWorldMat = mParentWorldMat * mLocalMat;
+		for (auto& pNode : mChildren) {
+			pNode ? pNode->setParentWorldMatrix(myWorldMat,true,notify) : 0;
 		}
 	}
 }
 
-/*
-* for situation: parent is moving, and the descendant of parent node will be moving,
-* thus It is not necessary to update all descendant
-*/
-void Node::updateMatrixMeAndSibling(glm::mat4& parentMat) noexcept {
-	setParentWorldMatrix(parentMat);
-	//update sibling node
-	if (mpNextSibling) {
-		mpNextSibling->updateMatrixMeAndSibling(parentMat);
-	}
-	for (auto& listener : mListeners) {
-		if (listener) {
-			listener->update(mParentWorldMat * mLocalMat);
+void Node::updateListener() {
+	if (!mListeners.empty()) {
+		auto myWorldMat = mParentWorldMat * mLocalMat;
+		for (auto& listener : mListeners) {
+			if (listener) {
+				listener->update(myWorldMat);
+			}
 		}
 	}
 }
