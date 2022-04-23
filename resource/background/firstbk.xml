@@ -3,5 +3,5 @@
 	<normal solidColor="#ff5000ff"/>
 	<pushed solidColor="#ffa000ff"/>
 	<hover solidColor="#ff5000ff"
-		borderColor="#ff0000ff"/>
+		borderColor="#00ff00ff"/>
 </background>

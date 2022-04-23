@@ -6,7 +6,7 @@ class UiRender;
 class LinearLayout :public View {
 public:
 	friend UiRender;
-	using View::View;//继承基类的构造函数
+	using View::View;
 
 	bool isVertical() {
 		return mOrientation == LayoutParam::Vertical;

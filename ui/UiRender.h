@@ -3,19 +3,23 @@
 #include "FreetypeUtils.h"
 #include "CharPosition.h"
 #include "CharInfo.h"
-#include "View.h"
-#include "TextView.h"
-#include "Button.h"
-#include "LinearLayout.h"
-#include "ScrollView.h"
-#include "ListView.h"
-#include "Shape.h"
 #include <glm/ext/matrix_float4x4.hpp>
+#include <map>
 
 using namespace std;
 class Mesh;
 class Material;
 class Texture;
+class Background;
+class BackgroundStyle;
+class View;
+class TextView;
+class Button;
+class LinearLayout;
+class ListView;
+class ScrollView;
+class Shape;
+
 /*
 这个类不要自己单独创建，UiRender::initUiRender函数里面会创建它。
 */
@@ -106,7 +110,7 @@ public:
 	void drawUi();
 private:
 	//确定了shape的宽高和中心点之后才能调用这个函数
-	void initShape(Rect<int>& viewRect, const unique_ptr<Background::BackgroundStyle>& pStyle);
+	void initShape(View* pView, std::shared_ptr<BackgroundStyle>& pStyle);
 	static unique_ptr<UiRender> gInstance;
 
 	shared_ptr<FontManager> mpFontManager;

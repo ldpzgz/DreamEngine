@@ -5,6 +5,7 @@
 #else
 #include <glad/glad.h>
 #endif
+#include "../MeshFilledRect.h"
 #include "UiTree.h"
 #include "UiRender.h"
 #include "../Log.h"

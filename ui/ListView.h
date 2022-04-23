@@ -7,7 +7,7 @@
 */
 class ListView :public View{
 public:
-	using View::View;//继承基类的构造函数
+	using View::View;
 	
 	void setAdapter(const std::shared_ptr<ViewAdapter>& pAdapter);
 
@@ -29,8 +29,17 @@ public:
 		return mOrientation == LayoutParam::Horizontal;
 	}
 
-	void draw() override;
+	/*
+	* 算出第一个和最后一个可见的item，
+	* 这个函数在listView的adapter里面，如果adapter的数据个数发生了变化，
+	* 需要在adapter里面被调用，重新计算可见的items
+	*/
+	void getVisibleItems();
 
+	void draw() override;
+	/*
+	* 在这里调用tryToMove，处理listview的上下或者左右拖动
+	*/
 	bool mouseMove(int x, int y,bool notInside) override;
 
 	bool mouseLButtonDown(int x, int y, bool notInside) override;
@@ -39,10 +48,6 @@ public:
 
 	void orientationHandler(const string& content) override;
 private:
-	/*
-	* 算出第一个和最后一个可见的item
-	*/
-	void getVisibleItems();
 	/*
 	* 尝试移动moveDistance的距离。
 	* 如果移动了，计算出listview里面的第一个和最后一个可见的item

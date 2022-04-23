@@ -1,9 +1,10 @@
 ﻿#ifndef _UI_MANAGER_H_
 #define _UI_MANAGER_H_
-#include "UiTree.h"
-#include "UiRender.h"
-#include "Shape.h"
+#include <memory>
+#include <string>
+#include <unordered_map>
 #include "../Color.h"
+#include <glm/mat4x4.hpp>         // mat4
 
 using namespace std;
 using UnicodeType = char32_t;
@@ -11,6 +12,10 @@ class Mesh;
 class Node;
 class Fbo;
 class Texture;
+class Shape;
+class View;
+class UiTree;
+class Background;
 /*
 这个类有一颗ui树，ui树上每个node可以挂一堆view，
 遍历这棵树，调用每个view的render函数，绘制出ui。
@@ -91,15 +96,15 @@ private:
 	float mWindowHeight{ 0.0f };
 	glm::mat4 mProjMatrix{1.0f};
 
-	static unique_ptr<UiManager> gInstance;
-	static unordered_map<string, string> gRStrings;//保存从material/strings.xml里面解析出来的字符串
-	static unordered_map<string, Color> gRColors;//保存从material/colors.xml里面解析出来的颜色值
-	static unordered_map<string, std::shared_ptr<Shape>> gRShapes;
-	static unordered_map<string, std::shared_ptr<Background>> gRBackground;
-	static void parseRStrings(const string& path);
+	static std::unique_ptr<UiManager> gInstance;
+	static std::unordered_map<std::string, std::string> gRStrings;//保存从material/strings.xml里面解析出来的字符串
+	static std::unordered_map<std::string, Color> gRColors;//保存从material/colors.xml里面解析出来的颜色值
+	static std::unordered_map<std::string, std::shared_ptr<Shape>> gRShapes;
+	static std::unordered_map<std::string, std::shared_ptr<Background>> gRBackground;
+	static void parseRStrings(const std::string& path);
 	//static void parseRColors(const string& path);
-	static void parseRShape(const string& path);
-	static void parseRBackground(const string& path);
+	static void parseRShape(const std::string& path);
+	static void parseRBackground(const std::string& path);
 	static void loadAllUiImage();
 	static void loadAllShape();
 	static void loadAllBackground();

@@ -1,11 +1,11 @@
 #ifndef _VIEW_ADAPTER_H_
 #define _VIEW_ADAPTER_H_
-
-#include "View.h"
+#include <memory>
+class View;
 class ViewAdapter
 {
 public:
-	ViewAdapter(std::shared_ptr<View>& pContainerView) :
+	explicit ViewAdapter(std::shared_ptr<View>& pContainerView) :
 		mpParentView(pContainerView)
 	{
 

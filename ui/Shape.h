@@ -252,14 +252,14 @@ public:
 		return mpTexture;
 	}
 
-	void setInitialized(bool b) {
+	/*void setInitialized(bool b) {
 		mbInitilized = b;
 	}
 
 	bool getInitialized() {
 		return mbInitilized;
-	}
-	std::shared_ptr<MeshFilledRect>& getMesh() {
+	}*/
+	/*std::shared_ptr<MeshFilledRect>& getMesh() {
 		return mpMesh;
 	}
 	std::shared_ptr<MeshFilledRect>& getBorderMesh() {
@@ -272,7 +272,7 @@ public:
 
 	void setMesh(const std::shared_ptr<MeshFilledRect>& pMesh) {
 		mpMesh = pMesh;
-	}
+	}*/
 
 	static std::unordered_map<std::string, std::function<void(const std::shared_ptr<Shape>&, const std::string&)>> gShapeAttributeHandler;
 public:
@@ -310,11 +310,11 @@ public:
 	float mOvalWidth{ 1.0f };
 	float mOvalHeight{ 1.0f };
 
-	bool mbInitilized{false};
+	//bool mbInitilized{false};
 
 	std::shared_ptr<Texture> mpTexture;
-	std::shared_ptr<MeshFilledRect> mpMesh;//承载shape的mesh
-	std::shared_ptr<MeshFilledRect> mpBorderMesh;//承载边框的mesh
+	//std::shared_ptr<MeshFilledRect> mpMesh;//承载shape的mesh
+	//std::shared_ptr<MeshFilledRect> mpBorderMesh;//承载边框的mesh
 
 private:
 	static void typeHandler(const std::shared_ptr<Shape>& shape, const std::string& value);

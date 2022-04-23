@@ -1,8 +1,11 @@
 #include "Background.h"
-#include <rapidxml.hpp>
-#include <rapidxml_utils.hpp>  //rapidxml::file
-#include <rapidxml_print.hpp>  //rapidxml::print
-#include "../Utils.h"
-
+#include "BackgroundStyle.h"
+#include "../MeshFilledRect.h"
+#include "Shape.h"
 using namespace std;
+
+Background::Background() {
+	mpNormalStyle = std::make_unique<BackgroundStyle>();
+	mpNormalStyle->mpShape = std::make_shared<Shape>();
+}
 

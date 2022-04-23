@@ -663,7 +663,7 @@ namespace
             int band_matrix::dim() const
             {
                 if (m_upper.size() > 0) {
-                    return m_upper[0].size();
+                    return static_cast<int>(m_upper[0].size());
                 }
                 else {
                     return 0;

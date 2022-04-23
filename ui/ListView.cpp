@@ -1,5 +1,7 @@
 #include "ListView.h"
 #include "UiRender.h"
+#include "../Log.h"
+#include "../MeshFilledRect.h"
 
 void ListView::setAdapter(const std::shared_ptr<ViewAdapter>& pAdapter) {
 	mpAdapter = pAdapter;
@@ -10,7 +12,7 @@ void ListView::setAdapter(const std::shared_ptr<ViewAdapter>& pAdapter) {
 
 void ListView::getVisibleItems() {
 	if (mFirstVisibleItem >= mpAdapter->getItemCounts()) {
-		mFirstVisibleItem = mLastVisibleItem = mpAdapter->getItemCounts() - 1;
+		mFirstVisibleItem = mLastVisibleItem = static_cast<int>(mpAdapter->getItemCounts()) - 1;
 		mFirstItemHideLength = mLastItemHideLength = 0;
 	}
 
@@ -69,13 +71,15 @@ void ListView::draw() {
 
 bool ListView::tryToMove(int moveDistance) {
 	//在这里处理上下左右拖动的逻辑
+	//根据移动距离，当前第一个和最后一个可见item，
+	//计算出最新的第一个和最后一个可见item
 	int moveLength = moveDistance;
 	int rectIndex = 2;
 	if (mOrientation == LayoutParam::Vertical) {
 		rectIndex = 3;
 	}
 
-	int itemCounts = mpAdapter->getItemCounts();
+	int itemCounts = static_cast<int>(mpAdapter->getItemCounts());
 	if (itemCounts > 0) {
 		auto pFirstVisibleItem = mpAdapter->getView(mFirstVisibleItem);
 		auto pLastVisibleItem = mpAdapter->getView(mLastVisibleItem);

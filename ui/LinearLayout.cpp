@@ -1,11 +1,13 @@
 #include "LinearLayout.h"
 #include "UiRender.h"
+#include "../MeshFilledRect.h"
+#include "../Log.h"
 
 int LinearLayout::getChildrenTotalWidthPercent() {
 	if (!mChildren.empty()) {
 		for (auto& child : mChildren) {
 			if (child) {
-				mTotalWidthPercent += child->mWidthPercent;
+				mTotalWidthPercent += child->getWidthPercent();
 			}
 		}
 	}
@@ -16,7 +18,7 @@ int LinearLayout::getChildrenTotalHeightPercent() {
 	if (!mChildren.empty()) {
 		for (auto& child : mChildren) {
 			if (child) {
-				mTotalHeightPercent += child->mHeightPercent;
+				mTotalHeightPercent += child->getHeightPercent();
 			}
 		}
 	}

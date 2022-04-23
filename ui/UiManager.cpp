@@ -4,12 +4,19 @@
 #include <rapidxml_utils.hpp>  //rapidxml::file
 #include <rapidxml_print.hpp>  //rapidxml::print
 #include <filesystem>
+#include "../MeshFilledRect.h"
 #include "../Utils.h"
 #include "../Resource.h"
 #include "../Mesh.h"
 #include "../Node.h"
 #include "../Fbo.h"
 #include "../Texture.h"
+#include "UiTree.h"
+#include "Shape.h"
+#include "Background.h"
+#include "BackgroundStyle.h"
+#include "View.h"
+#include "UiRender.h"
 using namespace std::filesystem;
 using namespace std;
 
@@ -131,7 +138,7 @@ void UiManager::parseRShape(const string& path) {
 	}
 }
 //处理background xml文件里面的属性
-void shapeHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+void shapeHandler(std::shared_ptr<BackgroundStyle>& pStyle, const string& value) {
 	if (pStyle) {
 		auto& pShape = UiManager::getShape(value);
 		if (pShape) {
@@ -151,43 +158,43 @@ void shapeHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const st
 	}
 }
 
-void textureHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+void textureHandler(std::shared_ptr<BackgroundStyle>& pStyle, const string& value) {
 	if (pStyle) {
 		pStyle->setTexture(UiManager::getTexture(value));
 	}
 }
 
-void startColorHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+void startColorHandler(std::shared_ptr<BackgroundStyle>& pStyle, const string& value) {
 	if (pStyle) {
 		Color::parseColor(value, pStyle->mStartColor);
 	}
 }
 
-void centerColorHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+void centerColorHandler(std::shared_ptr<BackgroundStyle>& pStyle, const string& value) {
 	if (pStyle) {
 		Color::parseColor(value, pStyle->mCenterColor);
 	}
 }
 
-void endColorHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+void endColorHandler(std::shared_ptr<BackgroundStyle>& pStyle, const string& value) {
 	if (pStyle) {
 		Color::parseColor(value, pStyle->mEndColor);
 	}
 }
 
-void solidColorHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+void solidColorHandler(std::shared_ptr<BackgroundStyle>& pStyle, const string& value) {
 	if (pStyle) {
 		Color::parseColor(value, pStyle->mSolidColor);
 	}
 }
 
-void borderColorHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, const string& value) {
+void borderColorHandler(std::shared_ptr<BackgroundStyle>& pStyle, const string& value) {
 	if (pStyle) {
 		Color::parseColor( value, pStyle->mBorderColor);
 	}
 }
 
-unordered_map<string, std::function<void(std::unique_ptr<Background::BackgroundStyle>&, const string&)>> gStyleHandlers{
+unordered_map<string, std::function<void(std::shared_ptr<BackgroundStyle>&, const string&)>> gStyleHandlers{
 	{"shape",shapeHandler},
 	{"texture",textureHandler},
 	{"solidColor",solidColorHandler},
@@ -197,7 +204,7 @@ unordered_map<string, std::function<void(std::unique_ptr<Background::BackgroundS
 	{"borderColor",borderColorHandler},
 };
 
-void backgroundAttributeHandler(std::unique_ptr<Background::BackgroundStyle>& pStyle, rapidxml::xml_attribute<char>* pAttribute) {
+void backgroundAttributeHandler(std::shared_ptr<BackgroundStyle>& pStyle, rapidxml::xml_attribute<char>* pAttribute) {
 	auto endIt = gStyleHandlers.end();
 	while (pAttribute) {
 		string name = pAttribute->name();
@@ -222,17 +229,17 @@ void backgroundNodeHandler(shared_ptr<Background>& pBk,rapidxml::xml_node<char>*
 		}
 		else if (name == "pushed") {
 			auto& pStyle = pBk->getPushedStyle();
-			pStyle = std::make_unique<Background::BackgroundStyle>();
+			pStyle = std::make_unique<BackgroundStyle>();
 			backgroundAttributeHandler(pStyle, pNode->first_attribute());
 		}
 		else if (name == "hover") {
 			auto& pStyle = pBk->getHoverStyle();
-			pStyle = std::make_unique<Background::BackgroundStyle>();
+			pStyle = std::make_unique<BackgroundStyle>();
 			backgroundAttributeHandler(pStyle, pNode->first_attribute());
 		}
 		else if (name == "disabled") {
 			auto& pStyle = pBk->getDisabledStyle();
-			pStyle = std::make_unique<Background::BackgroundStyle>();
+			pStyle = std::make_unique<BackgroundStyle>();
 			backgroundAttributeHandler(pStyle, pNode->first_attribute());
 		}
 	}
@@ -516,7 +523,7 @@ std::shared_ptr<Shape>& UiManager::getShape(const std::string& name) {
 }
 
 std::shared_ptr<Texture> UiManager::getTexture(const std::string& name) {
-	return Resource::getInstance().getTexture(name);
+	return Resource::getInstance().getOrLoadTextureFromFile(name);
 }
 
 std::shared_ptr<Background> UiManager::getBackground(const std::string& name) {
@@ -526,7 +533,7 @@ std::shared_ptr<Background> UiManager::getBackground(const std::string& name) {
 	}
 	else {
 		LOGE("cannot find %s background in string resource", name.c_str());
-		return std::shared_ptr<Background>();
+		return {};
 	}
 }
 

@@ -1,5 +1,7 @@
 #ifndef _LIST_ADAPTER_H_
 #define _LIST_ADAPTER_H_
+#include<string>
+#include<vector>
 #include "../ViewAdapter.h"
 class ListAdapter :public ViewAdapter {
 public:

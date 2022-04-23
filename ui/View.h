@@ -2,15 +2,21 @@
 #define _VIEW_H_
 #include <string>
 #include "../Rect.h"
-#include "../Renderable.h"
+#include "../Color.h"
 #include <functional>
 #include <list>
 #include <memory>
 #include <unordered_map>
 #include <string>
-#include "Background.h"
+#include <glm/vec2.hpp>           // vec2
+
 
 using namespace std;
+
+class MeshFilledRect;
+class Background;
+class Texture;
+class Shape;
 
 enum MouseState : unsigned char {
 	MouseNone = 0x00,
@@ -107,77 +113,11 @@ public:
 
 	//virtual bool isMouseInside(int x, int y) { return false; }
 
-	virtual bool mouseMove(int x, int y,bool notInside) { 
-		if (!notInside && mRect.isInside(x, y)) {
-			for (auto& pChild : mChildren) {
-				pChild->mouseMove(x, y,false);
-			}
-			if ((mMouseState & MouseState::MouseHover)==0) {
-				mMouseState |= MouseState::MouseHover;
-				if (mpBackground && mpBackground->getHoverStyle()) {
-					setDirty(true);
-				}
-			}
-			return true;
-		}
-		else {
-			for (auto& pChild : mChildren) {
-				pChild->mouseMove(x, y, true);
-			}
-			if (mMouseState & MouseState::MouseHover) {
-				mMouseState &= ~MouseState::MouseHover;
-				if (mpBackground && mpBackground->getHoverStyle()) {
-					setDirty(true);
-				}
-			}
-		}
-		return false;
-	};
+	virtual bool mouseMove(int x, int y, bool notInside);
 
-	virtual bool mouseLButtonDown(int x, int y,bool notInside) { 
-		if (!notInside && mRect.isInside(x, y)) {
-			for (auto& pChild : mChildren) {
-				pChild->mouseLButtonDown(x, y,false);
-			}
-			mMouseState |= MouseState::MouseLButtonDown;
-			if (mpBackground && mpBackground->getPushedStyle()) {
-				setDirty(true);
-			}
-			return true;
-		}
-		else {
-			for (auto& pChild : mChildren) {
-				pChild->mouseLButtonDown(x, y, true);
-			}
-		}
-		return false;
-	};
+	virtual bool mouseLButtonDown(int x, int y,bool notInside);
 
-	virtual bool mouseLButtonUp(int x, int y,bool notInside) { 
-		if (!notInside && mRect.isInside(x, y)) {
-			for (auto& pChild : mChildren) {
-				pChild->mouseLButtonUp(x, y,false);
-			}
-			if ((mMouseState & MouseState::MouseLButtonDown) && mClickedListener) {
-				onClicked(this);
-			}
-			mMouseState &= ~MouseState::MouseLButtonDown;
-			if (mpBackground && mpBackground->getPushedStyle()) {
-				setDirty(true);
-			}
-			return true;
-		}
-		else {
-			for (auto& pChild : mChildren) {
-				pChild->mouseLButtonUp(x, y,true);
-			}
-			mMouseState = MouseState::MouseNone;
-			if (mpBackground && mpBackground->getPushedStyle()) {
-				setDirty(true);
-			}
-			return false;
-		}
-	};
+	virtual bool mouseLButtonUp(int x, int y,bool notInside);
 
 	virtual void onClicked(View* pView) {
 		if (mClickedListener) {
@@ -325,46 +265,17 @@ public:
 		return mbIsDirty;
 	}
 
-	virtual void setBackgroundColor(const Color& c) {
-		if (!mpBackground) {
-			mpBackground = make_shared<Background>();
-		}
-		auto& pStyle = mpBackground->getNormalStyle();
-		if (pStyle) {
-			pStyle->setSolidColor(c);
-		}
-		
-	}
-
 	void setBackground(const std::shared_ptr<Background>& bk) {
 		mpBackground = bk;
 	}
 
-	void setBackgroundImg(shared_ptr<Texture>& pTex) {
-		if (!mpBackground) {
-			mpBackground = make_shared<Background>();
-		}
-		auto& pStyle = mpBackground->getNormalStyle();
-		pStyle->setTexture(pTex);
-	}
+	void setBackgroundImg(shared_ptr<Texture>& pTex);
 
 	std::shared_ptr<Background>& getBackground() {
 		return mpBackground;
 	}
 
-	void setBackgroundShape(const shared_ptr<Shape>& pShape) {
-		if (!mpBackground) {
-			mpBackground = make_shared<Background>();
-		}
-		auto& pStyle = mpBackground->getNormalStyle();
-		pStyle->setShape( pShape );
-		pStyle->setTexture(pShape->getTexture());
-		pStyle->setSolidColor(pShape->getSolidColor());
-		pStyle->setStartColor(pShape->getGradientStartColor());
-		pStyle->setCenterColor(pShape->getGradientCenterColor());
-		pStyle->setEndColor(pShape->getGradientEndColor());
-		pStyle->setBorderColor(pShape->getBorderColor());
-	}
+	void setBackgroundShape(const shared_ptr<Shape>& pShape);
 
 	void initBackground();
 
@@ -391,10 +302,6 @@ public:
 		return mMoveVector;
 	}
 
-	virtual void afterGetWidthHeight() {
-
-	}
-
 	bool getEnabled() {
 		return mbEnabled;
 	}
@@ -406,59 +313,34 @@ public:
 		return mMouseState;
 	}
 
-	static shared_ptr<View> createView(const string& name, shared_ptr<View> parent);
+	int& getWidthPercent() {
+		return mWidthPercent;
+	}
 
-	bool mbIsDirty{ false };
-	bool mbEnabled{ true };
-	unsigned int mMouseState{ MouseState::MouseNone };
-	std::string mId;
-	std::function<void(View*)> mClickedListener;
-	weak_ptr<void> mpUserData;
-	weak_ptr<View> mpParent;
-	
-	//与parent的相对位置信息
-	int mLayoutWidth{ 0 };		//match_parent,具体的宽度，以像素为单位
-	int mLayoutHeight{ 0 };		//match_parent,具体的宽度，以像素为单位
-	int mLayoutMarginTop{ 0 };
-	int mLayoutMarginBottom{ 0 };
-	int mLayoutMarginLeft{ 0 };
-	int mLayoutMarginRight{ 0 };
-	int mWidthPercent{ 0 };		//宽度百分比
-	int mHeightPercent{ 0 };	//高度百分比
-	int mGravity{ LayoutParam::Center };//控制view内部的元素或者子view如何居中对齐，水平居中，垂直居中，居中
-	Rect<int> mRect{ 0,0,0,0 };
-	glm::ivec2 mMoveVector{0,0};
-	std::list<std::shared_ptr<View>> mChildren;
-	weak_ptr<DirtyListener> mpDirtyListener;
-	weak_ptr<MoveListener> mpMoveListener;
-	std::shared_ptr<Background> mpBackground;
-	std::shared_ptr<void> mpBackgroundMesh;
-	std::unique_ptr< std::unordered_map<std::string, std::shared_ptr<View>> > mpId2ViewMap;
-	static void idHandler(const shared_ptr<View>&, const std::string&);
-	static void layoutWidthHandler(const shared_ptr<View>&, const std::string&);
-	static void layoutWidthPercentHandler(const shared_ptr<View>&, const std::string&);
-	static void layoutHeightHandler(const shared_ptr<View>&, const std::string&);
-	static void layoutHeightPercentHandler(const shared_ptr<View>&, const std::string&);
-	static void layoutMarginTopHandler(const shared_ptr<View>&, const std::string&);
-	static void layoutMarginBottomHandler(const shared_ptr<View>&, const std::string&);
-	static void layoutMarginLeftHandler(const shared_ptr<View>&, const std::string&);
-	static void layoutMarginRightHandler(const shared_ptr<View>&, const std::string&);
-	static void gravityHandler(const shared_ptr<View>&, const std::string&);
-	static void backgroundHandler(const shared_ptr<View>&, const std::string&);
+	int& getHeightPercent() {
+		return mHeightPercent;
+	}
 
-	static void orientationHandler_s(const shared_ptr<View>&, const string&);
-	static void textSizeHandler_s(const shared_ptr<View>&, const std::string&);
-	static void textColorHandler_s(const shared_ptr<View>&, const std::string&);
-	static void textHandler_s(const shared_ptr<View>&, const std::string&);
-	static void maxWidthHandler_s(const shared_ptr<View>&, const std::string&);
-	static void maxHeightHandler_s(const shared_ptr<View>&, const std::string&);
-	static void maxLineHandler_s(const shared_ptr<View>&, const std::string&);
-	static void charSpaceHandler_s(const shared_ptr<View>&, const std::string&);
-	static void lineSpaceHandler_s(const shared_ptr<View>&, const std::string&);
+	int& getLayoutHeight() {
+		return mLayoutHeight;
+	}
 
-	static unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> gLayoutAttributeHandler;
-	static unordered_map<string, int> gGravityKeyValue;
-	
+	int& getLayoutWidth() {
+		return mLayoutWidth;
+	}
+
+	int& getLayoutMarginBottom() {
+		return mLayoutMarginBottom;
+	}
+	int& getLayoutMarginLeft() {
+		return mLayoutMarginLeft;
+	}
+	int& getLayoutMarginRight() {
+		return mLayoutMarginRight;
+	}
+	int& getLayoutMarginTop() {
+		return mLayoutMarginTop;
+	}
 
 	virtual void orientationHandler(const string& content) {
 
@@ -488,6 +370,65 @@ public:
 	virtual void lineSpaceHandler(const std::string& content) {
 
 	}
+
+	virtual void afterGetWidthHeight() {
+
+	}
+
+	virtual void setBackgroundColor(const Color& c);
+
+	static shared_ptr<View> createView(const string& name, shared_ptr<View> parent);
+
+	static void idHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutWidthHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutWidthPercentHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutHeightHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutHeightPercentHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutMarginTopHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutMarginBottomHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutMarginLeftHandler(const shared_ptr<View>&, const std::string&);
+	static void layoutMarginRightHandler(const shared_ptr<View>&, const std::string&);
+	static void gravityHandler(const shared_ptr<View>&, const std::string&);
+	static void backgroundHandler(const shared_ptr<View>&, const std::string&);
+
+	static void orientationHandler_s(const shared_ptr<View>&, const string&);
+	static void textSizeHandler_s(const shared_ptr<View>&, const std::string&);
+	static void textColorHandler_s(const shared_ptr<View>&, const std::string&);
+	static void textHandler_s(const shared_ptr<View>&, const std::string&);
+	static void maxWidthHandler_s(const shared_ptr<View>&, const std::string&);
+	static void maxHeightHandler_s(const shared_ptr<View>&, const std::string&);
+	static void maxLineHandler_s(const shared_ptr<View>&, const std::string&);
+	static void charSpaceHandler_s(const shared_ptr<View>&, const std::string&);
+	static void lineSpaceHandler_s(const shared_ptr<View>&, const std::string&);
+protected:
+	bool mbIsDirty{ false };
+	bool mbEnabled{ true };
+	unsigned int mMouseState{ MouseState::MouseNone };
+	std::string mId;
+	std::function<void(View*)> mClickedListener;
+	weak_ptr<void> mpUserData;
+	weak_ptr<View> mpParent;
+
+	//与parent的相对位置信息
+	int mLayoutWidth{ 0 };		//match_parent,具体的宽度，以像素为单位
+	int mLayoutHeight{ 0 };		//match_parent,具体的宽度，以像素为单位
+	int mLayoutMarginTop{ 0 };
+	int mLayoutMarginBottom{ 0 };
+	int mLayoutMarginLeft{ 0 };
+	int mLayoutMarginRight{ 0 };
+	int mWidthPercent{ 0 };		//宽度百分比
+	int mHeightPercent{ 0 };	//高度百分比
+	int mGravity{ LayoutParam::Center };//控制view内部的元素或者子view如何居中对齐，水平居中，垂直居中，居中
+	Rect<int> mRect{ 0,0,0,0 };
+	glm::ivec2 mMoveVector{ 0,0 };
+	std::list<std::shared_ptr<View>> mChildren;
+	weak_ptr<DirtyListener> mpDirtyListener;
+	weak_ptr<MoveListener> mpMoveListener;
+	std::shared_ptr<Background> mpBackground;
+	std::unique_ptr< std::unordered_map<std::string, std::shared_ptr<View>> > mpId2ViewMap;
+public:
+	static unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> gLayoutAttributeHandler;
+	static unordered_map<string, int> gGravityKeyValue;
 };
 
 extern std::shared_ptr<View> gpViewNothing;

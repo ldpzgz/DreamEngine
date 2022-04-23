@@ -1,8 +1,8 @@
 #ifndef _BACKGROUND_H_
 #define _BACKGROUND_H_
-#include "../Texture.h"
-#include "Shape.h"
 #include <memory>
+
+class BackgroundStyle;
 
 /*
 * 表示view的背景，
@@ -21,122 +21,28 @@
 */
 class Background {
 public:
-	/*
-	* style有三种填充模式1 纹理，2渐变色，3纯色
-	* 对于同一种填充模式的style，可以共享同一个shape
-	*/
-	struct BackgroundStyle {
-		std::shared_ptr<Shape> mpShape;
-		std::shared_ptr<Texture> mpTex;//如果不为空，就表示用纹理填充，优先级最高
-		Color mStartColor;//如果不为空，就表示用渐变色填充，优先级次之
-		Color mCenterColor;
-		Color mEndColor;
-		Color mSolidColor;//如果不为空就表示用纯色填充，最低优先级
-		Color mBorderColor;
-		unsigned int mColorVbo{0};
-		void setColorVbo(unsigned int vbo) {
-			mColorVbo = vbo;
-		}
-		unsigned int getColorVbo() {
-			return mColorVbo;
-		}
-		Color& getStartColor() {
-			return mStartColor;
-		}
-		Color& getCenterColor() {
-			return mCenterColor;
-		}
-		Color& getEndColor() {
-			return mEndColor;
-		}
-		Color& getSolidColor() {
-			return mSolidColor;
-		}
-		Color& getBorderColor() {
-			return mBorderColor;
-		}
-		std::shared_ptr<Shape>& getShape() {
-			return mpShape;
-		}
-		void setMyStyle() {
-			if (mpShape) {
-				mpShape->setTexture(mpTex);
-				mpShape->setGradientStartColor(mStartColor);
-				mpShape->setGradientCenterColor(mCenterColor);
-				mpShape->setGradientEndColor(mEndColor);
-				mpShape->setSolidColor(mSolidColor);
-				mpShape->setBorderColor(mBorderColor);
-			}
-		}
-		void setShape(const std::shared_ptr<Shape>& pShape) {
-			mpShape = pShape;
-		}
-		void setTexture(const std::shared_ptr<Texture>& pTex) {
-			mpTex = pTex;
-			if (mpShape) {
-				mpShape->setTexture(mpTex);
-			}
-		}
-		std::shared_ptr<Texture>& getTexture() {
-			return mpTex;
-		}
-		void setStartColor(const Color& c) {
-			mStartColor = c;
-			if (mpShape) {
-				mpShape->setGradientStartColor(c);
-			}
-		}
-		void setCenterColor(const Color& c) {
-			mCenterColor = c;
-			if (mpShape) {
-				mpShape->setGradientCenterColor(c);
-			}
-		}
-		void setEndColor(const Color& c) {
-			mEndColor = c;
-			if (mpShape) {
-				mpShape->setGradientEndColor(c);
-			}
-		}
-		void setBorderColor(const Color& c) {
-			mBorderColor = c;
-			if (mpShape) {
-				mpShape->setBorderColor(c);
-			}
-		}
-		void setSolidColor(const Color& c) {
-			mSolidColor = c;
-			if (mpShape) {
-				mpShape->setSolidColor(c);
-			}
-		}
-	};
+	Background();
 
-	Background() {
-		mpNormalStyle = std::make_unique<BackgroundStyle>();
-		mpNormalStyle->mpShape = std::make_shared<Shape>();
-	}
-
-	std::unique_ptr<BackgroundStyle>& getNormalStyle () {
+	auto& getNormalStyle () {
 		return mpNormalStyle;
 	}
 
-	std::unique_ptr<BackgroundStyle>& getPushedStyle() {
+	auto& getPushedStyle() {
 		return mpPushedStyle;
 	}
 
-	std::unique_ptr<BackgroundStyle>& getHoverStyle() {
+	auto& getHoverStyle() {
 		return mpHoverStyle;
 	}
 
-	std::unique_ptr<BackgroundStyle>& getDisabledStyle() {
+	auto& getDisabledStyle() {
 		return mpDisabledStyle;
 	}
 
-	std::unique_ptr<BackgroundStyle> mpNormalStyle;
-	std::unique_ptr<BackgroundStyle> mpPushedStyle;
-	std::unique_ptr<BackgroundStyle> mpHoverStyle;
-	std::unique_ptr<BackgroundStyle> mpDisabledStyle;
+	std::shared_ptr<BackgroundStyle> mpNormalStyle;
+	std::shared_ptr<BackgroundStyle> mpPushedStyle;
+	std::shared_ptr<BackgroundStyle> mpHoverStyle;
+	std::shared_ptr<BackgroundStyle> mpDisabledStyle;
 };
 
 #endif

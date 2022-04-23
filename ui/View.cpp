@@ -3,9 +3,20 @@
 #include "Button.h"
 #include "LinearLayout.h"
 #include "ScrollView.h"
-#include "../Log.h"
+#include "ListView.h"
+
 #include "UiRender.h"
 #include "UiManager.h"
+#include "Background.h"
+#include "BackgroundStyle.h"
+#include "Shape.h"
+#include "../Texture.h"
+#include "../Log.h"
+#include "../MeshFilledRect.h"
+#include <string_view>
+#include <stdexcept>
+
+using namespace std;
 
 std::shared_ptr<View> gpViewNothing;
 
@@ -154,7 +165,7 @@ bool View::calcWidthHeight(int parentWidth, int parentHeight) {
 				LOGE("ERROR to calc child's width");
 				return false;
 			}
-			int childWidth = (int)((float)myWidth * (float)pChild->mWidthPercent / (float)totalWPercent);
+			int childWidth = (int)((float)myWidth * (float)pChild->getWidthPercent() / (float)totalWPercent);
 			pChild->setWidth(childWidth);
 		}
 		if (totalHPercent > 0) {
@@ -244,10 +255,10 @@ void View::idHandler(const shared_ptr<View>& pv, const std::string& value) {
 
 void View::layoutWidthHandler(const shared_ptr<View>& pv, const std::string& value) {
 	if (pv) {
-		if (value == "wrapContent") {
+		if (value == "wrapContent"sv) {
 			pv->mLayoutWidth = LayoutParam::WrapContent;
 		}
-		else if (value == "matchParent") {
+		else if (value == "matchParent"sv) {
 			pv->mLayoutWidth = LayoutParam::MatchParent;
 		}
 		else {
@@ -264,7 +275,7 @@ void View::layoutWidthHandler(const shared_ptr<View>& pv, const std::string& val
 void View::layoutWidthPercentHandler(const shared_ptr<View>& pv, const std::string& value) {
 	if (pv) {
 		try {
-			pv->mWidthPercent = stoi(value);
+			pv->getWidthPercent() = stoi(value);
 		}
 		catch (const logic_error& e) {
 			LOGE("error to parse layoutWidthPercent value %s,error:%s", value.c_str(),e.what());
@@ -274,10 +285,10 @@ void View::layoutWidthPercentHandler(const shared_ptr<View>& pv, const std::stri
 
 void View::layoutHeightHandler(const shared_ptr<View>& pv, const std::string& value) {
 	if (pv) {
-		if (value == "wrapContent") {
+		if (value == "wrapContent"sv) {
 			pv->mLayoutHeight = LayoutParam::WrapContent;
 		}
-		else if (value == "matchParent") {
+		else if (value == "matchParent"sv) {
 			pv->mLayoutHeight = LayoutParam::MatchParent;
 		}
 		else {
@@ -359,10 +370,10 @@ void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& valu
 	if (pv) {
 		if (!value.empty())
 		{
-			const string colorPrefix = "@color/";
-			const string imagePrefix = "@image/";
-			const string shapePrefix = "@shape/";
-			const string backgroundPrefix = "@bk/";
+			string_view colorPrefix{ "@color/" };
+			string_view imagePrefix{ "@image/" };
+			string_view shapePrefix{ "@shape/" };
+			string_view backgroundPrefix{ "@bk/" };
 			if (value[0] == '#' || value.find(colorPrefix)==0) {
 				Color c;
 				if (!Color::parseColor(value, c)) {
@@ -466,6 +477,123 @@ void View::lineSpaceHandler_s(const shared_ptr<View>& pView, const std::string& 
 	}
 }
 
+void View::setBackgroundShape(const shared_ptr<Shape>& pShape) {
+	if (!mpBackground) {
+		mpBackground = make_shared<Background>();
+	}
+	auto& pStyle = mpBackground->getNormalStyle();
+	pStyle->setShape(pShape);
+	auto& pTex = pShape->getTexture();
+	if (pTex) {
+		pStyle->setTexture(pShape->getTexture());
+		pStyle->setFillType(FillType::Fill_Texture);
+	}
+	else if (pShape->getGradientType() == GradientType::Linear) {
+		pStyle->setStartColor(pShape->getGradientStartColor());
+		pStyle->setCenterColor(pShape->getGradientCenterColor());
+		pStyle->setEndColor(pShape->getGradientEndColor());
+		pStyle->setFillType(FillType::Fill_Gradient);
+	}
+	else {
+		pStyle->setSolidColor(pShape->getSolidColor());
+		pStyle->setFillType(FillType::Fill_Solid);
+	}
+	
+	pStyle->setBorderColor(pShape->getBorderColor());
+}
+
+void View::setBackgroundImg(shared_ptr<Texture>& pTex) {
+	if (!mpBackground) {
+		mpBackground = make_shared<Background>();
+	}
+	auto& pStyle = mpBackground->getNormalStyle();
+	pStyle->setTexture(pTex);
+	pStyle->setFillType(FillType::Fill_Texture);
+}
+
+void View::setBackgroundColor(const Color& c) {
+	if (!mpBackground) {
+		mpBackground = make_shared<Background>();
+	}
+	auto& pStyle = mpBackground->getNormalStyle();
+	if (pStyle) {
+		pStyle->setSolidColor(c);
+		pStyle->setFillType(FillType::Fill_Solid);
+	}
+}
+
+bool View::mouseMove(int x, int y, bool notInside) {
+	if (!notInside && mRect.isInside(x, y)) {
+		for (auto& pChild : mChildren) {
+			pChild->mouseMove(x, y, false);
+		}
+		if ((mMouseState & MouseState::MouseHover) == 0) {
+			mMouseState |= MouseState::MouseHover;
+			if (mpBackground && mpBackground->getHoverStyle()) {
+				setDirty(true);
+			}
+		}
+		return true;
+	}
+	else {
+		for (auto& pChild : mChildren) {
+			pChild->mouseMove(x, y, true);
+		}
+		if (mMouseState & MouseState::MouseHover) {
+			mMouseState &= ~MouseState::MouseHover;
+			if (mpBackground && mpBackground->getHoverStyle()) {
+				setDirty(true);
+			}
+		}
+	}
+	return false;
+};
+
+bool View::mouseLButtonDown(int x, int y, bool notInside) {
+	if (!notInside && mRect.isInside(x, y)) {
+		for (auto& pChild : mChildren) {
+			pChild->mouseLButtonDown(x, y, false);
+		}
+		mMouseState |= MouseState::MouseLButtonDown;
+		if (mpBackground && mpBackground->getPushedStyle()) {
+			setDirty(true);
+		}
+		return true;
+	}
+	else {
+		for (auto& pChild : mChildren) {
+			pChild->mouseLButtonDown(x, y, true);
+		}
+	}
+	return false;
+};
+
+bool View::mouseLButtonUp(int x, int y, bool notInside) {
+	if (!notInside && mRect.isInside(x, y)) {
+		for (auto& pChild : mChildren) {
+			pChild->mouseLButtonUp(x, y, false);
+		}
+		if ((mMouseState & MouseState::MouseLButtonDown) && mClickedListener) {
+			onClicked(this);
+		}
+		mMouseState &= ~MouseState::MouseLButtonDown;
+		if (mpBackground && mpBackground->getPushedStyle()) {
+			setDirty(true);
+		}
+		return true;
+	}
+	else {
+		for (auto& pChild : mChildren) {
+			pChild->mouseLButtonUp(x, y, true);
+		}
+		mMouseState = MouseState::MouseNone;
+		if (mpBackground && mpBackground->getPushedStyle()) {
+			setDirty(true);
+		}
+		return false;
+	}
+};
+
 shared_ptr<View>& View::findViewById(const std::string& id) {
 	if (mpId2ViewMap && !id.empty()) {
 		auto it = mpId2ViewMap->find(id);
@@ -508,19 +636,19 @@ void View::getId2View(std::unique_ptr< std::unordered_map< std::string, std::sha
 
 shared_ptr<View> View::createView(const string& name, shared_ptr<View> parent) {
 	shared_ptr<View> pView;
-	if (name == "LinearLayout") {
+	if (name == "LinearLayout"sv) {
 		pView = make_shared<LinearLayout>(parent);
 	}
-	else if (name == "TextView") {
+	else if (name == "TextView"sv) {
 		pView = make_shared<TextView>(parent);
 	}
-	else if (name == "Button") {
+	else if (name == "Button"sv) {
 		pView = make_shared<Button>(parent);
 	}
-	else if (name == "ScrollView") {
+	else if (name == "ScrollView"sv) {
 		pView = make_shared<ScrollView>(parent);
 	}
-	else if (name == "ListView") {
+	else if (name == "ListView"sv) {
 		pView = make_shared<ListView>(parent);
 	}
 	else {

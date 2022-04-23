@@ -1,5 +1,6 @@
 #include "ScrollView.h"
 #include "UiRender.h"
+#include "../MeshFilledRect.h"
 
 void ScrollView::draw() {
 	UiRender::getInstance()->drawScrollView(this);

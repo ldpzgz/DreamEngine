@@ -3,6 +3,7 @@
 #include "View.h"
 #include <limits>
 #include "CharPosition.h"
+#include "../Color.h"
 using namespace std;
 
 class TextView : public View {
@@ -45,7 +46,8 @@ public:
 		if (mText != str) {
 			mText = str;
 			setDirty(true);
-			calcTextPosition();
+			setUpdateTextPosition(true);
+			//calcTextPosition();
 		}
 	}
 

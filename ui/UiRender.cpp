@@ -7,9 +7,17 @@
 #include "../Ubo.h"
 #include "../Material.h"
 #include "../Utils.h"
-#include "../Mesh.h"
 #include "../Pbo.h"
 #include "../Texture.h"
+#include "Background.h"
+#include "BackgroundStyle.h"
+#include "View.h"
+#include "TextView.h"
+#include "Button.h"
+#include "LinearLayout.h"
+#include "ScrollView.h"
+#include "ListView.h"
+#include "Shape.h"
 #include <glm/ext/matrix_transform.hpp> //translate, rotate, scale, identity
 #include <glm/ext/matrix_clip_space.hpp> // perspective
 #include "UiRender.h"
@@ -246,58 +254,31 @@ bool UiRender::initTextView(const string& savedPath, const string& ttfPath, cons
 	}
 }
 
-void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::BackgroundStyle>& pStyle) {
-	if (!pStyle) {
+void UiRender::initShape(View* pView, std::shared_ptr<BackgroundStyle>& pStyle) {
+	if (pStyle==nullptr) {
 		return;
 	}
 	auto& pShape = pStyle->getShape();
 	if (!pShape) {
 		return;
 	}
-	if (pShape->getInitialized()) {
-		//shape 可以在多个style之间共享，如果已经初始化过了，就不用再初始化了
-		//但是对于渐变色，不同的style可能有不同的渐变色
-		//渐变色是使用colorVbo来实现的
-		GradientType gradientType = pShape->getGradientType();
-		if (gradientType != GradientType::None) {
-			auto& startColor = pStyle->getStartColor();
-			auto& centerColor = pStyle->getCenterColor();
-			auto& endColor = pStyle->getEndColor();
-			if (!startColor.isZero() || !centerColor.isZero() || !endColor.isZero()) {
-				auto& pMesh = pShape->getMesh();
-				if (pMesh) {
-					auto colorVbo = pMesh->createAColorData(pShape->getGradientAngle(), startColor, endColor, centerColor);
-					pStyle->setColorVbo(colorVbo);
-				}
-			}
-			else {
-				auto& pMesh = pShape->getMesh();
-				if (pMesh) {
-					pStyle->setColorVbo(pMesh->getColorVbo());
-				}
-			}
-		}
-		return;
+
+	auto fillType = pStyle->getFillType();
+	if (fillType == FillType::Fill_Texture) {
+		pShape->setTexture(pStyle->getTexture());
+	}else if (fillType == FillType::Fill_Gradient) {
+		pShape->setGradientStartColor(pStyle->getStartColor());
+		pShape->setGradientCenterColor(pStyle->getCenterColor());
+		pShape->setGradientEndColor(pStyle->getEndColor());
+		pShape->setGradientType("Linear");
 	}
 	else {
-		auto& pTex = pStyle->getTexture();
-		if (pTex) {
-			pShape->setTexture(pTex);
-		}
-		auto& startC = pStyle->getStartColor();
-		auto& centerC = pStyle->getCenterColor();
-		auto& endC = pStyle->getEndColor();
-		if (!startC.isZero() || !centerC.isZero() || !endC.isZero()) {
-			pShape->setGradientStartColor(startC);
-			pShape->setGradientCenterColor(centerC);
-			pShape->setGradientEndColor(endC);
-			pShape->setGradientType("Linear");
-		}
-		auto& solidC = pStyle->getSolidColor();
-		if (!solidC.isZero()) {
-			pShape->setSolidColor(solidC);
-		}
+		pShape->setSolidColor(pStyle->getSolidColor());
 	}
+
+	pShape->setBorderColor(pStyle->getBorderColor());
+		
+	auto& rect = pView->getRect();
 	auto width = rect.width;
 	auto height = rect.height;
 	auto paddingLeft = pShape->getPaddingLeft();
@@ -319,8 +300,7 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 	auto ltRadius = pShape->getCornerLeftTopRadius();
 	auto lbRadius = pShape->getCornerLeftBottomRadius();
 	auto rbRadius = pShape->getCornerRightBottomRadius();
-	auto ovalWidth = pShape->getOvalWidth();
-	auto ovalHeight = pShape->getOvalHeight();
+	
 	auto centerX = pShape->getGradientCenterX();
 	auto centerY = pShape->getGradientCenterY();
 	centerX *= width;
@@ -333,31 +313,29 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 	auto& borderColor = pShape->getBorderColor();
 	auto& pTexture = pShape->getTexture();
 	auto angle = pShape->getGradientAngle();
-
-	bool hasBackground = (!solidColor.isZero() || pTexture || gradientType != GradientType::None);
-	shared_ptr<MeshFilledRect> pMesh;
-	shared_ptr<MeshFilledRect> pBorderMesh;
+	
+	bool hasBackground = true;
+	if (fillType == FillType::Fill_Solid && solidColor.a == 0.0f) {
+		hasBackground = false;
+	}
+	
+	std::shared_ptr< MeshFilledRect> pMesh;
+	std::shared_ptr< MeshFilledRect> pBorderMesh;
 	if (shapeType == ShapeType::Rectangle) {
 		if (hasBackground) {
 			pMesh = make_shared<MeshFilledRect>();
 			pMesh->loadMesh(width, height, gradientAngle,centerX, centerY);
-			//pShape->setMesh(static_pointer_cast<void>(pMesh));
-			pShape->setMesh(pMesh);
 		}
-		//if (!borderColor.isZero()) {
+		if (!borderColor.isZero()) {
 			pBorderMesh = make_shared<MeshFilledRect>();
 			pBorderMesh->loadMesh(width, height, gradientAngle, centerX, centerY);
 			pBorderMesh->setFilled(false);
 			pBorderMesh->setLineWidth(borderWidth);
-			//pShape->setStrokeMesh(static_pointer_cast<void>(pBorderMesh));
-			pShape->setBorderMesh( pBorderMesh );
-		//}
+		}
 	}
 	else if (shapeType == ShapeType::RoundedRectangle) {
 		if (hasBackground) {
 			pMesh = make_shared<MeshRoundedRectangle>();
-			//pShape->setMesh(static_pointer_cast<void>(pMesh));
-			pShape->setMesh( pMesh );
 			if (cornerRadius > 0) {
 				//四个圆角是一样的半径
 				pMesh->loadMesh(cornerRadius, gradientAngle, centerX, centerY, width, height);
@@ -367,7 +345,7 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 				pMesh->loadMesh(rtRadius, ltRadius, lbRadius, rbRadius, gradientAngle, centerX, centerY, width, height);
 			}
 		}
-		//if (!borderColor.isZero()) {
+		if (!borderColor.isZero()) {
 			pBorderMesh = make_shared<MeshRoundedRectangle>();
 			if (cornerRadius > 0) {
 				//四个圆角是一样的半径
@@ -379,25 +357,21 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 			}
 			pBorderMesh->setFilled(false);
 			pBorderMesh->setLineWidth(borderWidth);
-			//pShape->setStrokeMesh(static_pointer_cast<void>(pBorderMesh));
-			pShape->setBorderMesh( pBorderMesh );
-		//}
+		}
 	}
 	else if (shapeType == ShapeType::Oval) {
+		//auto ovalWidth = pShape->getOvalWidth();
+		//auto ovalHeight = pShape->getOvalHeight();
 		if (hasBackground) {
 			pMesh = make_shared<MeshCircle>();
 			pMesh->loadMesh(width, height, gradientAngle, centerX, centerY);
-			//pShape->setMesh(static_pointer_cast<void>(pMesh));
-			pShape->setMesh( pMesh );
 		}
-		//if (!borderColor.isZero()) {
+		if (!borderColor.isZero()) {
 			pBorderMesh = make_shared<MeshCircle>();
 			pBorderMesh->loadMesh(width, height, gradientAngle, centerX, centerY);
 			pBorderMesh->setFilled(false);
 			pBorderMesh->setLineWidth(borderWidth);
-			//pShape->setStrokeMesh(static_pointer_cast<void>(pBorderMesh));
-			pShape->setBorderMesh( pBorderMesh );
-		//}
+		}
 	}
 
 	if (pMesh && pTexture) {
@@ -422,7 +396,7 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 			LOGD("warning only support linear gradient type now");
 		}
 	}
-	else if (pMesh && !solidColor.isZero()) {
+	else if (pMesh && solidColor.a != 0.0f) {
 		auto pMaterial = Resource::getInstance().cloneMaterial("posUniformColor");
 		if (pMaterial) {
 			pMaterial->setUniformColor(solidColor);//这个每次渲染前都需要调用
@@ -443,9 +417,12 @@ void UiRender::initShape(Rect<int>& rect, const unique_ptr<Background::Backgroun
 			LOGE("ERROR cannot found posUniformColor material");
 		}
 	}
-	if (pShape) {
+
+	pStyle->setBkMesh(pMesh);
+	pStyle->setBkBorderMesh(pBorderMesh);
+	/*if (pShape) {
 		pShape->setInitialized(true);
-	}
+	}*/
 }
 
 void UiRender::initBackground(View* pView) {
@@ -454,29 +431,29 @@ void UiRender::initBackground(View* pView) {
 		if (!pBack) {
 			return;
 		}
-		auto& pStyle1 = pBack->getNormalStyle();
-		auto& pStyle2 = pBack->getPushedStyle();
-		auto& pStyle3 = pBack->getHoverStyle();
-		auto& pStyle4 = pBack->getDisabledStyle();
+		auto pStyle1 = pBack->getNormalStyle();
+		auto pStyle2 = pBack->getPushedStyle();
+		auto pStyle3 = pBack->getHoverStyle();
+		auto pStyle4 = pBack->getDisabledStyle();
 
 		if (pStyle1) {
-			initShape(pView->getRect(), pStyle1);
+			initShape(pView, pStyle1);
 		}
 		if (pStyle2) {
-			initShape(pView->getRect(), pStyle2);
+			initShape(pView, pStyle2);
 		}
 		if (pStyle3) {
-			initShape(pView->getRect(), pStyle3);
+			initShape(pView, pStyle3);
 		}
 		if (pStyle4) {
-			initShape(pView->getRect(), pStyle4);
+			initShape(pView, pStyle4);
 		}
 	}
 }
 
 //宽度或者高度为wrapContent的时候，计算TextView文本的宽度和高度以像素为单位
 void UiRender::calcTextViewWidthHeight(TextView* tv) {
-	if (tv->mLayoutWidth != LayoutParam::WrapContent && tv->mLayoutHeight != LayoutParam::WrapContent) {
+	if (tv->getLayoutWidth() != LayoutParam::WrapContent && tv->getLayoutHeight() != LayoutParam::WrapContent) {
 		LOGE("ERROR no need to call UiRender::calcTextViewWidthHeight");
 		return;
 	}
@@ -551,11 +528,11 @@ void UiRender::calcTextViewWidthHeight(TextView* tv) {
 		}
 	}
 
-	if (tv->mLayoutWidth == LayoutParam::WrapContent) {
-		tvRect.width = totalWidth + tv->mLayoutMarginLeft + tv->mLayoutMarginRight;
+	if (tv->getLayoutWidth() == LayoutParam::WrapContent) {
+		tvRect.width = totalWidth + tv->getLayoutMarginLeft() + tv->getLayoutMarginRight();
 	}
-	if (tv->mLayoutHeight == LayoutParam::WrapContent) {
-		tvRect.height = totalHeight + tv->mLayoutMarginTop + tv->mLayoutMarginBottom;
+	if (tv->getLayoutHeight() == LayoutParam::WrapContent) {
+		tvRect.height = totalHeight + tv->getLayoutMarginTop() + tv->getLayoutMarginBottom();
 	}
 }
 
@@ -824,46 +801,35 @@ bool UiRender::drawBackground(View* v){
 		}
 		std::shared_ptr<Shape> pShape;
 		unsigned int colorVbo = 0;
+		MeshFilledRect* pMesh = nullptr;
+		MeshFilledRect* pBorderMesh = nullptr;
+		std::shared_ptr<BackgroundStyle> pStyle;
 		auto mouseStatus = v->getMouseStatus();
 		if (!v->getEnabled()) {
-			auto& pStyle = pBack->getDisabledStyle();
-			if (pStyle) {
-				pStyle->setMyStyle();
-				pShape = pStyle->mpShape;
-				colorVbo = pStyle->getColorVbo();
-			}
+			pStyle = pBack->getDisabledStyle();
 		}
 		if (mouseStatus & MouseState::MouseLButtonDown) {
-			auto& pStyle = pBack->getPushedStyle();
-			if (pStyle) {
-				pStyle->setMyStyle();
-				pShape = pStyle->mpShape;
-				colorVbo = pStyle->getColorVbo();
-			}
+			pStyle = pBack->getPushedStyle();
 		}
 		else if (mouseStatus & MouseState::MouseHover) {
-			auto& pStyle = pBack->getHoverStyle();
-			if (pStyle) {
-				pStyle->setMyStyle();
-				pShape = pStyle->mpShape;
-				colorVbo = pStyle->getColorVbo();
-			}
+			pStyle = pBack->getHoverStyle();
 		}
 		else{
-			auto& pStyle = pBack->getNormalStyle();
-			if (pStyle) {
-				pStyle->setMyStyle();
-				pShape = pStyle->mpShape;
-				colorVbo = pStyle->getColorVbo();
-			}
+			pStyle = pBack->getNormalStyle();
+		}
+
+		if (pStyle) {
+			pStyle->setMyStyle();
+			pShape = pStyle->mpShape;
+			colorVbo = pStyle->getColorVbo();
+			pMesh = pStyle->getBkMesh();
+			pBorderMesh = pStyle->getBkBorderMesh();
 		}
 
 		if (!pShape) {
 			return false;
 		}
 		
-		auto& pMesh = pShape->getMesh();
-		auto& pBorderMesh = pShape->getBorderMesh();
 		auto& borderColor = pShape->getBorderColor();
 		if (pShape) {
 			auto paddingLeft = pShape->getPaddingLeft();

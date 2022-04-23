@@ -15,5 +15,11 @@
 		background="@bk/firstbk"
 		text="截图">
 	</TextView>
+	<ListView 
+		id="nodeTree"
+		width="200"
+		height="300"
+		background="#000000">
+	</ListView>
 		
 </LinearLayout>

@@ -6,7 +6,8 @@
 #include "Log.h"
 #include <vector>
 #include <cmath>
-static const int STEP = 32;
+constexpr int STEP = 32;
+constexpr float PI_1_2 = 3.1415926535897932f / 2.0f;
 using namespace std;
 
 MeshRoundedRectangle::MeshRoundedRectangle():
@@ -38,7 +39,7 @@ void MeshRoundedRectangle::loadMesh(float rightTopRadius,float leftTopRadius,flo
 	texcoord.emplace_back(centerX / mWidth, centerY / mHeight);
 	glm::vec3 lastPoint{0.0f,0.0f,0.0f};
 	glm::vec2 lastTex{ 0.0f,0.0f};
-	float PI_1_2 = 3.1415926535897932f / 2.0f;
+	
 	//先从右上角开始
 	if (rightTopRadius <= 0.0f) {
 		mPoints.emplace_back(width, height, 0.0f);

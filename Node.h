@@ -5,6 +5,7 @@
 #include <vector>
 #include <list>
 #include <memory>
+#include <any>
 #include <functional>
 #include <glm/vec3.hpp>           // vec3
 #include <glm/mat4x4.hpp>         // mat4
@@ -12,6 +13,9 @@ using namespace std;
 
 class Renderable;
 class NodeListener;
+enum class NodeAnyIndex {
+	UiTreeIndex
+};
 class Node : public enable_shared_from_this<Node> {
 public:
 	Node();
@@ -102,7 +106,20 @@ public:
 		
 	void addListener(const shared_ptr<NodeListener>& lis);
 	
-	
+	//you can attachment anything to the node
+	void addAny(int index,const std::any& a) {
+		mAttachments[index] = a;
+	}
+	std::any& getAny(int index) {
+		static std::any sAny;
+		auto it = mAttachments.find(index);
+		if (it != mAttachments.end()) {
+			return it->second;
+		}
+		else {
+			return sAny;
+		}
+	}
 	//void removeListener();
 protected:
 	glm::mat4 mLocalMat{1.0f};
@@ -110,6 +127,9 @@ protected:
 private:
 	void updateListener();
 	void updateChildrenMatrix(bool notify=true) noexcept;
+	void setParent(shared_ptr<Node>& parent) noexcept {
+		mpParent = parent;
+	}
 
 	std::string mName;
 	weak_ptr<Node> mpParent;
@@ -117,10 +137,7 @@ private:
 	unordered_map<unsigned int, shared_ptr<Renderable>> mRenderables;
 	std::list<std::shared_ptr<Node>> mChildren;
 	std::vector<shared_ptr<NodeListener>> mListeners;
-
-	void setParent(shared_ptr<Node>& parent) noexcept{
-		mpParent = parent;
-	}
+	std::unordered_map<int, std::any> mAttachments;
 };
 using NodeSP = std::shared_ptr<Node>;
 #endif

@@ -1,5 +1,8 @@
 #include"ListAdapter.h"
+#include "../View.h"
+#include "../TextView.h"
 #include "../UiManager.h"
+#include "../../MeshFilledRect.h"
 
 std::shared_ptr<View>& ListAdapter::getView(int position){
 	if (position >= mDatas.size()) {
