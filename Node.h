@@ -97,6 +97,8 @@ public:
 	void visitNode(const std::function<void(Node*)>& func);
 
 	void visitNode(const std::function<bool(Node*)>& func,bool& isOver);
+
+	void visitNode(const std::function<bool(Node*,bool& visitChild)>& func, bool& isOver);
 		
 	void addListener(const shared_ptr<NodeListener>& lis);
 	

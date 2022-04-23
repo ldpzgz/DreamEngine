@@ -153,6 +153,23 @@ void Node::visitNode(const std::function<bool(Node*)>& func, bool& isOver) {
 	}
 }
 
+void Node::visitNode(const std::function<bool(Node*, bool& visitChild)>& func, bool& isOver) {
+	bool visitChild = true;
+	if (func) {
+		isOver = func(this, visitChild);
+	}
+	if (!visitChild) {
+		return;
+	}
+	for (auto& pChild : mChildren) {
+		if (isOver)
+			return;
+		if (pChild) {
+			pChild->visitNode(func, isOver);
+		}
+	}
+}
+
 void Node::lookAt(const glm::vec3& eyepos, const glm::vec3& center, 
 	const glm::vec3& up, bool updateChild, bool notify) noexcept {
 	mLocalMat = glm::lookAt(eyepos, center, up);
