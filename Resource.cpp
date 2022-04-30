@@ -1585,7 +1585,7 @@ std::shared_ptr<Texture> ResourceImpl::getOrLoadTextureFromFile(const std::strin
 	parseTexParams(path, realPath, texParams);
 
 	if (RealTexName.empty()) {
-		RealTexName = Utils::getFileName(realPath);
+		RealTexName = Utils::getFileNameWithPath(realPath);
 	}
 	auto pTexture = mTextures.find(RealTexName);
 	if (pTexture != mTextures.end()) {
@@ -1595,7 +1595,12 @@ std::shared_ptr<Texture> ResourceImpl::getOrLoadTextureFromFile(const std::strin
 		//如果写的是drawable文件夹里面的某个文件
 		auto filePath = gDrawablePath + "/" + realPath;
 		auto pTex = loadImageFromFile(filePath, RealTexName);
-		pTex->setParam(texParams);
+		if (pTex) {
+			pTex->setParam(texParams);
+		}
+		else {
+			LOGE("load texture failed %s",filePath.c_str());
+		}
 		return pTex;
 	}
 }
@@ -1959,4 +1964,9 @@ void ResourceImpl::loadAllMaterial() {
 	if (pTex) {
 		mTextures.emplace("brdfLUT", pTex);
 	}
+	pTex = make_shared<Texture>();
+	std::array<unsigned char, 4> nullTex{0,0,0,0};
+	pTex->setParam(GL_NEAREST, GL_NEAREST);
+	pTex->create2DMap(1, 1, nullTex.data(), GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+	mTextures.emplace("nullTex", pTex);
 }
