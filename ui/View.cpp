@@ -4,6 +4,7 @@
 #include "LinearLayout.h"
 #include "ScrollView.h"
 #include "ListView.h"
+#include "TreeView.h"
 
 #include "UiRender.h"
 #include "UiManager.h"
@@ -18,7 +19,9 @@
 
 using namespace std;
 
-std::shared_ptr<View> gpViewNothing;
+std::vector<std::string_view> gViewAnyIndex{
+	"treeNodeIndentation"
+};
 
 unordered_map<string, int> View::gGravityKeyValue{
 	{ "center" ,LayoutParam::Center },
@@ -54,6 +57,48 @@ unordered_map < string, std::function<void(const shared_ptr<View>&, const std::s
 	{ "lineSpace",View::lineSpaceHandler_s },
 	{ "orientation",View::orientationHandler_s },
 };
+
+//下面这2个成员没有clone，父子关系
+//weak_ptr<View> mpParent;
+//std::list<std::shared_ptr<View>> mChildren;
+//std::unordered_map<std::string, std::shared_ptr<View>> mpId2ViewMap
+
+View::View(const View& v):
+	mbIsDirty(v.mbIsDirty),
+	mbEnabled(v.mbEnabled),
+	mMouseState(v.mMouseState),
+	mId(v.mId),
+	mClickedListener(v.mClickedListener),
+	mLayoutWidth(v.mLayoutWidth),
+	mLayoutHeight(v.mLayoutHeight),
+	mLayoutMarginTop(v.mLayoutMarginTop),
+	mLayoutMarginBottom(v.mLayoutMarginBottom),
+	mLayoutMarginLeft(v.mLayoutMarginLeft),
+	mLayoutMarginRight(v.mLayoutMarginRight),
+	mWidthPercent(v.mWidthPercent),
+	mHeightPercent(v.mHeightPercent),
+	mGravity(v.mGravity),
+	mRect(v.mRect),
+	mMoveVector(v.mMoveVector),
+	mpDirtyListener(v.mpDirtyListener),
+	mpMoveListener(v.mpMoveListener),
+	mpBackground(v.mpBackground),
+	mAnyMap(v.mAnyMap)
+{
+	/*if (v.mpId2ViewMap) {
+		mpId2ViewMap = std::make_unique<std::unordered_map<std::string, std::shared_ptr<View>>>(*v.mpId2ViewMap);
+	}*/
+}
+
+void View::setAny(ViewAnyIndex index, const std::any& any) {
+	auto& i = gViewAnyIndex[static_cast<size_t>(index)];
+	mAnyMap[i] = any;
+}
+
+std::any View::getAny(ViewAnyIndex index) {
+	auto& i = gViewAnyIndex[static_cast<size_t>(index)];
+	return getAny(i);
+}
 
 void View::drawBackground() {
 	UiRender::getInstance()->drawBackground(this);
@@ -196,55 +241,9 @@ bool View::calcWidthHeight(int parentWidth, int parentHeight) {
 
 //计算自身以及子view的位置尺寸
 bool View::calcRect(int parentWidth, int parentHeight) {
-
 	calcWidthHeight(parentWidth, parentHeight);
 	calcPos();
 	return true;
-
-	////计算parentWidth，parentHeight
-	////parentWidth，parentHeight是matchparent,或者固定宽度高度的情况，由下面这两个函数处理
-	//if (mWidthPercent == 0) {
-	//	calcWidth(parentRect.width);
-	//}
-	//if (mHeightPercent == 0) {
-	//	calcHeight(parentRect.height);
-	//}
-	////计算子view的宽高
-	//if (!mChildren.empty()) {
-	//	int percentWidth = 0;
-	//	int percentHeight = 0;
-	//	for (auto& child : mChildren) {
-	//		if (child) {
-	//			percentWidth += child->mWidthPercent;
-	//			percentHeight += child->mHeightPercent;
-	//		}
-	//	}
-	//	//如果子view是百分比布局，根据子view的百分比、父view的宽度计算出每个ziview的宽度
-	//	if (percentWidth > 0) {
-	//		for (auto& child : mChildren) {
-	//			if (child) {
-	//				int childWidth = (int)((float)mRect.width*(float)child->mWidthPercent / (float)percentWidth);
-	//				child->setWidth(childWidth);
-	//			}
-	//		}
-	//	}
-	//	else {
-	//		calcWidth(mRect.width);
-	//	}
-	//	//同上
-	//	if (percentHeight > 0) {
-	//		for (auto& child : mChildren) {
-	//			if (child) {
-	//				int childHeight = (int)((float)mRect.height*(float)child->mHeightPercent / (float)percentHeight);
-	//				child->setHeight(childHeight);
-	//			}
-	//		}
-	//	}
-	//	else {
-	//		calcHeight(mRect.height);
-	//	}
-	//}
-	//return true;
 }
 
 void View::idHandler(const shared_ptr<View>& pv, const std::string& value) {
@@ -500,6 +499,7 @@ void View::setBackgroundShape(const shared_ptr<Shape>& pShape) {
 	}
 	
 	pStyle->setBorderColor(pShape->getBorderColor());
+	//setDirty(true);
 }
 
 void View::setBackgroundImg(shared_ptr<Texture>& pTex) {
@@ -509,6 +509,7 @@ void View::setBackgroundImg(shared_ptr<Texture>& pTex) {
 	auto& pStyle = mpBackground->getNormalStyle();
 	pStyle->setTexture(pTex);
 	pStyle->setFillType(FillType::Fill_Texture);
+	//setDirty(true);
 }
 
 void View::setBackgroundColor(const Color& c) {
@@ -520,12 +521,18 @@ void View::setBackgroundColor(const Color& c) {
 		pStyle->setSolidColor(c);
 		pStyle->setFillType(FillType::Fill_Solid);
 	}
+	//setDirty(true);
 }
 
 bool View::mouseMove(int x, int y, bool notInside) {
-	if (!notInside && mRect.isInside(x, y)) {
+	auto tempRect = mRect;
+	tempRect.x += mMoveVector.x;
+	tempRect.y += mMoveVector.y;
+	if (!notInside && tempRect.isInside(x, y)) {
 		for (auto& pChild : mChildren) {
-			pChild->mouseMove(x, y, false);
+			if (pChild->mouseMove(x, y, false)) {
+				break;
+			}
 		}
 		if ((mMouseState & MouseState::MouseHover) == 0) {
 			mMouseState |= MouseState::MouseHover;
@@ -536,10 +543,10 @@ bool View::mouseMove(int x, int y, bool notInside) {
 		return true;
 	}
 	else {
-		for (auto& pChild : mChildren) {
-			pChild->mouseMove(x, y, true);
-		}
 		if (mMouseState & MouseState::MouseHover) {
+			for (auto& pChild : mChildren) {
+				pChild->mouseMove(x, y, true);
+			}
 			mMouseState &= ~MouseState::MouseHover;
 			if (mpBackground && mpBackground->getHoverStyle()) {
 				setDirty(true);
@@ -550,9 +557,14 @@ bool View::mouseMove(int x, int y, bool notInside) {
 };
 
 bool View::mouseLButtonDown(int x, int y, bool notInside) {
-	if (!notInside && mRect.isInside(x, y)) {
+	auto tempRect = mRect;
+	tempRect.x += mMoveVector.x;
+	tempRect.y += mMoveVector.y;
+	if (!notInside && tempRect.isInside(x, y)) {
 		for (auto& pChild : mChildren) {
-			pChild->mouseLButtonDown(x, y, false);
+			if (pChild->mouseLButtonDown(x, y, false)) {
+				break;
+			}
 		}
 		mMouseState |= MouseState::MouseLButtonDown;
 		if (mpBackground && mpBackground->getPushedStyle()) {
@@ -560,18 +572,23 @@ bool View::mouseLButtonDown(int x, int y, bool notInside) {
 		}
 		return true;
 	}
-	else {
-		for (auto& pChild : mChildren) {
-			pChild->mouseLButtonDown(x, y, true);
-		}
-	}
+	//else {
+	//	for (auto& pChild : mChildren) {
+	//		pChild->mouseLButtonDown(x, y, true);
+	//	}
+	//}
 	return false;
 };
 
 bool View::mouseLButtonUp(int x, int y, bool notInside) {
-	if (!notInside && mRect.isInside(x, y)) {
+	auto tempRect = mRect;
+	tempRect.x += mMoveVector.x;
+	tempRect.y += mMoveVector.y;
+	if (!notInside && tempRect.isInside(x, y)) {
 		for (auto& pChild : mChildren) {
-			pChild->mouseLButtonUp(x, y, false);
+			if (pChild->mouseLButtonUp(x, y, false)) {
+				break;
+			}
 		}
 		if ((mMouseState & MouseState::MouseLButtonDown) && mClickedListener) {
 			onClicked(this);
@@ -583,30 +600,42 @@ bool View::mouseLButtonUp(int x, int y, bool notInside) {
 		return true;
 	}
 	else {
-		for (auto& pChild : mChildren) {
-			pChild->mouseLButtonUp(x, y, true);
+		if (mMouseState != MouseState::MouseNone) {
+			for (auto& pChild : mChildren) {
+				pChild->mouseLButtonUp(x, y, true);
+			}
+			if (mpBackground && mpBackground->getPushedStyle()) {
+				setDirty(true);
+			}
 		}
 		mMouseState = MouseState::MouseNone;
-		if (mpBackground && mpBackground->getPushedStyle()) {
-			setDirty(true);
-		}
 		return false;
 	}
 };
 
-shared_ptr<View>& View::findViewById(const std::string& id) {
+shared_ptr<View> View::findViewById(const std::string& id) {
 	if (mpId2ViewMap && !id.empty()) {
 		auto it = mpId2ViewMap->find(id);
 		if (it != mpId2ViewMap->end()) {
 			return it->second;
 		}
 		else {
-			return gpViewNothing;
+			return {};
 		}
 	}
 	else {
-		return gpViewNothing;
+		return {};
 	}
+}
+
+std::shared_ptr<View> View::clone(const std::shared_ptr<View>& parent) {
+	auto pClone = clone();
+	if (pClone) {
+		pClone->setParent(parent);
+		std::unique_ptr< std::unordered_map< std::string, std::shared_ptr<View> > > p;
+		pClone->getId2View(p);
+	}
+	return pClone;
 }
 
 void View::getId2View(std::unique_ptr< std::unordered_map< std::string, std::shared_ptr<View> > >& pId2ViewMap) {
@@ -650,6 +679,9 @@ shared_ptr<View> View::createView(const string& name, shared_ptr<View> parent) {
 	}
 	else if (name == "ListView"sv) {
 		pView = make_shared<ListView>(parent);
+	}
+	else if (name == "TreeView"sv) {
+		pView = make_shared<TreeView>(parent);
 	}
 	else {
 		LOGE("can not create %s view",name.c_str());

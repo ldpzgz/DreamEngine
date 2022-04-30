@@ -2,23 +2,30 @@
 <LinearLayout
 	id="llayout"
 	width="matchParent"
-	height="50"
-	gravity="center"
-	background="#00ff00ff"
+	height="40"
+	gravity="leftCenter"
+	background="#000000ff"
 	orientation="h">
 	<TextView
-		id="icon"
-		width="40"
-		height="40"
+		id="wrapIcon"
+		width="16"
+		height="16"
 		gravity="center"
-		background="@image/plus"
+		background="@image/ui/wrap.png"
+	/>
+	<TextView
+		id="objectIcon"
+		width="32"
+		height="32"
+		gravity="center"
+		background="@image/ui/node.png"
 	/>
 	<TextView
 		id="tv"
-		width="60"
-		height="matchParent"
+		width="160"
+		height="32"
 		gravity="leftCenter"
 		textSize="32"
-		textColor="#ff0000ff"
+		textColor="#ffffffff"
 	/>
 </LinearLayout>

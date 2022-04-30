@@ -2,6 +2,18 @@
 #include "UiRender.h"
 #include "../MeshFilledRect.h"
 
+std::shared_ptr<View> ScrollView::clone() {
+	auto pParent = std::make_shared<ScrollView>(*this);
+	for (const auto& pChild : mChildren) {
+		auto pNewChild = pChild->clone();
+		if (pNewChild) {
+			pNewChild->setParent(pParent);
+			pParent->addChild(pNewChild);
+		}
+	}
+	return pParent;
+}
+
 void ScrollView::draw() {
 	UiRender::getInstance()->drawScrollView(this);
 	View::draw();

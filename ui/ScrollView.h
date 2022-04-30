@@ -9,7 +9,7 @@ class ScrollView :public LinearLayout,public MoveListener {
 public:
 	using LinearLayout::LinearLayout;//继承基类的构造函数
 	ScrollView() = default;
-	
+	ScrollView(const ScrollView&) = default;
 	void draw() override;
 
 	bool mouseMove(int x, int y,bool notInside) override;
@@ -19,8 +19,9 @@ public:
 	bool mouseLButtonUp(int x, int y, bool notInside) override;
 
 	void afterGetWidthHeight() override;
+
+	std::shared_ptr<View> clone() override;
 private:
-	unsigned int mMouseState{ MouseState::MouseNone };
 	bool mbLButtonDown{ false };
 	glm::ivec2 mPrePos{0,0};
 	glm::ivec2 mChildTotalWidthHeight{0,0};

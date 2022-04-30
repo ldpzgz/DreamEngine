@@ -13,6 +13,8 @@ public:
 		setTextColor(Color(0.0f, 0.0f, 0.0f, 1.0f));
 	}
 
+	Button(const Button&) = default;
+	std::shared_ptr<View> clone() override;
 	void draw() override;
 };
 

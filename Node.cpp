@@ -6,11 +6,28 @@
 #include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
 #include <glm/gtc/type_ptr.hpp> // value_ptr
 
+std::vector<std::string_view> gNodeAnyKey{
+	"treeNodeInfo"
+};
 atomic_uint Node::sCurMeshId = 0;
 
 Node::Node() = default;
 
 Node::~Node() = default;
+
+void Node::setAny(NodeAnyIndex index, const std::any & a) {
+	assert(static_cast<std::size_t>(index) < gNodeAnyKey.size());
+	auto& anyKey = gNodeAnyKey[static_cast<std::size_t>(index)];
+	mAttachments[anyKey] = a;
+}
+std::any Node::getAny(NodeAnyIndex index) {
+	auto& anyKey = gNodeAnyKey[static_cast<int>(index)];
+	auto it = mAttachments.find(anyKey);
+	if (it != mAttachments.end()) {
+		return it->second;
+	}
+	return {};
+}
 
 shared_ptr<Node> Node::newAChild() {
 	auto child = make_shared<Node>();
@@ -22,6 +39,7 @@ void Node::addChild(shared_ptr<Node>& child) {
 	if (child) {
 		child->setParent(shared_from_this());
 		child->setParentWorldMatrix(getWorldMatrix());
+		child->mIdInParent = mChildren.size();
 		mChildren.emplace_back(child);
 	}
 	/*if (!mpFirstChild) {
@@ -37,35 +55,18 @@ void Node::addChild(shared_ptr<Node>& child) {
 }
 
 void Node::removeChild(shared_ptr<Node>& child) noexcept{
-	mChildren.remove(child);
-	//auto p = mpFirstChild;
-	//while (p && p != child) {
-	//	p = p->mpNextSibling;
-	//}
-	//if (p) {
-	//	auto& pre = p->mpPreSibling.lock();
-	//	auto& next = p->mpNextSibling;
-	//	if (pre) {
-	//		pre->mpNextSibling = next;
-	//	}
-	//	else {
-	//		//remove first child;
-	//		mpFirstChild = next;
-	//	}
+	if (child) {
+		auto parent = child->getParent().lock();
+		if (parent.get() == this) {
+			mChildren.erase(std::cbegin(mChildren) + child->mIdInParent);
+		}
+	}
+}
 
-	//	if (next) {
-	//		next->mpPreSibling = pre;
-	//	}
-	//	else {
-	//		//remove last child;
-	//		mpLastChild = pre;
-	//	}
-	//	child->mpNextSibling.reset();
-	//	child->mpPreSibling.reset();
-	//	child.reset();
-	//	return true;
-	//}
-	//return false;
+void Node::removeChild(int index) noexcept {
+	if (index < mChildren.size()) {
+		mChildren.erase(std::cbegin(mChildren) + index);
+	}
 }
 
 bool Node::addRenderable(const shared_ptr<Renderable>& temp) {
@@ -153,12 +154,27 @@ void Node::visitNode(const std::function<bool(Node*)>& func, bool& isOver) {
 	}
 }
 
+void Node::visitNode(const std::function<void(Node*, bool& visitChild)>& func) {
+	bool visitChild = true;
+	if (func) {
+		func(this, visitChild);
+	}
+	if (!visitChild) {
+		return;
+	}
+	for (auto& pChild : mChildren) {
+		if (pChild) {
+			pChild->visitNode(func);
+		}
+	}
+}
+
 void Node::visitNode(const std::function<bool(Node*, bool& visitChild)>& func, bool& isOver) {
 	bool visitChild = true;
 	if (func) {
 		isOver = func(this, visitChild);
 	}
-	if (!visitChild) {
+	if (isOver || !visitChild) {
 		return;
 	}
 	for (auto& pChild : mChildren) {
@@ -168,6 +184,44 @@ void Node::visitNode(const std::function<bool(Node*, bool& visitChild)>& func, b
 			pChild->visitNode(func, isOver);
 		}
 	}
+}
+
+void Node::visitNodeForward(const std::function<bool(Node*)>& func,
+	const std::function<bool(Node*)>& visitChildFunc,
+	bool& isOver) {
+	isOver = func(this);
+	if (isOver)
+		return;
+	if (!mChildren.empty() && visitChildFunc(this)) {
+		for (auto it = mChildren.begin(); it != mChildren.end(); ++it) {
+			auto& pNode = *it;
+			if (pNode) {
+				(pNode)->visitNodeForward(func, visitChildFunc, isOver);
+			}
+			if (isOver)
+				break;
+		}
+	}
+}
+
+void Node::visitNodeBackward(const std::function<bool(Node*)>& func,
+	const std::function<bool(Node*)>& visitChildFunc,
+	bool& isOver) {
+
+	if (!mChildren.empty() && visitChildFunc(this)) {
+		for (auto it = mChildren.rbegin(); it != mChildren.rend(); ++it) {
+			if (isOver)
+				break;
+			auto& pNode = *it;
+			if (pNode) {
+				pNode->visitNodeBackward(func, visitChildFunc, isOver);
+			}
+		}
+	}
+	
+	if (isOver)
+		return;
+	isOver = func(this);
 }
 
 void Node::lookAt(const glm::vec3& eyepos, const glm::vec3& center, 

@@ -59,7 +59,7 @@ void UiTree::setRootView(const std::shared_ptr<View>& pRootView) {
 }
 
 void UiTree::addDirtyView(const shared_ptr<View>& pView) {
-	mViewsToBeDrawing.emplace_back(pView);
+	mViewsToBeDrawing.emplace(pView);
 }
 void UiTree::updateWidthHeight(float width, float height) {
 	//mpFboForRender.detachColorRbo();
@@ -84,6 +84,8 @@ void UiTree::updateWidthHeight(float width, float height) {
 void UiTree::calcViewsRect(int windowWidth, int windowHeight) {
 	if (mpRootView) {
 		//先计算出各个控件的宽高，再计算他们的位置
+		mpRootView->setAny("parentWidth"sv, std::any(windowWidth));
+		mpRootView->setAny("parentHeight"sv, std::any(windowHeight));
 		mpRootView->calcRect(windowWidth, windowHeight);
 	}
 }

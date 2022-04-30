@@ -40,14 +40,11 @@ class Background;
 */
 class UiManager {
 public:
-	static unique_ptr<UiManager>& getInstance() {
-		return gInstance;
-	}
+	static UiManager& getInstance();
 
-	//从一个xml文件里面加载一棵ui树，准备模仿Android的ui系统
 	shared_ptr<View> loadFromFile(const string& filepath);
 
-	//从一个xml文件里面加载一棵ui树，准备模仿Android的ui系统
+	
 	static shared_ptr<View> loadFromFile(const string& filepath,int parentWidth,int parentHeight);
 
 	/*
@@ -96,7 +93,6 @@ private:
 	float mWindowHeight{ 0.0f };
 	glm::mat4 mProjMatrix{1.0f};
 
-	static std::unique_ptr<UiManager> gInstance;
 	static std::unordered_map<std::string, std::string> gRStrings;//保存从material/strings.xml里面解析出来的字符串
 	static std::unordered_map<std::string, Color> gRColors;//保存从material/colors.xml里面解析出来的颜色值
 	static std::unordered_map<std::string, std::shared_ptr<Shape>> gRShapes;

@@ -8,6 +8,10 @@ public:
 	friend UiRender;
 	using View::View;
 
+	LinearLayout() = default;
+
+	LinearLayout(const LinearLayout&) = default;
+
 	bool isVertical() {
 		return mOrientation == LayoutParam::Vertical;
 	}
@@ -28,9 +32,8 @@ public:
 
 	void calcChildPos() override;
 
-	void orientationHandler(const string& content) override;
+	std::shared_ptr<View> clone() override;
 private:
-	int mOrientation{ LayoutParam::Horizontal };
 	int mTotalWidthPercent{ 0 };
 	int mTotalHeightPercent{ 0 };
 };

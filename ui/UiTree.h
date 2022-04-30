@@ -4,6 +4,7 @@
 //#include FT_FREETYPE_H
 #include <iostream>
 #include <string>
+#include <set>
 #include <unordered_map>
 #include <memory>
 #include "View.h"
@@ -36,7 +37,7 @@ public:
 //	void calcViewsPos(shared_ptr<View> pView);
 public:
 	shared_ptr<View> mpRootView;
-	list<weak_ptr<View>> mViewsToBeDrawing;
+	set<weak_ptr<View>, std::owner_less<std::weak_ptr<View>>> mViewsToBeDrawing;
 	unique_ptr<Fbo> mpFboForRender;
 	shared_ptr<Texture> mpTexture;
 	bool mbRedraw{ false };

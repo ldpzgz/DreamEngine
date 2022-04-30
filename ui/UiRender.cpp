@@ -17,6 +17,7 @@
 #include "LinearLayout.h"
 #include "ScrollView.h"
 #include "ListView.h"
+#include "TreeView.h"
 #include "Shape.h"
 #include <glm/ext/matrix_transform.hpp> //translate, rotate, scale, identity
 #include <glm/ext/matrix_clip_space.hpp> // perspective
@@ -808,14 +809,16 @@ bool UiRender::drawBackground(View* v){
 		if (!v->getEnabled()) {
 			pStyle = pBack->getDisabledStyle();
 		}
-		if (mouseStatus & MouseState::MouseLButtonDown) {
-			pStyle = pBack->getPushedStyle();
-		}
-		else if (mouseStatus & MouseState::MouseHover) {
-			pStyle = pBack->getHoverStyle();
-		}
-		else{
-			pStyle = pBack->getNormalStyle();
+		else {
+			if (mouseStatus & MouseState::MouseLButtonDown) {
+				pStyle = pBack->getPushedStyle();
+			}
+			else if (mouseStatus & MouseState::MouseHover) {
+				pStyle = pBack->getHoverStyle();
+			}
+			if(!pStyle){
+				pStyle = pBack->getNormalStyle();
+			}
 		}
 
 		if (pStyle) {
@@ -928,6 +931,49 @@ void UiRender::drawScrollView(ScrollView* psv) {
 	}
 }
 
+void UiRender::drawTreeView(TreeView* ptv) {
+	drawBackground(ptv);
+	auto& lvRect = ptv->getRect();
+
+	GLboolean bScissorTest;
+	glGetBooleanv(GL_SCISSOR_TEST, &bScissorTest);
+	Rect<int> preScissorBox;
+	glGetIntegerv(GL_SCISSOR_BOX, (GLint*)&preScissorBox);
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(lvRect.x, mWindowHeight - lvRect.y - lvRect.height, lvRect.width, lvRect.height);
+
+	auto& pAdapter = ptv->getAdapter();
+	if (pAdapter) {
+		int firstItemHideLength = pAdapter->getFirstItemHideLength();
+		int visibleCount = pAdapter->getVisibleItemCount();
+		int moveLength = -firstItemHideLength;
+
+		for (int i = 0; i < visibleCount; ++i) {
+			auto& pView = pAdapter->getView(i);
+			if (pView) {
+				glm::ivec2 tempMove(lvRect.x, lvRect.y);
+				auto& rectInc = pView->getRect();
+				auto identation = pView->getAny(ViewAnyIndex::TreeNodeIndentation);
+				if (identation.has_value()) {
+					tempMove.x += 16 * std::any_cast<int>(identation);
+				}
+				
+				tempMove.y += moveLength;
+				moveLength += pView->advanceY();
+				
+				pView->setMove(tempMove);
+				pView->draw();
+			}
+		}
+	}
+	if (!bScissorTest) {
+		glDisable(GL_SCISSOR_TEST);
+	}
+	else {
+		glScissor(preScissorBox.x, preScissorBox.y, preScissorBox.width, preScissorBox.height);
+	}
+}
+
 void UiRender::drawListView(ListView* plv) {
 	drawBackground(plv);
 	auto& lvRect = plv->getRect();
@@ -941,17 +987,12 @@ void UiRender::drawListView(ListView* plv) {
 	
 	auto& pAdapter = plv->getAdapter();
 	if (pAdapter) {
-		int firstItem;
-		int firstItemHideLength;
-		int lastItem;
-		int lastItemHideLength;
-		plv->getFirstVisibleItem(firstItem, firstItemHideLength);
-		plv->getLastVisibleItem(lastItem, lastItemHideLength);
+		int firstItemHideLength = pAdapter->getFirstItemHideLength();
 		bool isHorizontal = plv->isHorizontal();
-		
+		int visibleCount = pAdapter->getVisibleItemCount();
 		int moveLength = -firstItemHideLength;
 		
-		for (int i = firstItem; i <= lastItem; ++i) {
+		for (int i = 0; i < visibleCount; ++i) {
 			auto& pView = pAdapter->getView(i);
 			if (pView) {
 				glm::ivec2 tempMove(lvRect.x, lvRect.y);
@@ -964,6 +1005,7 @@ void UiRender::drawListView(ListView* plv) {
 					tempMove.y += moveLength;
 					moveLength += pView->advanceY();
 				}
+				std::cout << "view: " << i << ": move "<<tempMove.x << "," << tempMove.y << " Rect: " << rectInc.x << "," << rectInc.y << std::endl;
 				pView->setMove(tempMove);
 				pView->draw();
 			}

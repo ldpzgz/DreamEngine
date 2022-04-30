@@ -7,6 +7,7 @@
 #include <memory>
 #include <any>
 #include <functional>
+#include <string_view>
 #include <glm/vec3.hpp>           // vec3
 #include <glm/mat4x4.hpp>         // mat4
 using namespace std;
@@ -14,8 +15,9 @@ using namespace std;
 class Renderable;
 class NodeListener;
 enum class NodeAnyIndex {
-	UiTreeIndex
+	TreeNodeInfo,
 };
+
 class Node : public enable_shared_from_this<Node> {
 public:
 	Node();
@@ -28,6 +30,10 @@ public:
 	const std::string& getName() const noexcept{
 		return mName;
 	}
+
+	auto getIdInParent() {
+		return mIdInParent;
+	}
 	
 	shared_ptr<Node> newAChild();
 
@@ -39,13 +45,26 @@ public:
 		return mpParent;
 	}
 
+	bool hasChild() const noexcept {
+		return !mChildren.empty();
+	}
+
 	auto& getChildren() noexcept {
 		return mChildren;
+	}
+
+	std::shared_ptr<Node> getChild(size_t pos) {
+		if (pos>=0 && pos<mChildren.size()) {
+			return mChildren[pos];
+		}
+		return {};
 	}
 
 	void addChild(shared_ptr<Node>& child);
 
 	void removeChild(shared_ptr<Node>& child) noexcept;
+
+	void removeChild(int index) noexcept;
 
 	bool addRenderable(const shared_ptr<Renderable>& temp);
 
@@ -102,24 +121,21 @@ public:
 
 	void visitNode(const std::function<bool(Node*)>& func,bool& isOver);
 
+	void visitNode(const std::function<void(Node*, bool& visitChild)>& func);
+
 	void visitNode(const std::function<bool(Node*,bool& visitChild)>& func, bool& isOver);
-		
+	
+	void visitNodeForward(const std::function<bool(Node*)>& func,
+		const std::function<bool(Node*)>& visitChildFunc,
+		bool& isOver);
+	void visitNodeBackward(const std::function<bool(Node*)>& func,
+		const std::function<bool(Node*)>& visitChildFunc,
+		bool& isOver);
 	void addListener(const shared_ptr<NodeListener>& lis);
 	
 	//you can attachment anything to the node
-	void addAny(int index,const std::any& a) {
-		mAttachments[index] = a;
-	}
-	std::any& getAny(int index) {
-		static std::any sAny;
-		auto it = mAttachments.find(index);
-		if (it != mAttachments.end()) {
-			return it->second;
-		}
-		else {
-			return sAny;
-		}
-	}
+	void setAny(NodeAnyIndex index, const std::any& a);
+	std::any getAny(NodeAnyIndex index);
 	//void removeListener();
 protected:
 	glm::mat4 mLocalMat{1.0f};
@@ -132,12 +148,13 @@ private:
 	}
 
 	std::string mName;
+	std::size_t mIdInParent;
 	weak_ptr<Node> mpParent;
 	static atomic_uint sCurMeshId;
 	unordered_map<unsigned int, shared_ptr<Renderable>> mRenderables;
-	std::list<std::shared_ptr<Node>> mChildren;
+	std::vector<std::shared_ptr<Node>> mChildren;
 	std::vector<shared_ptr<NodeListener>> mListeners;
-	std::unordered_map<int, std::any> mAttachments;
+	std::unordered_map<std::string_view, std::any> mAttachments;
 };
 using NodeSP = std::shared_ptr<Node>;
 #endif

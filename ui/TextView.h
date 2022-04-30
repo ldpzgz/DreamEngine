@@ -11,6 +11,10 @@ public:
 	using View::View;//继承基类的构造函数
 	TextView() = default;
 
+	TextView(const TextView& tv) = default;
+
+	std::shared_ptr<View> clone() override;
+
 	void setTextColor(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
 		Color temp(r,g,b,a);
 		if (mTextColor != temp) {
@@ -41,15 +45,11 @@ public:
 	const std::string& getText() {
 		return mText;
 	}
-
-	void setText(const std::string& str) {
-		if (mText != str) {
-			mText = str;
-			setDirty(true);
-			setUpdateTextPosition(true);
-			//calcTextPosition();
-		}
-	}
+	/*
+	* 如果textView是wrapContent，
+	* 文本的变化会导致parent的尺寸变化
+	*/
+	void setText(const std::string& str);
 
 	void setTextSize(int size) {
 		mTextSize = size;

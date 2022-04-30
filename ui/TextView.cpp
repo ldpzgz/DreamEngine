@@ -4,9 +4,82 @@
 #include "../MeshFilledRect.h"
 #include "../Log.h"
 
+std::shared_ptr<View> TextView::clone() {
+	return std::make_shared<TextView>(*this);
+}
+
 void TextView::draw() {
 	UiRender::getInstance()->drawTextView(this);
 	View::draw();
+}
+
+void TextView::setText(const std::string& str) {
+	if (mText != str) {
+		mText = str;
+		setDirty(true);
+		setUpdateTextPosition(true);
+		/*
+		* 如果这个textview是wrapContent的，那么重新设置了text，它的宽高
+		* 都会发生变化，这就导致了背景mesh也会发生变化，
+		* 如果父view的宽高是wrapcontent的，那么父view的尺寸也会发生变化
+		*/
+		if (mLayoutWidth == LayoutParam::WrapContent || 
+			mLayoutHeight == LayoutParam::WrapContent) {
+			auto pParent = mpParent.lock();
+			int parentWidth = 0;
+			int parentHeight = 0;
+			bool traceToTopView{ false };
+			if (!pParent) {
+				traceToTopView = true;
+				pParent = shared_from_this();
+			}
+			while (pParent) {
+				if (pParent->getLayoutHeight() == LayoutParam::WrapContent ||
+					pParent->getLayoutWidth() == LayoutParam::WrapContent) {
+					auto pp = pParent->getParent().lock();
+					if (pp) {
+						pParent = pp;
+					}
+					else {
+						traceToTopView = true;
+						break;
+					}
+				}
+				else {
+					auto ppp = pParent->getParent().lock();
+					if (ppp) {
+						auto& rect = ppp->getRect();
+						parentWidth = rect.width;
+						parentHeight = rect.height;
+						break;
+					}
+					else {
+						traceToTopView = true;
+						break;
+					}
+				}
+			}
+			if (traceToTopView) {
+				auto anyW = pParent->getAny("parentWidth");
+				auto anyH = pParent->getAny("parentHeight");
+				if (anyW.has_value() && anyH.has_value()) {
+					try {
+						parentWidth = std::any_cast<int>(anyW);
+						parentHeight = std::any_cast<int>(anyH);
+					}
+					catch (std::bad_any_cast e) {
+						LOGE("TextView::setText any cast error");
+						return;
+					}
+				}
+				else {
+					LOGE("TextView::setText the top parent has no parent wh");
+					return;
+				}
+			}
+			pParent->calcRect(parentWidth, parentHeight);
+		}
+	}
 }
 
 bool TextView::calcWidth(int parentWidth) {

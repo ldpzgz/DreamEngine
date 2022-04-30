@@ -19,7 +19,7 @@ class LinearLayout;
 class ListView;
 class ScrollView;
 class Shape;
-
+class TreeView;
 /*
 这个类不要自己单独创建，UiRender::initUiRender函数里面会创建它。
 */
@@ -102,6 +102,7 @@ public:
 	void drawLinearLayout(LinearLayout* pll);
 	void drawScrollView(ScrollView* psv);
 	void drawListView(ListView* psv);
+	void drawTreeView(TreeView* ptv);
 
 	//指定最后要显示出来的纹理，当前uitree的纹理，每棵ui树都会渲染到它自己的纹理上面。
 	void setTexture(const shared_ptr<Texture>& pTex);

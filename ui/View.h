@@ -1,6 +1,7 @@
 #ifndef _VIEW_H_
 #define _VIEW_H_
 #include <string>
+#include "../Log.h"
 #include "../Rect.h"
 #include "../Color.h"
 #include <functional>
@@ -8,6 +9,8 @@
 #include <memory>
 #include <unordered_map>
 #include <string>
+#include <string_view>
+#include <any>
 #include <glm/vec2.hpp>           // vec2
 
 
@@ -17,6 +20,9 @@ class MeshFilledRect;
 class Background;
 class Texture;
 class Shape;
+enum class ViewAnyIndex {
+	TreeNodeIndentation
+};
 
 enum MouseState : unsigned char {
 	MouseNone = 0x00,
@@ -89,17 +95,19 @@ public:
 
 	View() = default;
 
+	View(const View& v);
+
 	virtual void draw() {
 		setDirty(false);
 	}
 
 	virtual void drawBackground();
 
-	weak_ptr<View> getParent() {
+	std::weak_ptr<View> getParent() {
 		return mpParent;
 	}
 
-	void setParent(const shared_ptr<View>& parent) {
+	void setParent(const std::weak_ptr<View>& parent) {
 		mpParent = parent;
 	}
 
@@ -125,7 +133,7 @@ public:
 		}
 	}
 
-	void setOnClickListener(std::function<void(View*)> func) {
+	void setOnClickListener(const std::function<void(View*)>& func) {
 		mClickedListener = func;
 	}
 
@@ -160,11 +168,28 @@ public:
 		mGravity = g;
 	}
 
+	int getOrientation() {
+		return mOrientation;
+	}
+
 	virtual bool calcRect(int parentWidth, int parentHeight);
 
-	shared_ptr<View>& findViewById(const std::string& id);
+	shared_ptr<View> findViewById(const std::string& id);
 	//将有Id的控件搜集起来，以便查找
 	void getId2View(std::unique_ptr< std::unordered_map< std::string, std::shared_ptr<View> > >& pId2ViewMap);
+
+	void setAny(std::string_view str,const std::any& any) {
+		mAnyMap[str] = any;
+	}
+	std::any getAny(std::string_view str) {
+		auto it = mAnyMap.find(str);
+		if (it != mAnyMap.end()) {
+			return it->second;
+		}
+		return {};
+	}
+	void setAny(ViewAnyIndex index, const std::any& any);
+	std::any getAny(ViewAnyIndex index);
 protected:
 	virtual bool calcWidthHeight(int parentWidth, int parentHeight);
 	virtual bool calcPos();
@@ -242,16 +267,14 @@ public:
 	}
 
 	void setDirty(bool b) {
-		if (!mpDirtyListener.lock() || mbIsDirty == b) {
-			return;
-		}
 		mbIsDirty = b;
 		if (mbIsDirty) {
 			auto pListener = mpDirtyListener.lock();
 			if (pListener) {
 				pListener->addDirtyView(shared_from_this());
 			}
-			
+			//没有背景的物体，它的父控件也需要更新,
+			//因为本控件没有clear背景的操作
 			if (!mpBackground) {
 				auto pParent = mpParent.lock();
 				if (pParent) {
@@ -278,7 +301,7 @@ public:
 	void setBackgroundShape(const shared_ptr<Shape>& pShape);
 
 	void initBackground();
-
+	//scrollView 控件会移动其他控件
 	glm::ivec2 getTranslateVector(){
 		auto pMoveLis = mpMoveListener.lock();
 		if (pMoveLis) {
@@ -342,8 +365,25 @@ public:
 		return mLayoutMarginTop;
 	}
 
-	virtual void orientationHandler(const string& content) {
+	virtual std::shared_ptr<View> clone() {
+		return {};
+	}
+	/*
+	* 应该调用这个函数去clone自己
+	*/
+	std::shared_ptr<View> clone(const std::shared_ptr<View>& parent);
 
+
+	virtual void orientationHandler(const string& content) {
+		if (content == "h") {
+			mOrientation = LayoutParam::Horizontal;
+		}
+		else if (content == "v") {
+			mOrientation = LayoutParam::Vertical;
+		}
+		else {
+			LOGE("can not recognize orientation value %s", content.c_str());
+		}
 	}
 
 	virtual void textSizeHandler(const std::string& content) {
@@ -406,7 +446,6 @@ protected:
 	unsigned int mMouseState{ MouseState::MouseNone };
 	std::string mId;
 	std::function<void(View*)> mClickedListener;
-	weak_ptr<void> mpUserData;
 	weak_ptr<View> mpParent;
 
 	//与parent的相对位置信息
@@ -419,18 +458,18 @@ protected:
 	int mWidthPercent{ 0 };		//宽度百分比
 	int mHeightPercent{ 0 };	//高度百分比
 	int mGravity{ LayoutParam::Center };//控制view内部的元素或者子view如何居中对齐，水平居中，垂直居中，居中
+	int mOrientation{ LayoutParam::Horizontal };
 	Rect<int> mRect{ 0,0,0,0 };
 	glm::ivec2 mMoveVector{ 0,0 };
 	std::list<std::shared_ptr<View>> mChildren;
 	weak_ptr<DirtyListener> mpDirtyListener;
-	weak_ptr<MoveListener> mpMoveListener;
+	weak_ptr<MoveListener> mpMoveListener; //scrollView 控件会移动其他控件
 	std::shared_ptr<Background> mpBackground;
 	std::unique_ptr< std::unordered_map<std::string, std::shared_ptr<View>> > mpId2ViewMap;
+	std::unordered_map<std::string_view, std::any> mAnyMap;
 public:
 	static unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> gLayoutAttributeHandler;
 	static unordered_map<string, int> gGravityKeyValue;
 };
-
-extern std::shared_ptr<View> gpViewNothing;
 
 #endif

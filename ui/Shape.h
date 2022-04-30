@@ -252,28 +252,6 @@ public:
 		return mpTexture;
 	}
 
-	/*void setInitialized(bool b) {
-		mbInitilized = b;
-	}
-
-	bool getInitialized() {
-		return mbInitilized;
-	}*/
-	/*std::shared_ptr<MeshFilledRect>& getMesh() {
-		return mpMesh;
-	}
-	std::shared_ptr<MeshFilledRect>& getBorderMesh() {
-		return mpBorderMesh;
-	}
-
-	void setBorderMesh(const std::shared_ptr<MeshFilledRect>& pMesh) {
-		mpBorderMesh = pMesh;
-	}
-
-	void setMesh(const std::shared_ptr<MeshFilledRect>& pMesh) {
-		mpMesh = pMesh;
-	}*/
-
 	static std::unordered_map<std::string, std::function<void(const std::shared_ptr<Shape>&, const std::string&)>> gShapeAttributeHandler;
 public:
 	ShapeType mType{ ShapeType::Rectangle };
@@ -310,12 +288,7 @@ public:
 	float mOvalWidth{ 1.0f };
 	float mOvalHeight{ 1.0f };
 
-	//bool mbInitilized{false};
-
 	std::shared_ptr<Texture> mpTexture;
-	//std::shared_ptr<MeshFilledRect> mpMesh;//承载shape的mesh
-	//std::shared_ptr<MeshFilledRect> mpBorderMesh;//承载边框的mesh
-
 private:
 	static void typeHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
 	static void cornerRadiusHandler(const std::shared_ptr<Shape>& shape,const std::string& value);

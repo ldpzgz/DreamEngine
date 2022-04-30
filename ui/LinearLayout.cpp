@@ -3,6 +3,18 @@
 #include "../MeshFilledRect.h"
 #include "../Log.h"
 
+std::shared_ptr<View> LinearLayout::clone() {
+	auto pParent = std::make_shared<LinearLayout>(*this);
+	for (const auto& pChild : mChildren) {
+		auto pNewChild = pChild->clone();
+		if (pNewChild) {
+			pNewChild->setParent(pParent);
+			pParent->addChild(pNewChild);
+		}
+	}
+	return pParent;
+}
+
 int LinearLayout::getChildrenTotalWidthPercent() {
 	if (!mChildren.empty()) {
 		for (auto& child : mChildren) {
@@ -270,16 +282,4 @@ void LinearLayout::calcChildPos() {
 void LinearLayout::draw() {
 	UiRender::getInstance()->drawLinearLayout(this);
 	View::draw();
-}
-
-void LinearLayout::orientationHandler(const string& value) {
-	if (value == "h") {
-		mOrientation = LayoutParam::Horizontal;
-	}
-	else if (value == "v") {
-		mOrientation = LayoutParam::Vertical;
-	}
-	else {
-		LOGE("can not recognize linearlayout orientation value %s",value.c_str());
-	}
 }

@@ -27,11 +27,15 @@ static const string gBackgroundPath("./opengles3/resource/background");
 static const string gUiImagePath("./opengles3/resource/drawable/uiImage");
 static const string gUiLayoutPath("./opengles3/resource/layout");
 
-unique_ptr<UiManager> UiManager::gInstance = make_unique<UiManager>();
 unordered_map<string, string> UiManager::gRStrings;
 //unordered_map<string, Color> UiManager::gRColors;
 unordered_map<string, std::shared_ptr<Shape>> UiManager::gRShapes;
 unordered_map<string, std::shared_ptr<Background>> UiManager::gRBackground;
+
+UiManager& UiManager::getInstance() {
+	static UiManager gInstance;
+	return gInstance;
+}
 
 void UiManager::loadAllBackground() {
 	path bkPath(gBackgroundPath);
@@ -352,9 +356,10 @@ void UiManager::parseRStrings(const string& path) {
 	}
 	
 	if (pfdoc && pfdoc->size() > 0) {
-		rapidxml::xml_document<> doc;// character type defaults to char
-		doc.parse<0>(pfdoc->data());// 0 means default parse flags
-		auto pResNode = doc.first_node("resources");
+		//unique_ptr < rapidxml::xml_document<> > pdoc;// character type defaults to char
+		auto pdoc = make_unique< rapidxml::xml_document<> >();
+		pdoc->parse<0>(pfdoc->data());// 0 means default parse flags
+		auto pResNode = pdoc->first_node("resources");
 		if (pResNode != nullptr) {
 			auto pStringNode = pResNode->first_node("string");
 			while (pStringNode != nullptr) {
@@ -423,7 +428,7 @@ shared_ptr<View> UiManager::loadFromFile(const string& filepath, int parentWidth
 	}
 	catch (std::exception e) {
 		LOGE("error to loadFromFile %s file,error %s", filepath.c_str(), e.what());
-		return gpViewNothing;
+		return {};
 	}
 	if (pfdoc->size() > 0) {
 		auto pDoc = make_unique < rapidxml::xml_document<> >();// character type defaults to char
