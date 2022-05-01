@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+	id="llayout"
+	width="matchParent"
+	height="42"
+	gravity="leftCenter"
+	background="#000000ff"
+	orientation="h">
+	<TextView
+		id="tv"
+		width="160"
+		height="42"
+		gravity="leftCenter"
+		textSize="42"
+		textColor="#ffffffff"
+	/>
+</LinearLayout>

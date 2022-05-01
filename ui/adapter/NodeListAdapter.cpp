@@ -252,7 +252,7 @@ Rect<int>* NodeListAdapter::getViewRect(int position) {
 	return nullptr;
 }
 
-size_t NodeListAdapter::getItemCounts() {
+size_t NodeListAdapter::getDataSize() {
 	return mItemCount;
 }
 

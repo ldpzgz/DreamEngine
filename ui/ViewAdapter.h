@@ -17,7 +17,9 @@ public:
 
 	}
 
-	virtual std::shared_ptr<View> getView(int position) = 0;
+	virtual std::shared_ptr<View> getView(int position) {
+		return {};
+	}
 
 	virtual Rect<int>* getViewRect(int position) {
 		return nullptr;
@@ -31,7 +33,7 @@ public:
 		return 0;
 	}
 
-	virtual size_t getItemCounts() {
+	virtual size_t getDataSize() {
 		return 0;
 	}
 

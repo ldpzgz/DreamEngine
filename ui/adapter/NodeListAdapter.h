@@ -16,7 +16,7 @@ public:
 
 	Rect<int>* getViewRect(int position) override;
 
-	size_t getItemCounts() override;
+	size_t getDataSize() override;
 
 	int getFirstItemHideLength() override {
 		return mFirstItemHideLength;

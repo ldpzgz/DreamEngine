@@ -11,22 +11,24 @@ ListAdapter::ListAdapter(std::shared_ptr<View>& pContainerView):
 
 }
 
-void ListAdapter::setData(std::vector<std::string>&& data) {
-	mDatas = std::move(data);
-	if (!mpItemView) {
-		initItemView();
-		getVisibleItems();
-	}
+void ListAdapter::setData(const std::shared_ptr<ListData>& pData) {
+	mpDatas = pData;
+	initItemView();
+	getVisibleItems();
 }
 
 std::shared_ptr<View> ListAdapter::getView(int position){
 	int realPos = mFirstVisibleItem + position;
 	std::shared_ptr<View> pView;
-	if (realPos < mDatas.size() && realPos >= 0) {
-		if (mpItemView) {
-			if (mVisibleViews.size() < position + 1) {
-				auto pv = mpItemView->clone(mpParentView.lock());
+	if (realPos < mpDatas->size() && realPos >= 0) {
+		int type = mpDatas->type(realPos);
+
+		if (mVisibleViews.size() < position + 1) {
+			if (mItemViewRefCount[type] >= mItemViews[type].size()) {
+				auto pv = mItemViews[type][0]->clone(mpParentView.lock());
 				if (pv) {
+					mItemViews[type].emplace_back(pv);
+					mItemViewRefCount[type] += 1;
 					mVisibleViews.emplace_back(pv);
 					pView = pv;
 				}
@@ -35,62 +37,58 @@ std::shared_ptr<View> ListAdapter::getView(int position){
 				}
 			}
 			else {
-				pView = mVisibleViews[position];
+				auto& pv = mItemViews[type][mItemViewRefCount[type]];
+				mItemViewRefCount[type] += 1;
+				mVisibleViews.emplace_back(pv);
+				pView = pv;
 			}
 		}
+		else {
+			pView = mVisibleViews[position];
+		}
+
 		if (pView) {
-			pView->setAny("text"sv, std::any(mDatas[realPos]));
+			setViewData(pView, type,realPos);
+			/*pView->setAny("text"sv, std::any(mpDatas[realPos]));
 			auto& pTv = dynamic_pointer_cast<TextView>(pView->findViewById("tv"));
 			if (pTv) {
-				pTv->setText(mDatas[realPos]);
-			}
+				pTv->setText(mpDatas[realPos]);
+			}*/
 		}
 	}
 	return pView;
 }
 
-void ListAdapter::initItemView() {
-	if (!mpItemView) {
-		auto pParent = mpParentView.lock();
-		if (pParent) {
-			auto& parentRect = pParent->getRect();
-			mpItemView = UiManager::loadFromFile("./opengles3/resource/layout/lvItem.xml", parentRect.width, parentRect.height);
-			if (mpItemView) {
-				mpItemView->setParent(mpParentView);
-				mVisibleViews.emplace_back(mpItemView);
-				mpItemView->setOnClickListener([](View* pView) {
-					auto t = pView->getAny("text");
-					if (t.has_value()) {
-						std::cout << "list view item text is " << std::any_cast<std::string>(t)<< std::endl;
-					}
-					});
-			}
-		}
-	}
-}
-
 Rect<int>* ListAdapter::getViewRect(int position) {
-	int realPos = position;
-	if (realPos < mDatas.size() && realPos >= 0) {
-		if (mpItemView) {
-			return &mpItemView->getRect();
+	int realPos = mFirstVisibleItem + position;
+	if (realPos < mpDatas->size() && realPos >= 0) {
+		int type = mpDatas->type(realPos);
+		if (mItemViews[type][0]) {
+			return &mItemViews[type][0]->getRect();
 		}
 	}
 	return nullptr;
 }
 
-size_t ListAdapter::getItemCounts() {
-	return mDatas.size();
+size_t ListAdapter::getDataSize() {
+	return mpDatas->size();
 }
 
 bool ListAdapter::getVisibleItems(bool fromFirstItem) {
-	if (mDatas.empty()) {
+	auto itemCount = getDataSize();
+	if (itemCount==0) {
 		return false;
 	}
 	auto pParent = mpParentView.lock();
 	if (!pParent) {
 		return false;
 	}
+
+	for (auto& p : mItemViewRefCount) {
+		p = 0;
+	}
+	mVisibleViews.clear();
+
 	int parentTotalLength{ 0 };
 	int rectIndex{ 2 };
 	auto& pRect = pParent->getRect();
@@ -102,7 +100,6 @@ bool ListAdapter::getVisibleItems(bool fromFirstItem) {
 		parentTotalLength = pRect.height;
 		rectIndex = 3;
 	}
-	auto itemCount = static_cast<int>(mDatas.size());
 	if (mFirstVisibleItem >= itemCount) {
 		mFirstVisibleItem = mLastVisibleItem = itemCount - 1;
 		mFirstItemHideLength = mLastItemHideLength = 0;
