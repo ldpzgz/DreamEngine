@@ -9,13 +9,16 @@
 #include "Node.h"
 #include "Animation.h"
 #include "MeshLoaderAssimp.h"
+#include "MeshLoaderGltf.h"
 #include "Config.h"
+#include "Sampler.h"
 #include <filesystem>
 #include <unordered_map>
 #include <sstream>
 #include <fstream>
 #include <any>
 #include <string_view>
+#include <charconv>
 #include <rapidxml.hpp>
 #include <rapidxml_utils.hpp>  //rapidxml::file
 #include <rapidxml_print.hpp>  //rapidxml::print
@@ -33,77 +36,6 @@ static const string gColorsPath = "./opengles3/resource/colors.xml";
 static const string gMaterialPath = "./opengles3/resource/material";
 static const string gProgramPath = "./opengles3/resource/program";
 static const string gDrawablePath = "./opengles3/resource/drawable";
-
-//解析出纹理路径以及纹理属性
-static void parseTexParams(const std::string& content, std::string& path, TexParams& params) {
-	std::vector<std::string_view> splitStr;
-	std::string pKey;
-	std::string pValue;
-	TexParams texParams;
-	if (Utils::splitStr(content, ",", splitStr) == 1) {
-		path = content;
-	}
-	else {
-		auto filterFun = [](const std::string& pValue) {
-			int minFilter = GL_LINEAR;
-			if (pValue == std::string_view("l")) {
-				minFilter = GL_LINEAR;
-			}
-			else if (pValue == std::string_view("n")) {
-				minFilter = GL_NEAREST;
-			}
-			else if (pValue == std::string_view("nn")) {
-				minFilter = GL_NEAREST_MIPMAP_NEAREST;
-			}
-			else if (pValue == std::string_view("ll")) {
-				minFilter = GL_LINEAR_MIPMAP_LINEAR;
-			}
-			else if (pValue == std::string_view("nl")) {
-				minFilter = GL_NEAREST_MIPMAP_LINEAR;
-			}
-			else if (pValue == std::string_view("ln")) {
-				minFilter = GL_LINEAR_MIPMAP_NEAREST;
-			}
-			return minFilter;
-		};
-		auto wrapFun = [](const std::string& pValue) {
-			int wrapFilter = GL_REPEAT;
-			if (pValue == std::string_view("repeat")) {
-
-			}
-			else if (pValue == std::string_view("clampToEdge")) {
-				wrapFilter = GL_CLAMP_TO_EDGE;
-			}
-			else if (pValue == std::string_view("clampToBoder")) {
-				wrapFilter = GL_CLAMP_TO_BORDER;
-			}
-			return wrapFilter;
-		};
-		for (const auto& str : splitStr) {
-			if (Utils::splitKeyValue(str, pKey, pValue)) {
-				if (pKey == std::string_view("path")) {
-					path = pValue;
-				}
-				else if (pKey == std::string_view("minF")) {
-					texParams.mMinFilter = filterFun(pValue);
-				}
-				else if (pKey == std::string_view("magF")) {
-					texParams.mMagFilter = filterFun(pValue);
-				}
-				else if (pKey == std::string_view("wrapS")) {
-					texParams.mWrapParamS = wrapFun(pValue);
-				}
-				else if (pKey == std::string_view("wrapT")) {
-					texParams.mWrapParamT = wrapFun(pValue);
-				}
-				else if (pKey == std::string_view("wrapR")) {
-					texParams.mWrapParamR = wrapFun(pValue);
-				}
-			}
-		}
-	}
-}
-
 
 static std::unordered_map<std::string_view, unsigned int> gBlendFuncMap{
 	{"1",GL_ONE},
@@ -449,8 +381,18 @@ bool ResourceImpl::meshScaleHander(NodeSP& pNode,const std::string& value) {
 }
 bool ResourceImpl::meshPathHander(NodeSP& pNode,const std::string& value) {
 	if (pNode && !value.empty()) {
-		MeshLoaderAssimp loader;
-		if (loader.loadFromFile(value, pNode)) {
+		auto suffix = Utils::getFileSuffix(value);
+		MeshLoader* pLoader=nullptr;
+		MeshLoaderAssimp loader1;
+		MeshLoaderGltf loader2;
+		/*if (suffix == "gltf"sv) {
+			pLoader = &loader2;
+		}
+		else {
+			pLoader = &loader1;
+		}*/
+		pLoader = &loader1;
+		if (pLoader->loadFromFile(value, pNode)) {
 			LOGD("success load mesh from %s",value.c_str());
 			return true;
 		}
@@ -1512,12 +1454,30 @@ bool ResourceImpl::parseTexture(const string& textureName, const string& texture
 			}
 		}
 		if (pTex) {
-			const auto pParams = umap.find("params");
-			if (pParams != umap.cend()) {
-				std::string realPath;
-				TexParams texParams;
-				parseTexParams(pParams->second, realPath, texParams);
-				pTex->setParam(texParams);
+			const auto pSampler = umap.find("sampler");
+			const auto pBorderColor = umap.find("borderColor");
+			if (pSampler != umap.cend()) {
+				int index{0};
+				std::string_view str{ pSampler->second };
+				auto [ptr, ec]{std::from_chars(str.data(), str.data() + str.size(), index)};
+				if (ec == std::errc()){
+					if (index < static_cast<int>(SamplerType::End)) {
+						auto pSampler = Sampler::getSampler(static_cast<SamplerType>(index));
+						pTex->setSampler(pSampler);
+					}else {
+						LOGE("parse texture sampler index overflow");
+					}
+				}else{
+					LOGE("parse texture sampler index");
+				}
+			}
+			if (pBorderColor != umap.cend()) {
+				Color border;
+				if (Color::parseColor(pBorderColor->second, border)){
+					pTex->setBorderColor(border);
+				}else {
+					LOGE("parse texture borderColor error");
+				}
 			}
 		}
 	}
@@ -1579,13 +1539,9 @@ std::shared_ptr<Texture> ResourceImpl::getOrLoadTextureFromFile(const std::strin
 		return nullptr;
 	}
 	std::string RealTexName(texName);
-	
-	std::string realPath;
-	TexParams texParams;
-	parseTexParams(path, realPath, texParams);
 
 	if (RealTexName.empty()) {
-		RealTexName = Utils::getFileNameWithPath(realPath);
+		RealTexName = Utils::getFileNameWithPath(path);
 	}
 	auto pTexture = mTextures.find(RealTexName);
 	if (pTexture != mTextures.end()) {
@@ -1593,12 +1549,9 @@ std::shared_ptr<Texture> ResourceImpl::getOrLoadTextureFromFile(const std::strin
 	}
 	else {
 		//如果写的是drawable文件夹里面的某个文件
-		auto filePath = gDrawablePath + "/" + realPath;
+		auto filePath = gDrawablePath + "/" + path;
 		auto pTex = loadImageFromFile(filePath, RealTexName);
-		if (pTex) {
-			pTex->setParam(texParams);
-		}
-		else {
+		if (!pTex){
 			LOGE("load texture failed %s",filePath.c_str());
 		}
 		return pTex;
@@ -1966,7 +1919,8 @@ void ResourceImpl::loadAllMaterial() {
 	}
 	pTex = make_shared<Texture>();
 	std::array<unsigned char, 4> nullTex{0,0,0,0};
-	pTex->setParam(GL_NEAREST, GL_NEAREST);
+	auto pSampler = Sampler::getSampler(SamplerType::NearNearEdgeEdge);
+	pTex->setSampler(pSampler);
 	pTex->create2DMap(1, 1, nullTex.data(), GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 	mTextures.emplace("nullTex", pTex);
 }

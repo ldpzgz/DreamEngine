@@ -5,11 +5,14 @@
 #include "Mesh.h"
 #include "Resource.h"
 #include "Ubo.h"
+#include "Sampler.h"
 #include <glm/ext/matrix_transform.hpp> //translate, rotate, scale, identity
 #include <glm/ext/matrix_clip_space.hpp> // perspective
 
 std::shared_ptr<Texture> genBrdfLut() {
 	TextureSP lut = std::make_shared<Texture>();
+	auto pSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
+	lut->setSampler(pSampler);
 	lut->create2DMap(512, 512, nullptr, GL_RG16F, GL_RG, GL_FLOAT);
 
 	Mesh mesh(MeshType::Quad);
@@ -222,7 +225,7 @@ TextureSP convertHdrToCubicmap(const std::shared_ptr<Texture>& pHdr) {
 	auto& pMaterial = Resource::getInstance().getMaterial("hdrToCubicMap");
 	pMaterial->setTextureForSampler("equirectangularMap", pHdr);
 	mesh.setMaterial(pMaterial);
-
+	auto pSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
 	floatR->create2DMap(width, width, nullptr, GL_RGBA, GL_RGBA);
 	floatG->create2DMap(width, width, nullptr, GL_RGBA, GL_RGBA);
 	floatB->create2DMap(width, width, nullptr, GL_RGBA, GL_RGBA);

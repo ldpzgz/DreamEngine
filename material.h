@@ -22,6 +22,7 @@ public:
 
 	//颜色必须要，要么一个color，要么一个map
 	std::string albedo{ "#ffffff" };
+	Color albedoColor;
 	std::string albedoMap;
 
 	//normal可以没有，可以有：要么normalmap，要么顶点normal
@@ -52,6 +53,7 @@ public:
 	
 	void enable();
 
+	void disable();
 	//深度测试，blend，cullface等操作
 	void setMyRenderOperation();
 

@@ -49,6 +49,13 @@ public:
 		return false;
 	}
 
+	void setColor(float* pc) {
+		r = pc[0];
+		g = pc[1];
+		b = pc[2];
+		a = pc[3];
+	}
+
 	union {
 		struct { float r, g, b, a; };
 		std::array<float, 4> rgba;

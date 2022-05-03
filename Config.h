@@ -1,9 +1,7 @@
 #pragma once
-
-class Config {
-public:
-	static int openTaa;//temporal aa
-	static int openSsao;
-	static int openSmaa;
-	static int openShadowMap;
+namespace Config {
+	constexpr bool openTaa=false;//temporal aa
+	constexpr bool openSsao=true;
+	constexpr bool openSmaa = true;
+	constexpr bool openShadowMap = true;
 };

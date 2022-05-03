@@ -2,13 +2,13 @@
 #include "Log.h"
 #include <vector>
 #include "Utils.h"
+#include "Sampler.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <iostream>
 
 Texture::Texture()
 {
-
 }
 Texture::~Texture()
 {
@@ -23,7 +23,9 @@ int Texture::getHeight() {
 int Texture::getWidth() {
 	return mWidth;
 }
-
+/*
+* 调用这个函数生成的texture，不需要设置sampler
+*/
 bool Texture::createMStexture(int width,int height,int samples,unsigned int internalformat) {
 	mInternalFormat = internalformat;
 	mWidth = width;
@@ -89,61 +91,16 @@ bool Texture::createCubicMap(int width, int height, GLint internalFormat, GLenum
 	}
 	if (autoMipmap) {
 		glGenerateMipmap(mTarget);
-		mTexParams.mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
+		if (!mpSampler) {//有这个就有cubemap
+			mpSampler = Sampler::getSampler(SamplerType::LML_LinearEdgeEdge);
+		}
 	}
-	setParamInner();
+	else {
+		if (!mpSampler) {
+			mpSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
+		}
+	}
 	return true;
-}
-
-void Texture::setParam(int minFilter, int magFilter, 
-	int wrapS, int wrapT,int wrapR,float* borderColor,
-	int compareMode,int compareFunc) {
-	mTexParams.mMinFilter = minFilter;
-	mTexParams.mMagFilter = magFilter;
-	mTexParams.mWrapParamS = wrapS;
-	mTexParams.mWrapParamT = wrapT;
-	mTexParams.mWrapParamR = wrapR;
-	mTexParams.mCompareMode = compareMode;
-	mTexParams.mCompareFunc = compareFunc;
-	if (borderColor != nullptr) {
-		mTexParams.mBoderColor[0] = borderColor[0];
-		mTexParams.mBoderColor[1] = borderColor[1];
-		mTexParams.mBoderColor[2] = borderColor[2];
-		mTexParams.mBoderColor[3] = borderColor[3];
-	}
-	setParamInner();
-}
-
-void Texture::setParam(const TexParams& param) {
-	mTexParams = param;
-	setParamInner();
-}
-
-void Texture::setParamInner() {
-	if (mTextureId > 0) {
-		glBindTexture(mTarget, mTextureId);
-		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, mTexParams.mMinFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, mTexParams.mMagFilter);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, mTexParams.mWrapParamS);
-		glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, mTexParams.mWrapParamT);
-		checkglerror();
-		if (mTarget == GL_TEXTURE_CUBE_MAP) {
-			glTexParameteri(mTarget, GL_TEXTURE_WRAP_R, mTexParams.mWrapParamR);
-		}
-		checkglerror();
-		if (mTexParams.mWrapParamS == GL_CLAMP_TO_BORDER ||
-			mTexParams.mWrapParamT == GL_CLAMP_TO_BORDER ||
-			mTexParams.mWrapParamR == GL_CLAMP_TO_BORDER) {
-			glTexParameterfv(mTarget, GL_TEXTURE_BORDER_COLOR, mTexParams.mBoderColor);
-		}
-		checkglerror();
-		if (mTexParams.mCompareMode != GL_NONE) {
-			glTexParameteri(mTarget, GL_TEXTURE_COMPARE_MODE, mTexParams.mCompareMode);
-			glTexParameteri(mTarget, GL_TEXTURE_COMPARE_FUNC, mTexParams.mCompareFunc);
-		}
-		checkglerror();
-		//glBindTexture(mTarget, 0);
-	}
 }
 
 bool Texture::create2DMap(int width,int height,const unsigned char* pdata, GLint internalFormat,GLint format,GLenum type, int aligment,bool autoMipmap)
@@ -158,34 +115,29 @@ bool Texture::create2DMap(int width,int height,const unsigned char* pdata, GLint
 	glGenTextures(1, &mTextureId);
 	//glActiveTexture(GL_TEXTURE0);
 	glBindTexture(mTarget, mTextureId);//mTarget是GL_TEXTURE_CUBE_MAP的时候要注意，
-	// Set-up texture properties.
-	if (autoMipmap) {
-		mTexParams.mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
-	}
-	
-	setParamInner();
 	// Loads image data into OpenGL.
 	
 	glPixelStorei(GL_UNPACK_ALIGNMENT, aligment);
-	
 	glTexImage2D(mTarget, 0, mInternalFormat, mWidth, mHeight, 0,
 		mFormat, mType, pdata);
-
-	if(autoMipmap)
-	{
-		//可以renderable he filterable的纹理才可以生成mipmap
+	if (autoMipmap) {
 		glGenerateMipmap(mTarget);
+		/*if (!mpSampler) {
+			mpSampler = Sampler::getSampler(SamplerType::LML_LinearEdgeEdge);
+		}*/
 	}
+	else {
+		/*if (!mpSampler) {
+			mpSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
+		}*/
+	}
+	
 	checkglerror();
-	/*if (glGetError() != GL_NO_ERROR)
-	{
-		LOGE("Error loading texture into OpenGL.");
-		unload();
-		return false;
-	}*/
 	return true;
 }
-
+/*
+* 浮点纹理默认没有生成mipmap
+*/
 bool Texture::loadHdrFile(const std::string& path) {
 	stbi_set_flip_vertically_on_load(true);
 	int nrComponents;
@@ -226,10 +178,10 @@ bool Texture::loadHdrFile(const std::string& path) {
 		//glActiveTexture(GL_TEXTURE0);
 		glBindTexture(mTarget, mTextureId);
 		glTexImage2D(GL_TEXTURE_2D, 0, mInternalFormat, mWidth, mHeight, 0, mFormat, mType, data);
-
-		setParamInner();
-
 		stbi_image_free(data);
+		if (!mpSampler) {
+			mpSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
+		}
 		return true;
 	}
 	else
@@ -238,7 +190,9 @@ bool Texture::loadHdrFile(const std::string& path) {
 		return false;
 	}
 }
-
+/*
+* 默认生成mipmap
+*/
 bool Texture::loadFromFile(const std::string& path) {
 	int nrChannels;
 	stbi_set_flip_vertically_on_load(true);
@@ -264,8 +218,9 @@ bool Texture::loadFromFile(const std::string& path) {
 		}
 		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, mType, data);
 		glGenerateMipmap(mTarget);
-		mTexParams.mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
-		setParamInner();
+		/*if (!mpSampler) {
+			mpSampler = Sampler::getSampler(SamplerType::LML_LinearEdgeEdge);
+		}*/
 		stbi_image_free(data);
 		return true;
 	}
@@ -274,9 +229,21 @@ bool Texture::loadFromFile(const std::string& path) {
 		LOGE("load texture from file: %s", path.c_str());
 		return false;
 	}
-
 }
 
+void Texture::genMipmap() {
+	if (mTextureId > 0) {
+		glBindTexture(mTarget, mTextureId);
+		glGenerateMipmap(mTarget);
+		checkglerror();
+	}
+	else {
+		LOGD("texture has not initialized when genMipmap");
+	}
+}
+/*
+* 默认生成mipmap
+*/
 bool Texture::loadCubemap(const std::string& path) {
 	unload();
 	mTarget = GL_TEXTURE_CUBE_MAP;
@@ -320,12 +287,11 @@ bool Texture::loadCubemap(const std::string& path) {
 		++i;
 	}
 	glGenerateMipmap(mTarget);
+	if (!mpSampler) {
+		mpSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
+	}
 	//int align = 0;
 	//glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);//默认是4，the alignment requirements for the start of each pixel row in memory
-
-	// Set-up texture properties.
-	mTexParams.mMinFilter = GL_LINEAR_MIPMAP_LINEAR;
-	setParamInner();
 
 	if (glGetError() != GL_NO_ERROR)
 	{
@@ -349,7 +315,16 @@ void Texture::active(GLint textPoint)
 {
 	glActiveTexture(textPoint);
 	glBindTexture(mTarget, mTextureId);
-	//checkglerror();
+	if (mpSampler) {
+		mpSampler->bindTex(textPoint, &mBorderColor[0]);
+	}
+}
+
+void Texture::deActive(GLint texPoint) {
+	if (mpSampler) {
+		glActiveTexture(texPoint);
+		mpSampler->unBind(texPoint);
+	}
 }
 
 void Texture::update(int xoffset,int yoffset,int width,int height,void* data,

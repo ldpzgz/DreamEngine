@@ -257,7 +257,7 @@ bool Fbo::replaceColorTexture(const std::shared_ptr<Texture>& texture, int attac
 
 	//ret = checkFrameBuffer();
 	disable();
-	return ret;
+	return true;
 }
 
 bool Fbo::attachColorTexture(const std::shared_ptr<Texture>& texture, int attachment_n, int cubicFace,GLint level)

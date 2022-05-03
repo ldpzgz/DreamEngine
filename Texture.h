@@ -10,31 +10,10 @@
 #else
 #include <glad/glad.h>
 #endif
+#include <array>
+#include "Color.h"
 
-class TexParams {
-public:
-	TexParams() = default;
-	TexParams(const TexParams& other) = default;
-	TexParams& operator=(const TexParams& other) = default;
-	TexParams(int minF, int magF, int wrapS, int wrapT, int wrapR) :
-		mMinFilter(minF),
-		mMagFilter(magF),
-		mWrapParamS(wrapS),
-		mWrapParamT(wrapT),
-		mWrapParamR(wrapR)
-	{
-	}
-	int mMinFilter{ GL_LINEAR };
-	int mMagFilter{ GL_LINEAR };
-	int mWrapParamS{ GL_CLAMP_TO_EDGE };
-	int mWrapParamT{ GL_CLAMP_TO_EDGE };
-	int mWrapParamR{ GL_CLAMP_TO_EDGE };
-	int mCompareMode{ GL_NONE };
-	int mCompareFunc{ GL_NEVER };
-	float mBoderColor[4]{ 0.0f,0.0f,0.0f,0.0f };
-
-};
-
+class Sampler;
 class Texture : public std::enable_shared_from_this<Texture>
 {
 public:
@@ -53,6 +32,7 @@ public:
 		mTarget = o.mTarget;
 		o.mTextureId = 0;
 		mName = std::move(o.mName);
+		mpSampler = o.mpSampler;
 	}
 	void operator=(Texture&& o) noexcept{
 		mTextureId = o.mTextureId;
@@ -65,6 +45,7 @@ public:
 		mTarget = o.mTarget;
 		o.mTextureId = 0;
 		mName = o.mName;
+		mpSampler = o.mpSampler;
 	}
 	virtual ~Texture();
 
@@ -86,20 +67,13 @@ public:
 	int getType() {
 		return mType;
 	}
-	//设置过滤和wrap 参数
-	//boderColor 当wrap参数是GL_CLAMP_TO_BORDER的时候，用于设置boder的颜色
-	void setParam(int minFilter,
-		int magFilter,
-		int wrapS = GL_CLAMP_TO_EDGE,
-		int wrapT = GL_CLAMP_TO_EDGE,
-		int wrapR = GL_CLAMP_TO_EDGE,
-		float* boderColor = nullptr,
-		int compareMode = GL_NONE,
-		int compareFunc = GL_NEVER
-		);
-	void setParam(const TexParams& param);
+
+	void setSampler(const std::shared_ptr<Sampler>& pSampler) {
+		mpSampler = pSampler;
+	}
 
 	//创建一个多重采样纹理，用于添加到fbo，
+	//多重采用纹理，不需要设置sampler
 	bool createMStexture(int width, int height, int samples=4, unsigned int internalformat= GL_RGBA8);
 	
 	/*
@@ -127,11 +101,15 @@ public:
 
 	void unload();
 
+	void genMipmap();
+
 	////参数为是否自动为这个纹理生存mipmap
 	//int load(const char* mPath,bool autoMipmap=false);
 
 	//GL_TEXTURE0
 	void active(GLint texPoint);
+
+	void deActive(GLint texPoint);
 
 	/*
 	* face: 只针对cubemap，对于2dmap设置为0
@@ -145,6 +123,20 @@ public:
 		return mName;
 	}
 
+	void setBorderColor(float* pColor) {
+		mBorderColor[0] = pColor[0];
+		mBorderColor[1] = pColor[1];
+		mBorderColor[2] = pColor[2];
+		mBorderColor[3] = pColor[3];
+	}
+
+	void setBorderColor(const Color& color) {
+		mBorderColor[0] = color.r;
+		mBorderColor[1] = color.g;
+		mBorderColor[2] = color.b;
+		mBorderColor[3] = color.a;
+	}
+
 	//支持的最大的纹理单元
 	static int maxTexunit();
 	//支持几种压缩纹理格式：
@@ -154,7 +146,6 @@ public:
 
 	static std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
 protected:
-	void setParamInner();
 	GLuint mTextureId{ 0 };
 	int mWidth{ 0 };
 	int mHeight{ 0 };
@@ -163,7 +154,9 @@ protected:
 	GLint mType{ GL_UNSIGNED_BYTE };//纹理数据在内存中的格式
 	int mNumOfSamples{ 0 };//多重采样纹理的采样个数
 	int mTarget{ GL_TEXTURE_2D };//GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_2D_ARRAY, or GL_TEXTURE_CUBE_MAP
-	TexParams mTexParams;
+
+	std::shared_ptr<Sampler> mpSampler;
+	std::array<float, 4> mBorderColor{ 0.0f,0.0f,0.0f,0.0f };
 	std::string mName;
 };
 
