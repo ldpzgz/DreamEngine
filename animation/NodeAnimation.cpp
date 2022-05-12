@@ -1,45 +1,96 @@
 #include "../Node.h"
 #include "../mesh.h"
 #include "NodeAnimation.h"
+#include "Skeleton.h"
 #include <algorithm>
 #include<glm/ext/quaternion_common.hpp>
 #include<glm/ext/quaternion_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-void NodeAnimation::updateAffectedMesh() {
-	auto rootMat = mpRootNode->getWorldMatrix();
-	auto rootMatInv = glm::inverse(rootMat);
-	for (auto& pairNameNode : mNameNodeMap) {
-		for (auto& pMesh : mAffectedMeshes) {
-			auto& nameIdMap = pMesh->getBoneNameIndex();
-			auto nameId = nameIdMap.find(pairNameNode.first);
-			if (nameId != nameIdMap.end()) {
-				auto& offsetMatrixs = pMesh->getBonesOffsetMatrix();
-				auto& finalMatrix = pMesh->getBonesFinalMatrix();
-				auto worldMat = pairNameNode.second->getWorldMatrix();
-				finalMatrix[nameId->second] = rootMatInv * worldMat * offsetMatrixs[nameId->second];
-			}
-		}
+NodeAnimation::NodeAnimation(const std::string& name) :
+	Animation(name),
+	mpNodesPosKeyFrameInfo(std::make_shared< std::unordered_map< std::string, std::vector<KeyFrameVec3Time>>>()),
+	mpNodesScaleKeyFrameInfo(std::make_shared<std::unordered_map< std::string, std::vector<KeyFrameVec3Time>>>()),
+	mpNodesRotateKeyFrameInfo(std::make_shared<std::unordered_map< std::string, std::vector<KeyFrameQuatTime>>>())
+{
+
+}
+
+NodeAnimation::NodeAnimation():
+	mpNodesPosKeyFrameInfo(std::make_shared< std::unordered_map< std::string, std::vector<KeyFrameVec3Time>>>()),
+	mpNodesScaleKeyFrameInfo(std::make_shared<std::unordered_map< std::string, std::vector<KeyFrameVec3Time>>>()),
+	mpNodesRotateKeyFrameInfo(std::make_shared<std::unordered_map< std::string, std::vector<KeyFrameQuatTime>>>())
+{
+
+}
+
+void NodeAnimation::addPosKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, int count) {
+	std::vector< KeyFrameVec3Time> vec;
+	for (int i = 0; i < count; ++i) {
+		int64_t time = pTime[i] * 1000;
+		vec.emplace_back( pPos[i],time);
+	}
+	if (!mpNodesPosKeyFrameInfo->try_emplace(nodeName, std::move(vec)).second) {
+		LOGE("addPosKeyFrame,the Node is already has pos keyframe info");
+	}
+}
+
+void NodeAnimation::addScaleKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pScale,int count) {
+	std::vector< KeyFrameVec3Time> vec;
+	for (int i = 0; i < count; ++i) {
+		int64_t time = pTime[i] * 1000;
+		vec.emplace_back( pScale[i],time);
+	}
+	if (!mpNodesScaleKeyFrameInfo->try_emplace(nodeName, std::move(vec)).second) {
+		LOGE("addPosKeyFrame,the Node is already has pos keyframe info");
+	}
+}
+
+void NodeAnimation::addRotateKeyFrame(const std::string& nodeName, float* pTime, glm::quat* pQuat, int count) {
+	std::vector< KeyFrameQuatTime> vec;
+	for (int i = 0; i < count; ++i) {
+		int64_t time = pTime[i] * 1000;
+		vec.emplace_back( pQuat[i],time);
+	}
+	if (!mpNodesRotateKeyFrameInfo->try_emplace(nodeName, std::move(vec)).second) {
+		LOGE("addPosKeyFrame,the Node is already has pos keyframe info");
 	}
 }
 
 void NodeAnimation::animate() {
-	if (isStarted() && mpRootNode) {
-		int completeCount = 0;
+	if (isStarted() && !mpSkeleton.expired()) {
+		//int completeCount = 0;
+		auto pSkeleton = mpSkeleton.lock();
+		if (!pSkeleton) {
+			return;
+		}
 		bool visitOver = false;
 		int64_t curTime = mTimer.elapseFromStart()% mDuration;
-		mpRootNode->visitNode([this,&completeCount,&curTime](Node* pNode)->bool {
+		auto& pRootNode = pSkeleton->getRootNode();
+		if (!pRootNode) {
+			LOGD("the rootNode of skeleton is null in animation %s",mName.c_str());
+			return;
+		}
+
+		auto& offsetMatrixes = pSkeleton->getOffsetMatrix();
+		auto& finalMatrixes = pSkeleton->getFinalMatrix();
+		auto& name2Index = pSkeleton->getBoneName2Index();
+		glm::mat4 invertRootMatrix(1.0f);
+		if (name2Index.find(pRootNode->getName()) == name2Index.end()) {
+			invertRootMatrix = glm::inverse(pRootNode->getWorldMatrix());
+		}
+
+		pRootNode->visitNode([this,&pSkeleton ,&curTime,&invertRootMatrix,&name2Index,&offsetMatrixes,&finalMatrixes](Node* pNode) {//&completeCount,
 			const std::string& nodeName = pNode->getName();
-			bool bVisit = mNameNodeMap.find(nodeName) != std::end(mNameNodeMap);
-			if (bVisit && !nodeName.empty()) {
+			if (!nodeName.empty()) {
 				glm::mat4 posMatrix{1.0f};
 				glm::mat4 scaleMatrix{ 1.0f };
 				glm::mat4 rotateMatrix{ 1.0f };
-				auto posKeyIt = mNodesPosKeyFrameInfo.find(nodeName);
-				if (posKeyIt != mNodesPosKeyFrameInfo.end()) {
+				auto posKeyIt = mpNodesPosKeyFrameInfo->find(nodeName);
+				if (posKeyIt != mpNodesPosKeyFrameInfo->end()) {
 					//evaluate the pos 
 					//find two keys which contains the curtime
-					auto& posArray = *posKeyIt->second;
+					auto& posArray = posKeyIt->second;
 					if (posArray.size() == 1) {
 						posMatrix = glm::translate(posMatrix, posArray[0].vec);
 					}
@@ -63,10 +114,10 @@ void NodeAnimation::animate() {
 					}
 				}
 
-				auto scaleKeyIt = mNodesScaleKeyFrameInfo.find(nodeName);
-				if (scaleKeyIt != mNodesScaleKeyFrameInfo.end()) {
+				auto scaleKeyIt = mpNodesScaleKeyFrameInfo->find(nodeName);
+				if (scaleKeyIt != mpNodesScaleKeyFrameInfo->end()) {
 					//evaluate the scale 
-					auto& scaleArray = *scaleKeyIt->second;
+					auto& scaleArray = scaleKeyIt->second;
 					if (scaleArray.size() == 1) {
 						scaleMatrix = glm::scale(scaleMatrix, scaleArray[0].vec);
 					}
@@ -90,10 +141,10 @@ void NodeAnimation::animate() {
 					}
 				}
 
-				auto rotateKeyIt = mNodesRotateKeyFrameInfo.find(nodeName);
-				if (rotateKeyIt != mNodesRotateKeyFrameInfo.end()) {
+				auto rotateKeyIt = mpNodesRotateKeyFrameInfo->find(nodeName);
+				if (rotateKeyIt != mpNodesRotateKeyFrameInfo->end()) {
 					//evaluate the rotate
-					auto& rotateArray = *rotateKeyIt->second;
+					auto& rotateArray = rotateKeyIt->second;
 					if (rotateArray.size() == 1) {
 						rotateMatrix = glm::toMat4(rotateArray[0].rotate);
 					}
@@ -117,34 +168,22 @@ void NodeAnimation::animate() {
 					}
 				}
 				auto myLocalMat = posMatrix * rotateMatrix * scaleMatrix;
-				auto myWorldMat = pNode->getParentWorldMat() * myLocalMat;
-				pNode->setLocalMatrix(myLocalMat);
-				//update the parentWorldMatrix of pNode's all direct children
-				auto& children = pNode->getChildren();
-				for(auto& pChild: children){
-					pChild->setParentWorldMatrix(myWorldMat,false);
-				}
+				pNode->setLocalMatrix(myLocalMat,false);
 
-				++completeCount;
-				if (completeCount == mNameNodeMap.size()) {
-					return true;
+				auto it = name2Index.find(nodeName);
+				if (it != name2Index.end()) {
+					int index = it->second;
+					auto worldMat = pNode->getWorldMatrix();
+					finalMatrixes[index] = invertRootMatrix * worldMat * offsetMatrixes[index];
+					pSkeleton->setUpdateFinalMatrix(true);
 				}
 			}
 			else {
-				auto myWorldMat = pNode->getWorldMatrix();
-				//update the parentWorldMatrix of pNode's all direct children
-				auto& children = pNode->getChildren();
-				for (auto& pChild : children){
-					pChild->setParentWorldMatrix(myWorldMat, false);
-				}
+				LOGD("a node has no name in NodeAnimation");
+				pNode->updateDirectChild(true);
 			}
-			return false;
-		}, visitOver);
+		});
 
-		updateAffectedMesh();
+		//updateAffectedMesh();
 	}
-}
-
-bool NodeAnimation::findBone(const std::string& name) {
-	return mNameNodeMap.find(name) != mNameNodeMap.end();
 }

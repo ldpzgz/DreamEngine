@@ -22,8 +22,10 @@
 #include <string>
 #include <unordered_set>
 #include <algorithm>
+#include <filesystem>
 #include "animation/NodeAnimation.h"
 #include "AnimationManager.h"
+#include "animation/Skeleton.h"
 
 class MeshLoaderAssimpImpl {
 public:
@@ -44,7 +46,7 @@ void MeshLoaderAssimpImpl::parseAnimationInfo(const struct aiScene* pScene,
 			if (pAnimation != nullptr) {
 				std::string name(pAnimation->mName.data);
 				int64_t duration = pAnimation->mDuration * 1000.0 / pAnimation->mTicksPerSecond;
-				auto pNodeAnimation = std::make_shared<NodeAnimation>(name, pRootNode);
+				auto pNodeAnimation = std::make_shared<NodeAnimation>(name);
 				assert(pNodeAnimation);
 				pNodeAnimation->setDuration(duration);
 				if (!mAnimations.emplace(name, pNodeAnimation).second) {
@@ -60,51 +62,51 @@ void MeshLoaderAssimpImpl::parseAnimationInfo(const struct aiScene* pScene,
 					aiNodeAnim* pNodeAnim = pAnimation->mChannels[j];
 					if (pNodeAnim != nullptr) {
 						std::string nodeName(pNodeAnim->mNodeName.data);
-						pNodeAnimation->addAffectedNode(nodeName);
+						//pNodeAnimation->addAffectedNode(nodeName);
 						auto numPos = pNodeAnim->mNumPositionKeys;
 						auto* pPosKey = pNodeAnim->mPositionKeys;
-						auto pPosKeys = std::make_unique<std::vector<NodeAnimation::KeyFrameVec3Time>>();
+						std::vector<NodeAnimation::KeyFrameVec3Time> posKeys;
 						for (unsigned int m = 0; m < numPos; ++m) {
-							pPosKeys->emplace_back(glm::vec3(pPosKey[m].mValue.x, pPosKey[m].mValue.y, pPosKey[m].mValue.z),
+							posKeys.emplace_back(glm::vec3(pPosKey[m].mValue.x, pPosKey[m].mValue.y, pPosKey[m].mValue.z),
 								pPosKey[m].mTime * 1000.0 / pAnimation->mTicksPerSecond);
 						}
-						if (!std::is_sorted(pPosKeys->begin(), pPosKeys->end(),
+						if (!std::is_sorted(posKeys.begin(), posKeys.end(),
 							[](const NodeAnimation::KeyFrameVec3Time& key1, const NodeAnimation::KeyFrameVec3Time& key2)->bool {
 								return key1.timeMs < key2.timeMs;
 							})) {
 							LOGE("the time of pos key frame in node animation is not sorted ");
 						};
-						pNodeAnimation->addPosKeyFrame(nodeName, pPosKeys);
+						pNodeAnimation->addPosKeyFrame(nodeName, posKeys);
 
 						auto numScale = pNodeAnim->mNumScalingKeys;
 						auto* pScaleKey = pNodeAnim->mScalingKeys;
-						auto pScaleKeys = std::make_unique<std::vector<NodeAnimation::KeyFrameVec3Time>>();
+						std::vector<NodeAnimation::KeyFrameVec3Time> scaleKeys;
 						for (unsigned int m = 0; m < numScale; ++m) {
-							pScaleKeys->emplace_back(glm::vec3(pScaleKey[m].mValue.x, pScaleKey[m].mValue.y, pScaleKey[m].mValue.z),
+							scaleKeys.emplace_back(glm::vec3(pScaleKey[m].mValue.x, pScaleKey[m].mValue.y, pScaleKey[m].mValue.z),
 								pScaleKey[m].mTime * 1000.0 / pAnimation->mTicksPerSecond);
 						}
-						if (!std::is_sorted(pScaleKeys->begin(), pScaleKeys->end(),
+						if (!std::is_sorted(scaleKeys.begin(), scaleKeys.end(),
 							[](const NodeAnimation::KeyFrameVec3Time& key1, const NodeAnimation::KeyFrameVec3Time& key2)->bool {
 								return key1.timeMs < key2.timeMs;
 							})) {
 							LOGE("the time of scale key frame in node animation is not sorted ");
 						};
-						pNodeAnimation->addScaleKeyFrame(nodeName, pScaleKeys);
+						pNodeAnimation->addScaleKeyFrame(nodeName, scaleKeys);
 
 						auto numRotate = pNodeAnim->mNumRotationKeys;
 						auto* pRotateKey = pNodeAnim->mRotationKeys;
-						auto pRotateKeys = std::make_unique<std::vector<NodeAnimation::KeyFrameQuatTime>>();
+						std::vector<NodeAnimation::KeyFrameQuatTime> rotateKeys;
 						for (unsigned int m = 0; m < numRotate; ++m) {
-							pRotateKeys->emplace_back(glm::quat(pRotateKey[m].mValue.w,pRotateKey[m].mValue.x, pRotateKey[m].mValue.y, pRotateKey[m].mValue.z),
+							rotateKeys.emplace_back(glm::quat(pRotateKey[m].mValue.w,pRotateKey[m].mValue.x, pRotateKey[m].mValue.y, pRotateKey[m].mValue.z),
 								pRotateKey[m].mTime * 1000.0 / pAnimation->mTicksPerSecond);
 						}
-						if (!std::is_sorted(pRotateKeys->begin(), pRotateKeys->end(),
+						if (!std::is_sorted(rotateKeys.begin(), rotateKeys.end(),
 							[](const NodeAnimation::KeyFrameQuatTime& key1, const NodeAnimation::KeyFrameQuatTime& key2)->bool {
 								return key1.timeMs < key2.timeMs;
 							})) {
 							LOGE("the time of rotate key frame in node animation is not sorted ");
 						};
-						pNodeAnimation->addRotateKeyFrame(nodeName, pRotateKeys);
+						pNodeAnimation->addRotateKeyFrame(nodeName, rotateKeys);
 					}
 				}
 			}
@@ -139,11 +141,12 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 		vector<float> mPos;//保存顶点坐标
 		vector<float> mNormals;//保存normal
 		vector<float> mTexcoords;//保存纹理坐标值
+		vector<float> mColors;
 		vector<int> mBoneIds;//保存影响顶点的骨头id，一个顶点最多被4个骨头影响。
 		vector<float> mBoneWeight;//保存骨头对顶点影响的权重，4个权重加起来要==1
-		vector<glm::mat4> mBonesOffset;
+		//vector<glm::mat4> mBonesOffset;
 		vector<unsigned int> mIndexes;//保存索引值
-		unordered_map<std::string, int> mBonesNameIdMap;//通过name找到id，以便外面设置mBones的值
+		//unordered_map<std::string, int> mBonesNameIdMap;//通过name找到id，以便外面设置mBones的值
 		unordered_map<unsigned int, unsigned int> mIndexMap;
 		vector<int> boneCounts;
 
@@ -172,54 +175,47 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 			std::string_view materialName = Utils::getFileName(pathStr);
 			int numOfBones = 0;
 			unsigned int index = 0;
+
+			if (mesh->mVertices != nullptr) {
+				auto pBegin = mesh->mVertices;
+				auto pEnd = pBegin + mesh->mNumVertices;
+				mPos.assign((float*)pBegin, (float*)pEnd);
+			}
+			if (mesh->mNormals != nullptr) {
+				auto pBegin = mesh->mNormals;
+				auto pEnd = pBegin + mesh->mNumVertices;
+				mNormals.assign((float*)pBegin, (float*)pEnd);
+			}
+			if (mesh->mColors != nullptr) {
+				auto pBegin = mesh->mColors;
+				auto pEnd = pBegin + mesh->mNumVertices;
+				mColors.assign((float*)pBegin, (float*)pEnd);
+			}
+			if (mesh->HasTextureCoords(0)) {
+				auto pBegin = mesh->mTextureCoords[0];
+				auto pEnd = pBegin + mesh->mNumVertices;
+				mTexcoords.assign((float*)pBegin, (float*)pEnd);
+			}
 			for (t = 0; t < mesh->mNumFaces; ++t) {
 				const struct aiFace* face = &mesh->mFaces[t];
 				for (int i = 0; i < face->mNumIndices; i++) {
 					int vertexIndex = face->mIndices[i];
-					auto cit = indexMap.find(vertexIndex);
-					if (cit == indexMap.end()) {
-						if (mesh->mVertices != nullptr) {
-							mPos.emplace_back(mesh->mVertices[vertexIndex].x);
-							mPos.emplace_back(mesh->mVertices[vertexIndex].y);
-							mPos.emplace_back(mesh->mVertices[vertexIndex].z);
-						}
-						if (mesh->mNormals != nullptr){
-							mNormals.emplace_back(mesh->mNormals[vertexIndex].x);
-							mNormals.emplace_back(mesh->mNormals[vertexIndex].y);
-							mNormals.emplace_back(mesh->mNormals[vertexIndex].z);
-						}
-						else {
-							LOGD("a mesh has no normals");
-						}
-
-						if (mesh->HasTextureCoords(0)) {
-							mTexcoords.emplace_back(mesh->mTextureCoords[0][vertexIndex].x);
-							mTexcoords.emplace_back(mesh->mTextureCoords[0][vertexIndex].y);
-						}
-						else {
-							LOGD("a mesh has no texcoords");
-						}
-						mIndexes.emplace_back(index);
-						indexMap.emplace(vertexIndex,index);
-						++index;
-					}
-					else {
-						mIndexes.emplace_back(cit->second);
-					}
+					mIndexes.emplace_back(vertexIndex);
 				}
 			}
-
+			std::shared_ptr<Skeleton> pSkeleton;
 			if (mesh->HasBones()) {
-				mBoneIds.assign(static_cast<size_t>(index) * 4, 0);
-				mBoneWeight.assign(static_cast<size_t>(index) * 4,0.0f);
-				boneCounts.assign(index,0);
+				mBoneIds.assign(static_cast<size_t>(mesh->mNumVertices) * 4, 0);
+				mBoneWeight.assign(static_cast<size_t>(mesh->mNumVertices) * 4,0.0f);
+				boneCounts.assign(mesh->mNumVertices,0);
 				numOfBones = mesh->mNumBones;
-
+				pSkeleton = std::make_shared<Skeleton>(nodeName);
 				//a mesh can be controled by a lot of bones
 				for (int i = 0; i < mesh->mNumBones; ++i) {
 					aiBone* pBone = mesh->mBones[i];
 					if (pBone != nullptr) {
-						if (!mBonesNameIdMap.emplace(pBone->mName.data, i).second) {
+						//todo
+						if (!pSkeleton->getBoneName2Index().emplace(pBone->mName.data, i).second) {
 							LOGE("duplicate bone name in mesh file MeshLoaderAssim");
 						}
 						if (pBone->mWeights != nullptr) {
@@ -227,26 +223,20 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 							for (int j = 0; j < pBone->mNumWeights; ++j) {
 								auto& weights = pBone->mWeights[j];
 								if (weights.mWeight > 0.0f) {
-									auto it = indexMap.find(weights.mVertexId);
-									if (it != indexMap.end()) {
-										//a vertex can be controlled by as many as 4 bones
-										//because the bone attribute of vertex in shader has only 4 component
-										int boneCount = boneCounts[it->second];
-										mBoneIds[static_cast<size_t>(4) * it->second + boneCount] = i;
-										mBoneWeight[static_cast<size_t>(4) * it->second + boneCount] = weights.mWeight;
-										boneCounts[it->second] += 1;
-										if (boneCounts[it->second] > 4) {
-											LOGE("bones per vertex is exceed 4");
-										}
-									}
-									else {
-										LOGE("bone vs vexter error,cannot find the vertex index");
+									//a vertex can be controlled by as many as 4 bones
+									//because the bone attribute of vertex in shader has only 4 component
+									int& boneCount = boneCounts[weights.mVertexId];
+									mBoneIds[static_cast<size_t>(4) * weights.mVertexId + boneCount] = i;
+									mBoneWeight[static_cast<size_t>(4) * weights.mVertexId + boneCount] = weights.mWeight;
+									boneCount += 1;
+									if (boneCount > 4) {
+										LOGE("bones per vertex is exceed 4");
 									}
 								}
 							}
 						}
 						auto& om = pBone->mOffsetMatrix;
-						mBonesOffset.emplace_back(om.a1, om.b1, om.c1, om.d1,
+						pSkeleton->getOffsetMatrix().emplace_back(om.a1, om.b1, om.c1, om.d1,
 							om.a2, om.b2, om.c2, om.d2,
 							om.a3, om.b3, om.c3, om.d3,
 							om.a4, om.b4, om.c4, om.d4);
@@ -255,28 +245,32 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 			}
 
 			MeshSP pMesh = make_shared<Mesh>(MeshType::DIY);
-			if (pMesh->loadMesh(mPos, mTexcoords, mNormals, mIndexes)) {
-				if (!mBoneIds.empty()) {
-					//find animations which affected me
-					for (const auto& pair : mAnimations) {
-						for (const auto& nameId : mBonesNameIdMap) {
-							if (pair.second->findBone(nameId.first)) {
-								pair.second->addAffectedMesh(pMesh);
-								pMesh->addNodeAnimationAffectMe(pair.first);
-								break;
-							}
-						}
+			if (pSkeleton) {
+				pMesh->setSkeleton(pSkeleton);
+			}
+			if (!mBoneIds.empty()) {
+				//todo
+				for (const auto& pair : mAnimations) {
+					for (const auto& nameId : pSkeleton->getBoneName2Index()) {
+						/*if (pair.second->findBone(nameId.first)) {
+							pair.second->addAffectedMesh(pMesh);
+							pMesh->addNodeAnimationAffectMe(pair.first);
+							break;
+						}*/
 					}
-					pMesh->loadBoneData(mBoneIds.data(), mBoneIds.size() * sizeof(int),
-						mBoneWeight.data(), mBoneWeight.size() * sizeof(float));
-					pMesh->initBoneInfo(std::move(mBonesOffset), std::move(mBonesNameIdMap));
 				}
-				pNode->addRenderable(pMesh);
-				pMesh->setMaterialName(materialName); 
+				pMesh->loadMesh(mPos, mTexcoords, mNormals, mIndexes, mBoneIds, mBoneWeight);
+				//pMesh->initBoneInfo(std::move(mBonesOffset), std::move(mBonesNameIdMap));
 			}
 			else {
-				LOGE("%s load mesh failed", __func__);
+				pMesh->loadMesh(mPos, mTexcoords, mNormals, mIndexes);
 			}
+			pNode->addRenderable(pMesh);
+			pMesh->setMaterialName(materialName); 
+			
+			//else {
+			//	LOGE("%s load mesh failed", __func__);
+			//}
 		}
 		else {
 			LOGE(" primitive type is not triangle when import mesh from file");

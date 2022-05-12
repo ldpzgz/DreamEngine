@@ -6,6 +6,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <iostream>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 Texture::Texture()
 {
@@ -41,6 +44,7 @@ bool Texture::createMStexture(int width,int height,int samples,unsigned int inte
 	}
 	if (mInternalFormat == GL_RGB8) {
 		mFormat = GL_RGB;
+		glTexParameteri(mTarget, GL_TEXTURE_SWIZZLE_A, GL_ONE);
 	}
 	else if (mInternalFormat == GL_RGBA8) {
 		mFormat = GL_RGBA;
@@ -92,18 +96,18 @@ bool Texture::createCubicMap(int width, int height, GLint internalFormat, GLenum
 	if (autoMipmap) {
 		glGenerateMipmap(mTarget);
 		if (!mpSampler) {//有这个就有cubemap
-			mpSampler = Sampler::getSampler(SamplerType::LML_LinearEdgeEdge);
+			mpSampler = Sampler::getSampler(GL_LINEAR_MIPMAP_LINEAR,GL_LINEAR);
 		}
 	}
 	else {
 		if (!mpSampler) {
-			mpSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
+			mpSampler = Sampler::getSampler(GL_LINEAR,GL_LINEAR);
 		}
 	}
 	return true;
 }
 
-bool Texture::create2DMap(int width,int height,const unsigned char* pdata, GLint internalFormat,GLint format,GLenum type, int aligment,bool autoMipmap)
+bool Texture::create2DMap(int width,int height,const unsigned char* pdata, GLint internalFormat,GLint format,GLenum type, bool autoMipmap,int aligment)
 {
 	mFormat = format;
 	mInternalFormat = internalFormat;
@@ -114,24 +118,25 @@ bool Texture::create2DMap(int width,int height,const unsigned char* pdata, GLint
 	unload();
 	glGenTextures(1, &mTextureId);
 	//glActiveTexture(GL_TEXTURE0);
-	glBindTexture(mTarget, mTextureId);//mTarget是GL_TEXTURE_CUBE_MAP的时候要注意，
+	glBindTexture(mTarget, mTextureId);
 	// Loads image data into OpenGL.
 	
 	glPixelStorei(GL_UNPACK_ALIGNMENT, aligment);
 	glTexImage2D(mTarget, 0, mInternalFormat, mWidth, mHeight, 0,
 		mFormat, mType, pdata);
 	if (autoMipmap) {
-		glGenerateMipmap(mTarget);
+		if(pdata != nullptr)
+			glGenerateMipmap(mTarget);
 		/*if (!mpSampler) {
-			mpSampler = Sampler::getSampler(SamplerType::LML_LinearEdgeEdge);
+			mpSampler = Sampler::getSampler(SamplerType::LML_LinearEdgeEdgeEdge);
 		}*/
 	}
 	else {
-		/*if (!mpSampler) {
-			mpSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
-		}*/
+		/**/
 	}
-	
+	if (!mpSampler) {
+		mpSampler = Sampler::getSampler(GL_LINEAR,GL_LINEAR);
+	}
 	checkglerror();
 	return true;
 }
@@ -139,9 +144,10 @@ bool Texture::create2DMap(int width,int height,const unsigned char* pdata, GLint
 * 浮点纹理默认没有生成mipmap
 */
 bool Texture::loadHdrFile(const std::string& path) {
-	stbi_set_flip_vertically_on_load(true);
+	//stbi_set_flip_vertically_on_load(true);
 	int nrComponents;
 	float* data = stbi_loadf(path.c_str(), &mWidth, &mHeight, &nrComponents, 0);
+	//stbi_set_flip_vertically_on_load(false);
 	/*float minest = 11111110.0f;
 	float maxest = 0.0f;*/
 	if (data)
@@ -180,7 +186,7 @@ bool Texture::loadHdrFile(const std::string& path) {
 		glTexImage2D(GL_TEXTURE_2D, 0, mInternalFormat, mWidth, mHeight, 0, mFormat, mType, data);
 		stbi_image_free(data);
 		if (!mpSampler) {
-			mpSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
+			mpSampler = Sampler::getSampler(GL_LINEAR, GL_LINEAR);
 		}
 		return true;
 	}
@@ -195,7 +201,7 @@ bool Texture::loadHdrFile(const std::string& path) {
 */
 bool Texture::loadFromFile(const std::string& path) {
 	int nrChannels;
-	stbi_set_flip_vertically_on_load(true);
+	//stbi_set_flip_vertically_on_load(true);
 	unsigned char* data = stbi_load(path.c_str(), &mWidth, &mHeight, &nrChannels, 0);
 	if (data)
 	{
@@ -204,6 +210,7 @@ bool Texture::loadFromFile(const std::string& path) {
 		glGenTextures(1, &mTextureId);
 		//glActiveTexture(GL_TEXTURE0);
 		glBindTexture(mTarget, mTextureId);
+		glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		if (nrChannels == 3) {
 			mFormat = GL_RGB;
 		}
@@ -211,16 +218,16 @@ bool Texture::loadFromFile(const std::string& path) {
 			mFormat = GL_RGBA;
 		}
 		else if (nrChannels == 1) {
-			mFormat = GL_LUMINANCE;
+			mFormat = GL_LUMINANCE;//this will swizzle rgba to red
 		}
 		else {
 			LOGE("load texture %s,unknow channels: %d", path.c_str(), nrChannels);
 		}
 		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, mType, data);
 		glGenerateMipmap(mTarget);
-		/*if (!mpSampler) {
-			mpSampler = Sampler::getSampler(SamplerType::LML_LinearEdgeEdge);
-		}*/
+		if (!mpSampler) {
+			mpSampler = Sampler::getSampler(GL_LINEAR, GL_LINEAR,GL_MIRRORED_REPEAT,GL_MIRRORED_REPEAT);
+		}
 		stbi_image_free(data);
 		return true;
 	}
@@ -252,7 +259,7 @@ bool Texture::loadCubemap(const std::string& path) {
 	glBindTexture(mTarget, mTextureId);
 
 	std::vector<std::string> filename{ "/right.jpg","/left.jpg","/top.jpg","/bottom.jpg","/front.jpg","/back.jpg" };
-	stbi_set_flip_vertically_on_load(true);
+	//stbi_set_flip_vertically_on_load(true);
 	int nrChannels;
 	int i = 0;
 	for (auto& afile:filename)
@@ -268,7 +275,7 @@ bool Texture::loadCubemap(const std::string& path) {
 				mFormat = GL_RGBA;
 			}
 			else if (nrChannels == 1) {
-				mFormat = GL_LUMINANCE;
+				mFormat = GL_LUMINANCE;//this will swizzle rgba to red
 			}
 			else {
 				LOGE("Cubemap texture %s,unknow channels: %d", filePath.c_str(), nrChannels);
@@ -288,7 +295,7 @@ bool Texture::loadCubemap(const std::string& path) {
 	}
 	glGenerateMipmap(mTarget);
 	if (!mpSampler) {
-		mpSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
+		mpSampler = Sampler::getSampler(GL_LINEAR, GL_LINEAR);
 	}
 	//int align = 0;
 	//glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);//默认是4，the alignment requirements for the start of each pixel row in memory
@@ -364,11 +371,11 @@ void Texture::getCompressFormat(GLint* formats)
 	glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS,formats);
 }
 
-std::shared_ptr<Texture> Texture::loadImageFromFile(const std::string& path) {
-	auto pTex = std::make_shared<Texture>();
+std::shared_ptr<Texture> Texture::loadImageFromFile(const std::string& path, const std::string& name) {
+	auto pTex = std::make_shared<Texture>(name);
 	if (pTex) {
 		bool b = false;
-		if (Utils::getFileSuffix(path) == "hdr") {
+		if (fs::path(path).extension() == ".hdr") {
 			b = pTex->loadHdrFile(path);
 			/*if (b) {
 				pTex->convertHdrToCubicmap();

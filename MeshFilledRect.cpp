@@ -192,7 +192,7 @@ void MeshFilledRect::drawLineStrip(int posloc) {
 	if (createVaoIfNeed(posloc)) {
 		glBindVertexArray(mVAO);
 		if (mposLocation >= 0) {
-			glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
+			mpVbo->bindArray(true);
 			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
 			glEnableVertexAttribArray(posloc);
 			assert(mCountOfVertex != 0);
@@ -209,4 +209,5 @@ void MeshFilledRect::drawLineStrip(int posloc) {
 	glLineWidth(mLineWidth);
 	glDrawArrays(GL_LINE_STRIP, 1, mCountOfVertex-1);
 	glBindVertexArray(0);
+	mpVbo->bindArray(false);
 }

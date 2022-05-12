@@ -49,11 +49,17 @@ public:
 		return false;
 	}
 
-	void setColor(float* pc) {
+	void setColor4(float* pc) {
 		r = pc[0];
 		g = pc[1];
 		b = pc[2];
 		a = pc[3];
+	}
+
+	void setColor3(float* pc) {
+		r = pc[0];
+		g = pc[1];
+		b = pc[2];
 	}
 
 	union {

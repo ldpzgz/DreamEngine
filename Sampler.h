@@ -11,14 +11,14 @@
 #include <memory>
 //#include <array>
 enum class SamplerType {
-	NearNearEdgeEdge,
-	LinearLinearEdgeEdge,
-	LML_LinearEdgeEdge,//linear_mipmap_linear
-	NearNearBorderBorder,
-	LinearLinearBorderBorder,
+	NearNearEdgeEdgeEdge,
+	LinearLinearEdgeEdgeEdge,
+	LML_LinearEdgeEdgeEdge,//linear_mipmap_linear
+	NearNearBorderBorderBorder,
+	LinearLinearBorderBorderBorder,
 	LinearLinearBorderBorderEdgeLe,//compare mode is GL_COMPARE_REF_TO_TEXTURE,
-	NearNearRepeatRepeat,
-	LinearLinearRepeatRepeat,
+	NearNearRepeatRepeatRepeat,
+	LinearLinearRepeatRepeatRepeat,
 	End
 };
 class Sampler {
@@ -40,11 +40,18 @@ public:
 
 	void bindTex(unsigned texUnit, float* borderColor);
 
-	void unbind(unsigned texUnit);
 	//void applyParams(unsigned int texUnit,float* borderColor,unsigned int target=GL_TEXTURE_2D);
 	void unBind(int texUnit);
 
-	static std::shared_ptr<Sampler> getSampler(SamplerType type);
+	//static std::shared_ptr<Sampler> getSampler(SamplerType type);
+
+	static Sampler* getSampler(int minFilter,
+		int magFilter,
+		int wrapS = GL_CLAMP_TO_EDGE,
+		int wrapT = GL_CLAMP_TO_EDGE,
+		int wrapR = GL_CLAMP_TO_EDGE,
+		int compareMode = GL_NONE,
+		int compareFunc = GL_NEVER);
 private:
 	unsigned int mId{0};
 	bool mbSetBorderColor{ false };

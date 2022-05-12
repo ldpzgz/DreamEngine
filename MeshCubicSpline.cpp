@@ -53,7 +53,8 @@ void MeshCubicSpline::loadMesh(const std::vector<glm::vec3>& points,int num) {
 	}
 
 	int numOfVertex = pos.size();
-	bool b = createBufferObject((GLfloat*)pos.data(), sizeof(glm::vec3) * numOfVertex, numOfVertex, nullptr, 0);
+	bool b = createBufferObject((GLfloat*)pos.data(), sizeof(glm::vec3) * numOfVertex, 
+		numOfVertex, nullptr, 0);
 	if (!b)
 	{
 		LOGD("error to load MeshCubicSpline\n");
@@ -94,7 +95,8 @@ void MeshCubicSpline::loadMesh(const std::vector<glm::vec2>& points,int num) {
 	}
 
 	int numOfVertex = pos.size();
-	bool b = createBufferObject((GLfloat*)pos.data(), sizeof(glm::vec2) * numOfVertex, numOfVertex, nullptr, 0);
+	bool b = createBufferObject((GLfloat*)pos.data(), sizeof(glm::vec2) * numOfVertex, 
+		numOfVertex, nullptr, 0);
 	if (!b)
 	{
 		LOGD("error to load MeshCubicSpline\n");

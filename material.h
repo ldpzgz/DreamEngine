@@ -17,29 +17,52 @@ class Shader;
 class MaterialInfo {
 public:
 	std::string name;
-	//ao roughness metallic,三合一map
+	bool metallicRoughnessWorkFlow{true};//false is specularGlossnessWorkflow
+
+	//for metallic/roughness workflow
 	std::string armMap;
-
-	//颜色必须要，要么一个color，要么一个map
-	std::string albedo{ "#ffffff" };
-	Color albedoColor;
-	std::string albedoMap;
-
-	//normal可以没有，可以有：要么normalmap，要么顶点normal
-	bool hasNormal{ true };
-	std::string normalMap;
-
-	//aoMap不为0，就有
-	float ao{ 0.2f };
-	std::string aoMap;
-
-	//粗糙度，要么是一个固定值，要么是map
-	float roughness{ 0.8f };
-	std::string roughnessMap;
+	//std::shared_ptr<Texture> pMetaRoughMap;
 
 	//金属性，要么是一个固定值，要么是map
 	float metallic{ 0.0f };
 	std::string metallicMap;
+	//std::shared_ptr<Texture> pMetaTex;
+
+	//粗糙度，要么是一个固定值，要么是map
+	float roughness{ 0.8f };//=1.0f-glossness
+	std::string roughnessMap;
+	//std::shared_ptr<Texture> pRoughTex;
+
+	/*specularglossness map，for pbr specular / glossness workflow
+	* this workflow has two rgb textures,the one is specular the other is diffuse
+	* the specular record the reflective of metal,and the f0 value of non-metal.
+	*	reflective Of metal will be a higher value(180-255srgb), some is colorful,such as 铜，
+	*	F0 for dielectrics will be a darker value(40-75srgb)
+	* the diffuse(albedo),The areas that indicate raw metal will be zero,
+	* 	oxidation of metal area will has color,the same dust,dirt.
+	*	for non-metal,the lowest value should not be lower than 30 sRGB (tolerant range) or 50 sRGB (strict range),
+	*	Bright values should not be higher than 240 sRGB
+	*/
+	std::string specGlosMapPath;
+	//std::shared_ptr<Texture> pSpecGlosMap;
+	//std::shared_ptr<Texture> pSpecTex;
+	Color specularColor;
+
+	//albedo,for specular/glossness workflow this diffuse,metal has no diffuse to the diffuse is zero,
+	//std::string albedo;// { "#ffffff" };
+	Color albedoColor{1.0f,1.0f,1.0f,1.0f};
+	std::string albedoMap;//or diffuseMap
+	//std::shared_ptr<Texture> pAlbedoTex;
+
+	//normal
+	bool hasNormal{ true };
+	std::string normalMap;
+	//std::shared_ptr<Texture> pNormalTex;
+
+	//ao
+	float ao{ 0.2f };
+	std::string aoMap;
+	//std::shared_ptr<Texture> pAoTex;
 };
 
 class Material{

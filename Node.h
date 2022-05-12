@@ -86,7 +86,7 @@ public:
 		return mParentWorldMat;
 	}
 
-	void setParentWorldMatrix(const glm::mat4& matrix, bool updateChild = true, bool notify = true) noexcept;
+	void setParentWorldMatrix(const glm::mat4& matrix, bool updateAllChild=true,bool notify = true) noexcept;
 
 	const auto& getRenderables() const noexcept {
 		return mRenderables;
@@ -132,7 +132,7 @@ public:
 		const std::function<bool(Node*)>& visitChildFunc,
 		bool& isOver);
 	void addListener(const shared_ptr<NodeListener>& lis);
-	
+	void updateDirectChild(bool notify);
 	//you can attachment anything to the node
 	void setAny(NodeAnyIndex index, const std::any& a);
 	std::any getAny(NodeAnyIndex index);
@@ -142,7 +142,8 @@ protected:
 	glm::mat4 mParentWorldMat{1.0f};
 private:
 	void updateListener();
-	void updateChildrenMatrix(bool notify=true) noexcept;
+	void updateAllChild(bool notify);
+	void updateChildrenMatrix(bool updateAllChild=true, bool notify=true) noexcept;
 	void setParent(shared_ptr<Node>& parent) noexcept {
 		mpParent = parent;
 	}

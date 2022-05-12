@@ -42,6 +42,11 @@ public:
 		int format,
 		unsigned int type,
 		bool autoMipmap = false);
+
+	/*
+	* path is a image file in drawable directory,
+	* if texName is empty the stem of image file will be the texName;
+	*/
 	std::shared_ptr<Texture> getOrLoadTextureFromFile(const std::string& path, const std::string& texName = "");
 	std::shared_ptr<Texture> loadImageFromFile(const std::string& path, const std::string& texName);
 	std::shared_ptr<Material> cloneMaterial(const std::string& name);

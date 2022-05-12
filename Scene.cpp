@@ -57,7 +57,7 @@ shared_ptr<Node> Scene::createSkybox() {
 	mSkyboxInfo.mpMesh->setMaterial(pSkyboxMaterial);
 	auto pSkyNode = mpRootNode->newAChild();
 	pSkyNode->addRenderable(mSkyboxInfo.mpMesh);
-	pSkyNode->scale(glm::vec3(600.0f, 600.0f, 600.0f));
+	pSkyNode->scale(glm::vec3(100.0f, 100.0f, 100.0f));
 	return pSkyNode;
 }
 
@@ -75,7 +75,7 @@ void Scene::updateLightsForShader(const glm::mat4& viewMat) {
 		}
 	}
 	if (!lightPos.empty()) {
-		int counts = lightPos.size();
+		int counts = static_cast<int>(lightPos.size());
 		int byteSize = counts * sizeof(glm::vec4);
 		constexpr int colorStartPos = MaxNumberOfLights * sizeof(glm::vec4);
 		constexpr int countStartPos = MaxNumberOfLights * sizeof(glm::vec4) * 2;

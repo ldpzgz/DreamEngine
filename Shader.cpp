@@ -531,11 +531,12 @@ void Shader::deleteShader()
 
 //只bind一次，渲染的时候就不用设置了，渲染过程中只改ubo中的值就好了
 void Shader::bindUniformBlock(const char* uboName, unsigned int bindPoint) {
-	//shader的uniform block有一个index，让这个index与某个uniform buffer bindpoint联系起来
+	//shader的uniform block有一个index，
 	unsigned int ubIndex = glGetUniformBlockIndex(mProgram,uboName);
 	if (GL_INVALID_INDEX != ubIndex)
 	{
-		//先把自己bind到bindPoint
+		checkglerror();
+		//让这个uniform block index与uniform buffer 的某个 bindpoint联系起来
 		glUniformBlockBinding(mProgram, ubIndex, bindPoint);
 		int sizeInBytes = 0;
 		glGetActiveUniformBlockiv(mProgram, ubIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &sizeInBytes);

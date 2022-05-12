@@ -14,6 +14,8 @@
 #include "Material.h"
 #include "Ubo.h"
 #include "animation/NodeAnimation.h"
+#include "animation/Skeleton.h"
+#include "Vbo.h"
 
 #include <glm/trigonometric.hpp>  //sin cos,tan,radians,degree
 #include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
@@ -22,14 +24,14 @@
 #include <cmath>
 #include <fstream>
 
-Mesh::Mesh(MeshType meshType) noexcept:
+Mesh::Mesh(MeshType meshType):
 	mMeshType(meshType)
 {
 	// TODO Auto-generated constructor stub
 
 }
 
-Mesh::Mesh(MeshType meshType, DrawType drawType) noexcept:
+Mesh::Mesh(MeshType meshType, DrawType drawType):
 	mMeshType(meshType),
 	mDrawType(drawType)
 {
@@ -37,11 +39,11 @@ Mesh::Mesh(MeshType meshType, DrawType drawType) noexcept:
 }
 
 void Mesh::reset() {
-	mPosVbo = 0;
+	/*mPosVbo = 0;
 	mTexVbo = 0;
 	mNorVbo = 0;
 	mColorVbo = 0;
-	mIndexVbo = 0;
+	mIndexVbo = 0;*/
 	mposLocation = 0;
 	mtexLocation = 0;
 	mnorLocation = 0;
@@ -57,12 +59,12 @@ void Mesh::reset() {
 	mDrawType = DrawType::Triangles;
 }
 
-Mesh::Mesh(const Mesh&& temp) noexcept:
-	mPosVbo(temp.mPosVbo),
+Mesh::Mesh(Mesh&& temp) noexcept:
+	/*mPosVbo(temp.mPosVbo),
 	mTexVbo(temp.mTexVbo),
 	mNorVbo(temp.mNorVbo),
 	mColorVbo(temp.mColorVbo),
-	mIndexVbo(temp.mIndexVbo),
+	mIndexVbo(temp.mIndexVbo),*/
 	mIndexByteSize(temp.mIndexByteSize),
 	mPosByteSize(temp.mPosByteSize),
 	mNorByteSize(temp.mNorByteSize),
@@ -73,10 +75,20 @@ Mesh::Mesh(const Mesh&& temp) noexcept:
 	mtexLocation(temp.mtexLocation),
 	mnorLocation(temp.mnorLocation),
 	mVAO(temp.mVAO),
+	mpVbo(temp.mpVbo),
 	mLineWidth(temp.mLineWidth),
 	mCountOfVertex(temp.mCountOfVertex),
-	mDrawType(temp.mDrawType)
+	mDrawType(temp.mDrawType),
+	mNodeAnimationsAffectMe(std::move(temp.mNodeAnimationsAffectMe)),
+	mpSkeleton(temp.mpSkeleton),
+	mHasSkin(temp.mHasSkin),
+	mpMaterial(temp.mpMaterial),
+	mpAabb(std::move(temp.mpAabb)),
+	mpPreMvpMatrix(std::move(temp.mpPreMvpMatrix))
 {
+	temp.mVAO = 0;
+	temp.mpVbo = nullptr;
+	temp.mpSkeleton = nullptr;
 }
 
 Mesh::~Mesh()
@@ -182,7 +194,7 @@ void Mesh::loadMesh()
 			{0.0f,0.0f,1.0f},
 		};
 		GLuint indexes[] = { 0,1,2,0,2,3 };
-		GLfloat tex[] = { 1.0f,1.0f,0.0f,1.0f,0.0f,0.0f,1.0f,0.0f };
+		GLfloat tex[] = { 1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,1.0f,1.0f };
 		createBufferObject((GLfloat*)pos.data(), pos.size() * sizeof(glm::vec3), 4,
 			indexes, sizeof(indexes),
 			tex, sizeof(tex), (GLfloat*)nor.data(), nor.size() * sizeof(glm::vec3));
@@ -338,218 +350,324 @@ bool Mesh::loadMesh(const std::vector<float>& pos,
 	return createBufferObject(&pos[0], pos.size()*sizeof(float), pos.size()/3,
 		index.data(), index.size()*sizeof(unsigned int),
 		texcoord.data(), texcoord.size() * sizeof(float),
-		normal.data(), normal.size() * sizeof(float),
-		nullptr, 0,
-		nullptr, 0);
+		normal.data(), normal.size() * sizeof(float));
 }
 
-bool Mesh::loadMesh(const std::string meshFilePath) {
-	std::ifstream infile;
-	infile.open(meshFilePath, std::ifstream::in | std::ifstream::binary);
-	if (infile.good()) {
-		LdpMesh mesh;
-		infile.read((char*)&mesh, sizeof(mesh));
-		if (infile.gcount() == sizeof(mesh)) {
-			//创建mesh的aabb
-			mpAabb = make_unique<AABB>(mesh.xmin,mesh.xmax,mesh.ymin,mesh.ymax,mesh.zmin,mesh.zmax);
-			//获取mesh的材质的名字
-			if (mesh.materialNameSize > 0) {
-				mMaterialName.resize(mesh.materialNameSize);
-				infile.read(mMaterialName.data(), mesh.materialNameSize);
-				assert(infile.gcount() == mesh.materialNameSize);
-				mpMaterial = Resource::getInstance().getMaterial(mMaterialName);
-				if (!mpMaterial) {
-					LOGE("ERROR to find material %s,when load mesh from file", mMaterialName.c_str());
-				}
+bool Mesh::loadMesh(const std::vector<float>& pos,
+	const std::vector<float>& texcoord,
+	const std::vector<float>& normal,
+	const std::vector<unsigned int>& index,
+	const std::vector<int>& boneId,
+	const std::vector<float>& boneWeight
+)
+{
+	float xmin, xmax, ymin, ymax, zmin, zmax;
+	if (pos.size() >= 9) {
+		xmin = xmax = pos[0];
+		ymin = ymax = pos[1];
+		zmin = zmax = pos[2];
+		for (size_t i = 0; i < pos.size(); i += 3) {
+			if (xmin > pos[i]) {
+				xmin = pos[i];
 			}
-			std::vector<float> pos;
-			std::vector<float> texcoord;
-			std::vector<float> normal;
-			std::vector<float> tangent;
-			//std::vector<float> bitangent;
-			std::vector<unsigned int> index;
-
-			//读取顶点数据
-			if (mesh.vertexCount > 0) {
-				pos.reserve(mesh.vertexCount*3);
-				infile.read((char*)pos.data(), mesh.vertexLength);
-				assert(infile.gcount() == mesh.vertexLength);
+			if (xmax < pos[i]) {
+				xmax = pos[i];
 			}
-			//读取纹理坐标数据
-			if (mesh.texcoordLength > 0) {
-				texcoord.reserve(mesh.vertexCount * 2);
-				infile.read((char*)texcoord.data(), mesh.texcoordLength);
-				assert(infile.gcount() == mesh.texcoordLength);
+			if (ymin > pos[i + 1]) {
+				ymin = pos[i + 1];
 			}
-			//读取法线数据
-			if (mesh.normalLength > 0) {
-				normal.reserve(mesh.vertexCount * 3);
-				infile.read((char*)normal.data(), mesh.normalLength);
-				assert(infile.gcount() == mesh.normalLength);
+			if (ymax < pos[i + 1]) {
+				ymax = pos[i + 1];
 			}
-
-			if (mesh.tangentsLength > 0) {
-				tangent.reserve(mesh.vertexCount * 3);
-				infile.read((char*)tangent.data(), mesh.tangentsLength);
-				assert(infile.gcount() == mesh.tangentsLength);
+			if (zmin > pos[i + 2]) {
+				zmin = pos[i + 2];
 			}
-
-			//读取索引数据
-			if (mesh.indexLength > 0) {
-				index.reserve(mesh.indexLength/sizeof(unsigned int));
-				infile.read((char*)index.data(), mesh.indexLength);
-				assert(infile.gcount() == mesh.indexLength);
+			if (zmax < pos[i + 2]) {
+				zmax = pos[i + 2];
 			}
-
-			createBufferObject(pos.data(), mesh.vertexLength, mesh.vertexCount, 
-				index.data(), mesh.indexLength, 
-				texcoord.data(), mesh.texcoordLength,
-				normal.data(),mesh.normalLength,
-				nullptr,0,
-				tangent.data(),mesh.tangentsLength);
 		}
-		return true;
+		mpAabb = std::make_unique<AABB>(xmin, xmax, ymin, ymax, zmin, zmax);
 	}
-	return false;
-}
-//初始化bone matrix size，bone name-id map
-void Mesh::initBoneInfo(vector<glm::mat4>&& offsetMatrix, unordered_map<std::string, int>&& nameIndexMap) {
-	mBonesOffsetMatrix = std::move(offsetMatrix);
-	mBoneNameIndex = std::move(nameIndexMap);
-	mBonesFinalMatrix.resize(mBonesOffsetMatrix.size());
+	if (!boneId.empty()) {
+		mHasSkin = true;
+	}
+	return createBufferObject(&pos[0], pos.size() * sizeof(float), pos.size() / 3,
+		index.data(), index.size() * sizeof(unsigned int),
+		texcoord.data(), texcoord.size() * sizeof(float),
+		normal.data(), normal.size() * sizeof(float),
+		nullptr,0,boneId.data(),boneId.size()*sizeof(int),
+		boneWeight.data(),boneWeight.size()*sizeof(float));
 }
 
-//初始化boneInfo per vertex
-bool Mesh::loadBoneData(const int* pBoneIds, int idByteSize,
-	const GLfloat* pWeights, int wByteSize, int drawType) {
-	if (pBoneIds != nullptr && idByteSize > 0)
-	{
-		setBoneIdData(pBoneIds, idByteSize, drawType);
-		checkglerror();
-	}
-	if (pWeights != nullptr && wByteSize > 0)
-	{
-		setBoneWeightData(pWeights, wByteSize, drawType);
-		checkglerror();
-	}
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	return true;
-}
+//bool Mesh::loadMesh(const std::string meshFilePath) {
+//	std::ifstream infile;
+//	infile.open(meshFilePath, std::ifstream::in | std::ifstream::binary);
+//	if (infile.good()) {
+//		LdpMesh mesh;
+//		infile.read((char*)&mesh, sizeof(mesh));
+//		if (infile.gcount() == sizeof(mesh)) {
+//			//创建mesh的aabb
+//			mpAabb = make_unique<AABB>(mesh.xmin,mesh.xmax,mesh.ymin,mesh.ymax,mesh.zmin,mesh.zmax);
+//			//获取mesh的材质的名字
+//			if (mesh.materialNameSize > 0) {
+//				mMaterialName.resize(mesh.materialNameSize);
+//				infile.read(mMaterialName.data(), mesh.materialNameSize);
+//				assert(infile.gcount() == mesh.materialNameSize);
+//				mpMaterial = Resource::getInstance().getMaterial(mMaterialName);
+//				if (!mpMaterial) {
+//					LOGE("ERROR to find material %s,when load mesh from file", mMaterialName.c_str());
+//				}
+//			}
+//			std::vector<float> pos;
+//			std::vector<float> texcoord;
+//			std::vector<float> normal;
+//			std::vector<float> tangent;
+//			//std::vector<float> bitangent;
+//			std::vector<unsigned int> index;
+//
+//			//读取顶点数据
+//			if (mesh.vertexCount > 0) {
+//				pos.reserve(mesh.vertexCount*3);
+//				infile.read((char*)pos.data(), mesh.vertexLength);
+//				assert(infile.gcount() == mesh.vertexLength);
+//			}
+//			//读取纹理坐标数据
+//			if (mesh.texcoordLength > 0) {
+//				texcoord.reserve(mesh.vertexCount * 2);
+//				infile.read((char*)texcoord.data(), mesh.texcoordLength);
+//				assert(infile.gcount() == mesh.texcoordLength);
+//			}
+//			//读取法线数据
+//			if (mesh.normalLength > 0) {
+//				normal.reserve(mesh.vertexCount * 3);
+//				infile.read((char*)normal.data(), mesh.normalLength);
+//				assert(infile.gcount() == mesh.normalLength);
+//			}
+//
+//			if (mesh.tangentsLength > 0) {
+//				tangent.reserve(mesh.vertexCount * 3);
+//				infile.read((char*)tangent.data(), mesh.tangentsLength);
+//				assert(infile.gcount() == mesh.tangentsLength);
+//			}
+//
+//			//读取索引数据
+//			if (mesh.indexLength > 0) {
+//				index.reserve(mesh.indexLength/sizeof(unsigned int));
+//				infile.read((char*)index.data(), mesh.indexLength);
+//				assert(infile.gcount() == mesh.indexLength);
+//			}
+//
+//			createBufferObject(pos.data(), mesh.vertexLength, mesh.vertexCount, 
+//				index.data(), mesh.indexLength, 
+//				texcoord.data(), mesh.texcoordLength,
+//				normal.data(),mesh.normalLength,
+//				nullptr,0,
+//				tangent.data(),mesh.tangentsLength);
+//		}
+//		return true;
+//	}
+//	return false;
+//}
+//初始化bone matrix size，bone name-id map
+//void Mesh::initBoneInfo(vector<glm::mat4>&& offsetMatrix, unordered_map<std::string, int>&& nameIndexMap) {
+//	mBonesOffsetMatrix = std::move(offsetMatrix);
+//	mBoneNameIndex = std::move(nameIndexMap);
+//	mBonesFinalMatrix.resize(mBonesOffsetMatrix.size());
+//}
+
+////初始化boneInfo per vertex
+//bool Mesh::loadBoneData(const int* pBoneIds, int idByteSize,
+//	const GLfloat* pWeights, int wByteSize, int drawType) {
+//	if (pBoneIds != nullptr && idByteSize > 0)
+//	{
+//		setBoneIdData(pBoneIds, idByteSize, drawType);
+//		checkglerror();
+//	}
+//	if (pWeights != nullptr && wByteSize > 0)
+//	{
+//		setBoneWeightData(pWeights, wByteSize, drawType);
+//		checkglerror();
+//	}
+//	glBindBuffer(GL_ARRAY_BUFFER, 0);
+//	return true;
+//}
 
 bool Mesh::createBufferObject(const GLfloat* pos,int posByteSize, int countOfVertex, 
 	const GLuint* index,int indexByteSize,
 	const GLfloat* tex,int texByteSize,
 	const GLfloat* nor,int norByteSize,
 	const GLfloat* color, int colorByteSize,
-	const GLfloat* tangent, int tangentByteSize,
+	const GLint* pBoneId, int boneIdSize,
+	const GLfloat* pBoneWeight, int boneWeightSize,
 	int drawType)
 {
+	int totalSize = posByteSize + texByteSize + norByteSize 
+		+ colorByteSize + boneIdSize + boneWeightSize + indexByteSize;
+	auto pTempData = std::make_unique<char[]>(totalSize);
+	int offset = 0;
+	
 	if(pos != nullptr && posByteSize>0)
 	{
 		mCountOfVertex = countOfVertex;
-		setPosData(pos,posByteSize, drawType);
-		checkglerror();
+		mPosByteSize = posByteSize;
+		mPosOffset = offset;
+		mPosStride = 0;
+		memcpy(&pTempData[0]+ offset, pos, posByteSize);
+		//mpVbo->updateVbo(offset, (void*)pos, posByteSize);
+		offset += posByteSize;
+		//setPosData(pos,posByteSize, drawType);
+		//checkglerror();
 	}
 	if(tex != nullptr && texByteSize > 0)
 	{
-		setTexcoordData(tex,texByteSize, drawType);
+		mTexByteSize = texByteSize;
+		mTexOffset = offset;
+		mTexStride = 0;
+		memcpy(&pTempData[0] + offset, tex, texByteSize);
+		//mpVbo->updateVbo(offset, (void*)tex, texByteSize);
+		offset += texByteSize;
+		//setTexcoordData(tex,texByteSize, drawType);
 	}
 	if(nor != nullptr && norByteSize > 0)
 	{
-		setNormalData(nor,norByteSize, drawType);
+		mNorByteSize = norByteSize;
+		mNorOffset = offset;
+		mNorStride = 0;
+		memcpy(&pTempData[0] + offset, nor, norByteSize);
+		//mpVbo->updateVbo(offset, (void*)nor, norByteSize);
+		offset += norByteSize;
+		//setNormalData(nor,norByteSize, drawType);
 	}
 	if (color != nullptr && colorByteSize > 0) {
-		setColorData(color, colorByteSize, drawType);
+		//setColorData(color, colorByteSize, drawType);
+		mColorByteSize = colorByteSize;
+		mColorOffset = offset;
+		mColorStride = 0;
+		memcpy(&pTempData[0] + offset, color, colorByteSize);
+		//mpVbo->updateVbo(offset, (void*)color, colorByteSize);
+		offset += colorByteSize;
+		//setColorData(color, colorByteSize, drawType);
 	}
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	if(index!=0)
+	if(index!=nullptr)
 	{
-		setIndexData(index,indexByteSize, drawType);
-		checkglerror();
+		mIndexStride = 4;
+		mIndexByteSize = indexByteSize;
+		mCountOfIndex = indexByteSize/sizeof(GLuint);
+		mIndexOffset = offset;
+		mIndexStride = 0;
+		memcpy(&pTempData[0] + offset, index, indexByteSize);
+		//mpVbo->updateVbo(offset,(void*)index, indexByteSize);
+		offset += indexByteSize;
+		//setIndexData(index,indexByteSize, drawType);
+		//checkglerror();
 	}
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	if (pBoneId != nullptr) {
+		mBoneIdByteSize = boneIdSize;
+		mBoneIdOffset = offset;
+		mBoneIdStride = 0;
+		memcpy(&pTempData[0] + offset, pBoneId, boneIdSize);
+		//mpVbo->updateVbo(offset, (void*)pBoneId, boneIdSize);
+		offset += boneIdSize;
+	}
+	if (pBoneWeight != nullptr) {
+		mBoneWeightByteSize = boneWeightSize;
+		mBoneWeightOffset = offset;
+		mBoneWeightStride = 0;
+		memcpy(&pTempData[0] + offset, pBoneWeight, boneWeightSize);
+		//mpVbo->updateVbo(offset, (void*)pBoneWeight, boneWeightSize);
+	}
+	if (totalSize > 0) {
+		mpVbo = std::make_unique<Vbo>();
+		mpVbo->initVbo((void*)&pTempData[0], totalSize);
+	}
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	return true;
 }
 
 //更新pos vbo
-bool Mesh::updataPos(float* pos, int byteOffset, int size,int numOfVertex)
+bool Mesh::updataPos(float* pos, int byteOffset, int size)
 {
 	if (size + byteOffset > mPosByteSize) {
-		if (byteOffset > 0) {
-			LOGE("ERROR to update mesh pos data, the size + byteOffset is greater then vbo size");
-			return false;
-		}
-		mCountOfVertex = numOfVertex;
-		setPosData(pos, size);
+		LOGE("ERROR to update mesh pos data, the size + byteOffset is greater then vbo size");
+	}
+	else if(mpVbo) {
+		//int offset = byteOffset;
+		mpVbo->updateVbo(mPosOffset+byteOffset, (void*)pos, byteOffset);
 	}
 	else {
-		glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
-		glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, pos);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		LOGE("the mpVbo is null when updatePos");
 	}
-	
 	return true;
 }
 
-bool Mesh::updateColor(float* color, int offsetInByte, int sizeInByteToBeReplaced) {
-	if (sizeInByteToBeReplaced + offsetInByte > mColorByteSize)
+bool Mesh::updateColor(float* color, int byteOffset, int size) {
+	if (size + byteOffset > mColorByteSize)
 	{
-		if (offsetInByte > 0) {
-			LOGE("ERROR to update mesh color data, the size + byteOffset is greater then vbo size");
-			return false;
-		}
-		setColorData(color, sizeInByteToBeReplaced);
-	}
-	glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
+		LOGE("ERROR to update mesh color data, the size + byteOffset is greater then vbo size");
+	}    
+	/*glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
 	glBufferSubData(GL_ARRAY_BUFFER, offsetInByte, sizeInByteToBeReplaced, color);
-	checkglerror();
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	return true;*/
+	else if (mpVbo) {
+		mpVbo->updateVbo(mColorOffset+ byteOffset, (void*)color, size);
+	}
+	else {
+		LOGE("the mpVbo is null when updateNormal");
+	}
 	return true;
 }
 
 bool Mesh::updateNormal(float* normal, int byteOffset, int size) {
 	if (size + byteOffset > mNorByteSize)
 	{
-		if (byteOffset > 0) {
-			LOGE("ERROR to update mesh normal data, the size + byteOffset is greater then vbo size");
-			return false;
-		}
-		setNormalData(normal, size);
+		LOGE("ERROR to update mesh normal data, the size + byteOffset is greater then vbo size");
+		return false;
 	}
-	glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
-	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, normal);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	else if (mpVbo) {
+		//int offset = mPosByteSize + mTexByteSize + byteOffset;
+		mpVbo->updateVbo(mNorOffset + byteOffset, (void*)normal, size);
+	}
+	else {
+		LOGE("the mpVbo is null when updateNormal");
+	}
 	return true;
 }
 
 bool Mesh::updateBoneId(GLint* pId, int byteOffset, int size) {
 	if (size + byteOffset > mBoneIdByteSize)
 	{
-		if (byteOffset > 0) {
-			LOGE("ERROR to update mesh BoneId data, the size + byteOffset is greater then vbo size");
-			return false;
-		}
-		setBoneIdData(pId, size);
+		LOGE("ERROR to update mesh BoneId data, the size + byteOffset is greater then vbo size");
+		return false;
 	}
-	glBindBuffer(GL_ARRAY_BUFFER, mBoneIdVbo);
-	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, pId);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	else if (mpVbo) {
+		/*int offset = mPosByteSize + mTexByteSize + mNorByteSize
+			+ mIndexByteSize + byteOffset;*/
+		mpVbo->updateVbo(mBoneIdOffset+byteOffset, (void*)pId, size);
+	}
+	else {
+		LOGE("the mpVbo is null when updateBoneId");
+	}
 	return true;
 }
 
 bool Mesh::updateBoneWeight(float* pWeight, int byteOffset, int size) {
 	if (size + byteOffset > mBoneWeightByteSize)
 	{
-		if (byteOffset > 0) {
-			LOGE("ERROR to update mesh normal data, the size + byteOffset is greater then vbo size");
-			return false;
-		}
-		setBoneWeightData(pWeight, size);
+		LOGE("ERROR to update mesh normal data, the size + byteOffset is greater then vbo size");
+		return false;
 	}
-	glBindBuffer(GL_ARRAY_BUFFER, mBoneWeightVbo);
-	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, pWeight);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	else if (mpVbo) {
+		/*int offset = mPosByteSize + mTexByteSize + mNorByteSize
+			+ mIndexByteSize + mBoneIdByteSize + byteOffset;*/
+		mpVbo->updateVbo(mBoneWeightOffset+byteOffset, (void*)pWeight, size);
+	}
+	else {
+		LOGE("the mpVbo is null when updateBoneWeight");
+	}
 	return true;
 }
 
@@ -558,15 +676,16 @@ bool Mesh::updataTexcoord(float* tex, int byteOffset, int size)
 {
 	if (size + byteOffset > mTexByteSize)
 	{
-		if (byteOffset > 0) {
-			LOGE("ERROR to update mesh texcoord data, the size + byteOffset is greater then vbo size");
-			return false;
-		}
-		setTexcoordData(tex, size);
+		LOGE("ERROR to update mesh texcoord data, the size + byteOffset is greater then vbo size");
+		return false;
 	}
-	glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
-	glBufferSubData(GL_ARRAY_BUFFER, byteOffset, size, tex);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	else if (mpVbo) {
+		//int offset = mPosByteSize + byteOffset;
+		mpVbo->updateVbo(mTexOffset+byteOffset, (void*)tex, size);
+	}
+	else {
+		LOGE("the mpVbo is null when updataTexcoord");
+	}
 	return true;
 }
 //更新索引vbo
@@ -574,32 +693,30 @@ bool Mesh::updataIndex(GLuint* pIndex, int byteOffset, int size)
 {
 	if (size + byteOffset > mIndexByteSize)
 	{
-		if (byteOffset > 0) {
-			LOGE("ERROR to update mesh index data, the size + byteOffset is greater then vbo size");
-			return false;
-		}
-		setIndexData(pIndex, size);
+		LOGE("ERROR to update mesh index data, the size + byteOffset is greater then vbo size");
+		return false;
 	}
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, byteOffset, size, pIndex);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	else if (mpVbo) {
+		//int offset = mPosByteSize + mTexByteSize + mNorByteSize + byteOffset;
+		mpVbo->updateVbo(mIndexOffset+byteOffset, (void*)pIndex, size);
+	}
+	else {
+		LOGE("the mpVbo is null when updataTexcoord");
+	}
 	return true;
 }
 
 void Mesh::drawLineStrip(int posloc)
 {
-	if (createVaoIfNeed(posloc)) {
+	if (createVaoIfNeed(posloc) && mpVbo) {
 		glBindVertexArray(mVAO);
 		if (mposLocation >= 0) {
-			glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
+			mpVbo->bindArray(true);
 			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
 			glEnableVertexAttribArray(posloc);
 			assert(mCountOfVertex != 0);
 			int componentOfPos = mPosByteSize / (sizeof(GLfloat) * mCountOfVertex);
 			glVertexAttribPointer(posloc, componentOfPos, GL_FLOAT, GL_FALSE, 0, 0);
-		}
-		else {
-
 		}
 		glBindVertexArray(0);
 	}
@@ -608,6 +725,7 @@ void Mesh::drawLineStrip(int posloc)
 	glLineWidth(mLineWidth);
 	glDrawArrays(GL_LINE_STRIP, 0, mCountOfVertex);
 	glBindVertexArray(0);
+	mpVbo->bindArray(false);
 	//glDrawElements(GL_LINE_LOOP, mNumOfIndex, GL_UNSIGNED_INT, (const void*)0);
 }
 
@@ -727,67 +845,78 @@ void Mesh::drawLineStrip(int posloc)
 
 void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneIdLoc,int boneWeightLoc)
 {
-	if (createVaoIfNeed(posloc,texloc,norloc,colorloc)) {
+	if (createVaoIfNeed(posloc,texloc,norloc,colorloc) && mpVbo) {
 		glBindVertexArray(mVAO);
+		mpVbo->bindArray(true);
 		if (posloc >= 0)
 		{
-			glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
 			glEnableVertexAttribArray(posloc);
 			assert(mCountOfVertex != 0);
 			int componentOfPos = mPosByteSize / (sizeof(GLfloat) * mCountOfVertex);
-			glVertexAttribPointer(posloc, componentOfPos, GL_FLOAT, GL_FALSE, 0, 0);
+			glVertexAttribPointer(posloc, componentOfPos, GL_FLOAT, GL_FALSE, mPosStride, (const void*)mPosOffset);
 			//glVertexAttribDivisor(posloc, 1);//这个函数一调用，shader 里面posloc这个位置的顶点属性，就会变成uniform属性了，
 			//渲染一个instance，只取一个值出来，渲染下一个instance的时候再取下一个值出来。
 		}
 
 		if (texloc >= 0)
 		{
-			glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
+			//int offset = mPosByteSize;
 			glEnableVertexAttribArray(texloc);
 			int componentOfTexcoord = mTexByteSize / (sizeof(GLfloat) * mCountOfVertex);
 			//indicate a vertexAttrib space 2*float,in mTexVbo
-			glVertexAttribPointer(texloc, componentOfTexcoord, GL_FLOAT, GL_FALSE, 0, 0);
+			glVertexAttribPointer(texloc, componentOfTexcoord, GL_FLOAT, GL_FALSE, mTexStride, (const void*)mTexOffset);
 			if (mTexByteSize == 0) {
 				LOGE("render mesh,the shader has texcoord attribute,but there are no texccord data");
 			}
 		}
 		if (norloc >= 0)
 		{
-			glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
+			//int offset = mPosByteSize + mTexByteSize;
 			glEnableVertexAttribArray(norloc);
 			int componentOfNormal = mNorByteSize / (sizeof(GLfloat) * mCountOfVertex);
-			glVertexAttribPointer(norloc, componentOfNormal, GL_FLOAT, GL_FALSE, 0, 0);
+			glVertexAttribPointer(norloc, componentOfNormal, GL_FLOAT, GL_FALSE, mNorStride, (const void*)mNorOffset);
 			if (mNorByteSize == 0) {
 				LOGE("render mesh,the shader has normal attribute,but there are no normal data");
 			}
 		}
+		if (colorloc >= 0) {
+			glEnableVertexAttribArray(colorloc);
+			int componentNum = mColorByteSize / (sizeof(float) * mCountOfVertex);
+			glVertexAttribPointer(colorloc, componentNum, GL_FLOAT, GL_FALSE, mColorStride, (const void*)mColorOffset);
+			if (mColorByteSize == 0) {
+				LOGE("render mesh,the shader has color attribute,but there are no color data");
+			}
+		}
 		if (boneIdLoc >= 0) {
-			glBindBuffer(GL_ARRAY_BUFFER, mBoneIdVbo);
+			/*int offset = mPosByteSize + mTexByteSize + mNorByteSize+
+				mColorByteSize + mIndexByteSize;*/
 			glEnableVertexAttribArray(boneIdLoc);
 			int componentNum = mBoneIdByteSize / (sizeof(int) * mCountOfVertex);
-			glVertexAttribIPointer(boneIdLoc, componentNum, GL_INT, 0, 0);
+			glVertexAttribIPointer(boneIdLoc, componentNum, GL_INT, mBoneIdStride, (const void*)mBoneIdOffset);
 			if (mBoneIdByteSize == 0) {
 				LOGE("render mesh,the shader has boneId attribute,but there are no boneId data");
 			}
 		}
 		if (boneWeightLoc>=0) {
-			glBindBuffer(GL_ARRAY_BUFFER, mBoneWeightVbo);
+			/*int offset = mPosByteSize + mTexByteSize + mNorByteSize +
+				mColorByteSize + mIndexByteSize + mBoneIdByteSize;*/
 			glEnableVertexAttribArray(boneWeightLoc);
 			int componentNum = mBoneWeightByteSize / (sizeof(GLfloat) * mCountOfVertex);
-			glVertexAttribPointer(boneWeightLoc, componentNum, GL_FLOAT, GL_FALSE, 0, 0);
+			glVertexAttribPointer(boneWeightLoc, componentNum, GL_FLOAT, GL_FALSE, mBoneWeightStride, (const void*)mBoneWeightOffset);
 			if (mBoneWeightByteSize == 0) {
 				LOGE("render mesh,the shader has boneWeight attribute,but there are no boneWeight data");
 			}
 		}
-
+		
 		if (mDrawType == DrawType::Triangles || mDrawType == DrawType::TriangleStrip) {
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);//glDrawElements会用到这个
+			mpVbo->bindElement(true);
+			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);//glDrawElements会用到这个
 		}
 		glBindVertexArray(0);
 	}
 	
 	glBindVertexArray(mVAO);
-	if (colorloc >= 0) {
+	/*if (colorloc >= 0) {
 		glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
 		glEnableVertexAttribArray(colorloc);
 		int componentOfColor = mColorByteSize / (sizeof(GLfloat) * mCountOfVertex);
@@ -795,17 +924,24 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 		if (mColorByteSize == 0) {
 			LOGE("render mesh,the shader has color attribute,but there are no color data");
 		}
+	}*/
+	int componentSize = mIndexByteSize / mCountOfIndex;
+	int type = GL_UNSIGNED_INT;
+	if (componentSize == 2) {
+		type = GL_UNSIGNED_SHORT;
 	}
 	if (mDrawType == DrawType::Triangles) {
-		glDrawElements(GL_TRIANGLES, mIndexByteSize / sizeof(GLuint), GL_UNSIGNED_INT, (const void*)0);
+		glDrawElements(GL_TRIANGLES, mCountOfIndex, type, (const void*)mIndexOffset);
 	}
 	else if (mDrawType == DrawType::TriangleStrip) {
-		glDrawElements(GL_TRIANGLE_STRIP, mIndexByteSize / sizeof(GLuint), GL_UNSIGNED_INT, (const void*)0);
+		glDrawElements(GL_TRIANGLE_STRIP, mCountOfIndex, type, (const void*)mIndexOffset);
 	}
 	else {
 		glDrawArrays(GL_TRIANGLE_FAN, 0, mCountOfVertex);
 	}
 	glBindVertexArray(0);
+	mpVbo->bindArray(false);
+	mpVbo->bindElement(false);
 }
 
 void Mesh::getMaxNumVertexAttr()
@@ -831,8 +967,8 @@ void Mesh::getPointSizeRange() {
 void Mesh::draw(int posloc, int texloc, int norloc, int colorloc,int boneIdLoc,int boneWeightLoc)
 {
 	//shader has boneid vertex attribute
-	if (boneIdLoc != -1 && !mBonesFinalMatrix.empty()) {
-		Ubo::getInstance().update("Bones", mBonesFinalMatrix.data(), mBonesFinalMatrix.size() * sizeof(glm::mat4));
+	if (boneIdLoc != -1 && mpSkeleton) {
+		mpSkeleton->updateToUbo();
 	}
 	switch (mDrawType) {
 	case DrawType::Triangles:
@@ -889,97 +1025,92 @@ void Mesh::draw(const glm::mat4* modelMat, const glm::mat4* texMat, const glm::m
 	}
 }
 
-bool Mesh::setPosData(const GLfloat* pos, int size, unsigned int drawType)
-{
-	if (mPosVbo > 0) {
-		glDeleteBuffers(1, &mPosVbo);
-		if (mVAO != 0) {
-			//先删除原来的vao
-			glDeleteVertexArrays(1, &mVAO);
-			mVAO = 0;
-		}
-	}
-	glGenBuffers(1, &mPosVbo);
-	glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
-	glBufferData(GL_ARRAY_BUFFER, size, pos, drawType);
-	mPosByteSize = size;
-	return true;
-}
-bool Mesh::setTexcoordData(const GLfloat* tex, int size, unsigned int drawType)
-{
-	if (mTexVbo > 0) {
-		glDeleteBuffers(1, &mTexVbo);
-		if (mVAO != 0) {
-			//先删除原来的vao
-			glDeleteVertexArrays(1, &mVAO);
-			mVAO = 0;
-		}
-	}
-	glGenBuffers(1, &mTexVbo);
-	glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
-	glBufferData(GL_ARRAY_BUFFER, size, tex, drawType);
-	mTexByteSize = size;
-	return true;
-}
+//bool Mesh::setPosData(const GLfloat* pos, int size, unsigned int drawType)
+//{
+//	if (mPosVbo > 0) {
+//		glDeleteBuffers(1, &mPosVbo);
+//		if (mVAO != 0) {
+//			//先删除原来的vao
+//			glDeleteVertexArrays(1, &mVAO);
+//			mVAO = 0;
+//		}
+//	}
+//	glGenBuffers(1, &mPosVbo);
+//	glBindBuffer(GL_ARRAY_BUFFER, mPosVbo);
+//	glBufferData(GL_ARRAY_BUFFER, size, pos, drawType);
+//	mPosByteSize = size;
+//	return true;
+//}
+//bool Mesh::setTexcoordData(const GLfloat* tex, int size, unsigned int drawType)
+//{
+//	if (mTexVbo > 0) {
+//		glDeleteBuffers(1, &mTexVbo);
+//		if (mVAO != 0) {
+//			//先删除原来的vao
+//			glDeleteVertexArrays(1, &mVAO);
+//			mVAO = 0;
+//		}
+//	}
+//	glGenBuffers(1, &mTexVbo);
+//	glBindBuffer(GL_ARRAY_BUFFER, mTexVbo);
+//	glBufferData(GL_ARRAY_BUFFER, size, tex, drawType);
+//	mTexByteSize = size;
+//	return true;
+//}
 
-bool Mesh::setNormalData(const GLfloat* nor, int sizeInbyte, unsigned int drawType)
-{
-	if (mNorVbo > 0) {
-		glDeleteBuffers(1, &mNorVbo);
-		if (mVAO != 0) {
-			//先删除原来的vao
-			glDeleteVertexArrays(1, &mVAO);
-			mVAO = 0;
-		}
-	}
-	glGenBuffers(1, &mNorVbo);
-	glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, nor, drawType);
-	mNorByteSize = sizeInbyte;
-	return true;
-}
+//bool Mesh::setNormalData(const GLfloat* nor, int sizeInbyte, unsigned int drawType)
+//{
+//	if (mNorVbo > 0) {
+//		glDeleteBuffers(1, &mNorVbo);
+//		if (mVAO != 0) {
+//			//先删除原来的vao
+//			glDeleteVertexArrays(1, &mVAO);
+//			mVAO = 0;
+//		}
+//	}
+//	glGenBuffers(1, &mNorVbo);
+//	glBindBuffer(GL_ARRAY_BUFFER, mNorVbo);
+//	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, nor, drawType);
+//	mNorByteSize = sizeInbyte;
+//	return true;
+//}
 
-bool Mesh::setBoneIdData(const int* boneIds, int sizeInbyte, unsigned int drawType) {
-	if(mBoneIdVbo>0){
-		glDeleteBuffers(1, &mBoneIdVbo);
-		if (mVAO != 0) {
-			//先删除原来的vao
-			glDeleteVertexArrays(1, &mVAO);
-			mVAO = 0;
-		}
-	}
-	glGenBuffers(1, &mBoneIdVbo);
-	glBindBuffer(GL_ARRAY_BUFFER, mBoneIdVbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, boneIds, drawType);
-	mBoneIdByteSize = sizeInbyte;
-	return true;
-}
+//bool Mesh::setBoneIdData(const int* boneIds, int sizeInbyte, unsigned int drawType) {
+//	if(mBoneIdVbo>0){
+//		glDeleteBuffers(1, &mBoneIdVbo);
+//		if (mVAO != 0) {
+//			//先删除原来的vao
+//			glDeleteVertexArrays(1, &mVAO);
+//			mVAO = 0;
+//		}
+//	}
+//	glGenBuffers(1, &mBoneIdVbo);
+//	glBindBuffer(GL_ARRAY_BUFFER, mBoneIdVbo);
+//	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, boneIds, drawType);
+//	mBoneIdByteSize = sizeInbyte;
+//	return true;
+//}
 
-bool Mesh::setBoneWeightData(const GLfloat* weight, int sizeInbyte, unsigned int drawType) {
-	if (mBoneWeightVbo > 0) {
-		glDeleteBuffers(1, &mBoneWeightVbo);
-		if (mVAO != 0) {
-			//先删除原来的vao
-			glDeleteVertexArrays(1, &mVAO);
-			mVAO = 0;
-		}
-	}
-	glGenBuffers(1, &mBoneWeightVbo);
-	glBindBuffer(GL_ARRAY_BUFFER, mBoneWeightVbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, weight, drawType);
-	mBoneWeightByteSize = sizeInbyte;
-	return true;
-}
+//bool Mesh::setBoneWeightData(const GLfloat* weight, int sizeInbyte, unsigned int drawType) {
+//	if (mBoneWeightVbo > 0) {
+//		glDeleteBuffers(1, &mBoneWeightVbo);
+//		if (mVAO != 0) {
+//			//先删除原来的vao
+//			glDeleteVertexArrays(1, &mVAO);
+//			mVAO = 0;
+//		}
+//	}
+//	glGenBuffers(1, &mBoneWeightVbo);
+//	glBindBuffer(GL_ARRAY_BUFFER, mBoneWeightVbo);
+//	glBufferData(GL_ARRAY_BUFFER, sizeInbyte, weight, drawType);
+//	mBoneWeightByteSize = sizeInbyte;
+//	return true;
+//}
 
 bool Mesh::setColorData(const GLfloat* nor, int size, unsigned int drawType)
 {
 	if (mColorVbo > 0) {
 		glDeleteBuffers(1, &mColorVbo);
-		if (mVAO != 0) {
-			//先删除原来的vao
-			glDeleteVertexArrays(1, &mVAO);
-			mVAO = 0;
-		}
 	}
 	glGenBuffers(1, &mColorVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, mColorVbo);
@@ -988,54 +1119,30 @@ bool Mesh::setColorData(const GLfloat* nor, int size, unsigned int drawType)
 	return true;
 }
 
-bool Mesh::setIndexData(const GLuint* index, int size, unsigned int drawType)
-{
-	if (mIndexVbo > 0) {
-		glDeleteBuffers(1, &mIndexVbo);
-	}
-	glGenBuffers(1, &mIndexVbo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, index, drawType);
-	mIndexByteSize = size;
-	return true;
-}
+//bool Mesh::setIndexData(const GLuint* index, int size, unsigned int drawType)
+//{
+//	if (mIndexVbo > 0) {
+//		glDeleteBuffers(1, &mIndexVbo);
+//	}
+//	glGenBuffers(1, &mIndexVbo);
+//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
+//	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, index, drawType);
+//	mIndexByteSize = size;
+//	return true;
+//}
 
 void Mesh::unLoadMesh()
 {
-	if (mPosVbo != 0)
-	{
-		glDeleteBuffers(1, &mPosVbo);
-		mPosVbo = 0;
-		mPosByteSize = 0;
-	}
-	if (mNorVbo != 0)
-	{
-		glDeleteBuffers(1, &mNorVbo);
-		mNorVbo = 0;
-		mNorByteSize = 0;
-	}
-
-	if (mTexVbo != 0)
-	{
-		glDeleteBuffers(1, &mTexVbo);
-		mTexVbo = 0;
-		mTexByteSize = 0;
-	}
 	if (mColorVbo != 0) {
 		glDeleteBuffers(1, &mColorVbo);
 		mColorVbo = 0;
 		mColorByteSize = 0;
 	}
-	if (mIndexVbo != 0)
-	{
-		glDeleteBuffers(1, &mIndexVbo);
-		mIndexVbo = 0;
-		mIndexByteSize = 0;
-	}
 	if (mVAO != 0) {
 		glDeleteVertexArrays(1, &mVAO);
 		mVAO = 0;
 	}
+	mpVbo = nullptr;
 	mCountOfVertex = 0;
 }
 
@@ -1063,3 +1170,31 @@ bool Mesh::createVaoIfNeed(int posloc, int texloc, int norloc, int colorLoc) {
 void Mesh::setLineWidth(GLfloat width) {
 	mLineWidth = width;
 }
+
+//const std::unordered_map<std::string, int>& Mesh::getBoneNameIndex() {
+//	if (mpSkeleton) {
+//		return mpSkeleton->getBoneName2Index();
+//	}
+//}
+
+//const std::vector<glm::mat4>& Mesh::getBonesOffsetMatrix() {
+//	if (mpSkeleton) {
+//		return mpSkeleton->getOffsetMatrix();
+//	}
+//}
+
+void Mesh::setSkeleton(const std::shared_ptr<Skeleton>& ps) {
+	if (mHasSkin) {
+		mpSkeleton = ps;
+	}
+	else {
+		LOGD("the mesh has no skin,setSkeleton make no sense");
+	}
+}
+
+void Mesh::setAABB(float x1, float y1, float z1, float x2, float y2, float z2) {
+	if (!mpAabb) {
+		mpAabb = std::make_unique<AABB>(x1, y1, z1, x2, y2, z2);
+	}
+}
+

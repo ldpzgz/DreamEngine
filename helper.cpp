@@ -11,8 +11,6 @@
 
 std::shared_ptr<Texture> genBrdfLut() {
 	TextureSP lut = std::make_shared<Texture>();
-	auto pSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
-	lut->setSampler(pSampler);
 	lut->create2DMap(512, 512, nullptr, GL_RG16F, GL_RG, GL_FLOAT);
 
 	Mesh mesh(MeshType::Quad);
@@ -44,12 +42,12 @@ TextureSP genSpecularFilterMap(const std::shared_ptr<Texture>& pCube) {
 	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 	glm::mat4 captureViews[] =
 	{
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
 		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
 		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, 1.0f,  0.0f))
 	};
 
 	unsigned int maxMipLevels = 5;
@@ -118,6 +116,8 @@ TextureSP genSpecularFilterMap(const std::shared_ptr<Texture>& pCube) {
 				});
 		}
 	}
+	//don't genMipmap again!!
+	//floatCubeSpec->genMipmap();
 	return floatCubeSpec;
 }
 
@@ -145,12 +145,12 @@ TextureSP genDiffuseIrrMap(const std::shared_ptr<Texture>& pCube) {
 	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 	glm::mat4 captureViews[] =
 	{
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
 		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
 		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, 1.0f,  0.0f))
 	};
 	Pbo pbo;
 	pbo.initPbo(irrWidth, irrWidth);
@@ -225,11 +225,11 @@ TextureSP convertHdrToCubicmap(const std::shared_ptr<Texture>& pHdr) {
 	auto& pMaterial = Resource::getInstance().getMaterial("hdrToCubicMap");
 	pMaterial->setTextureForSampler("equirectangularMap", pHdr);
 	mesh.setMaterial(pMaterial);
-	auto pSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
+	auto pSampler = Sampler::getSampler(GL_LINEAR,GL_LINEAR);
 	floatR->create2DMap(width, width, nullptr, GL_RGBA, GL_RGBA);
 	floatG->create2DMap(width, width, nullptr, GL_RGBA, GL_RGBA);
 	floatB->create2DMap(width, width, nullptr, GL_RGBA, GL_RGBA);
-	floatCube->createCubicMap(width, width, GL_RGB16F, GL_RGB, GL_FLOAT);
+	floatCube->createCubicMap(width, width, GL_RGB16F, GL_RGB, GL_FLOAT,true);
 	fbo.attachColorTexture(floatR, 0);
 	fbo.attachColorTexture(floatG, 1);
 	fbo.attachColorTexture(floatB, 2);
@@ -237,12 +237,12 @@ TextureSP convertHdrToCubicmap(const std::shared_ptr<Texture>& pHdr) {
 	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 	glm::mat4 captureViews[] =
 	{
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
 		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
 		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, 1.0f,  0.0f))
 	};
 	Pbo pbo;
 	pbo.initPbo(width, width);
@@ -292,6 +292,7 @@ TextureSP convertHdrToCubicmap(const std::shared_ptr<Texture>& pHdr) {
 			floatCube->update(0, 0, width, width, resultRGB.data(), i);
 			});
 	}
+	floatCube->genMipmap();
 	return floatCube;
 }
 

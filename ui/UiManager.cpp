@@ -92,12 +92,12 @@ void UiManager::loadAllUiImage() {
 		directory_iterator list(imagePath);
 		//directory_entry 是一个文件夹里的某一项，可以是path，也可以是文件
 		for (auto& it : list) {
-			auto filePath = it.path();
+			auto& filePath = it.path();
 			if (is_regular_file(filePath)) {
 				//是文件
 				auto filePathString = filePath.string();
 				std::string texName = "ui";
-				texName += Utils::getFileName(filePathString);
+				texName += filePath.stem().string();
 				Resource::getInstance().loadImageFromFile(filePathString,texName);
 			}
 		}

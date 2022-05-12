@@ -34,7 +34,7 @@ void AnimationManager::addAffectedNode(const std::string& name, const std::share
 	for (const auto& pair : mAnimationMap) {
 		auto pNodeAnimation = std::dynamic_pointer_cast<NodeAnimation>(pair.second);
 		if (pNodeAnimation) {
-			pNodeAnimation->addAffectedNode(name, pNode);
+			//pNodeAnimation->addAffectedNode(name, pNode);
 		}
 	}
 }

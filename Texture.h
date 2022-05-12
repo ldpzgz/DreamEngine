@@ -68,7 +68,7 @@ public:
 		return mType;
 	}
 
-	void setSampler(const std::shared_ptr<Sampler>& pSampler) {
+	void setSampler(Sampler* pSampler) {
 		mpSampler = pSampler;
 	}
 
@@ -88,7 +88,7 @@ public:
 	//internalFormat:该纹理在显存中的格式，GL_RGB,GL_RGBA
 	//format:pdata指向的内存数据的格式，GL_RGB,GL_RGBA
 	//type:pdata指向的内存，比如rgb中的r的类型，GL_UNSIGNED_BYTE
-	bool create2DMap(int width,int height,const unsigned char* pdata, GLint internalFormat = GL_RGB, GLint format=GL_RGB,GLenum type =GL_UNSIGNED_BYTE, int aligment = 1,bool autoMipmap=false);
+	bool create2DMap(int width,int height,const unsigned char* pdata, GLint internalFormat = GL_RGB, GLint format=GL_RGB,GLenum type =GL_UNSIGNED_BYTE, bool autoMipmap=false,int aligment=1);
 	
 	/*
 	* path:指定了六个cubemap文件所在的路径，这个路径里面有"right.jpg","left.jpg","top.jpg","bottom.jpg","front.jpg","back.jpg"
@@ -144,7 +144,7 @@ public:
 	//传入一个数组，用于获取支持的压缩纹理格式
 	static void getCompressFormat(GLint* formats);
 
-	static std::shared_ptr<Texture> loadImageFromFile(const std::string& path);
+	static std::shared_ptr<Texture> loadImageFromFile(const std::string& path,const std::string& name);
 protected:
 	GLuint mTextureId{ 0 };
 	int mWidth{ 0 };
@@ -155,7 +155,7 @@ protected:
 	int mNumOfSamples{ 0 };//多重采样纹理的采样个数
 	int mTarget{ GL_TEXTURE_2D };//GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_2D_ARRAY, or GL_TEXTURE_CUBE_MAP
 
-	std::shared_ptr<Sampler> mpSampler;
+	Sampler* mpSampler{ nullptr };
 	std::array<float, 4> mBorderColor{ 0.0f,0.0f,0.0f,0.0f };
 	std::string mName;
 };

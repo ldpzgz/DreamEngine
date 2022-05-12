@@ -157,8 +157,10 @@ void Camera::renderScene() {
 			}
 
 			//blur the shadowResult
-			mpPostGsBlur->process(mpShadowResult, mpShadowResult1);
-			mpPostGsBlur->process(mpShadowResult1, mpShadowResult);
+			if (mpShadowResult && mpShadowResult1) {
+				mpPostGsBlur->process(mpShadowResult, mpShadowResult1);
+				mpPostGsBlur->process(mpShadowResult1, mpShadowResult);
+			}
 
 			//deffered render lighting pass
 			if (mpFboDefferedLighting) {
@@ -274,10 +276,10 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) noexcep
 	mpTaaPreColorMap[1] = std::make_shared<Texture>();
 	mpPostTex[0] = std::make_shared<Texture>();
 	mpPostTex[1] = std::make_shared<Texture>();
-	auto pNearestSampler = Sampler::getSampler(SamplerType::NearNearEdgeEdge);
-	auto pLinearSampler = Sampler::getSampler(SamplerType::LinearLinearEdgeEdge);
-	auto pLBSampler = Sampler::getSampler(SamplerType::LinearLinearBorderBorder);
-	auto pNearestRepeatSampler = Sampler::getSampler(SamplerType::NearNearRepeatRepeat);
+	auto pNearestSampler = Sampler::getSampler(GL_NEAREST, GL_NEAREST);
+	auto pLinearSampler = Sampler::getSampler(GL_LINEAR,GL_LINEAR);
+	auto pLBSampler = Sampler::getSampler(GL_LINEAR, GL_LINEAR,GL_CLAMP_TO_BORDER,GL_CLAMP_TO_BORDER,GL_CLAMP_TO_BORDER);
+	auto pNearestRepeatSampler = Sampler::getSampler(GL_NEAREST, GL_NEAREST,GL_REPEAT,GL_REPEAT,GL_REPEAT);
 	if (mpPosMap && mpNormal && mpAlbedoMap && mpDepthMap && mpTaaVelocityMap) {
 		mpPosMap->setSampler(pNearestSampler);
 		mpPosMap->create2DMap(mWidth, mHeight, nullptr, GL_RGBA16F, GL_RGBA, GL_FLOAT);
@@ -418,9 +420,9 @@ void Camera::initDefferedRendering(const std::shared_ptr<Scene>& pScene) noexcep
 		}
 
 		if (mpPostTex[0] && mpPostTex[1]) {
-			mpPostTex[0]->setSampler(pLinearSampler);
+			mpPostTex[0]->setSampler(pNearestSampler);
 			mpPostTex[0]->create2DMap(mWidth, mHeight, nullptr, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
-			mpPostTex[1]->setSampler(pLinearSampler);
+			mpPostTex[1]->setSampler(pNearestSampler);
 			mpPostTex[1]->create2DMap(mWidth, mHeight, nullptr, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 		}
 		
@@ -448,7 +450,7 @@ void Camera::genShadowMap(std::shared_ptr<Scene>& pScene) {
 		constexpr int SM_HEIGHT = 1024;
 		mpShadowMap = std::make_shared<Texture>();
 		float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-		auto pSampler = Sampler::getSampler(SamplerType::LinearLinearBorderBorderEdgeLe);
+		auto pSampler = Sampler::getSampler(GL_LINEAR,GL_LINEAR,GL_CLAMP_TO_BORDER,GL_CLAMP_TO_BORDER, GL_CLAMP_TO_EDGE,GL_COMPARE_REF_TO_TEXTURE,GL_LEQUAL);
 		mpShadowMap->setSampler(pSampler);
 		mpShadowMap->setBorderColor(borderColor);
 		mpShadowMap->create2DMap(SM_WIDTH, SM_HEIGHT, nullptr, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT);

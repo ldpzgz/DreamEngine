@@ -11,6 +11,7 @@ public:
 	{
 
 	}
+	~AABB()=default;
 	float xmin() {
 		return xyz[0];
 	}

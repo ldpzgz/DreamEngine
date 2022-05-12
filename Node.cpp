@@ -42,16 +42,6 @@ void Node::addChild(shared_ptr<Node>& child) {
 		child->mIdInParent = mChildren.size();
 		mChildren.emplace_back(child);
 	}
-	/*if (!mpFirstChild) {
-		mpFirstChild = child;
-		mpLastChild = child;
-	}
-	else {
-		mpLastChild->mpNextSibling = child;
-		child->mpPreSibling = mpLastChild;
-		mpLastChild = child;
-	}
-	return true;*/
 }
 
 void Node::removeChild(shared_ptr<Node>& child) noexcept{
@@ -76,13 +66,16 @@ bool Node::addRenderable(const shared_ptr<Renderable>& temp) {
 	return true;
 }
 
-void Node::setParentWorldMatrix(const glm::mat4& matrix, bool updateChild, bool notify) noexcept {
+void Node::setParentWorldMatrix(const glm::mat4& matrix, bool updateAllChildren,bool notify) noexcept {
 	mParentWorldMat = matrix;
 	if (notify) {
 		updateListener();
 	}
-	if (updateChild) {
-		updateChildrenMatrix();
+	if (updateAllChildren) {
+		updateAllChild(notify);
+	}
+	else {
+		updateDirectChild(notify);
 	}
 }
 
@@ -92,7 +85,10 @@ void Node::setLocalMatrix(const glm::mat4& matrix,bool updateChild, bool notify)
 		updateListener();
 	}
 	if (updateChild) {
-		updateChildrenMatrix();
+		updateAllChild(notify);
+	}
+	else {
+		updateDirectChild(notify);
 	}
 }
 
@@ -103,7 +99,10 @@ void Node::translate(float x, float y, float z, bool updateChild, bool notify) n
 		updateListener();
 	}
 	if (updateChild) {
-		updateChildrenMatrix();
+		updateAllChild(notify);
+	}
+	else {
+		updateDirectChild(notify);
 	}
 }
 
@@ -114,7 +113,10 @@ void Node::rotate(float angle, const glm::vec3& vec, bool updateChild, bool noti
 		updateListener();
 	}
 	if (updateChild) {
-		updateChildrenMatrix();
+		updateAllChild(notify);
+	}
+	else {
+		updateDirectChild(notify);
 	}
 }
 
@@ -125,7 +127,10 @@ void Node::scale(const glm::vec3& scaleVec, bool updateChild, bool notify) noexc
 		updateListener();
 	}
 	if (updateChild) {
-		updateChildrenMatrix();
+		updateAllChild(notify);
+	}
+	else {
+		updateDirectChild(notify);
 	}
 }
 
@@ -231,7 +236,10 @@ void Node::lookAt(const glm::vec3& eyepos, const glm::vec3& center,
 		updateListener();
 	}
 	if (updateChild) {
-		updateChildrenMatrix();
+		updateAllChild(notify);
+	}
+	else {
+		updateDirectChild(notify);
 	}
 }
 
@@ -239,12 +247,16 @@ void Node::addListener(const shared_ptr<NodeListener>& lis) {
 	mListeners.emplace_back(lis);
 }
 
-void Node::updateChildrenMatrix(bool notify) noexcept {
-	if (!mChildren.empty()) {
-		auto myWorldMat = mParentWorldMat * mLocalMat;
-		for (auto& pNode : mChildren) {
-			pNode ? pNode->setParentWorldMatrix(myWorldMat,true,notify) : 0;
-		}
+void Node::updateDirectChild(bool notify) {
+	auto mat = mParentWorldMat * mLocalMat;
+	for (auto& pNode : mChildren) {
+		pNode->mParentWorldMat = mat;
+	}
+}
+void Node::updateAllChild(bool notify) {
+	auto mat = mParentWorldMat * mLocalMat;
+	for (auto& pNode : mChildren) {
+		pNode->setParentWorldMatrix(mat,true,notify);
 	}
 }
 

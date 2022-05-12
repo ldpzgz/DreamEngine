@@ -75,7 +75,7 @@ public:
 		}
 	}
 
-	std::shared_ptr<Texture> getTexture(const std::string& name) {
+	static std::shared_ptr<Texture> getTexture(const std::string& name) {
 		auto it = mTextures.find(name);
 		if (it != mTextures.end()) {
 			return it->second;
@@ -83,7 +83,7 @@ public:
 		return nullptr;
 	}
 
-	std::shared_ptr<Material> getMaterial(const std::string& name) {
+	static std::shared_ptr<Material> getMaterial(const std::string& name) {
 		auto it = mMaterials.find(name);
 		if (it != mMaterials.end()) {
 			return it->second;
@@ -385,13 +385,12 @@ bool ResourceImpl::meshPathHander(NodeSP& pNode,const std::string& value) {
 		MeshLoader* pLoader=nullptr;
 		MeshLoaderAssimp loader1;
 		MeshLoaderGltf loader2;
-		/*if (suffix == "gltf"sv) {
+		if (suffix == "gltf"sv) {
 			pLoader = &loader2;
 		}
 		else {
 			pLoader = &loader1;
-		}*/
-		pLoader = &loader1;
+		}
 		if (pLoader->loadFromFile(value, pNode)) {
 			LOGD("success load mesh from %s",value.c_str());
 			return true;
@@ -718,8 +717,7 @@ bool ResourceImpl::programSamplerHandler(Material* pMat, const std::string& valu
 					else {
 						LOGE("error in material file sampler2D %s not found in shader", item.first.c_str());
 					}
-					auto texName = Utils::getFileName(item.second);
-					auto pTex = getOrLoadTextureFromFile(item.second, texName);
+					auto pTex = getOrLoadTextureFromFile(item.second);
 					int loc = pMat->getShader()->getUniformLoc(item.first.c_str()); //
 					if (loc != -1) {
 						if (pTex) {
@@ -992,11 +990,11 @@ Color Resource::getColor(const std::string& name) {
 }
 
 std::shared_ptr<Texture> Resource::getTexture(const std::string& name) {
-	return mpImpl->getTexture(name);
+	return ResourceImpl::getTexture(name);
 }
 
 std::shared_ptr<Material> Resource::getMaterial(const std::string& name) {
-	return mpImpl->getMaterial(name);
+	return ResourceImpl::getMaterial(name);
 }
 /*
 * name: 可以是物体的名字
@@ -1124,7 +1122,7 @@ bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 				}
 				for (const auto& it : pRend) {
 					MeshSP pMesh = std::dynamic_pointer_cast<Mesh>(it.second);
-					if (pMesh) {
+					if (pMesh && !pMesh->getMaterial()) {
 						const std::string& matName = pMesh->getMaterialName();
 						auto it = gMaterialInfos.find(matName);
 						if (matName.empty() || it == gMaterialInfos.end()) {
@@ -1325,6 +1323,7 @@ bool ResourceImpl::parseProgram(std::shared_ptr<Material>& pMaterial, const stri
 {
 	vector<pair<string,string>> vec;
 	bool bsuccess = false;
+	checkglerror();
 	if (Utils::parseItem(program, vec)) {
 		for (auto& pair : vec) {
 			auto it = gProgramKeyValueHandlers.find(pair.first);
@@ -1401,7 +1400,7 @@ bool ResourceImpl::parseTexture(const string& textureName, const string& texture
 	if (Utils::parseItem(texture, umap)) {
 		const auto pPath = umap.find("path");
 		if (pPath != umap.cend()) {
-			pTex = Texture::loadImageFromFile(gDrawablePath + "/" + pPath->second);
+			pTex = Texture::loadImageFromFile(gDrawablePath + "/" + pPath->second, textureName);
 			if (!pTex) {
 				LOGE("failed to load texture from path %s", pPath->second.c_str());
 				return false;
@@ -1457,18 +1456,25 @@ bool ResourceImpl::parseTexture(const string& textureName, const string& texture
 			const auto pSampler = umap.find("sampler");
 			const auto pBorderColor = umap.find("borderColor");
 			if (pSampler != umap.cend()) {
-				int index{0};
-				std::string_view str{ pSampler->second };
-				auto [ptr, ec]{std::from_chars(str.data(), str.data() + str.size(), index)};
-				if (ec == std::errc()){
-					if (index < static_cast<int>(SamplerType::End)) {
-						auto pSampler = Sampler::getSampler(static_cast<SamplerType>(index));
-						pTex->setSampler(pSampler);
-					}else {
-						LOGE("parse texture sampler index overflow");
+				std::array<int, 7> params{ GL_NEAREST,GL_NEAREST,GL_CLAMP_TO_EDGE,GL_CLAMP_TO_EDGE,GL_CLAMP_TO_EDGE,GL_NONE,GL_NEVER};
+				std::vector<std::string_view> indexs;
+				Utils::splitStr(pSampler->second, ",", indexs);
+				auto size = indexs.size();
+				if (size <= 7) {
+					for (int i = 0; i < size; ++i) {
+						auto& str = indexs[i];
+						auto [ptr, ec] {std::from_chars(str.data(), str.data() + str.size(), params[i],16)};
+						if (ec != std::errc()) {
+							LOGE("parse texture sampler params");
+						}
 					}
-				}else{
-					LOGE("parse texture sampler index");
+					auto pSampler = Sampler::getSampler(params[0], params[1],
+						params[2], params[3], params[4],
+						params[5], params[6]);
+					pTex->setSampler(pSampler);
+				}
+				else {
+					LOGE("parse texture sampler params,too many params");
 				}
 			}
 			if (pBorderColor != umap.cend()) {
@@ -1521,7 +1527,7 @@ std::shared_ptr<Material> ResourceImpl::cloneMaterial(const std::string& name) {
 }
 
 std::shared_ptr<Texture> ResourceImpl::loadImageFromFile(const std::string& path, const std::string& texName) {
-	std::shared_ptr<Texture> pTexture = Texture::loadImageFromFile(path);
+	std::shared_ptr<Texture> pTexture = Texture::loadImageFromFile(path, texName);
 	if (pTexture) {
 		auto it = mTextures.try_emplace(texName, pTexture);
 		if (!it.second) {
@@ -1535,26 +1541,36 @@ std::shared_ptr<Texture> ResourceImpl::loadImageFromFile(const std::string& path
 
 std::shared_ptr<Texture> ResourceImpl::getOrLoadTextureFromFile(const std::string& path, const std::string_view texName)
 {
-	if (texName == std::string_view("none")) {
+	if (path == std::string_view("none")) {
 		return nullptr;
 	}
 	std::string RealTexName(texName);
-
-	if (RealTexName.empty()) {
-		RealTexName = Utils::getFileNameWithPath(path);
+	if (!RealTexName.empty()) {
+		auto pTexture = mTextures.find(RealTexName);
+		if (pTexture != mTextures.end()) {
+			return pTexture->second;
+		}
 	}
-	auto pTexture = mTextures.find(RealTexName);
+	
+	auto pTexture = mTextures.find(path);
 	if (pTexture != mTextures.end()) {
 		return pTexture->second;
 	}
 	else {
-		//如果写的是drawable文件夹里面的某个文件
-		auto filePath = gDrawablePath + "/" + path;
-		auto pTex = loadImageFromFile(filePath, RealTexName);
-		if (!pTex){
-			LOGE("load texture failed %s",filePath.c_str());
+		RealTexName = std::filesystem::path(path).replace_extension("").string();
+		pTexture = mTextures.find(RealTexName);
+		if (pTexture != mTextures.end()) {
+			return pTexture->second;
 		}
-		return pTex;
+		else {
+			//如果写的是drawable文件夹里面的某个文件
+			auto filePath = gDrawablePath + "/" + path;
+			auto pTex = loadImageFromFile(filePath, RealTexName);
+			if (!pTex) {
+				LOGE("load texture failed %s", filePath.c_str());
+			}
+			return pTex;
+		}
 	}
 }
 
@@ -1579,6 +1595,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedLightPass(bool hasIBL
 	std::string ubo{"ubo{\nLights=1\n}"};
 	fs += mpVersion;
 	fs += mpPrecision;
+	vs += mpVersion;
 
 	program += "sampler{\nposMap=none\nalbedoMap=none\nnormalMap=none\nssaoMap=none\n";	
 	if (hasIBL) {
@@ -1667,21 +1684,9 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	if (!mInfo.armMap.empty()) {
 		materialFlag |= 0x08;
 		materialFlag |= 0x10;
-		materialFlag |= 0x20;
-	}
-	else {
-		if (!mInfo.metallicMap.empty()) {
-			materialFlag |= 0x08;
-		}
-		if (!mInfo.roughnessMap.empty()) {
-			materialFlag |= 0x10;
-		}
-		if (!mInfo.aoMap.empty()) {
-			materialFlag |= 0x20;
-		}
 	}
 	if (hasNodeAnimation) {
-		materialFlag |= 0x40;
+		materialFlag |= 0x20;
 	}
 
 	std::stringstream tempss;
@@ -1689,186 +1694,139 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	auto materialName = tempss.str();
 	auto destMat = cloneMaterial(materialName);
 	//如果找到了现成的，为他们设置好参数
+	if (!destMat) {
+		std::string allDefine;
+		std::string_view hasTaa{ "#define HAS_TAA 1\n" };
+		std::string_view hasMap{ "#define HAS_MAP 1\n" };
+		std::string_view hasNormalMap{ "#define HAS_NORMAL_MAP 1\n" };
+		std::string_view hasAlbedoMap{ "#define HAS_ALBEDO_MAP 1\n" };
+		std::string_view hasArmMap{ "#define HAS_ARM_MAP 1\n" };
+		std::string_view hasShadow{ "#define HAS_SHADOW 1\n" };
+		std::string_view hasNodeAnimationDef{ "#define HAS_NODE_ANIMATION 1\n" };
+
+		if (!mInfo.albedoMap.empty()) {
+			materialFlag |= 0x02;
+			allDefine += hasAlbedoMap;
+			programSampler += "albedoMap="sv;
+			programSampler += mInfo.albedoMap;
+			programSampler += "\n"sv;
+		}
+		else {
+			program += "albedo=albedo\n"sv;
+		}
+
+		if (!mInfo.normalMap.empty()) {
+			allDefine += hasNormalMap;
+
+			programSampler += "normalMap="sv;
+			programSampler += mInfo.normalMap;
+			programSampler += "\n"sv;
+			materialFlag |= 0x04;
+		}
+
+		if (!mInfo.armMap.empty()) {
+			allDefine += hasArmMap;
+			programSampler += "armMap="sv;
+			programSampler += mInfo.armMap;
+			programSampler += "\n"sv;
+			materialFlag |= 0x08;
+			materialFlag |= 0x10;
+		}
+
+		program += "metallic=metallic\n"sv;
+		program += "roughness=roughness\n"sv;
+		
+		if (Config::openShadowMap) {
+			programSampler += "shadowMap="sv;
+			programSampler += "none"sv;
+			programSampler += "\n"sv;
+		}
+
+		programSampler += "}\n"sv;
+
+		fs += mpVersion;
+		fs += mpPrecision;
+		vs += mpVersion;
+		vs += mpPrecision;
+		if (materialFlag != 0) {
+			fs += hasMap;
+			vs += hasMap;
+			program += "texcoordLoc=1\nnormalLoc=2\n"sv;
+			if (Config::openTaa) {
+				fs += hasTaa;
+				vs += hasTaa;
+			}
+		}
+		else {
+			program += "normalLoc=1\n"sv;
+		}
+		program += programSampler;
+		program += programUbo;
+		if (Config::openShadowMap) {
+			fs += hasShadow;
+			vs += hasShadow;
+		}
+		if (hasNodeAnimation) {
+			vs += hasNodeAnimationDef;
+		}
+		fs += allDefine;
+		vs += getKeyAsStr("defferedGeoVs");
+		fs += getKeyAsStr("defferedGeoFs");
+
+		//fs 搞定了
+		destMat = std::make_shared<Material>();
+		checkglerror();
+		if (compileShader(destMat, materialName, vs, fs)) {
+			if (parseProgram(destMat, program)) {
+				if (!mMaterials.emplace(materialName, destMat).second) {
+					LOGE("there are already exist %s material in gMaterials when call Material::getMaterial", materialName.c_str());
+					destMat.reset();
+				}
+				else {
+					//clone一份
+					auto destMat = cloneMaterial(materialName);
+					if (!mInfo.name.empty() && destMat) {
+						mMaterials.try_emplace(mInfo.name, destMat);
+					}
+				}
+			}
+			else {
+				LOGE(" parseProgram when call Material::getMaterial");
+				destMat.reset();
+			}
+		}
+		else {
+			LOGE(" compile shader failed when  call Material::getMaterial");
+			destMat.reset();
+		}
+		checkglerror();
+	}
+
 	if (destMat) {
 		if (!mInfo.albedoMap.empty()) {
 			auto pTex = getOrLoadTextureFromFile(mInfo.albedoMap);
 			destMat->setTextureForSampler("albedoMap", pTex);
 		}
 		else {
-			Color c;
-			Color::parseColor(mInfo.albedo, c);
-			destMat->setAlbedoColor(c);
+			//Color c;
+			//Color::parseColor(mInfo.albedo, c);
+			destMat->setAlbedoColor(mInfo.albedoColor);
 		}
 		if (!mInfo.normalMap.empty()) {
 			auto pTex = getOrLoadTextureFromFile(mInfo.normalMap);
 			destMat->setTextureForSampler("normalMap", pTex);
 		}
+
 		if (!mInfo.armMap.empty()) {
 			auto pTex = getOrLoadTextureFromFile(mInfo.armMap);
 			destMat->setTextureForSampler("armMap", pTex);
 		}
-		else {
-			if (!mInfo.metallicMap.empty()) {
-				auto pTex = getOrLoadTextureFromFile(mInfo.metallicMap);
-				destMat->setTextureForSampler("metallicMap", pTex);
-			}
-			else {
-				destMat->setMetallical(mInfo.metallic);
-			}
-			if (!mInfo.roughnessMap.empty()) {
-				auto pTex = getOrLoadTextureFromFile(mInfo.roughnessMap);
-				destMat->setTextureForSampler("roughnessMap", pTex);
-			}
-			else {
-				destMat->setRoughness(mInfo.roughness);
-			}
-			if (!mInfo.aoMap.empty()) {
-				auto pTex = getOrLoadTextureFromFile(mInfo.aoMap);
-				destMat->setTextureForSampler("aoMap", pTex);
-			}
-			else {
-				destMat->setAo(mInfo.ao);
-			}
-		}
+		destMat->setMetallical(mInfo.metallic);
+		destMat->setRoughness(mInfo.roughness);
+		
 		return destMat;
 	}
-
-	std::string allDefine;
-	std::string_view hasTaa{"#define HAS_TAA 1\n"};
-	std::string_view hasMap{ "#define HAS_MAP 1\n" };
-	std::string_view hasNormalMap{"#define HAS_NORMAL_MAP 1\n"};
-	std::string_view hasAlbedoMap{ "#define HAS_ALBEDO_MAP 1\n" };
-	std::string_view hasArmMap{ "#define HAS_ARM_MAP 1\n" };
-	std::string_view hasMetallicMap{ "#define HAS_METALLIC_MAP 1\n" };
-	std::string_view hasRoughnessMap{ "#define HAS_ROUGHNESS_MAP 1\n" };
-	std::string_view hasAoMap{ "#define HAS_AO_MAP 1\n" };
-	std::string_view hasShadow{ "#define HAS_SHADOW 1\n" };
-	std::string_view hasNodeAnimationDef{ "#define HAS_NODE_ANIMATION 1\n" };
-
-	if (!mInfo.albedoMap.empty()) {
-		materialFlag |= 0x02;
-		allDefine += hasAlbedoMap;
-		programSampler += "albedoMap="sv;
-		programSampler += mInfo.albedoMap;
-		programSampler += "\n"sv;
-	}
-	else {
-		program += "albedo=albedo\n"sv;
-	}
-
-	if (!mInfo.normalMap.empty()) {
-		allDefine += hasNormalMap;
-		
-		programSampler += "normalMap="sv;
-		programSampler += mInfo.normalMap;
-		programSampler += "\n"sv;
-		materialFlag |= 0x04;
-	}
-
-	if (!mInfo.armMap.empty()) {
-		allDefine += hasArmMap;
-		programSampler += "armMap="sv;
-		programSampler += mInfo.armMap;
-		programSampler += "\n"sv;
-		materialFlag |= 0x08;
-		materialFlag |= 0x10;
-		materialFlag |= 0x20;
-	}
-	else {
-		if (!mInfo.metallicMap.empty()) {
-			allDefine += hasMetallicMap;
-			programSampler += "metallicMap="sv;
-			programSampler += mInfo.metallicMap;
-			programSampler += "\n"sv;
-			materialFlag |= 0x08;
-		}
-		else {
-			program += "metallic=metallic\n"sv;
-		}
-
-		if (!mInfo.roughnessMap.empty()) {
-			allDefine += hasRoughnessMap;
-			programSampler += "roughnessMap="sv;
-			programSampler += mInfo.roughnessMap;
-			programSampler += "\n"sv;
-			materialFlag |= 0x10;
-		}
-		else {
-			program += "roughness=roughness\n"sv;
-		}
-		if (!mInfo.aoMap.empty()) {
-			allDefine += hasAoMap;
-			programSampler += "aoMap="sv;
-			programSampler += mInfo.aoMap;
-			programSampler += "\n"sv;
-			materialFlag |= 0x20;
-		}
-		else {
-			program += "ao=ao\n"sv;
-		}
-	}
-	if (Config::openShadowMap) {
-		programSampler += "shadowMap="sv;
-		programSampler += "none"sv;
-		programSampler += "\n"sv;
-	}
-
-	programSampler += "}\n"sv;
-	
-	fs += mpVersion;
-	fs += mpPrecision;
-	vs += mpVersion;
-	vs += mpPrecision;
-	if (materialFlag != 0) {
-		fs += hasMap;
-		vs += hasMap;
-		program += "texcoordLoc=1\nnormalLoc=2\n"sv;
-		if (Config::openTaa) {
-			fs += hasTaa;
-			vs += hasTaa;
-		}
-	}
-	else {
-		program += "normalLoc=1\n"sv;
-	}
-	program += programSampler;
-	program += programUbo;
-	if (Config::openShadowMap) {
-		fs += hasShadow;
-		vs += hasShadow;
-	}
-	if (hasNodeAnimation) {
-		vs += hasNodeAnimationDef;
-	}
-	fs += allDefine;
-	vs += getKeyAsStr("defferedGeoVs");
-	fs += getKeyAsStr("defferedGeoFs");
-
-	//fs 搞定了
-	auto pMaterial = std::make_shared<Material>();
-	
-	if (compileShader(pMaterial,materialName, vs, fs)) {
-		if (parseProgram(pMaterial,program)) {
-			if (!mMaterials.emplace(materialName, pMaterial).second) {
-				LOGE("there are already exist %s material in gMaterials when call Material::getMaterial", materialName.c_str());
-			}
-			else {
-				//clone一份
-				auto destMat = cloneMaterial(materialName);
-				return destMat;
-			}
-		}
-		else {
-			LOGE(" parseProgram when call Material::getMaterial");
-			pMaterial.reset();
-		}
-	}
-	else {
-		LOGE(" compile shader failed when  call Material::getMaterial");
-		pMaterial.reset();
-	}
-	checkglerror();
-	return pMaterial;
+	return {};
 }
 
 void ResourceImpl::loadAllMaterial() {
@@ -1919,8 +1877,8 @@ void ResourceImpl::loadAllMaterial() {
 	}
 	pTex = make_shared<Texture>();
 	std::array<unsigned char, 4> nullTex{0,0,0,0};
-	auto pSampler = Sampler::getSampler(SamplerType::NearNearEdgeEdge);
-	pTex->setSampler(pSampler);
+	//auto pSampler = Sampler::getSampler(SamplerType::NearNearEdgeEdgeEdge);
+	//pTex->setSampler(pSampler);
 	pTex->create2DMap(1, 1, nullTex.data(), GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 	mTextures.emplace("nullTex", pTex);
 }

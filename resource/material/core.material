@@ -22,7 +22,7 @@ material:skyboxM{
 material:skyboxHdr1{
 	program=skyboxHdr
 	sampler{
-		skybox=hdr/Mans_Outside_2k.hdr
+		skybox=hdr/road.hdr
 	}
 	op{
 		depthTest=true
@@ -106,7 +106,7 @@ config{
 				animatedNormal = BoneTransform * animatedNormal;
 			#endif
 			
-			worldNormal = vec3(mvMat * animatedNormal);
+			worldNormal = vec3(transpose(inverse(mvMat)) * animatedNormal);
 			worldPos = vec3(mvMat * animatedPos);
 			#ifdef HAS_TAA
 				preScreenPos = preMvpMat * animatedPos;
@@ -180,7 +180,8 @@ config{
 			{
 				vec4 projCoords = fragPosLightSpace * 0.5 + 0.5;
 				float cosNL=clamp(dot(vec3(0.0f,0.0f,1.0f),shadowNormal),0.0f,1.0f);
-				float bias = 0.005f*tan(acos(cosNL));
+				float bias = 0.001f*tan(acos(cosNL));
+				bias = clamp(bias,0.0f,0.01f);
 				float visibility=1.0;
 				projCoords.z -= bias*projCoords.w;
 				for (int i=0;i<4;i++){
@@ -200,25 +201,10 @@ config{
 		
 		#ifdef HAS_ARM_MAP
 			uniform sampler2D armMap;
-		#else
-			#ifdef HAS_METALLIC_MAP
-				uniform sampler2D metallicMap;
-			#else
-				uniform float metallic;
-			#endif
-			
-			#ifdef HAS_ROUGHNESS_MAP
-				uniform sampler2D roughnessMap;
-			#else
-				uniform float roughness;
-			#endif
-			
-			#ifdef HAS_AO_MAP
-				uniform sampler2D aoMap;
-			#else
-				uniform float ao;
-			#endif
 		#endif
+		
+		uniform float metallic;
+		uniform float roughness;
 		
 		#ifdef HAS_NORMAL_MAP
 			uniform sampler2D normalMap;
@@ -253,27 +239,11 @@ config{
 			
 			#ifdef HAS_ARM_MAP
 				vec3 arm = texture(armMap,texcoord).rgb;
-				outNormalMap.a = arm.b;
-				outAlbedoMap.a = arm.g;
-				outPosMap.a = arm.r;
+				outNormalMap.a = metallic*arm.b;
+				outAlbedoMap.a = roughness*arm.g;
 			#else
-				#ifdef HAS_METALLIC_MAP
-					outNormalMap.a = texture(metallicMap,texcoord).r;
-				#else
-					outNormalMap.a = metallic;
-				#endif
-				
-				#ifdef HAS_ROUGHNESS_MAP
-					outAlbedoMap.a = texture(roughnessMap,texcoord).r;
-				#else
-					outAlbedoMap.a = roughness;
-				#endif
-				
-				#ifdef HAS_AO_MAP
-					outPosMap.a = texture(aoMap,texcoord).r;
-				#else
-					outPosMap.a = ao;
-				#endif
+				outNormalMap.a = metallic;
+				outAlbedoMap.a = roughness;
 			#endif
 			#ifdef HAS_TAA
 				// velocity
@@ -457,29 +427,32 @@ config{
 			float NDF = DistributionGGX(normal, H, roughness);        
 			float G   = GeometrySmith(normal, V, L, roughness);		
 			vec3 F    = fresnelSchlick(max(dot(H, V), 0.0f), F0);
-			
-			//clear coat DFG
-			float NDFc = DistributionGGX(normal, H, 0.1);
-			float Gc = GeometrySmith(normal, V, L, 0.1);
-			vec3 Fc    = fresnelSchlick(max(dot(H, V), 0.0f), vec3(0.04));
-			
-			vec3 numeratorC    = NDFc * Gc * Fc;
 			float denominator = 4.0f * max(dot(normal, V), 0.0f) * max(dot(normal, L), 0.0f) + 0.0001f;
-			vec3 specularC     = numeratorC / denominator; 		
+			vec3 numerator    = NDF * G * F;
+			vec3 specular     = numerator / denominator;
+			
+			#ifdef HAS_CLEAR_COAT
+				//clear coat DFG
+				float NDFc = DistributionGGX(normal, H, 0.1);
+				float Gc = GeometrySmith(normal, V, L, 0.1);
+				vec3 Fc    = fresnelSchlick(max(dot(H, V), 0.0f), vec3(0.04));
+				vec3 numeratorC    = NDFc * Gc * Fc;
+				vec3 specularC     = numeratorC / denominator; 		
+			#endif
 			
 			vec3 kS = F;
 			vec3 kD = vec3(1.0f) - kS;
 			kD *= 1.0f - metallic;	  
 			
-			vec3 numerator    = NDF * G * F;
-			vec3 specular     = numerator / denominator;  
+			  
 				
 			// add to outgoing radiance Lo
 			float NdotL = max(dot(normal, L), 0.0f);
-			
-			//
-			Lo += ((kD * albedo / PI + specular)*(vec3(1.0)-Fc)*NdotL + specularC*NdotL)*radiance;// 
-			
+			#ifdef HAS_CLEAR_COAT
+				Lo += ((kD * albedo / PI + specular)*(vec3(1.0)-Fc)*NdotL + specularC*NdotL)*radiance;
+			#else
+				Lo += (kD * albedo / PI + specular*NdotL)*radiance;
+			#endif
 			return Lo;
 		}
 		
@@ -487,11 +460,10 @@ config{
 			vec3 V = normalize(vec3(0.0f,0.0f,0.0f) - worldPos);
 			// ambient lighting (we now use IBL as the ambient term)
 			vec3 F = fresnelSchlickRoughness(max(dot(normal, V), 0.0f), F0, roughness);
-			vec3 Fc = fresnelSchlickRoughness(max(dot(normal, V), 0.0f), vec3(0.04), 0.1);
 			vec3 R = reflect(-V, normal);
 			vec3 kS = F;
 			vec3 kD = 1.0f - kS;
-			kD *= 1.0f - metallic;	  
+			kD *= (1.0f - metallic);	  
 			
 			vec3 irradiance = texture(irrMap, normal).rgb;
 			vec3 diffuse      = irradiance * albedo;
@@ -501,10 +473,15 @@ config{
 			vec3 prefilteredColor = textureLod(prefilterMap, R,  roughness * MAX_REFLECTION_LOD).rgb;    
 			vec2 brdf  = texture(brdfLUT, vec2(max(dot(normal, V), 0.0), roughness)).rg;
 			vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
-			vec3 specularC = prefilteredColor * (Fc * brdf.x + brdf.y);
-			vec3 l_fc = vec3(1.0)-Fc;
-			vec3 sq1_fc = (vec3(1.0)-Fc)*(vec3(1.0)-Fc);
-			vec3 ambient = (kD * diffuse*l_fc + specular*sq1_fc + specularC)*ao;
+			#ifdef HAS_CLEAR_COAT
+				vec3 Fc = fresnelSchlickRoughness(max(dot(normal, V), 0.0f), vec3(0.04), 0.1);
+				vec3 specularC = prefilteredColor * (Fc * brdf.x + brdf.y);
+				vec3 l_fc = vec3(1.0)-Fc;
+				vec3 sq1_fc = l_fc*l_fc;
+				vec3 ambient = (kD * diffuse*l_fc + specular*sq1_fc + specularC)*ao;
+			#else
+				vec3 ambient = (kD * diffuse+specular)*ao;
+			#endif
 			return ambient;
 		}
 		
@@ -521,9 +498,9 @@ config{
 			vec3 albedo = albedoRgba.rgb;
 			float metallic = normalRgba.a;
 			float roughness = albedoRgba.a;
-			float ao = posRgba.a*ssao;
+			float ao = ssao;
 			#ifdef HAS_SHADOW
-				ao = texture(shadowResult, texcoord).r;
+				ao *= texture(shadowResult, texcoord).r;
 			#endif
 			// calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
 			// of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
@@ -537,7 +514,7 @@ config{
 			
 			vec3 color = dirColor + envColor;
 			
-			FragColor = vec4(color , 1.0);
+			FragColor = vec4(color, 1.0);
 		}  
 	}
 }

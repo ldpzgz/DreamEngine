@@ -23,11 +23,11 @@
 #include <memory>
 #include <string_view>
 #include <unordered_map>
-
+#include "Vbo.h"
 
 class Material;
 class NodeAnimation;
-
+class Skeleton;
 enum class MeshType
 {
 	None,
@@ -59,20 +59,22 @@ enum class MeshType
 };
 
 enum class DrawType {
-	Triangles,
-	TriangleFan,
-	TriangleStrip,
-	Lines,
-	LineStrip,
 	Points,
+	Lines,
+	LineLoop,
+	LineStrip,
+	Triangles,
+	TriangleStrip,
+	TriangleFan,
 };
+//class Vbo;
 class Mesh : public Renderable
 {
 public:
-	explicit Mesh(MeshType meshType) noexcept;
-	Mesh(MeshType meshType,DrawType drawType) noexcept;
+	explicit Mesh(MeshType meshType);
+	Mesh(MeshType meshType,DrawType drawType);
 	Mesh() = default;
-	Mesh(const Mesh&&) noexcept;
+	Mesh(Mesh&&) noexcept;
 	Mesh(const Mesh&) = delete; //防止拷贝
 	Mesh & operator = (const Mesh&) = delete; //防止赋值
 	virtual ~Mesh();
@@ -85,36 +87,54 @@ public:
 
 	}
 
+	/*
+	* for hermit,cubic,CRSpline,Bezier curves
+	*/
 	virtual void loadMesh(const std::vector<glm::vec3>& p,int num) {
 
 	}
-
+	/*
+	* for hermit,cubic,CRSpline,Bezier curves
+	*/
 	virtual void loadMesh(const std::vector<glm::vec2>& p, int num) {
 
 	}
-
+	/*
+	* for line
+	*/
 	virtual void loadMesh(const std::vector<glm::vec2>& p) {
 
 	}
-
+	/*
+	* for line
+	*/
 	virtual void loadMesh(const std::vector<glm::vec3>& p) {
 
 	}
 
-	virtual void loadMesh(const std::vector<glm::vec3>& pos, const std::vector<glm::uvec3>& index);
+	virtual void loadMesh(const std::vector<glm::vec3>& pos, 
+		const std::vector<glm::uvec3>& index);
 
-	virtual bool loadMesh(const std::string meshFilePath);
+	//virtual bool loadMesh(const std::string meshFilePath);
 
 	virtual bool loadMesh(const std::vector<float>& pos,
 		const std::vector<float>& texcoord,
 		const std::vector<float>& normal,
 		const std::vector<unsigned int>& index);
 
+	virtual bool loadMesh(const std::vector<float>& pos,
+		const std::vector<float>& texcoord,
+		const std::vector<float>& normal,
+		const std::vector<unsigned int>& index,
+		const std::vector<int>& boneId,
+		const std::vector<float>& boneWeight
+		);
+
 	//uniform b spline
 	//void loadUBS(const std::vector<float>& points);
 
 	//更新pos vbo，如果要更新的数据超过原来vbo的大小，先删除vbo，再创建一个新的vbo
-	bool updataPos(float* pos,int byteOffset,int size, int numOfVertex);
+	bool updataPos(float* pos,int byteOffset,int size);
 	//更新纹理坐标vbo，如果要更新的数据超过原来vbo的大小，先删除vbo，再创建一个新的vbo
 	bool updataTexcoord(float* tex, int byteOffset, int size);
     //更新索引vbo
@@ -182,14 +202,55 @@ public:
 		return mbReceiveShadow;
 	}
 
+	void setPosSizeOffset(int size, int offset,int stride,int count) {
+		mPosByteSize = size;
+		mPosOffset = offset;
+		mPosStride = stride;
+		mCountOfVertex = count;
+	}
+	void setTexSizeOffset(int size, int offset, int stride=0) {
+		mTexByteSize = size;
+		mTexOffset = offset;
+		mTexStride = stride;
+	}
+	void setNorSizeOffset(int size, int offset, int stride = 0) {
+		mNorByteSize = size;
+		mNorOffset = offset;
+		mNorStride = stride;
+	}
+	void setColorSizeOffset(int size, int offset, int stride = 0) {
+		mColorByteSize = size;
+		mColorOffset = offset;
+		mColorStride = stride;
+	}
+	void setIndexSizeOffset(int size, int offset,int stride,int count) {
+		mIndexByteSize = size;
+		mIndexOffset = offset;
+		mIndexStride = stride;
+		mCountOfIndex = count;
+	}
+	void setBoneIdSizeOffset(int size, int offset, int stride = 0) {
+		mBoneIdByteSize = size;
+		mBoneIdOffset = offset;
+		if (mBoneIdByteSize>0) {
+			mHasSkin = true;
+		}
+		mBoneIdStride = stride;
+	}
+	void setBoneWeightSizeOffset(int size, int offset, int stride = 0) {
+		mBoneWeightByteSize = size;
+		mBoneWeightOffset = offset;
+		mBoneWeightStride = stride;
+	}
+
 	//load bone id and bone weight into vbo
-	bool loadBoneData(const int* pBoneIds, int idByteSize,
-		const GLfloat* pWeights, int wByteSize, int drawType = GL_STATIC_DRAW);
+	/*bool loadBoneData(const int* pBoneIds, int idByteSize,
+		const GLfloat* pWeights, int wByteSize, int drawType = GL_STATIC_DRAW);*/
 	/*
 	* offsetMatrix: bone offsetMatrix
 	* nameIndexMap: get bone id from bone name(node name)
 	*/
-	void initBoneInfo(std::vector<glm::mat4>&& offsetMatrix, std::unordered_map<std::string, int>&& nameIndexMap);
+	//void initBoneInfo(std::vector<glm::mat4>&& offsetMatrix, std::unordered_map<std::string, int>&& nameIndexMap);
 	/*
 	* add NodeAnimation which can affect this mesh
 	*/
@@ -202,29 +263,33 @@ public:
 	}
 
 	virtual bool hasAnimation() {
-		return !mBonesOffsetMatrix.empty();
+		return mHasSkin;
 	}
 
-	const std::unordered_map<std::string, int>& getBoneNameIndex() {
-		return mBoneNameIndex;
+	void setAABB(float x1, float y1, float z1, float x2, float y2, float z2);
+
+	/*const std::unordered_map<std::string, int>& getBoneNameIndex();
+
+	const std::vector<glm::mat4>& getBonesOffsetMatrix();*/
+
+	void setSkeleton(const std::shared_ptr<Skeleton>& ps);
+
+	void setVbo(const std::shared_ptr<Vbo>& pVbo) {
+		mpVbo = pVbo;
 	}
 
-	const std::vector<glm::mat4>& getBonesOffsetMatrix() {
-		return mBonesOffsetMatrix;
-	}
-
-	std::vector<glm::mat4>& getBonesFinalMatrix() {
-		return mBonesFinalMatrix;
+	void setDrawType(int type) {
+		mDrawType = static_cast<DrawType>(type);
 	}
 
 	//这四个函数都是创建vbo，ebo，并从内存上传数据到vbo的显存,如果之前存在vbo了，先删除
-	bool setPosData(const GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	bool setTexcoordData(const GLfloat* tex, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	bool setNormalData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	bool setBoneIdData(const int* boneIds, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	bool setBoneWeightData(const GLfloat* weight, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	//bool setPosData(const GLfloat* pos, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	//bool setTexcoordData(const GLfloat* tex, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	//bool setNormalData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	//bool setBoneIdData(const int* boneIds, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
+	//bool setBoneWeightData(const GLfloat* weight, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
 	bool setColorData(const GLfloat* nor, int sizeInbyte, unsigned int drawType = GL_STATIC_DRAW);
-	bool setIndexData(const GLuint* index, int indexByteSize, unsigned int drawType = GL_STATIC_DRAW);
+	//bool setIndexData(const GLuint* index, int indexByteSize, unsigned int drawType = GL_STATIC_DRAW);
 
 	static void getMaxNumVertexAttr();
 	static void getLineWidthRange();
@@ -237,7 +302,8 @@ protected:
 		const GLfloat* tex = 0, int texByteSize = 0,
 		const GLfloat* nor = 0, int norByteSize = 0,
 		const GLfloat* color = 0, int colorByteSize = 0,
-		const GLfloat* tangent = 0, int tangentByteSize = 0,
+		const GLint* pBoneId = nullptr, int boneIdSize = 0,
+		const GLfloat* pBoneWeight = nullptr, int boneWeightSize = 0,
 		int drawType = GL_STATIC_DRAW);
 
 	
@@ -258,14 +324,10 @@ protected:
 	bool mbCastShadow{true};
 	bool mbReceiveShadow{ true };
 	//4个vbo对象
-	GLuint mPosVbo{ 0 };
-	GLuint mTexVbo{ 0 }; 
-	GLuint mNorVbo{ 0 };
-	GLuint mColorVbo{ 0 };
-	GLuint mIndexVbo{ 0 };
-	GLuint mBoneIdVbo{ 0 };//骨骼数据
-	GLuint mBoneWeightVbo{ 0 };//骨骼数据
 	GLuint mVAO{ 0 };//这个是vao，顶点数组对象，opengles3.0才支持，是一个集合。把设定顶点属性的过程打包到一起，简化绘制流程。
+	GLuint mColorVbo{ 0 };
+	std::shared_ptr<Vbo> mpVbo;
+	
 	GLfloat mLineWidth{ 1.0f };
 
 	int mposLocation{ -1 };//顶点的位置属性在shader中的location
@@ -276,27 +338,54 @@ protected:
 	int mColorLoc{ -1 };
 	
 	int mPosByteSize{ 0 };
+	int mCountOfVertex{ 0 };//vertex的个数，这里默认pos，texcoord，normal，color等属性的顶点个数都是一样的;
+	int mPosStride{ 0 };
+	int mPosOffset{ 0 };
+
 	int mTexByteSize{ 0 };
+	int mTexOffset{ 0 };
+	int mTexStride{ 0 };
+
 	int mNorByteSize{ 0 };
+	int mNorOffset{ 0 };
+	int mNorStride{ 0 };
+
 	int mColorByteSize{ 0 };
+	int mColorStride{ 0 };
+	int mColorOffset{ 0 };
+
 	int mBoneIdByteSize{ 0 };
+	int mBoneIdStride{ 0 };
+	int mBoneIdOffset{ 0 };
+
 	int mBoneWeightByteSize{ 0 };
+	int mBoneWeightStride{ 0 };
+	int mBoneWeightOffset{ 0 };
+
 	int mIndexByteSize{ 0 };
+	int mIndexStride{ 0 };
+	int mIndexOffset{ 0 };
+	int mCountOfIndex{0};
 	std::string mMaterialName;//解析第三方的mesh格式的时候会设置这个名字，一个mesh文件里面可能会有多个mesh
 							//每个mesh的material是不一样的，默认把mesh的albedoMap文件的名字作为material名字，
 							//解析完了mesh文件之后，再遍历一遍mesh，根据名字找到对应的material。
 	MeshType mMeshType{ MeshType::None };
 	DrawType mDrawType{ DrawType::Triangles };
-	int mCountOfVertex{ 0 };//vertex的个数，这里默认pos，texcoord，normal，color等属性的顶点个数都是一样的;
 	unsigned int mId{ 0 };
 	std::shared_ptr<Material> mpMaterial;
 	std::unique_ptr<AABB> mpAabb;
 	std::unique_ptr< glm::mat4> mpPreMvpMatrix;
-	//for node animation
-	std::unordered_map<std::string, int> mBoneNameIndex;
-	std::vector<glm::mat4> mBonesOffsetMatrix;
-	std::vector<glm::mat4> mBonesFinalMatrix;
+
+	//node name to boneIndex
+	//std::unordered_map<std::string, int> mBoneNameIndex;
+	//offsetMatrix and finalMatrix should be placed in NodeAnimation
+	//because a NodeAnimation may be affect several meshes;
+	//it data is shared by these meshes;
+	//std::vector<glm::mat4> mBonesOffsetMatrix;//这个矩阵可能是几个mesh共用的
+	
 	std::vector<std::string> mNodeAnimationsAffectMe;
+	std::shared_ptr<Skeleton> mpSkeleton;
+	bool mHasSkin{ false };
 
 	//如果函数内部创建了vao就返回true
 	bool createVaoIfNeed(int posloc=-1, int texloc=-1, int norloc=-1,int colorLoc=-1);

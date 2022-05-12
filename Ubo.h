@@ -10,7 +10,8 @@
 #include<unordered_map>
 #include<string>
 /*
-* 整个程序创建一个ubo就可以了，ubo的不同部分可以绑定到bindpoint
+* ubo的bindpoint 是数量有限的资源，最少支持24个bindpoint，
+* 但是ubo只是一块显存，ubo可以分配多个，
 */
 
 class Ubo {
@@ -18,6 +19,7 @@ public:
 	static constexpr int totalUboSize = 4096+8192;
 	Ubo();
 	~Ubo();
+	//
 	void bind(const char* ubName, int sizeInByte, int bindPoint) noexcept;
 	void update(const std::string& ubName, void* pdata, int sizeInByte, int offset = 0) noexcept;
 	//获取系统的最大bindPoint个数，最少有24个bindpoint
