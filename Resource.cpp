@@ -1113,39 +1113,39 @@ bool ResourceImpl::parseMeshCfg(const std::string& cfgValue) {
 				}
 			}
 		}
-		auto& res = Resource::getInstance();
-		pNode->visitNode([&res](Node* pNode) {
-			if (pNode!=nullptr) {
-				auto& pRend = pNode->getRenderables();
-				if (pRend.empty()) {
-					return;
-				}
-				for (const auto& it : pRend) {
-					MeshSP pMesh = std::dynamic_pointer_cast<Mesh>(it.second);
-					if (pMesh && !pMesh->getMaterial()) {
-						const std::string& matName = pMesh->getMaterialName();
-						auto it = gMaterialInfos.find(matName);
-						if (matName.empty() || it == gMaterialInfos.end()) {
-							//给一个默认的材质
-							MaterialInfo info;
-							auto pMaterial = res.getMaterialDefferedGeoPass(info, pMesh->hasAnimation());
-							pMesh->setMaterial(pMaterial);
-						}
-						else {
-							//解析并创建组合出来的material，组合出来的material也有个名字，
-							//getMaterialDefferedGeoPass会把组合出来的shader按照组合出来的名字insert到map
-							auto& matInfo = it->second;
-							MaterialSP pMat = Resource::getInstance().getMaterialDefferedGeoPass(matInfo,pMesh->hasAnimation());
-							if (pMat && !matInfo.name.empty()) {
-								//按照配置文件里面的名字再insert到map
-								mMaterials.emplace(matInfo.name, pMat);
-							}
-							pMesh->setMaterial(pMat);
-						}
-					}
-				}
-			}
-		});
+		//auto& res = Resource::getInstance();
+		//pNode->visitNode([&res](Node* pNode) {
+		//	if (pNode!=nullptr) {
+		//		auto& pRend = pNode->getRenderables();
+		//		if (pRend.empty()) {
+		//			return;
+		//		}
+		//		for (const auto& it : pRend) {
+		//			MeshSP pMesh = std::dynamic_pointer_cast<Mesh>(it.second);
+		//			if (pMesh && !pMesh->getMaterial()) {
+		//				const std::string& matName = pMesh->getMaterialName();
+		//				auto it = gMaterialInfos.find(matName);
+		//				if (matName.empty() || it == gMaterialInfos.end()) {
+		//					//给一个默认的材质
+		//					MaterialInfo info;
+		//					auto pMaterial = res.getMaterialDefferedGeoPass(info, pMesh->hasAnimation());
+		//					pMesh->setMaterial(pMaterial);
+		//				}
+		//				else {
+		//					//解析并创建组合出来的material，组合出来的material也有个名字，
+		//					//getMaterialDefferedGeoPass会把组合出来的shader按照组合出来的名字insert到map
+		//					auto& matInfo = it->second;
+		//					MaterialSP pMat = Resource::getInstance().getMaterialDefferedGeoPass(matInfo,pMesh->hasAnimation());
+		//					if (pMat && !matInfo.name.empty()) {
+		//						//按照配置文件里面的名字再insert到map
+		//						mMaterials.emplace(matInfo.name, pMat);
+		//					}
+		//					pMesh->setMaterial(pMat);
+		//				}
+		//			}
+		//		}
+		//	}
+		//});
 	}
 	return true;
 }
