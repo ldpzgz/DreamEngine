@@ -1659,7 +1659,8 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	std::string programUbo{ "ubo{\nMatrixes=0\n" };
 
 	program = string_view("posLoc=0\n");
-	program += string_view("\nmodelMatrix=modelMat\n");
+	program += string_view("modelMatrix=modelMat\n");
+	
 	if (hasNodeAnimation) {
 		program += string_view("boneIdLoc=3\nboneWeightLoc=4\n");
 		programUbo += string_view("Bones=5\n");
@@ -1671,22 +1672,27 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	else {
 		programUbo += string_view("}\n");
 	}
-	programSampler = string_view("sampler{\n");
 	
-
+	bool bHasMap = false;
 	//先计算出标志，确定material的名字，然后在gMaterial里面找，能找到就用现成的
 	if (!mInfo.albedoMap.empty()) {
+		bHasMap = true;
 		materialFlag |= 0x02;
 	}
 	if (!mInfo.normalMap.empty()) {
+		bHasMap = true;
 		materialFlag |= 0x04;
 	}
 	if (!mInfo.armMap.empty()) {
+		bHasMap = true;
 		materialFlag |= 0x08;
 		materialFlag |= 0x10;
 	}
 	if (hasNodeAnimation) {
 		materialFlag |= 0x20;
+	}
+	if (mInfo.hasVertexColor) {
+		materialFlag |= 0x40;
 	}
 
 	std::stringstream tempss;
@@ -1700,9 +1706,25 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		std::string_view hasMap{ "#define HAS_MAP 1\n" };
 		std::string_view hasNormalMap{ "#define HAS_NORMAL_MAP 1\n" };
 		std::string_view hasAlbedoMap{ "#define HAS_ALBEDO_MAP 1\n" };
+		std::string_view hasVertexColor{ "#define HAS_VERTEX_COLOR 1\n" };
 		std::string_view hasArmMap{ "#define HAS_ARM_MAP 1\n" };
 		std::string_view hasShadow{ "#define HAS_SHADOW 1\n" };
 		std::string_view hasNodeAnimationDef{ "#define HAS_NODE_ANIMATION 1\n" };
+
+		if (bHasMap) {
+			allDefine += hasMap;
+			program += "texcoordLoc=1\nnormalLoc=2\n"sv;
+			if (mInfo.hasVertexColor) {
+				program += "colorLoc=3"sv;
+			}
+			programSampler = string_view("sampler{\n");
+		}
+		else {
+			program += "normalLoc=1\n"sv;
+			if (mInfo.hasVertexColor) {
+				program += "colorLoc=2\n"sv;
+			}
+		}
 
 		if (!mInfo.albedoMap.empty()) {
 			materialFlag |= 0x02;
@@ -1711,17 +1733,18 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 			programSampler += mInfo.albedoMap;
 			programSampler += "\n"sv;
 		}
+		else if (mInfo.hasVertexColor) {
+			allDefine += hasVertexColor;
+		}
 		else {
 			program += "albedo=albedo\n"sv;
 		}
 
 		if (!mInfo.normalMap.empty()) {
 			allDefine += hasNormalMap;
-
 			programSampler += "normalMap="sv;
 			programSampler += mInfo.normalMap;
 			programSampler += "\n"sv;
-			materialFlag |= 0x04;
 		}
 
 		if (!mInfo.armMap.empty()) {
@@ -1729,8 +1752,6 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 			programSampler += "armMap="sv;
 			programSampler += mInfo.armMap;
 			programSampler += "\n"sv;
-			materialFlag |= 0x08;
-			materialFlag |= 0x10;
 		}
 
 		program += "metallic=metallic\n"sv;
@@ -1742,34 +1763,29 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 			programSampler += "\n"sv;
 		}
 
-		programSampler += "}\n"sv;
+		if (bHasMap) {
+			programSampler += "}\n"sv;
+		}
+
+		if (Config::openTaa) {
+			allDefine += hasTaa;
+		}
+
+		program += programSampler;
+		program += programUbo;
+		if (Config::openShadowMap) {
+			allDefine += hasShadow;
+		}
+		if (hasNodeAnimation) {
+			allDefine += hasNodeAnimationDef;
+		}
 
 		fs += mpVersion;
 		fs += mpPrecision;
 		vs += mpVersion;
 		vs += mpPrecision;
-		if (materialFlag != 0) {
-			fs += hasMap;
-			vs += hasMap;
-			program += "texcoordLoc=1\nnormalLoc=2\n"sv;
-			if (Config::openTaa) {
-				fs += hasTaa;
-				vs += hasTaa;
-			}
-		}
-		else {
-			program += "normalLoc=1\n"sv;
-		}
-		program += programSampler;
-		program += programUbo;
-		if (Config::openShadowMap) {
-			fs += hasShadow;
-			vs += hasShadow;
-		}
-		if (hasNodeAnimation) {
-			vs += hasNodeAnimationDef;
-		}
 		fs += allDefine;
+		vs += allDefine;
 		vs += getKeyAsStr("defferedGeoVs");
 		fs += getKeyAsStr("defferedGeoFs");
 
@@ -1807,7 +1823,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 			auto pTex = getOrLoadTextureFromFile(mInfo.albedoMap);
 			destMat->setTextureForSampler("albedoMap", pTex);
 		}
-		else {
+		else if(!mInfo.hasVertexColor) {
 			//Color c;
 			//Color::parseColor(mInfo.albedo, c);
 			destMat->setAlbedoColor(mInfo.albedoColor);

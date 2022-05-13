@@ -52,6 +52,7 @@ public:
 	//std::string albedo;// { "#ffffff" };
 	Color albedoColor{1.0f,1.0f,1.0f,1.0f};
 	std::string albedoMap;//or diffuseMap
+	bool hasVertexColor{false};
 	//std::shared_ptr<Texture> pAlbedoTex;
 
 	//normal

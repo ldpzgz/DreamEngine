@@ -31,14 +31,51 @@ material:skyboxHdr1{
 }
 config{
 	defferedGeoVs{
+		out vec3 worldPos;
+		out vec3 worldNormal;
 		layout(location = 0) in vec3 inPos;
 		#ifdef HAS_MAP
+			out vec2 texcoord;
 			layout(location = 1) in vec2 inTexcoord;
 			layout(location = 2) in vec3 inNormal;
-			out vec2 texcoord;
+			#ifdef HAS_VERTEX_COLOR
+				layout(location = 3) in vec4 inVertexColor;
+				out vec3 vertexColor;
+				#ifdef HAS_NODE_ANIMATION
+					layout (location = 4) in ivec4 boneIDs;
+					layout (location = 5) in vec4 weights;
+				#endif
+			#else
+				#ifdef HAS_NODE_ANIMATION
+					layout (location = 3) in ivec4 boneIDs;
+					layout (location = 4) in vec4 weights;
+				#endif
+			#endif
+			
 		#else
 			layout(location = 1) in vec3 inNormal;
+			#ifdef HAS_VERTEX_COLOR
+				layout(location = 2) in vec4 inVertexColor;
+				out vec3 vertexColor;
+				#ifdef HAS_NODE_ANIMATION
+					layout (location = 3) in ivec4 boneIDs;
+					layout (location = 4) in vec4 weights;
+				#endif
+			#else
+				#ifdef HAS_NODE_ANIMATION
+					layout (location = 2) in ivec4 boneIDs;
+					layout (location = 3) in vec4 weights;
+				#endif
+			#endif
 		#endif
+		
+		#ifdef HAS_NODE_ANIMATION
+			layout(std140) uniform Bones
+			{
+				mat4 bones[128];
+			};
+		#endif
+		
 		layout (std140) uniform Matrixes
 		{
 			mat4 projMat;
@@ -46,9 +83,7 @@ config{
 			mat4 shadowMat;
 		};
 		uniform mat4 modelMat;
-
-		out vec3 worldPos;
-		out vec3 worldNormal;
+		
 		#ifdef HAS_SHADOW
 			out vec4 shadowPos;
 			out vec3 shadowNormal;
@@ -82,14 +117,6 @@ config{
 			);
 		#endif
 		
-		#ifdef HAS_NODE_ANIMATION
-			layout (location = 3) in ivec4 boneIDs;
-			layout (location = 4) in vec4 weights;
-			layout(std140) uniform Bones
-			{
-				mat4 bones[128];
-			};
-		#endif
 		void main(){
 			mat4 mvMat = viewMat * modelMat;
 			#ifdef HAS_MAP
@@ -108,6 +135,9 @@ config{
 			
 			worldNormal = vec3(transpose(inverse(mvMat)) * animatedNormal);
 			worldPos = vec3(mvMat * animatedPos);
+			#ifdef HAS_VERTEX_COLOR
+				vertexColor = inVertexColor.rgb;
+			#endif
 			#ifdef HAS_TAA
 				preScreenPos = preMvpMat * animatedPos;
 				float deltaWidth = 1.0f/screenWidth;
@@ -134,13 +164,18 @@ config{
 		layout (location = 2) out vec4 outAlbedoMap;
 		in vec3 worldPos;
 		in vec3 worldNormal;
-		#ifdef HAS_TAA
-			layout(location=3) out vec2 outVelocity;
-			in vec4 preScreenPos;
-			in vec4 curScreenPos;
-		#endif
 		#ifdef HAS_MAP
 			in vec2 texcoord;
+		#endif
+		
+		#ifdef HAS_ALBEDO_MAP
+			uniform sampler2D albedoMap;
+		#else
+			#ifdef HAS_VERTEX_COLOR
+				in vec3 vertexColor;
+			#else
+				uniform vec4 albedo;
+			#endif
 		#endif
 		
 		#ifdef HAS_SHADOW
@@ -193,10 +228,10 @@ config{
 			}
 		#endif
 		
-		#ifdef HAS_ALBEDO_MAP
-			uniform sampler2D albedoMap;
-		#else
-			uniform vec4 albedo;
+		#ifdef HAS_TAA
+			layout(location=3) out vec2 outVelocity;
+			in vec4 preScreenPos;
+			in vec4 curScreenPos;
 		#endif
 		
 		#ifdef HAS_ARM_MAP
@@ -226,11 +261,17 @@ config{
 		#endif
 		void main(){
 			outPosMap.rgb = worldPos;
+			
 			#ifdef HAS_ALBEDO_MAP
 				outAlbedoMap.rgb = texture(albedoMap,texcoord).rgb;
 			#else
-				outAlbedoMap.rgb = albedo.rgb;
+				#ifdef HAS_VERTEX_COLOR
+					outAlbedoMap.rgb = vertexColor;
+				#else
+					outAlbedoMap.rgb = albedo.rgb;
+				#endif
 			#endif
+			
 			#ifdef HAS_NORMAL_MAP
 				outNormalMap.rgb = getNormalFromMap(normalMap,texcoord,worldPos,worldNormal);
 			#else

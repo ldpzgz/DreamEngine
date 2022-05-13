@@ -120,56 +120,57 @@ AccRet MeshLoaderGltfImpl::getAccessorData(cgltf_accessor* pAcc) {
 	int offset = static_cast<int>(pAcc->offset);
 	int stride = pAcc->stride;
 	int count = static_cast<int>(pAcc->count);
-	int component_type = pAcc->component_type;
-	int dataType = pAcc->type;//scalar,vec2,vec3,vec4 mat2,mat3,mat4
-	int componentSize = 0;
-	int componentCount = 0;
-	switch (component_type) {
-	case cgltf_component_type_r_8:
-	case cgltf_component_type_r_8u:
-		componentSize = 1;
-		break;
-	case cgltf_component_type_r_16:
-	case cgltf_component_type_r_16u:
-		componentSize = 2;
-		break;
-	case cgltf_component_type_r_32u:
-	case cgltf_component_type_r_32f:
-		componentSize = 4;
-		break;
-	default:
-		break;
-	};
+	//int component_type = pAcc->component_type;
+	//int dataType = pAcc->type;//scalar,vec2,vec3,vec4 mat2,mat3,mat4
+	//int componentSize = 0;
+	//int componentCount = 0;
+	//switch (component_type) {
+	//case cgltf_component_type_r_8:
+	//case cgltf_component_type_r_8u:
+	//	componentSize = 1;
+	//	break;
+	//case cgltf_component_type_r_16:
+	//case cgltf_component_type_r_16u:
+	//	componentSize = 2;
+	//	break;
+	//case cgltf_component_type_r_32u:
+	//case cgltf_component_type_r_32f:
+	//	componentSize = 4;
+	//	break;
+	//default:
+	//	break;
+	//};
 
-	switch (dataType) {
-	case cgltf_type_scalar:
-		componentCount = 1;
-		break;
-	case cgltf_type_vec2:
-		componentCount = 2;
-		break;
-	case cgltf_type_vec3:
-		componentCount = 3;
-		break;
-	case cgltf_type_vec4:
-		componentCount = 2;
-		break;
-	case cgltf_type_mat2:
-		componentCount = 4;
-		break;
-	case cgltf_type_mat3:
-		componentCount = 9;
-		break;
-	case cgltf_type_mat4:
-		componentCount = 16;
-		break;
-	default:
-		break;
-	};
-	int size = componentSize* componentCount* count;
-
+	//switch (dataType) {
+	//case cgltf_type_scalar:
+	//	componentCount = 1;
+	//	break;
+	//case cgltf_type_vec2:
+	//	componentCount = 2;
+	//	break;
+	//case cgltf_type_vec3:
+	//	componentCount = 3;
+	//	break;
+	//case cgltf_type_vec4:
+	//	componentCount = 4;
+	//	break;
+	//case cgltf_type_mat2:
+	//	componentCount = 4;
+	//	break;
+	//case cgltf_type_mat3:
+	//	componentCount = 9;
+	//	break;
+	//case cgltf_type_mat4:
+	//	componentCount = 16;
+	//	break;
+	//default:
+	//	break;
+	//};
+	//int size = componentSize* componentCount* count;
+	int size = 0;
 	void* pData = nullptr;
 	if (pBv != nullptr) {
+		size = static_cast<int>(pBv->size);
 		offset += pBv->offset;
 		stride = pBv->stride;
 		if (pBv->data != nullptr) {
@@ -216,7 +217,7 @@ void MeshLoaderGltfImpl::parseMaterial(cgltf_data* data) {
 			if (!pRet) {
 				std::string imageUri{ pImage->uri };
 				if (!imageUri.empty()) {
-					//for load file which path has spaces
+					//for load file which path has spaces(such path will be encoded with base64 codec)
 					auto  decodedSize = cgltf_decode_uri(imageUri.data());
 					imageUri.resize(decodedSize);
 					pRet = Resource::getInstance().getOrLoadTextureFromFile(imageUri, name);
@@ -370,6 +371,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 				LOGD("the mesh in gltf has no indecies,so call drawArray");
 			}
 			bool hasNodeAnimation = false;
+			bool hasColorAttribute = false;
 			auto pAttr = pPrimitive->attributes;
 			int attrCount = pPrimitive->attributes_count;
 			for (int j = 0; j < attrCount; ++j) {
@@ -393,6 +395,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 					pMyMesh->setTexSizeOffset(ret.size, ret.offset, ret.stride);
 					break;
 				case cgltf_attribute_type_color:
+					hasColorAttribute = true;
 					pMyMesh->setColorSizeOffset(ret.size, ret.offset, ret.stride);
 					break;
 				case cgltf_attribute_type_joints:
@@ -426,6 +429,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 						if (it != materialsMap.end()) {
 							auto& pMatInfo = it->second;
 							if (pMatInfo) {
+								pMatInfo->hasVertexColor = hasColorAttribute;
 								auto pMyMat = Resource::getInstance().getMaterialDefferedGeoPass(*pMatInfo, hasNodeAnimation);
 								if (pMyMat) {
 									pMyMesh->setMaterial(pMyMat);
