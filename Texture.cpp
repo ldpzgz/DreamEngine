@@ -127,16 +127,16 @@ bool Texture::create2DMap(int width,int height,const unsigned char* pdata, GLint
 	if (autoMipmap) {
 		if(pdata != nullptr)
 			glGenerateMipmap(mTarget);
-		/*if (!mpSampler) {
-			mpSampler = Sampler::getSampler(SamplerType::LML_LinearEdgeEdgeEdge);
-		}*/
+		if (!mpSampler) {
+			mpSampler = Sampler::getSampler(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+		}
 	}
 	else {
-		/**/
+		if (!mpSampler) {
+			mpSampler = Sampler::getSampler(GL_LINEAR, GL_LINEAR);
+		}
 	}
-	if (!mpSampler) {
-		mpSampler = Sampler::getSampler(GL_LINEAR,GL_LINEAR);
-	}
+	
 	checkglerror();
 	return true;
 }
@@ -188,6 +188,7 @@ bool Texture::loadHdrFile(const std::string& path) {
 		if (!mpSampler) {
 			mpSampler = Sampler::getSampler(GL_LINEAR, GL_LINEAR);
 		}
+		checkglerror();
 		return true;
 	}
 	else
@@ -226,7 +227,7 @@ bool Texture::loadFromFile(const std::string& path) {
 		glTexImage2D(mTarget,0, mFormat, mWidth, mHeight, 0, mFormat, mType, data);
 		glGenerateMipmap(mTarget);
 		if (!mpSampler) {
-			mpSampler = Sampler::getSampler(GL_LINEAR, GL_LINEAR,GL_MIRRORED_REPEAT,GL_MIRRORED_REPEAT);
+			mpSampler = Sampler::getSampler(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR,GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
 		}
 		stbi_image_free(data);
 		return true;
@@ -295,7 +296,7 @@ bool Texture::loadCubemap(const std::string& path) {
 	}
 	glGenerateMipmap(mTarget);
 	if (!mpSampler) {
-		mpSampler = Sampler::getSampler(GL_LINEAR, GL_LINEAR);
+		mpSampler = Sampler::getSampler(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
 	}
 	//int align = 0;
 	//glGetIntegerv(GL_UNPACK_ALIGNMENT, &align);//默认是4，the alignment requirements for the start of each pixel row in memory
