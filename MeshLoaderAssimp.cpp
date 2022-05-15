@@ -23,7 +23,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include <filesystem>
-#include "animation/NodeAnimation.h"
+#include "animation/SkeletonAnimation.h"
 #include "AnimationManager.h"
 #include "animation/Skeleton.h"
 
@@ -33,7 +33,7 @@ public:
 	void recursive_parse(const struct aiScene* sc, const struct aiNode* nd, std::shared_ptr<Node>& pRootNode);
 	void parseAnimationInfo(const struct aiScene* pScene,std::shared_ptr<Node>& pRootNode);
 	aiScene* mpAiScene{ nullptr };
-	std::unordered_map<std::string,std::shared_ptr<NodeAnimation>> mAnimations;
+	std::unordered_map<std::string,std::shared_ptr<SkeletonAnimation>> mAnimations;
 	
 };
 
@@ -46,67 +46,67 @@ void MeshLoaderAssimpImpl::parseAnimationInfo(const struct aiScene* pScene,
 			if (pAnimation != nullptr) {
 				std::string name(pAnimation->mName.data);
 				int64_t duration = pAnimation->mDuration * 1000.0 / pAnimation->mTicksPerSecond;
-				auto pNodeAnimation = std::make_shared<NodeAnimation>(name);
-				assert(pNodeAnimation);
-				pNodeAnimation->setDuration(duration);
-				if (!mAnimations.emplace(name, pNodeAnimation).second) {
+				auto pSkeletonAnimation = std::make_shared<SkeletonAnimation>(name);
+				assert(pSkeletonAnimation);
+				pSkeletonAnimation->setDuration(duration);
+				if (!mAnimations.emplace(name, pSkeletonAnimation).second) {
 					LOGE("duplicate animation name in mesh file MeshLoaderAssimp");
 				}
 				else {
-					LOGD("get a nodeAnimation %s",name.c_str());
+					LOGD("get a SkeletonAnimation %s",name.c_str());
 				}
-				AnimationManager::getInstance().addAnimation(name, pNodeAnimation);
+				AnimationManager::getInstance().addAnimation(name, pSkeletonAnimation);
 				//how many nodes affected by this animation
 				unsigned int num = pAnimation->mNumChannels;
 				for (unsigned int j = 0; j < num; ++j) {
 					aiNodeAnim* pNodeAnim = pAnimation->mChannels[j];
 					if (pNodeAnim != nullptr) {
 						std::string nodeName(pNodeAnim->mNodeName.data);
-						//pNodeAnimation->addAffectedNode(nodeName);
+						//pSkeletonAnimation->addAffectedNode(nodeName);
 						auto numPos = pNodeAnim->mNumPositionKeys;
 						auto* pPosKey = pNodeAnim->mPositionKeys;
-						std::vector<NodeAnimation::KeyFrameVec3Time> posKeys;
+						std::vector<KeyFrameVec3Time> posKeys;
 						for (unsigned int m = 0; m < numPos; ++m) {
 							posKeys.emplace_back(glm::vec3(pPosKey[m].mValue.x, pPosKey[m].mValue.y, pPosKey[m].mValue.z),
 								pPosKey[m].mTime * 1000.0 / pAnimation->mTicksPerSecond);
 						}
 						if (!std::is_sorted(posKeys.begin(), posKeys.end(),
-							[](const NodeAnimation::KeyFrameVec3Time& key1, const NodeAnimation::KeyFrameVec3Time& key2)->bool {
+							[](const KeyFrameVec3Time& key1, const KeyFrameVec3Time& key2)->bool {
 								return key1.timeMs < key2.timeMs;
 							})) {
 							LOGE("the time of pos key frame in node animation is not sorted ");
 						};
-						pNodeAnimation->addPosKeyFrame(nodeName, posKeys);
+						pSkeletonAnimation->addPosKeyFrame(nodeName, posKeys);
 
 						auto numScale = pNodeAnim->mNumScalingKeys;
 						auto* pScaleKey = pNodeAnim->mScalingKeys;
-						std::vector<NodeAnimation::KeyFrameVec3Time> scaleKeys;
+						std::vector<KeyFrameVec3Time> scaleKeys;
 						for (unsigned int m = 0; m < numScale; ++m) {
 							scaleKeys.emplace_back(glm::vec3(pScaleKey[m].mValue.x, pScaleKey[m].mValue.y, pScaleKey[m].mValue.z),
 								pScaleKey[m].mTime * 1000.0 / pAnimation->mTicksPerSecond);
 						}
 						if (!std::is_sorted(scaleKeys.begin(), scaleKeys.end(),
-							[](const NodeAnimation::KeyFrameVec3Time& key1, const NodeAnimation::KeyFrameVec3Time& key2)->bool {
+							[](const KeyFrameVec3Time& key1, const KeyFrameVec3Time& key2)->bool {
 								return key1.timeMs < key2.timeMs;
 							})) {
 							LOGE("the time of scale key frame in node animation is not sorted ");
 						};
-						pNodeAnimation->addScaleKeyFrame(nodeName, scaleKeys);
+						pSkeletonAnimation->addScaleKeyFrame(nodeName, scaleKeys);
 
 						auto numRotate = pNodeAnim->mNumRotationKeys;
 						auto* pRotateKey = pNodeAnim->mRotationKeys;
-						std::vector<NodeAnimation::KeyFrameQuatTime> rotateKeys;
+						std::vector<KeyFrameQuatTime> rotateKeys;
 						for (unsigned int m = 0; m < numRotate; ++m) {
 							rotateKeys.emplace_back(glm::quat(pRotateKey[m].mValue.w,pRotateKey[m].mValue.x, pRotateKey[m].mValue.y, pRotateKey[m].mValue.z),
 								pRotateKey[m].mTime * 1000.0 / pAnimation->mTicksPerSecond);
 						}
 						if (!std::is_sorted(rotateKeys.begin(), rotateKeys.end(),
-							[](const NodeAnimation::KeyFrameQuatTime& key1, const NodeAnimation::KeyFrameQuatTime& key2)->bool {
+							[](const KeyFrameQuatTime& key1, const KeyFrameQuatTime& key2)->bool {
 								return key1.timeMs < key2.timeMs;
 							})) {
 							LOGE("the time of rotate key frame in node animation is not sorted ");
 						};
-						pNodeAnimation->addRotateKeyFrame(nodeName, rotateKeys);
+						pSkeletonAnimation->addRotateKeyFrame(nodeName, rotateKeys);
 					}
 				}
 			}
@@ -254,7 +254,7 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 					for (const auto& nameId : pSkeleton->getBoneName2Index()) {
 						/*if (pair.second->findBone(nameId.first)) {
 							pair.second->addAffectedMesh(pMesh);
-							pMesh->addNodeAnimationAffectMe(pair.first);
+							pMesh->addSkeletonAnimationAffectMe(pair.first);
 							break;
 						}*/
 					}

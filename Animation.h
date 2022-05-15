@@ -1,5 +1,5 @@
-#ifndef _ANIMATION_H_
-#define _ANIMATION_H_
+#pragma once
+
 //#include <glm/glm.hpp>
 //#include <glm/vec2.hpp>           // vec3
 //#include <glm/vec3.hpp>           // vec3
@@ -8,17 +8,6 @@
 #include "Utils.h"
 #include <vector>
 //#include "Spline.h"
-
-//enum class LoopMode {
-//	None,
-//	ReturnBack,
-//	Loop
-//};
-//
-//enum class InterpolateType {
-//	Linear,
-//	Cubic
-//};
 
 enum class AnimationState {
 	Idle,
@@ -106,4 +95,3 @@ protected:
 	tk::spline mSplineY;*/
 };
 using AnimationSP = std::shared_ptr<Animation>;
-#endif

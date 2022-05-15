@@ -1,5 +1,5 @@
-#ifndef _RENDERABLE_H_
-#define _RENDERABLE_H_
+#pragma once
+
 #include <vector>
 #include <glm/vec3.hpp>           // vec3
 #include <glm/mat4x4.hpp>         // mat4
@@ -33,5 +33,3 @@ public:
 private:
 	unsigned int mId;
 };
-
-#endif

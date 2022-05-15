@@ -1,10 +1,10 @@
 #include "Skeleton.h"
-#include "NodeAnimation.h"
+#include "SkeletonAnimation.h"
 #include "../Ubo.h"
 
-void Skeleton::addNodeAnimation(const std::shared_ptr<NodeAnimation>& pa) {
+void Skeleton::addAnimation(const std::shared_ptr<SkeletonAnimation>& pa) {
 	if (pa) {
-		mNodeAnimations.try_emplace(pa->getName(), pa);
+		mSkeletonAnimations.try_emplace(pa->getName(), pa);
 	}
 }
 

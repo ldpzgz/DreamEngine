@@ -1,5 +1,5 @@
-#ifndef _TEXT_VIEW_H_
-#define _TEXT_VIEW_H_
+#pragma once
+
 #include "View.h"
 #include <limits>
 #include "CharPosition.h"
@@ -142,4 +142,3 @@ private:
 	bool mbUpdateTextPositioin{ true };
 	//unsigned int mAligment{ TextAlignment::AlignCenter}; //文本对齐方式
 };
-#endif

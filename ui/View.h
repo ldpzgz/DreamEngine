@@ -1,5 +1,5 @@
-#ifndef _VIEW_H_
-#define _VIEW_H_
+#pragma once
+
 #include <string>
 #include "../Log.h"
 #include "../Rect.h"
@@ -471,5 +471,3 @@ public:
 	static unordered_map < string, std::function<void(const shared_ptr<View>&, const std::string&)>> gLayoutAttributeHandler;
 	static unordered_map<string, int> gGravityKeyValue;
 };
-
-#endif

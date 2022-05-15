@@ -1,5 +1,5 @@
-﻿#ifndef _METERIAL_H_
-#define _METERIAL_H_
+﻿#pragma once
+
 #include <iostream>
 #include <string>
 #include <memory>
@@ -187,4 +187,3 @@ private:
 	std::shared_ptr <OpData> mMyOpData;
 };
 using MaterialSP = std::shared_ptr<Material>;
-#endif

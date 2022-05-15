@@ -1,31 +1,4 @@
 mesh{
-	nodeName=wolf
-	path=C:\myproject\opengles\freeMesh\33-gltf-wolf\gltf\Wolf-Blender-2.82a.gltf
-	matInfo{
-		albedoMap=Material__wolf_col_tga_diffuse_jpeg.jpeg
-	}
-	matInfo{
-		albedoMap=eyes_diffuse_jpeg.jpeg
-	}
-	matInfo{
-		albedoMap=fella3_Kopie_7.png
-	}
-	matInfo{
-		albedoMap=fur__fella3_jpg_001_diffuse.png
-	}
-	matInfo{
-		albedoMap=Fur_2.png
-	}
-	matInfo{
-		albedoMap=Fur_Col_20.png
-	}
-}
-mesh{
 	nodeName=big_gun
-	path=C:\myproject\opengles\freeMesh\big_gun_gltf\cannon_01_2k.gltf
-	matInfo{
-		albedoMap=cannon_01_diff_2k.jpg
-		armMap=cannon_01_arm_2k.jpg
-		normalMap=cannon_01_nor_gl_2k.jpg
-	}
+	path=C:\myproject\opengles\freeMesh\gltfTest\AnimatedCube.gltf
 }

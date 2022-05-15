@@ -1,5 +1,5 @@
-#ifndef _PBO_H_
-#define _PBO_H_
+#pragma once
+
 #include <string>
 #include <memory>
 #include <thread>
@@ -131,5 +131,3 @@ private:
 	static int gPerfectType;
 	static void getPerfectParam();
 };
-
-#endif

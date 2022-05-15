@@ -5,8 +5,8 @@
  *      Author: ldp
  */
 
-#ifndef GRAPHICSMESH_H_
-#define GRAPHICSMESH_H_
+#pragma once
+
 #ifdef _GLES3
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
@@ -26,7 +26,7 @@
 #include "Vbo.h"
 
 class Material;
-class NodeAnimation;
+class SkeletonAnimation;
 class Skeleton;
 enum class MeshType
 {
@@ -252,14 +252,14 @@ public:
 	*/
 	//void initBoneInfo(std::vector<glm::mat4>&& offsetMatrix, std::unordered_map<std::string, int>&& nameIndexMap);
 	/*
-	* add NodeAnimation which can affect this mesh
+	* add SkeletonAnimation which can affect this mesh
 	*/
 	void addNodeAnimationAffectMe(const std::string& animatName) {
-		mNodeAnimationsAffectMe.emplace_back(animatName);
+		mSkeletonAnimationsAffectMe.emplace_back(animatName);
 	}
 
 	const auto& getNodeAnimationAffectMe() {
-		return mNodeAnimationsAffectMe;
+		return mSkeletonAnimationsAffectMe;
 	}
 
 	virtual bool hasAnimation() {
@@ -378,12 +378,12 @@ protected:
 
 	//node name to boneIndex
 	//std::unordered_map<std::string, int> mBoneNameIndex;
-	//offsetMatrix and finalMatrix should be placed in NodeAnimation
-	//because a NodeAnimation may be affect several meshes;
+	//offsetMatrix and finalMatrix should be placed in SkeletonAnimation
+	//because a SkeletonAnimation may be affect several meshes;
 	//it data is shared by these meshes;
 	//std::vector<glm::mat4> mBonesOffsetMatrix;//这个矩阵可能是几个mesh共用的
 	
-	std::vector<std::string> mNodeAnimationsAffectMe;
+	std::vector<std::string> mSkeletonAnimationsAffectMe;
 	std::shared_ptr<Skeleton> mpSkeleton;
 	bool mHasSkin{ false };
 
@@ -392,4 +392,3 @@ protected:
 };
 using MeshSP = std::shared_ptr<Mesh>;
 
-#endif /* GRAPHICSMESH_H_ */

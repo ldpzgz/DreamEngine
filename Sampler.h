@@ -1,5 +1,5 @@
-#ifndef _SAMPLER_H_
-#define _SAMPLER_H_
+#pragma once
+
 #ifdef _GLES3
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
@@ -56,5 +56,3 @@ private:
 	unsigned int mId{0};
 	bool mbSetBorderColor{ false };
 };
-
-#endif

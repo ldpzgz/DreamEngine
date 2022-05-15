@@ -1,5 +1,5 @@
-#ifndef _MESH_BEZIER_H_
-#define _MESH_BEZIER_H_
+#pragma once
+
 #include "Mesh.h"
 #include "Rect.h"
 /*
@@ -17,5 +17,3 @@ public:
 protected:
 	void draw(int posloc = -1) override;
 };
-
-#endif

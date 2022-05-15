@@ -1,5 +1,5 @@
-#ifndef _LINEAR_LAYOUT_H_
-#define _LINEAR_LAYOUT_H_
+#pragma once
+
 #include "View.h"
 using namespace std;
 class UiRender;
@@ -37,4 +37,3 @@ private:
 	int mTotalWidthPercent{ 0 };
 	int mTotalHeightPercent{ 0 };
 };
-#endif

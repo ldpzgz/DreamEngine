@@ -1,5 +1,5 @@
-#ifndef _TREE_VIEW_H_
-#define _TREE_VIEW_H_
+#pragma once
+
 #include "View.h"
 #include "ViewAdapter.h"
 /*
@@ -55,5 +55,3 @@ private:
 	int mVisibleItemTotalLength{ 0 };//所有可见的item加起来的length。
 	std::shared_ptr<ViewAdapter> mpAdapter;
 };
-
-#endif

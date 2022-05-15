@@ -1,5 +1,4 @@
-﻿#ifndef __LOG_H__
-#define __LOG_H__
+﻿#pragma once
 
 #define LOG_ALL 0
 #define LOG_VERBOSE 1
@@ -150,5 +149,3 @@ void OutputDebugPrintf(const char* strOutputString, ...);
 // end of other system
 #endif
 
-
-#endif

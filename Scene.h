@@ -1,5 +1,5 @@
-#ifndef _SCENE_H_
-#define _SCENE_H_
+#pragma once
+
 #include <memory>
 #include <vector>
 #include <glm/vec3.hpp>           // vec3
@@ -53,6 +53,3 @@ private:
 	vector<shared_ptr<Light>> mLights;
 	SkyboxInfo mSkyboxInfo;
 };
-
-
-#endif

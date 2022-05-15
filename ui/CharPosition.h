@@ -1,5 +1,4 @@
-#ifndef _CHARPOSITION_H_
-#define _CHARPOSITION_H_
+#pragma once
 
 #include <glm/mat4x4.hpp>
 
@@ -19,4 +18,3 @@ public:
 	glm::mat4 texMatrix;//这个矩阵负责把一个0，1的纹理坐标，变换到该字符所占用的纹理区域
 };
 
-#endif

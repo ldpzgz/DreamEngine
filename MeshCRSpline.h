@@ -1,5 +1,5 @@
-#ifndef _MESH_CR_SPLINE_H_
-#define _MESH_CR_SPLINE_H_
+#pragma once
+
 #include "Mesh.h"
 
 /*
@@ -16,5 +16,3 @@ public:
 protected:
 	void draw(int posloc = -1) override;
 };
-
-#endif

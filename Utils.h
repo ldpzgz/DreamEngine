@@ -1,5 +1,4 @@
-#ifndef _UTILS_H_
-#define _UTILS_H_
+#pragma once
 
 //#include <opencv2/opencv.hpp>
 #include <iostream>
@@ -358,6 +357,3 @@ namespace UtfConvert
 	}
 }
 
-
-
-#endif

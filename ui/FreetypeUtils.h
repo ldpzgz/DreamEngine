@@ -1,5 +1,5 @@
-#ifndef _FREETYPE_UTILS_H_
-#define _FREETYPE_UTILS_H_
+#pragma once
+
 //#include <ft2build.h>
 //#include FT_FREETYPE_H
 //#include FT_GLYPH_H
@@ -13,4 +13,3 @@
 //void getCharOutline();
 
 bool getCharBitmap2(UnicodeType code, int charPixelSize, CharInfo& info, std::vector<unsigned char>& tempBuf);
-#endif

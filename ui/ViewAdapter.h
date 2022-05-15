@@ -1,5 +1,5 @@
-#ifndef _VIEW_ADAPTER_H_
-#define _VIEW_ADAPTER_H_
+#pragma once
+
 #include"../Rect.h"
 #include <memory>
 #include <functional>
@@ -57,4 +57,3 @@ public:
 protected:
 	std::weak_ptr<View> mpParentView;
 };
-#endif

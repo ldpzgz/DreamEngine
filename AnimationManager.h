@@ -1,5 +1,4 @@
-#ifndef _ANIMATION_MANAGER_H_
-#define _ANIMATION_MANAGER_H_
+#pragma once
 
 #include "Log.h"
 #include <unordered_map>
@@ -23,4 +22,3 @@ private:
 	std::unordered_map<std::string, std::shared_ptr<Animation>> mAnimationMap;
 	std::unordered_map<std::string, std::shared_ptr<Animation>> mActiveAnimations;
 };
-#endif

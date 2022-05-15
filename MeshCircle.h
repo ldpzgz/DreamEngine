@@ -1,5 +1,5 @@
-#ifndef _MESH_CIRCLE_H_
-#define _MESH_CIRCLE_H_
+#pragma once
+
 #include "MeshFilledRect.h"
 /*
 椭圆mesh，内部生成了纹理坐标，不过纹理坐标是按圆来生成的，如果是椭圆，显示处理的图片会变形
@@ -18,5 +18,3 @@ public:
 	void loadMesh(float width, float height, int gradientAngle,float centerX, float centerY) override;
 protected:
 };
-
-#endif

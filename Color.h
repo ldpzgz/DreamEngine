@@ -1,5 +1,5 @@
-#ifndef _COLOR_H_
-#define _COLOR_H_
+#pragma once
+
 #include <array>
 #include <string>
 
@@ -69,4 +69,3 @@ public:
 
 	static bool parseColor(const std::string& value, Color& color);
 };
-#endif

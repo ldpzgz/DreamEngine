@@ -1,5 +1,5 @@
-#ifndef _BACKGROUND_H_
-#define _BACKGROUND_H_
+#pragma once
+
 #include <memory>
 
 class BackgroundStyle;
@@ -44,5 +44,3 @@ public:
 	std::shared_ptr<BackgroundStyle> mpHoverStyle;
 	std::shared_ptr<BackgroundStyle> mpDisabledStyle;
 };
-
-#endif

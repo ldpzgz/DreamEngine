@@ -1,5 +1,5 @@
-﻿#ifndef _NODE_H_
-#define _NODE_H_
+﻿#pragma once
+
 #include <atomic>
 #include <unordered_map>
 #include <vector>
@@ -158,4 +158,3 @@ private:
 	std::unordered_map<std::string_view, std::any> mAttachments;
 };
 using NodeSP = std::shared_ptr<Node>;
-#endif

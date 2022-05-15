@@ -1,5 +1,5 @@
-#ifndef _MESH_CUBIC_SPLINE_H_
-#define _MESH_CUBIC_SPLINE_H_
+#pragma once
+
 #include "Mesh.h"
 #include "Rect.h"
 /*CubicSpline,使用y=a+bx+cx2+dx3,三次函数插值给定的点，具有c2连续的性质
@@ -19,5 +19,3 @@ public:
 protected:
 	void draw(int posloc = -1) override;
 };
-
-#endif

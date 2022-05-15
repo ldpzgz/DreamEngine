@@ -1,5 +1,4 @@
-#ifndef _VBO_H_
-#define _VBO_H_
+#pragma once
 
 class Vbo {
 public:
@@ -15,4 +14,3 @@ private:
 	int mTotalSize{ 0 };
 };
 
-#endif

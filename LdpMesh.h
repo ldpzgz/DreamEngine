@@ -1,5 +1,4 @@
-#ifndef _LDP_MESH_H_
-#define _LDP_MESH_H_
+#pragma once
 
 //定义自己的mesh结构体
 /*
@@ -36,5 +35,3 @@ struct LdpMesh {
 	float zmax{ 0 };
 	int materialNameSize{ 0 };
 };
-
-#endif

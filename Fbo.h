@@ -4,9 +4,8 @@
  *  Created on: 2015-9-29
  *      Author: liudongping
  */
+#pragma once
 
-#ifndef _FBO_H_
-#define _FBO_H_
 #include<memory>
 #include "Texture.h"
 #include "Rect.h"
@@ -134,4 +133,3 @@ private:
 	std::vector<unsigned int> mAttachments;
 };
 
-#endif /* GRAPHICSFBO_H_ */

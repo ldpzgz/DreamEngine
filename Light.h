@@ -1,5 +1,5 @@
-#ifndef _LIGHT_H_
-#define _LIGHT_H_
+#pragma once
+
 #include "Renderable.h"
 #include <glm/vec3.hpp>           // vec3
 enum class LightType {
@@ -66,4 +66,3 @@ private:
 	glm::vec3 mPosOrDir{-1.0f,-1.0f,0.0f};
 	glm::vec3 mLightColor{1.0f,1.0f,1.0f};
 };
-#endif

@@ -1,5 +1,5 @@
-#ifndef _NODE_ROAMER_H_
-#define _NODE_ROAMER_H_
+#pragma once
+
 #include <memory>
 /*
 * 操纵节点漫游
@@ -20,4 +20,3 @@ protected:
 	std::shared_ptr<Node> mpNode;
 	std::shared_ptr<Camera> mpView;
 };
-#endif

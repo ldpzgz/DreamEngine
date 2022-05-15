@@ -24,7 +24,7 @@ public:
 
 	std::shared_ptr<Material> getMaterial(const std::string& name);
 	//get deffered rendering geometry pass shader accord to material info
-	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo,bool hasNodeAnimation = false);
+	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo,bool hasSkeletonAnimation = false);
 	//get deffered rendering lighting pass shader
 	std::shared_ptr<Material> getMaterialDefferedLightPass(bool hasIBL);
 

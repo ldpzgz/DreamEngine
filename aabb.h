@@ -1,5 +1,5 @@
-#ifndef _AABB_H_
-#define _AABB_H_
+#pragma once
+
 #include <utility>
 #include <glm/vec3.hpp>
 #include <array>
@@ -55,4 +55,3 @@ public:
 	}
 	std::array<float, 6> xyz{ 0,0,0,0,0,0 };
 };
-#endif

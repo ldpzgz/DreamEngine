@@ -1,7 +1,7 @@
 #include "Animation.h"
 #include "AnimationManager.h"
 #include <algorithm>
-#include "animation/NodeAnimation.h"
+#include "animation/SkeletonAnimation.h"
 #include "Node.h"
 AnimationManager& AnimationManager::getInstance() {
 	static AnimationManager gManager;
@@ -32,9 +32,9 @@ void AnimationManager::updateActiveAnimation() {
 
 void AnimationManager::addAffectedNode(const std::string& name, const std::shared_ptr<Node>& pNode) {
 	for (const auto& pair : mAnimationMap) {
-		auto pNodeAnimation = std::dynamic_pointer_cast<NodeAnimation>(pair.second);
-		if (pNodeAnimation) {
-			//pNodeAnimation->addAffectedNode(name, pNode);
+		auto pSkeletonAnimation = std::dynamic_pointer_cast<SkeletonAnimation>(pair.second);
+		if (pSkeletonAnimation) {
+			//pSkeletonAnimation->addAffectedNode(name, pNode);
 		}
 	}
 }

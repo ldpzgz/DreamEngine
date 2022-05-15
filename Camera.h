@@ -1,5 +1,5 @@
-#ifndef _CAMERA_H_
-#define _CAMERA_H_
+#pragma once
+
 #include <memory>
 #include <vector>
 #include "NodeListener.h"
@@ -123,6 +123,3 @@ private:
 	std::unique_ptr<Post> mpPostSmaa;
 	std::unique_ptr<Post> mpPostGsBlur;
 };
-
-
-#endif

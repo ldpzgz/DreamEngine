@@ -6,6 +6,7 @@
 #include "Resource.h"
 #include "Ubo.h"
 #include "Sampler.h"
+#include "Texture.h"
 #include <glm/ext/matrix_transform.hpp> //translate, rotate, scale, identity
 #include <glm/ext/matrix_clip_space.hpp> // perspective
 

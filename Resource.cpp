@@ -91,7 +91,7 @@ public:
 		return nullptr;
 	}
 
-	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo,bool hasNodeAnimation=false);
+	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo,bool hasSkeletonAnimation=false);
 
 	std::shared_ptr<Material> getMaterialDefferedLightPass(bool hasIBL);
 
@@ -1000,8 +1000,8 @@ std::shared_ptr<Material> Resource::getMaterial(const std::string& name) {
 * name: 可以是物体的名字
 * mInfo：材质信息，根据里面的信息生成或者clone一个material对象
 */
-std::shared_ptr<Material> Resource::getMaterialDefferedGeoPass(const MaterialInfo& mInfo, bool hasNodeAnimation) {
-	return mpImpl->getMaterialDefferedGeoPass(mInfo, hasNodeAnimation);
+std::shared_ptr<Material> Resource::getMaterialDefferedGeoPass(const MaterialInfo& mInfo, bool hasSkeletonAnimation) {
+	return mpImpl->getMaterialDefferedGeoPass(mInfo, hasSkeletonAnimation);
 }
 
 std::shared_ptr<Material> Resource::getMaterialDefferedLightPass(bool hasIBL) {
@@ -1635,7 +1635,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedLightPass(bool hasIBL
 	return pMaterial;
 }
 
-std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const MaterialInfo& mInfo, bool hasNodeAnimation) {
+std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const MaterialInfo& mInfo, bool hasSkeletonAnimation) {
 	/*
 	* 材质信息标志
 	* 0: 表示是否有纹理
@@ -1644,7 +1644,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	* 3：metellic标志，0表示固定值，1表示metellic map
 	* 4: roughness表示，0表示固定值，1表示roughness map
 	* 5：ao标志，0表示固定值，1表示ao map
-	* 6: nodeAnimation flag,1 has nodeAnimation,0 no
+	* 6: SkeletonAnimation flag,1 has SkeletonAnimation,0 no
 	*
 	* 根据mInfo里面的信息计算出materialFlag，然后看看名字“defferedGeomertry_标志位”的纹理是否已经存在，
 	* 如果已经存在就clone这个material，然后为它设置好各种纹理
@@ -1661,7 +1661,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	program = string_view("posLoc=0\n");
 	program += string_view("modelMatrix=modelMat\n");
 	
-	if (hasNodeAnimation) {
+	if (hasSkeletonAnimation) {
 		program += string_view("boneIdLoc=3\nboneWeightLoc=4\n");
 		programUbo += string_view("Bones=5\n");
 	}
@@ -1688,7 +1688,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		materialFlag |= 0x08;
 		materialFlag |= 0x10;
 	}
-	if (hasNodeAnimation) {
+	if (hasSkeletonAnimation) {
 		materialFlag |= 0x20;
 	}
 	if (mInfo.hasVertexColor) {
@@ -1709,7 +1709,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		std::string_view hasVertexColor{ "#define HAS_VERTEX_COLOR 1\n" };
 		std::string_view hasArmMap{ "#define HAS_ARM_MAP 1\n" };
 		std::string_view hasShadow{ "#define HAS_SHADOW 1\n" };
-		std::string_view hasNodeAnimationDef{ "#define HAS_NODE_ANIMATION 1\n" };
+		std::string_view hasSkeletonAnimationDef{ "#define HAS_NODE_ANIMATION 1\n" };
 
 		if (bHasMap) {
 			allDefine += hasMap;
@@ -1776,8 +1776,8 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		if (Config::openShadowMap) {
 			allDefine += hasShadow;
 		}
-		if (hasNodeAnimation) {
-			allDefine += hasNodeAnimationDef;
+		if (hasSkeletonAnimation) {
+			allDefine += hasSkeletonAnimationDef;
 		}
 
 		fs += mpVersion;

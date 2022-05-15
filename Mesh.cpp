@@ -13,7 +13,7 @@
 #include "aabb.h"
 #include "Material.h"
 #include "Ubo.h"
-#include "animation/NodeAnimation.h"
+#include "animation/SkeletonAnimation.h"
 #include "animation/Skeleton.h"
 #include "Vbo.h"
 
@@ -79,7 +79,7 @@ Mesh::Mesh(Mesh&& temp) noexcept:
 	mLineWidth(temp.mLineWidth),
 	mCountOfVertex(temp.mCountOfVertex),
 	mDrawType(temp.mDrawType),
-	mNodeAnimationsAffectMe(std::move(temp.mNodeAnimationsAffectMe)),
+	mSkeletonAnimationsAffectMe(std::move(temp.mSkeletonAnimationsAffectMe)),
 	mpSkeleton(temp.mpSkeleton),
 	mHasSkin(temp.mHasSkin),
 	mpMaterial(temp.mpMaterial),

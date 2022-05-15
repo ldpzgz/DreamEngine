@@ -22,7 +22,7 @@ material:skyboxM{
 material:skyboxHdr1{
 	program=skyboxHdr
 	sampler{
-		skybox=hdr/road.hdr
+		skybox=hdr/ehingen_hillside_2k.hdr
 	}
 	op{
 		depthTest=true

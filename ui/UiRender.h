@@ -1,5 +1,5 @@
-﻿#ifndef _UI_RENDER_H_
-#define _UI_RENDER_H_
+﻿#pragma once
+
 #include "FreetypeUtils.h"
 #include "CharPosition.h"
 #include "CharInfo.h"
@@ -121,4 +121,3 @@ private:
 	float mWindowHeight;
 	glm::mat4 mProjMatrix;
 };
-#endif

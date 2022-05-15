@@ -1,5 +1,5 @@
-﻿#ifndef _BUTTON_H_
-#define _BUTTON_H_
+﻿#pragma once
+
 #include "TextView.h"
 
 class UiRender;
@@ -17,5 +17,3 @@ public:
 	std::shared_ptr<View> clone() override;
 	void draw() override;
 };
-
-#endif

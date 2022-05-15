@@ -1,5 +1,5 @@
-#ifndef _RECT_H_
-#define _RECT_H_
+#pragma once
+
 #include <array>
 #include <string>
 template<typename T>
@@ -334,5 +334,3 @@ public:
 //using Vec4 = Vector4<float>;
 //using Vec2 = Vector2<float>;
 //using Vec2i = Vector2<int>;
-
-#endif

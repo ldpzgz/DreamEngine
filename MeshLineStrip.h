@@ -1,5 +1,5 @@
-#ifndef _MESH_LINE_STRIP_H_
-#define _MESH_LINE_STRIP_H_
+#pragma once
+
 #include "Mesh.h"
 #include "Rect.h"
 
@@ -11,5 +11,3 @@ public:
 	void loadMesh(const std::vector<glm::vec3>& p) override;
 	void loadMesh(const std::vector<glm::vec2>& p) override;
 };
-
-#endif

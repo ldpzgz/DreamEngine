@@ -1,5 +1,5 @@
-#ifndef _SKELETON_H_
-#define _SKELETON_H_
+#pragma once
+
 #include <glm/vec3.hpp>           // vec3
 #include <glm/vec4.hpp>           // vec3
 #include <glm/mat4x4.hpp>         // mat4
@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <memory>
 class Node;
-class NodeAnimation;
+class SkeletonAnimation;
 class Skeleton {
 public:
 	Skeleton() = default;
@@ -44,7 +44,7 @@ public:
 		mpRootNode = pNode;
 	}
 
-	void addNodeAnimation(const std::shared_ptr<NodeAnimation>& pa);
+	void addAnimation(const std::shared_ptr<SkeletonAnimation>& pa);
 
 	void updateToUbo();
 
@@ -58,10 +58,8 @@ private:
 	std::unordered_map<std::string, int> mBoneName2Index;//this should be shared too
 	
 	bool mbUpdatedFinalMatrix{ true };
-	std::vector<glm::mat4> mBonesFinalMatrix;//when clone NodeAnimation,this should be cloned too
-	std::shared_ptr<Node> mpRootNode;//when clone NodeAnimation,node tree should be cloned too
+	std::vector<glm::mat4> mBonesFinalMatrix;//when clone SkeletonAnimation,this should be cloned too
+	std::shared_ptr<Node> mpRootNode;//when clone SkeletonAnimation,node tree should be cloned too
 
-	std::unordered_map<std::string, std::shared_ptr<NodeAnimation>> mNodeAnimations;
+	std::unordered_map<std::string, std::shared_ptr<SkeletonAnimation>> mSkeletonAnimations;
 };
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef _CHARINFO_H_
-#define _CHARINFO_H_
+#pragma once
 
 using UnicodeType = char32_t;
 //一个字符的位图信息，描述了该字符在纹理里面的位置，宽高等信息
@@ -17,4 +16,3 @@ public:
 	int advY{ 0 }; //表示下一个字符与本字符的垂直距离，单位是像素
 };
 
-#endif

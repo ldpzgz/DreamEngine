@@ -1,5 +1,5 @@
-﻿#ifndef _PACKT_GRAPHICSTEXTURE_HPP_
-#define _PACKT_GRAPHICSTEXTURE_HPP_
+﻿#pragma once
+
 #include<string>
 #include <map>
 #include <memory>
@@ -159,7 +159,5 @@ protected:
 	std::array<float, 4> mBorderColor{ 0.0f,0.0f,0.0f,0.0f };
 	std::string mName;
 };
-
 using TextureSP = std::shared_ptr<Texture>;
 
-#endif

@@ -1,5 +1,5 @@
-#ifndef _SHAPE_H_
-#define _SHAPE_H_
+#pragma once
+
 #include "../Log.h"
 #include "../Color.h"
 #include <string>
@@ -323,4 +323,3 @@ private:
 	//static void strokeDashWidthHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
 	//static void strokeDashGapHandler(const std::shared_ptr<Shape>& shape, const std::string& value);
 };
-#endif

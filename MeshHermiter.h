@@ -1,5 +1,5 @@
-#ifndef _MESH_HERMITER_H_
-#define _MESH_HERMITER_H_
+#pragma once
+
 #include "Mesh.h"
 /*
 一段hermiter曲线，由两个顶点，以及两个顶点处的切向量，插值而成，
@@ -16,5 +16,3 @@ public:
 protected:
 	void draw(int posloc = -1) override;
 };
-
-#endif

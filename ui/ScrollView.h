@@ -1,5 +1,5 @@
-#ifndef _SCROLL_VIEW_H_
-#define _SCROLL_VIEW_H_
+#pragma once
+
 #include "LinearLayout.h"
 /*
 * 如果ScrollView有很多个子view，
@@ -26,4 +26,3 @@ private:
 	glm::ivec2 mPrePos{0,0};
 	glm::ivec2 mChildTotalWidthHeight{0,0};
 };
-#endif

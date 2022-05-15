@@ -1,5 +1,5 @@
-#ifndef _MESH_NURBS_H_
-#define _MESH_NURBS_H_
+#pragma once
+
 #include "Mesh.h"
 /*
 * 1 先说uniform B样条：
@@ -29,5 +29,3 @@ private:
 	//计算nonuniform b-splines的per-control-point blend function,k是阶数，三阶就好了
 	float Niku(int i, int k, float u, const std::vector<int>& knots);
 };
-
-#endif

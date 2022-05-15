@@ -1,5 +1,5 @@
-#ifndef _MESH_LOADER_ASSIMP_H_
-#define _MESH_LOADER_ASSIMP_H_
+#pragma once
+
 #include "MeshLoader.h"
 #include <unordered_map>
 #include <memory>
@@ -15,5 +15,3 @@ public:
 	}
 	bool loadFromFile(const std::string& path, std::shared_ptr<Node>& pRootNode) override;
 };
-
-#endif

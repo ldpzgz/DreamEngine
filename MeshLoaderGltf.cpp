@@ -22,7 +22,7 @@
 #include <string_view>
 #include <vector>
 #include "animation/Skeleton.h"
-#include "animation/NodeAnimation.h"
+#include "animation/SkeletonAnimation.h"
 #include<glm/ext/quaternion_common.hpp>
 #include<glm/ext/quaternion_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -332,7 +332,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 	auto pMesh = data->meshes;
 	auto meshCount = data->meshes_count;
 	for (int i = 0; i < meshCount; ++i) {
-		bool hasNodeAnimation{ false };
+		bool hasSkeletonAnimation{ false };
 		std::cout << "gltf mesh name:" << pMesh->name << std::endl;
 		//primitive is real mesh,
 		auto pPrimitive = pMesh->primitives;
@@ -370,7 +370,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 			else {
 				LOGD("the mesh in gltf has no indecies,so call drawArray");
 			}
-			bool hasNodeAnimation = false;
+			bool hasSkeletonAnimation = false;
 			bool hasColorAttribute = false;
 			auto pAttr = pPrimitive->attributes;
 			int attrCount = pPrimitive->attributes_count;
@@ -399,7 +399,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 					pMyMesh->setColorSizeOffset(ret.size, ret.offset, ret.stride);
 					break;
 				case cgltf_attribute_type_joints:
-					hasNodeAnimation = true;
+					hasSkeletonAnimation = true;
 					pMyMesh->setBoneIdSizeOffset(ret.size, ret.offset, ret.stride);
 					break;
 				case cgltf_attribute_type_weights:
@@ -416,7 +416,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 				if (pMat->name == nullptr) {
 					//give a default material
 					MaterialInfo info;
-					auto pMaterial = Resource::getInstance().getMaterialDefferedGeoPass(info, hasNodeAnimation);
+					auto pMaterial = Resource::getInstance().getMaterialDefferedGeoPass(info, hasSkeletonAnimation);
 					pMyMesh->setMaterial(pMaterial);
 				}
 				else {
@@ -430,7 +430,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 							auto& pMatInfo = it->second;
 							if (pMatInfo) {
 								pMatInfo->hasVertexColor = hasColorAttribute;
-								auto pMyMat = Resource::getInstance().getMaterialDefferedGeoPass(*pMatInfo, hasNodeAnimation);
+								auto pMyMat = Resource::getInstance().getMaterialDefferedGeoPass(*pMatInfo, hasSkeletonAnimation);
 								if (pMyMat) {
 									pMyMesh->setMaterial(pMyMat);
 								}
@@ -601,16 +601,18 @@ void MeshLoaderGltfImpl::recursive_parse(const cgltf_node* pNode, std::shared_pt
 }
 
 void MeshLoaderGltfImpl::parseAnimationInfo(cgltf_data* pData) {
-	//one NodeAnimation has one skeleton
+	//one SkeletonAnimation has one skeleton
 	auto pAnimation = pData->animations;
 	int animatCount = pData->animations_count;
 	for (int i = 0; i < animatCount; ++i) {
 		if (pAnimation != nullptr) {
+			if (pAnimation->name == nullptr) {
+				LOGE("find animation with no name");
+				continue;
+			}
 			LOGD("find animation %s", pAnimation->name);
-			auto pMyAnimation = std::make_shared<NodeAnimation>();
+			auto pMyAnimation = std::make_shared<SkeletonAnimation>(pAnimation->name);
 			std::shared_ptr<Skeleton> pSkeleton;
-			//visit all bones to find rootBone;
-			pMyAnimation->setName(pAnimation->name);
 			int64_t duration = 0;
 			auto pChannel = pAnimation->channels;
 			int channelCount = pAnimation->channels_count;
@@ -619,12 +621,6 @@ void MeshLoaderGltfImpl::parseAnimationInfo(cgltf_data* pData) {
 			for (int j = 0; j < channelCount; ++j) {
 				auto pTargetNode = pChannel->target_node;
 				if (pTargetNode != nullptr) {
-					//add affected node by this animation
-					
-					//auto nodeIt = nodeMap.find(reinterpret_cast<size_t>(pTargetNode));
-					//if (nodeIt != nodeMap.end()) {
-					//	//pMyAnimation->addAffectedNode(targetNodeName,nodeIt->second);
-					//}
 					std::string targetNodeName(pTargetNode->name);
 					//find the affected skeleton by this animation
 					if (pSkeleton==nullptr) {
@@ -636,8 +632,10 @@ void MeshLoaderGltfImpl::parseAnimationInfo(cgltf_data* pData) {
 								break;
 							}
 						}
-						pMyAnimation->setAffectedSkeleton(pSkeleton);
-						pSkeleton->addNodeAnimation(pMyAnimation);
+						if (pSkeleton != nullptr) {
+							pMyAnimation->setAffectedSkeleton(pSkeleton);
+							pSkeleton->addAnimation(pMyAnimation);
+						}
 					}
 					//get all 
 					auto pSampler = pChannel->sampler;
@@ -668,7 +666,7 @@ void MeshLoaderGltfImpl::parseAnimationInfo(cgltf_data* pData) {
 				++pChannel;
 			}
 			pMyAnimation->setDuration(duration);
-			//auto pMyAnimation = std::make_shared<NodeAnimation>();
+			//auto pMyAnimation = std::make_shared<SkeletonAnimation>();
 			++pAnimation;
 		}
 	}

@@ -1,5 +1,4 @@
-﻿#ifndef _UI_TREE_H_
-#define _UI_TREE_H_
+﻿#pragma once
 //#include <ft2build.h>
 //#include FT_FREETYPE_H
 #include <iostream>
@@ -42,4 +41,3 @@ public:
 	shared_ptr<Texture> mpTexture;
 	bool mbRedraw{ false };
 };
-#endif

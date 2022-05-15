@@ -1,5 +1,5 @@
-#ifndef _MESH_FILLED_RECT_H_
-#define _MESH_FILLED_RECT_H_
+#pragma once
+
 #include "Mesh.h"
 #include "Rect.h"
 #include <glm/ext/vector_float3.hpp>                // vec3
@@ -53,5 +53,3 @@ protected:
 	std::vector<glm::vec3> mPoints;
 	std::vector<GLuint> mExtraColorVbos;
 };
-
-#endif

@@ -1,5 +1,5 @@
-﻿#ifndef _UI_MANAGER_H_
-#define _UI_MANAGER_H_
+﻿#pragma once
+
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -105,5 +105,3 @@ private:
 	static void loadAllShape();
 	static void loadAllBackground();
 };
-
-#endif

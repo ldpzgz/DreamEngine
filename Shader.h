@@ -4,9 +4,8 @@
  *  Created on: 2015-9-19
  *      Author: ldp
  */
+#pragma once
 
-#ifndef GRAPHICSSHADER_H_
-#define GRAPHICSSHADER_H_
 #ifdef _GLES3
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
@@ -247,6 +246,5 @@ protected:
 	//GL_VERTEX_SHADER,GL_FRAGMENT_SHADER
 	GLuint loadShader ( GLenum type, const char *shaderSrc );
 };
-
 using ShaderSP = std::shared_ptr<Shader>;
-#endif /* GRAPHICSSHADER_H_ */
+
