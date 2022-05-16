@@ -10,7 +10,6 @@
 #include <string>
 class Mesh;
 class Node;
-class Skeleton;
 /*
 * one SkeletonAnimation link to one Skeleton,
 */
@@ -20,57 +19,26 @@ public:
 
 	SkeletonAnimation();
 
-	//SkeletonAnimation(const SkeletonAnimation& other);
+	~SkeletonAnimation() = default;
 
-	void setDuration(int64_t dur) {
-		mDuration = dur;
-	}
+	void setPosKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, 
+		int count, InterpolationType interType) override;
+	void setScaleKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, 
+		int count, InterpolationType interType) override;
+	void setRotateKeyFrame(const std::string& nodeName, float* pTime, glm::quat* pPos, 
+		int count, InterpolationType interType) override;
 
-	int64_t getDuration() {
-		return mDuration;
-	}
+	void addPosKeyFrame(const std::string& nodeName, std::vector<KeyFrameVec3Time>& info) override;
+	void addScaleKeyFrame(const std::string& nodeName, std::vector<KeyFrameVec3Time>& info) override;
+	void addRotateKeyFrame(const std::string& nodeName, std::vector<KeyFrameQuatTime>& info) override;
 
-	void addPosKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, int count);
-	void addScaleKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, int count);
-	void addRotateKeyFrame(const std::string& nodeName, float* pTime, glm::quat* pPos, int count);
-
-	void addPosKeyFrame(const std::string& nodeName,std::vector<KeyFrameVec3Time>& info) {
-		if (!mpNodesPosKeyFrameInfo->try_emplace(nodeName, std::move(info)).second) {
-			LOGE("addPosKeyFrame,the Node is already has pos keyframe info");
-		}
-	}
-	void addScaleKeyFrame(const std::string& nodeName,std::vector<KeyFrameVec3Time>& info) {
-		if (!mpNodesScaleKeyFrameInfo->try_emplace(nodeName, std::move(info)).second) {
-			LOGE("addScaleKeyFrame,the Node is already has scale keyframe info");
-		}
-	}
-	void addRotateKeyFrame(const std::string& nodeName,std::vector<KeyFrameQuatTime>& info) {
-		if (!mpNodesRotateKeyFrameInfo->try_emplace(nodeName, std::move(info)).second) {
-			LOGE("addRotateKeyFrame,the Node is already has rotate keyframe info");
-		}
-	}
-
-	//void addAffectedNode(const std::string& name) {
-	//	if (!mNameNodeMap.try_emplace(name,std::shared_ptr<Node>()).second) {
-	//	}
-	//}
-
-	//void addAffectedNode(const std::string& name, const std::shared_ptr<Node>& pNode) {
-	//	mNameNodeMap[name] = pNode;
-	//}
-
-	/*void addAffectedMesh(const std::shared_ptr<Mesh>& pMesh) {
-		mAffectedMeshes.emplace_back(pMesh);
-	}*/
-
-	void setAffectedSkeleton(std::shared_ptr<Skeleton> ps) {
+	void setAffectedSkeleton(std::shared_ptr<Skeleton> ps) override {
 		mpSkeleton = ps;
 	}
 
 	void animate() override;
 private:
 	//void updateAffectedMesh();
-	int64_t mDuration{ 0 };//in ms
 	//the animation key frame info
 	//nodeName-keyFrameInfo
 	//each bone has name,and has a vector of pos,scale,rotate keyfram info.

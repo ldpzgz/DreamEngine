@@ -2,7 +2,7 @@
 #include "SkeletonAnimation.h"
 #include "../Ubo.h"
 
-void Skeleton::addAnimation(const std::shared_ptr<SkeletonAnimation>& pa) {
+void Skeleton::addAnimation(const std::shared_ptr<Animation>& pa) {
 	if (pa) {
 		mSkeletonAnimations.try_emplace(pa->getName(), pa);
 	}

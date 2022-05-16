@@ -4,17 +4,27 @@
 //#include <glm/vec2.hpp>           // vec3
 //#include <glm/vec3.hpp>           // vec3
 
-//#include "Rect.h"
+#include "animation/KeyFrame.h"
 #include "Utils.h"
 #include <vector>
 //#include "Spline.h"
+enum class AnimationType {
+	NodeAnimation,
+	SkeletonAnimation,
+};
+enum class InterpolationType {
+	Linear,
+	Step,
+	CubicSpline
+};
 
 enum class AnimationState {
 	Idle,
 	Started,
 	Paused
 };
-
+class Skeleton;
+class Node;
 class Animation {
 public:
 	Animation() = default;
@@ -60,9 +70,47 @@ public:
 		return mState == AnimationState::Started;
 	}
 
+	void setDuration(int64_t dur) {
+		mDuration = dur;
+	}
+
+	int64_t getDuration() {
+		return mDuration;
+	}
+
 	virtual void animate() {
 
 	}
+
+	virtual void setAffectedSkeleton(std::shared_ptr<Skeleton> ps) {
+
+	}
+
+	virtual void setTargetNode(const std::shared_ptr<Node> pNode) {
+
+	}
+
+	virtual void setPosKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, int count, InterpolationType interType) {
+
+	}
+	virtual void setScaleKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pScale, int count, InterpolationType interType) {
+
+	}
+	virtual void setRotateKeyFrame(const std::string& nodeName, float* pTime, glm::quat* pRotate, int count, InterpolationType interType) {
+
+	}
+
+	virtual void addPosKeyFrame(const std::string& nodeName, std::vector<KeyFrameVec3Time>& info) {
+
+	}
+	virtual void addScaleKeyFrame(const std::string& nodeName, std::vector<KeyFrameVec3Time>& info) {
+
+	}
+	virtual void addRotateKeyFrame(const std::string& nodeName, std::vector<KeyFrameQuatTime>& info) {
+
+	}
+
+	static std::shared_ptr<Animation> createAnimation(AnimationType type,const std::string& name);
 	/*void setLoopModel(LoopMode mode) {
 		mLoopMode = mode;
 	}
@@ -84,8 +132,7 @@ public:
 	//glm::vec2 getCurXY();
 protected:
 	std::string mName;
-	int64_t mAnimationTime{ 0 };
-	int64_t mCurTime{0};
+	int64_t mDuration{ 0 };//in ms
 	TimerMil mTimer;
 	AnimationState mState{ AnimationState::Idle };
 	/*LoopMode mLoopMode{ LoopMode::None };

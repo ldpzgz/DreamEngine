@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <memory>
 class Node;
-class SkeletonAnimation;
+class Animation;
 class Skeleton {
 public:
 	Skeleton() = default;
@@ -44,7 +44,7 @@ public:
 		mpRootNode = pNode;
 	}
 
-	void addAnimation(const std::shared_ptr<SkeletonAnimation>& pa);
+	void addAnimation(const std::shared_ptr<Animation>& pa);
 
 	void updateToUbo();
 
@@ -61,5 +61,5 @@ private:
 	std::vector<glm::mat4> mBonesFinalMatrix;//when clone SkeletonAnimation,this should be cloned too
 	std::shared_ptr<Node> mpRootNode;//when clone SkeletonAnimation,node tree should be cloned too
 
-	std::unordered_map<std::string, std::shared_ptr<SkeletonAnimation>> mSkeletonAnimations;
+	std::unordered_map<std::string, std::shared_ptr<Animation>> mSkeletonAnimations;
 };

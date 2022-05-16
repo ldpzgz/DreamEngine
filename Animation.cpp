@@ -1,4 +1,24 @@
-//#include "Animation.h"
+#include "Animation.h"
+#include "animation/NodeAnimation.h"
+#include "animation/SkeletonAnimation.h"
+
+std::shared_ptr<Animation> Animation::createAnimation(AnimationType type,const std::string& name) {
+	switch (type) {
+	case AnimationType::NodeAnimation:
+		return std::make_shared<NodeAnimation>(name);
+		break;
+	case AnimationType::SkeletonAnimation:
+		return std::make_shared<SkeletonAnimation>(name);
+		break;
+	default:
+		return {};
+		break;
+	}
+}
+
+
+
+
 //#include "Spline.h"           // vec3
 //
 //void Animation::setControlPoints(const std::vector<glm::vec2>& cPoints) {
