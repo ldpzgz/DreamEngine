@@ -71,11 +71,11 @@ bool MeshLoaderGltfImpl::loadFromFile(const std::string& path, std::shared_ptr<N
 	cgltf_options options;
 	memset(&options, 0, sizeof(cgltf_options));
 	cgltf_data* data = NULL;
-	//·ÖÎögltfÎÄ¼þ
+	//åˆ†æžgltfæ–‡ä»¶
 	cgltf_result result = cgltf_parse_file(&options, path.c_str(), &data);
 
 	if (result == cgltf_result_success) {
-		//´ÓbinÎÄ¼þ¼ÓÔØÊý¾Ý
+		//ä»Žbinæ–‡ä»¶åŠ è½½æ•°æ®
 		result = cgltf_load_buffers(&options, data, path.c_str());
 	}
 	
@@ -119,60 +119,67 @@ AccRet MeshLoaderGltfImpl::getAccessorData(cgltf_accessor* pAcc) {
 	auto pBv = pAcc->buffer_view;
 	int offset = static_cast<int>(pAcc->offset);
 	int stride = pAcc->stride;
-	int count = static_cast<int>(pAcc->count);
-	//int component_type = pAcc->component_type;
-	//int dataType = pAcc->type;//scalar,vec2,vec3,vec4 mat2,mat3,mat4
-	//int componentSize = 0;
-	//int componentCount = 0;
-	//switch (component_type) {
-	//case cgltf_component_type_r_8:
-	//case cgltf_component_type_r_8u:
-	//	componentSize = 1;
-	//	break;
-	//case cgltf_component_type_r_16:
-	//case cgltf_component_type_r_16u:
-	//	componentSize = 2;
-	//	break;
-	//case cgltf_component_type_r_32u:
-	//case cgltf_component_type_r_32f:
-	//	componentSize = 4;
-	//	break;
-	//default:
-	//	break;
-	//};
 
-	//switch (dataType) {
-	//case cgltf_type_scalar:
-	//	componentCount = 1;
-	//	break;
-	//case cgltf_type_vec2:
-	//	componentCount = 2;
-	//	break;
-	//case cgltf_type_vec3:
-	//	componentCount = 3;
-	//	break;
-	//case cgltf_type_vec4:
-	//	componentCount = 4;
-	//	break;
-	//case cgltf_type_mat2:
-	//	componentCount = 4;
-	//	break;
-	//case cgltf_type_mat3:
-	//	componentCount = 9;
-	//	break;
-	//case cgltf_type_mat4:
-	//	componentCount = 16;
-	//	break;
-	//default:
-	//	break;
-	//};
-	//int size = componentSize* componentCount* count;
-	int size = 0;
+	int count = static_cast<int>(pAcc->count);
+	int component_type = pAcc->component_type;
+	int dataType = pAcc->type;//scalar,vec2,vec3,vec4 mat2,mat3,mat4
+	int componentSize = 0;
+	int componentCount = 0;
+	switch (component_type) {
+	case cgltf_component_type_r_8:
+	case cgltf_component_type_r_8u:
+		componentSize = 1;
+		break;
+	case cgltf_component_type_r_16:
+	case cgltf_component_type_r_16u:
+		componentSize = 2;
+		break;
+	case cgltf_component_type_r_32u:
+	case cgltf_component_type_r_32f:
+		componentSize = 4;
+		break;
+	default:
+		break;
+	};
+
+	switch (dataType) {
+	case cgltf_type_scalar:
+		componentCount = 1;
+		break;
+	case cgltf_type_vec2:
+		componentCount = 2;
+		break;
+	case cgltf_type_vec3:
+		componentCount = 3;
+		break;
+	case cgltf_type_vec4:
+		componentCount = 4;
+		break;
+	case cgltf_type_mat2:
+		componentCount = 4;
+		break;
+	case cgltf_type_mat3:
+		componentCount = 9;
+		break;
+	case cgltf_type_mat4:
+		componentCount = 16;
+		break;
+	default:
+		break;
+	};
+	int size = componentSize* componentCount* count;
+	
 	void* pData = nullptr;
 	if (pBv != nullptr) {
-		size = static_cast<int>(pBv->size);
+		//size = static_cast<int>(pBv->size);
 		offset += pBv->offset;
-		stride = pBv->stride;
+		if (pBv->stride != 0) {
+			stride = pBv->stride;
+		}
+		if (stride == componentSize * componentCount) {
+			stride = 0;
+		}
+		
 		if (pBv->data != nullptr) {
 			pData = (void*)((char*)pBv->data + offset);
 		}
@@ -241,7 +248,7 @@ void MeshLoaderGltfImpl::parseMaterial(cgltf_data* data) {
 				pSampler->wrap_s,
 				pSampler->wrap_t);
 			pRet->setSampler(pS);
-			//pSampler->extensions; ÆäËû²ÎÊýÓ¦¸ÃÔÚÕâ¸öÀ©Õ¹ÀïÃæ
+			//pSampler->extensions; å…¶ä»–å‚æ•°åº”è¯¥åœ¨è¿™ä¸ªæ‰©å±•é‡Œé¢
 		}
 		return pRet;
 	};
@@ -337,7 +344,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 		//primitive is real mesh,
 		auto pPrimitive = pMesh->primitives;
 		auto primitiveCount = pMesh->primitives_count;
-		for (int i = 0; i < primitiveCount; ++i) {
+		for (int j = 0; j < primitiveCount; ++j) {
 			if (pPrimitive->has_draco_mesh_compression) {
 				std::cout << "draco compression" << std::endl;
 			}
@@ -374,8 +381,8 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 			bool hasColorAttribute = false;
 			auto pAttr = pPrimitive->attributes;
 			int attrCount = pPrimitive->attributes_count;
-			for (int j = 0; j < attrCount; ++j) {
-				//vertex ,normal,texcoord etc£¬
+			for (int k = 0; k < attrCount; ++k) {
+				//vertex ,normal,texcoord etcï¼Œ
 				auto type = pAttr->type;// vertex/normal/texcoord tec
 				auto pAccessor = pAttr->data;
 				auto ret = getAccessorData(pAccessor);
@@ -389,7 +396,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 					pMyMesh->setPosSizeOffset(ret.size, ret.offset,ret.stride,ret.count);
 					break;
 				case cgltf_attribute_type_normal:
-					pMyMesh->setNorSizeOffset(ret.size, ret.offset,ret.stride);
+					pMyMesh->setNorSizeOffset(ret.size, ret.offset, ret.stride);
 					break;
 				case cgltf_attribute_type_texcoord:
 					pMyMesh->setTexSizeOffset(ret.size, ret.offset, ret.stride);
@@ -611,48 +618,73 @@ void MeshLoaderGltfImpl::parseAnimationInfo(cgltf_data* pData) {
 				continue;
 			}
 			LOGD("find animation %s", pAnimation->name);
-			auto pMyAnimation = std::make_shared<SkeletonAnimation>(pAnimation->name);
-			std::shared_ptr<Skeleton> pSkeleton;
+			std::shared_ptr<Animation> pMyAnimation;
+			AnimationType animatType{AnimationType::NodeAnimation};
 			int64_t duration = 0;
+			//a channel contains a set of keyframes of a node
+			//a node may have four kinds of keyframe(rotate,translate,scale,weight)
+			//a channel only contains one kind of keyframe
 			auto pChannel = pAnimation->channels;
 			int channelCount = pAnimation->channels_count;
-			int rootBoneCount = 0;
-			std::vector<std::shared_ptr<Node>> pNodeAnimationRootNode;
+
+			if (channelCount <= 0) {
+				continue;
+			}
+			//find skeleton for this animation
+			std::shared_ptr<Skeleton> pSkeleton;
+			
+			auto pTargetNode = pChannel->target_node;
+			if (pTargetNode != nullptr) {
+				std::string targetNodeName(pTargetNode->name);
+
+				for (auto& ske : skeletonMap) {
+					auto& nameIndexMap = ske.second->getBoneName2Index();
+					auto it = nameIndexMap.find(targetNodeName);
+					if (it != nameIndexMap.end()) {
+						pSkeleton = ske.second;
+						animatType = AnimationType::SkeletonAnimation;
+						break;
+					}
+				}
+					
+				pMyAnimation = Animation::createAnimation(animatType,pAnimation->name);
+				pMyAnimation->setAffectedSkeleton(pSkeleton);
+				if (pSkeleton) {
+					pSkeleton->addAnimation(pMyAnimation);
+				}
+				else {
+					auto it = nodeMap.find(reinterpret_cast<size_t>(pTargetNode));
+					if (it != nodeMap.end()) {
+						pMyAnimation->setTargetNode(it->second);
+					}
+				}	
+			}
 			for (int j = 0; j < channelCount; ++j) {
 				auto pTargetNode = pChannel->target_node;
 				if (pTargetNode != nullptr) {
-					std::string targetNodeName(pTargetNode->name);
-					//find the affected skeleton by this animation
-					if (pSkeleton==nullptr) {
-						for (auto& ske : skeletonMap) {
-							auto& nameIndexMap = ske.second->getBoneName2Index();
-							auto it = nameIndexMap.find(targetNodeName);
-							if (it != nameIndexMap.end()) {
-								pSkeleton = ske.second;
-								break;
-							}
-						}
-						if (pSkeleton != nullptr) {
-							pMyAnimation->setAffectedSkeleton(pSkeleton);
-							pSkeleton->addAnimation(pMyAnimation);
-						}
-					}
-					//get all 
 					auto pSampler = pChannel->sampler;
-					int dataType = pChannel->target_path;//translate,rotate,scale
+					int dataType = pChannel->target_path;//translate,rotate,scale,weight
 					if (pSampler) {
 						//get bone's keyframe info
 						//time is float type in seconds;
 						auto retTime = getAccessorData(pSampler->input);
 						auto retMat = getAccessorData(pSampler->output);
 						if (dataType == cgltf_animation_path_type_translation) {
-							pMyAnimation->addPosKeyFrame(pTargetNode->name, (float*)retTime.data, (glm::vec3*)retMat.data, retTime.count);
+							pMyAnimation->setPosKeyFrame(pTargetNode->name, 
+								(float*)retTime.data, (glm::vec3*)retMat.data, 
+								retTime.count, static_cast<InterpolationType>(pSampler->interpolation));
 						}
 						else if (dataType == cgltf_animation_path_type_rotation) {
-							pMyAnimation->addRotateKeyFrame(pTargetNode->name, (float*)retTime.data, (glm::quat*)retMat.data, retTime.count);
+							pMyAnimation->setRotateKeyFrame(pTargetNode->name, 
+								(float*)retTime.data, (glm::quat*)retMat.data, 
+								retTime.count, static_cast<InterpolationType>(pSampler->interpolation));
 						}
 						else if (dataType == cgltf_animation_path_type_scale) {
-							pMyAnimation->addScaleKeyFrame(pTargetNode->name, (float*)retTime.data, (glm::vec3*)retMat.data, retTime.count);
+							pMyAnimation->setScaleKeyFrame(pTargetNode->name, 
+								(float*)retTime.data, (glm::vec3*)retMat.data, 
+								retTime.count, static_cast<InterpolationType>(pSampler->interpolation));
+						}
+						else {
 						}
 						int64_t maxTime = ((float*)retTime.data)[retTime.count - 1]*1000;
 						if (maxTime > duration) {
@@ -665,8 +697,9 @@ void MeshLoaderGltfImpl::parseAnimationInfo(cgltf_data* pData) {
 				}
 				++pChannel;
 			}
-			pMyAnimation->setDuration(duration);
-			//auto pMyAnimation = std::make_shared<SkeletonAnimation>();
+			if (pMyAnimation) {
+				pMyAnimation->setDuration(duration);
+			}
 			++pAnimation;
 		}
 	}

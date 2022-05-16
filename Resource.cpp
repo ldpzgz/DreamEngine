@@ -1545,32 +1545,27 @@ std::shared_ptr<Texture> ResourceImpl::getOrLoadTextureFromFile(const std::strin
 		return nullptr;
 	}
 	std::string RealTexName(texName);
-	if (!RealTexName.empty()) {
-		auto pTexture = mTextures.find(RealTexName);
-		if (pTexture != mTextures.end()) {
-			return pTexture->second;
-		}
+	if (RealTexName.empty()) {
+		RealTexName = std::filesystem::path(path).replace_extension("").string();
 	}
-	
-	auto pTexture = mTextures.find(path);
+
+	auto pTexture = mTextures.find(RealTexName);
+	if (pTexture != mTextures.end()) {
+		return pTexture->second;
+	}
+
+	pTexture = mTextures.find(path);
 	if (pTexture != mTextures.end()) {
 		return pTexture->second;
 	}
 	else {
-		RealTexName = std::filesystem::path(path).replace_extension("").string();
-		pTexture = mTextures.find(RealTexName);
-		if (pTexture != mTextures.end()) {
-			return pTexture->second;
+		//如果写的是drawable文件夹里面的某个文件
+		auto filePath = gDrawablePath + "/" + path;
+		auto pTex = loadImageFromFile(filePath, RealTexName);
+		if (!pTex) {
+			LOGE("load texture failed %s", filePath.c_str());
 		}
-		else {
-			//如果写的是drawable文件夹里面的某个文件
-			auto filePath = gDrawablePath + "/" + path;
-			auto pTex = loadImageFromFile(filePath, RealTexName);
-			if (!pTex) {
-				LOGE("load texture failed %s", filePath.c_str());
-			}
-			return pTex;
-		}
+		return pTex;
 	}
 }
 
@@ -1661,16 +1656,9 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 	program = string_view("posLoc=0\n");
 	program += string_view("modelMatrix=modelMat\n");
 	
-	if (hasSkeletonAnimation) {
-		program += string_view("boneIdLoc=3\nboneWeightLoc=4\n");
-		programUbo += string_view("Bones=5\n");
-	}
 	if (Config::openTaa) {
 		program += string_view("preMvpMatrix=preMvpMat\n");
 		programUbo += string_view("ScreenWH = 2\nTaa=3\n}\n");
-	}
-	else {
-		programUbo += string_view("}\n");
 	}
 	
 	bool bHasMap = false;
@@ -1714,6 +1702,10 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		if (bHasMap) {
 			allDefine += hasMap;
 			program += "texcoordLoc=1\nnormalLoc=2\n"sv;
+			if (hasSkeletonAnimation) {
+				program += string_view("boneIdLoc=3\nboneWeightLoc=4\n");
+				programUbo += string_view("Bones=5\n");
+			}
 			if (mInfo.hasVertexColor) {
 				program += "colorLoc=3"sv;
 			}
@@ -1721,6 +1713,10 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		}
 		else {
 			program += "normalLoc=1\n"sv;
+			if (hasSkeletonAnimation) {
+				program += string_view("boneIdLoc=2\nboneWeightLoc=3\n");
+				programUbo += string_view("Bones=5\n");
+			}
 			if (mInfo.hasVertexColor) {
 				program += "colorLoc=2\n"sv;
 			}
@@ -1770,7 +1766,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		if (Config::openTaa) {
 			allDefine += hasTaa;
 		}
-
+		programUbo += string_view("}\n");
 		program += programSampler;
 		program += programUbo;
 		if (Config::openShadowMap) {
