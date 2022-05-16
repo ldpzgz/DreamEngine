@@ -122,9 +122,9 @@ void MeshLoaderAssimpImpl::recursive_parse(const struct aiScene* sc, const struc
 
 	std::string nodeName(nd->mName.data);
 	pNode->setName(nodeName);
-	if (!nodeName.empty()) {
+	/*if (!nodeName.empty()) {
 		AnimationManager::getInstance().addAffectedNode(nodeName,pNode);
-	}
+	}*/
 	unsigned int n = 0;
 	unsigned int t = 0;
 	aiMatrix4x4 model = nd->mTransformation;//本节点的model矩阵

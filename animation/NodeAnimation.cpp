@@ -63,6 +63,9 @@ void NodeAnimation::animate() {
 						preTimeIt = nextTimeIt - 1;
 					}
 					float blendFactor = static_cast<float>(curTime - preTimeIt->timeMs) / static_cast<float>(nextTimeIt->timeMs - preTimeIt->timeMs);
+					if (mPosInterpolationType == InterpolationType::Step) {
+						blendFactor = glm::step(0.5f,blendFactor);
+					}
 					glm::vec3 curPos = glm::mix(preTimeIt->vec, nextTimeIt->vec, blendFactor);
 					posMatrix = glm::translate(posMatrix, curPos);
 				}
@@ -90,6 +93,9 @@ void NodeAnimation::animate() {
 						preTimeIt = nextTimeIt - 1;
 					}
 					float blendFactor = static_cast<float>(curTime - preTimeIt->timeMs) / static_cast<float>(nextTimeIt->timeMs - preTimeIt->timeMs);
+					if (mScaleInterpolationType == InterpolationType::Step) {
+						blendFactor = glm::step(0.5f, blendFactor);
+					}
 					glm::vec3 curScale = glm::mix(preTimeIt->vec, nextTimeIt->vec, blendFactor);
 					scaleMatrix = glm::scale(scaleMatrix, curScale);
 				}
@@ -116,7 +122,15 @@ void NodeAnimation::animate() {
 						preTimeIt = nextTimeIt - 1;
 					}
 					float blendFactor = static_cast<float>(curTime - preTimeIt->timeMs) / static_cast<float>(nextTimeIt->timeMs - preTimeIt->timeMs);
-					glm::quat curRotate = glm::slerp(preTimeIt->rotate, nextTimeIt->rotate, blendFactor);
+					glm::quat curRotate(1.0f,0.0f,0.0f,0.0f);
+					if (mRotateInterpolationType == InterpolationType::Step) {
+						blendFactor = glm::step(0.5f, blendFactor);
+						curRotate = glm::mix(preTimeIt->rotate, nextTimeIt->rotate, blendFactor);
+					}
+					else if (mRotateInterpolationType == InterpolationType::Linear) {
+						curRotate = glm::mix(preTimeIt->rotate, nextTimeIt->rotate, blendFactor);
+					}
+					curRotate = glm::slerp(preTimeIt->rotate, nextTimeIt->rotate, blendFactor);
 					rotateMatrix = glm::toMat4(curRotate);
 				}
 			}

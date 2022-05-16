@@ -30,11 +30,11 @@ void AnimationManager::updateActiveAnimation() {
 	}
 }
 
-void AnimationManager::addAffectedNode(const std::string& name, const std::shared_ptr<Node>& pNode) {
-	for (const auto& pair : mAnimationMap) {
-		auto pSkeletonAnimation = std::dynamic_pointer_cast<SkeletonAnimation>(pair.second);
-		if (pSkeletonAnimation) {
-			//pSkeletonAnimation->addAffectedNode(name, pNode);
-		}
-	}
-}
+//void AnimationManager::addAffectedNode(const std::string& name, const std::shared_ptr<Node>& pNode) {
+//	for (const auto& pair : mAnimationMap) {
+//		auto pSkeletonAnimation = std::dynamic_pointer_cast<SkeletonAnimation>(pair.second);
+//		if (pSkeletonAnimation) {
+//			//pSkeletonAnimation->addAffectedNode(name, pNode);
+//		}
+//	}
+//}

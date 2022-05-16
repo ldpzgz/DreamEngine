@@ -17,7 +17,7 @@ public:
 	void startAnimation(const std::string& name);
 	void stopAnimation(const std::string& name);
 	void updateActiveAnimation();
-	void addAffectedNode(const std::string& name,const std::shared_ptr<Node>& pNode);
+	//void addAffectedNode(const std::string& name,const std::shared_ptr<Node>& pNode);
 private:
 	std::unordered_map<std::string, std::shared_ptr<Animation>> mAnimationMap;
 	std::unordered_map<std::string, std::shared_ptr<Animation>> mActiveAnimations;

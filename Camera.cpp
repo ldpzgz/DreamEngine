@@ -489,7 +489,6 @@ void Camera::genShadowMap(std::shared_ptr<Scene>& pScene) {
 				if (mpGenShadowMaterial) {
 					auto& pMat = mpGenShadowMaterial;
 					auto& pMatA = mpGenShadowAnimMaterial;
-					AnimationManager::getInstance().updateActiveAnimation();
 					rootNode->visitNode([&pMat,&pMatA](Node* pNode) {
 						const auto& pRenderables = pNode->getRenderables();
 						if (pRenderables.empty()) {

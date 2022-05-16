@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include <string_view>
 #include <vector>
+#include "AnimationManager.h"
 #include "animation/Skeleton.h"
 #include "animation/SkeletonAnimation.h"
 #include<glm/ext/quaternion_common.hpp>
@@ -648,6 +649,7 @@ void MeshLoaderGltfImpl::parseAnimationInfo(cgltf_data* pData) {
 				}
 					
 				pMyAnimation = Animation::createAnimation(animatType,pAnimation->name);
+				AnimationManager::getInstance().addAnimation(pAnimation->name, pMyAnimation);
 				pMyAnimation->setAffectedSkeleton(pSkeleton);
 				if (pSkeleton) {
 					pSkeleton->addAnimation(pMyAnimation);
