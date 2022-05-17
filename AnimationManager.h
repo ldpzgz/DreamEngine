@@ -14,6 +14,7 @@ public:
 			LOGE("duplicate animation name %s",name.c_str());
 		}
 	}
+	void startAnimation(int i);
 	void startAnimation(const std::string& name);
 	void stopAnimation(const std::string& name);
 	void updateActiveAnimation();

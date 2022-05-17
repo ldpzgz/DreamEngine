@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <string_view>
 #include <random>
+#include <regex>
 #include "Log.h"
 
 using namespace std::filesystem;
@@ -35,6 +36,8 @@ namespace Utils {
 	}
 
 	std::string nowTime();
+
+	std::vector<std::string> resplit(const std::string& s, const std::regex& sep_regex = std::regex{ "\\s+" });
 	/*
 	* 返回path中的文件名，如果path没有路径信息也没有后缀，直接返回path
 	*/
@@ -45,7 +48,7 @@ namespace Utils {
 	* 以separator为分界分割字符串，
 	* 返回找到的子串的个数
 	*/
-	int splitStr(const std::string_view str, const std::string_view Separator, std::vector<std::string_view>& result);
+	void splitStr(const std::string_view str, const std::string_view Separator, std::vector<std::string_view>& result);
 
 	void forEachFile(const std::string pathName, const std::string suffix, std::function<void(const std::string& path)> func);
 

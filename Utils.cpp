@@ -126,8 +126,7 @@ namespace Utils {
 		}
 	}
 
-	int splitStr(const std::string_view str, const std::string_view separator, std::vector<std::string_view>& result) {
-		int count = 0;
+	void splitStr(const std::string_view str, const std::string_view separator, std::vector<std::string_view>& result) {
 		if (!str.empty() && !separator.empty()) {
 			size_t startPos = str.find_first_not_of(separator);
 			size_t endPos = 0;
@@ -135,7 +134,6 @@ namespace Utils {
 			do {
 				auto tempPos = str.find_first_of(separator,startPos);
 				if (tempPos != std::string::npos) {
-					++count;
 					result.emplace_back(str.substr(startPos, tempPos - startPos));
 					startPos = str.find_first_not_of(separator, tempPos + 1);
 					if (startPos != std::string::npos) {
@@ -147,14 +145,25 @@ namespace Utils {
 				}
 				else {
 					if (startPos < strLen) {
-						++count;
 						result.emplace_back(str.substr(startPos));
 					}
 					break;
 				}
 			} while (true);
 		}
-		return count;
+	}
+
+	std::vector<std::string> resplit(const std::string& s, const std::regex& sep_regex) {
+		std::sregex_token_iterator iter(s.begin(), s.end(), sep_regex, -1);
+		std::sregex_token_iterator end;
+		std::vector<std::string> elems;
+		while (iter != end) {
+			if (iter->length()) {
+				elems.emplace_back(*iter);
+			}
+			++iter;
+		}
+		return elems;
 	}
 
 	bool parseItem(const string& value, std::function<bool(const std::string&, const std::string&)> func) {

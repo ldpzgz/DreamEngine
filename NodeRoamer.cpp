@@ -34,6 +34,8 @@ void NodeRoamer::setTarget(std::shared_ptr<Node>& pNode,std::shared_ptr<Camera>&
 	if (mLengthBase < 0.0001f) {
 		mLengthBase = 1.0f;
 	}
+	//mTranslateForScale = glm::translate(mTranslateForScale, -translateForScale);
+	//mInverseTranslate = glm::translate(mInverseTranslate, translateForScale);
 }
 void NodeRoamer::startRotate(int x, int y) {
 	if (mpNode) {
@@ -62,9 +64,8 @@ void NodeRoamer::rotate(int x, int y) {
 			tempUd = glm::rotate(tempUd, b / 100.0f, glm::vec3(tempMat[0][0], tempMat[1][0], tempMat[2][0]));
 		}
 		const auto& myMat = mpNode->getLocalMatrix();
-		const auto& myParentMat = mpNode->getParentWorldMat();
 		
-		//模仿blender查看物体的方式
+		//模仿blender查看物体的方式 mInverseTranslate *  * mTranslateForScale
 		mpNode->setLocalMatrix(tempUd * myMat * tempLr);
 
 		mStartRotateX = x;

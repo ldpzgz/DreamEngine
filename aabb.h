@@ -1,8 +1,11 @@
 #pragma once
 
 #include <utility>
-#include <glm/vec3.hpp>
 #include <array>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>         // mat4
+#include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
 class AABB {
 public:
 	AABB()=default;
@@ -52,6 +55,22 @@ public:
 		xyz[4] = std::min<float>(xyz[4], other.xyz[4]);
 		xyz[5] = std::max<float>(xyz[5], other.xyz[5]);
 		return *this;
+	}
+
+	AABB operator*(const glm::mat4& mat) {
+		glm::vec4 mi(xyz[0], xyz[2], xyz[4],1.0f);
+		glm::vec4 ma(xyz[1], xyz[3], xyz[5], 1.0f);
+		auto mi_ = mat * mi;
+		auto ma_ = mat * ma;
+
+		AABB temp;
+		temp.xyz[0] = std::min<float>(mi_.x, ma_.x);
+		temp.xyz[1] = std::max<float>(mi_.x, ma_.x);
+		temp.xyz[2] = std::min<float>(mi_.y, ma_.y);
+		temp.xyz[3] = std::max<float>(mi_.y, ma_.y);
+		temp.xyz[4] = std::min<float>(mi_.z, ma_.z);
+		temp.xyz[5] = std::max<float>(mi_.z, ma_.z);
+		return temp;
 	}
 	std::array<float, 6> xyz{ 0,0,0,0,0,0 };
 };

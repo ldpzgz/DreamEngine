@@ -818,7 +818,8 @@ bool ResourceImpl::opBlendHandler(Material* pMaterial, const std::string& value)
 	do {
 		if (value != "false") {
 			std::vector<std::string_view> findResult;
-			auto count = Utils::splitStr(value, ",", findResult);
+			Utils::splitStr(value, ",", findResult);
+			auto count = findResult.size();
 			if (count != 4 && count != 7) {
 				LOGE("blend op spell error,int material %s", pMaterial->getName().c_str());
 				hasError = true;
@@ -916,50 +917,47 @@ bool ResourceImpl::opBlendHandler(Material* pMaterial, const std::string& value)
 }
 bool ResourceImpl::opCullfaceHandler(Material* pMaterial, const std::string& value) {
 
-	std::string bEnableStr;
-	std::string cullWhichFaceStr;
+	std::string_view bEnableStr;
+	std::string_view cullWhichFaceStr;
 	bool bEnable = false;
-	int cullWhichFace = 1;
+	int cullWhichFace = GL_BACK;
 	bool hasError = false;
-	do {
-		auto pos = value.find(',');
-		if (pos != std::string::npos) {
-			bEnableStr = value.substr(0, pos);
-			cullWhichFaceStr = value.substr(pos + 1);
-			if (bEnableStr == "true") {
-				bEnable = true;
-			}
-			else if (bEnableStr == "false") {
-				bEnable = false;
-			}
-			else {
-				hasError = true;
-				break;
-			}
+	
+	std::vector<std::string_view> result;
+	Utils::splitStr(value, ","sv, result);
+	auto count = result.size();
+	if(count==1){
+		bEnableStr = result[0];
+	}
+	else if (count == 2) {
+		bEnableStr = result[0];
+		cullWhichFaceStr = result[1];
+	}
+	if (bEnableStr == "true"sv) {
+		bEnable = true;
+	}
+	else if (bEnableStr == "false"sv) {
+		bEnable = false;
+	}
+	else {
+		hasError = true;
+	}
 
-			if (cullWhichFaceStr == "front") {
-				cullWhichFace = GL_FRONT;
-			}
-			else if (cullWhichFaceStr == "back") {
-				cullWhichFace = GL_BACK;
-			}
-			else if (cullWhichFaceStr == "frontAndBack") {
-				cullWhichFace = GL_FRONT_AND_BACK;
-			}
-			else {
-				hasError = true;
-				break;
-			}
+	if (bEnable) {
+		if (cullWhichFaceStr == "front"sv) {
+			cullWhichFace = GL_FRONT;
 		}
-		else if (value == "false") {
-			bEnable = false;
+		else if (cullWhichFaceStr == "back"sv) {
+			cullWhichFace = GL_BACK;
+		}
+		else if (cullWhichFaceStr == "frontAndBack"sv) {
+			cullWhichFace = GL_FRONT_AND_BACK;
 		}
 		else {
 			hasError = true;
-			break;
 		}
-	} while (false);
-
+	}
+		
 	if (hasError) {
 		LOGE("error to parse material-op-cullface value is %s", value.c_str());
 		return false;
@@ -968,7 +966,6 @@ bool ResourceImpl::opCullfaceHandler(Material* pMaterial, const std::string& val
 		pMaterial->setCullWhichFace(bEnable, cullWhichFace);
 		return true;
 	}
-
 }
 
 Resource& Resource::getInstance() {
@@ -1769,6 +1766,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		programUbo += string_view("}\n");
 		program += programSampler;
 		program += programUbo;
+		program += mInfo.opString;
 		if (Config::openShadowMap) {
 			allDefine += hasShadow;
 		}

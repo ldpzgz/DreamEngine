@@ -61,7 +61,7 @@ void MeshLoaderAssimpImpl::parseAnimationInfo(const struct aiScene* pScene,
 				for (unsigned int j = 0; j < num; ++j) {
 					aiNodeAnim* pNodeAnim = pAnimation->mChannels[j];
 					if (pNodeAnim != nullptr) {
-						std::string nodeName(pNodeAnim->mNodeName.data);
+						const char* nodeName = pNodeAnim->mNodeName.data;
 						//pSkeletonAnimation->addAffectedNode(nodeName);
 						auto numPos = pNodeAnim->mNumPositionKeys;
 						auto* pPosKey = pNodeAnim->mPositionKeys;

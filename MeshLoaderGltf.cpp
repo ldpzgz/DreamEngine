@@ -318,13 +318,15 @@ void MeshLoaderGltfImpl::parseMaterial(cgltf_data* data) {
 				pInfo->normalMap = pTex->getName();
 			}
 		}
-		/*auto pAoTex = pMaterial->occlusion_texture.texture;
-		if (pAoTex != nullptr) {
-			auto pTex = loadTextureFunc(pAoTex);
-			if (pTex) {
-				pInfo->aoMap = pTex->getName();
-			}
-		}*/
+		std::string op{"op{\n"};
+		if (pMaterial->double_sided) {
+			op += "\tcullFace=false\n";
+		}
+		if (pMaterial->alpha_mode == cgltf_alpha_mode_blend) {
+			op += "\tblend=true,sa,1-sa\n";
+		}
+		op += "}\n";
+		pInfo->opString = std::move(op);
 		materialsMap.try_emplace(pInfo->name, std::move(pInfo));
 		++pMaterial;
 		//clearCoat
@@ -341,7 +343,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 	auto meshCount = data->meshes_count;
 	for (int i = 0; i < meshCount; ++i) {
 		bool hasSkeletonAnimation{ false };
-		std::cout << "gltf mesh name:" << pMesh->name << std::endl;
+		LOGD("gltf mesh name:%s", pMesh->name );
 		//primitive is real mesh,
 		auto pPrimitive = pMesh->primitives;
 		auto primitiveCount = pMesh->primitives_count;
@@ -614,11 +616,16 @@ void MeshLoaderGltfImpl::parseAnimationInfo(cgltf_data* pData) {
 	int animatCount = pData->animations_count;
 	for (int i = 0; i < animatCount; ++i) {
 		if (pAnimation != nullptr) {
+			std::string animationName;
 			if (pAnimation->name == nullptr) {
-				LOGE("find animation with no name");
-				continue;
+				LOGD("find animation with no name,so give a random name");
+				animationName = "animation" + Utils::nowTime();
 			}
-			LOGD("find animation %s", pAnimation->name);
+			else {
+				LOGD("find animation %s", pAnimation->name);
+				animationName = pAnimation->name;
+			}
+			
 			std::shared_ptr<Animation> pMyAnimation;
 			AnimationType animatType{AnimationType::NodeAnimation};
 			int64_t duration = 0;
@@ -636,22 +643,23 @@ void MeshLoaderGltfImpl::parseAnimationInfo(cgltf_data* pData) {
 			
 			auto pTargetNode = pChannel->target_node;
 			if (pTargetNode != nullptr) {
-				std::string targetNodeName(pTargetNode->name);
-
-				for (auto& ske : skeletonMap) {
-					auto& nameIndexMap = ske.second->getBoneName2Index();
-					auto it = nameIndexMap.find(targetNodeName);
-					if (it != nameIndexMap.end()) {
-						pSkeleton = ske.second;
-						animatType = AnimationType::SkeletonAnimation;
-						break;
+				if (pTargetNode->name != nullptr) {
+					std::string targetNodeName(pTargetNode->name);
+					for (auto& ske : skeletonMap) {
+						auto& nameIndexMap = ske.second->getBoneName2Index();
+						auto it = nameIndexMap.find(targetNodeName);
+						if (it != nameIndexMap.end()) {
+							pSkeleton = ske.second;
+							animatType = AnimationType::SkeletonAnimation;
+							break;
+						}
 					}
 				}
 					
-				pMyAnimation = Animation::createAnimation(animatType,pAnimation->name);
-				AnimationManager::getInstance().addAnimation(pAnimation->name, pMyAnimation);
-				pMyAnimation->setAffectedSkeleton(pSkeleton);
+				pMyAnimation = Animation::createAnimation(animatType, animationName);
+				AnimationManager::getInstance().addAnimation(animationName, pMyAnimation);
 				if (pSkeleton) {
+					pMyAnimation->setAffectedSkeleton(pSkeleton);
 					pSkeleton->addAnimation(pMyAnimation);
 				}
 				else {
@@ -667,7 +675,7 @@ void MeshLoaderGltfImpl::parseAnimationInfo(cgltf_data* pData) {
 					auto pSampler = pChannel->sampler;
 					int dataType = pChannel->target_path;//translate,rotate,scale,weight
 					if (pSampler) {
-						//get bone's keyframe info
+						//get keyframe info
 						//time is float type in seconds;
 						auto retTime = getAccessorData(pSampler->input);
 						auto retMat = getAccessorData(pSampler->output);

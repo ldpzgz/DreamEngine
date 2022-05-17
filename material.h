@@ -21,17 +21,14 @@ public:
 
 	//for metallic/roughness workflow
 	std::string armMap;
-	//std::shared_ptr<Texture> pMetaRoughMap;
 
 	//金属性，要么是一个固定值，要么是map
 	float metallic{ 0.0f };
 	std::string metallicMap;
-	//std::shared_ptr<Texture> pMetaTex;
 
 	//粗糙度，要么是一个固定值，要么是map
 	float roughness{ 0.8f };//=1.0f-glossness
 	std::string roughnessMap;
-	//std::shared_ptr<Texture> pRoughTex;
 
 	/*specularglossness map，for pbr specular / glossness workflow
 	* this workflow has two rgb textures,the one is specular the other is diffuse
@@ -44,8 +41,6 @@ public:
 	*	Bright values should not be higher than 240 sRGB
 	*/
 	std::string specGlosMapPath;
-	//std::shared_ptr<Texture> pSpecGlosMap;
-	//std::shared_ptr<Texture> pSpecTex;
 	Color specularColor;
 
 	//albedo,for specular/glossness workflow this diffuse,metal has no diffuse to the diffuse is zero,
@@ -53,17 +48,22 @@ public:
 	Color albedoColor{1.0f,1.0f,1.0f,1.0f};
 	std::string albedoMap;//or diffuseMap
 	bool hasVertexColor{false};
-	//std::shared_ptr<Texture> pAlbedoTex;
 
 	//normal
 	bool hasNormal{ true };
 	std::string normalMap;
-	//std::shared_ptr<Texture> pNormalTex;
 
 	//ao
 	float ao{ 0.2f };
 	std::string aoMap;
-	//std::shared_ptr<Texture> pAoTex;
+
+	/*
+	* op{
+	*	depthTest=true
+	*	cullFace=true,front
+	* }
+	*/
+	std::string opString;
 };
 
 class Material{

@@ -7,6 +7,20 @@ AnimationManager& AnimationManager::getInstance() {
 	static AnimationManager gManager;
 	return gManager;
 }
+
+void AnimationManager::startAnimation(int i) {
+	for (auto it = mAnimationMap.begin(); it != mAnimationMap.end();) {
+		if (--i < 0) {
+			it->second->start();
+			mActiveAnimations.try_emplace(it->first, it->second);
+			break;
+		}
+		else {
+			++it;
+		}
+	}
+}
+
 void AnimationManager::startAnimation(const std::string& name) {
 	auto it = mAnimationMap.find(name);
 	if (it != std::end(mAnimationMap)) {

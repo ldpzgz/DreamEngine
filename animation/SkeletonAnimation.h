@@ -21,16 +21,16 @@ public:
 
 	~SkeletonAnimation() = default;
 
-	void setPosKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, 
+	void setPosKeyFrame(const char* nodeName, float* pTime, glm::vec3* pPos,
 		int count, InterpolationType interType) override;
-	void setScaleKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, 
+	void setScaleKeyFrame(const char* nodeName, float* pTime, glm::vec3* pPos,
 		int count, InterpolationType interType) override;
-	void setRotateKeyFrame(const std::string& nodeName, float* pTime, glm::quat* pPos, 
+	void setRotateKeyFrame(const char* nodeName, float* pTime, glm::quat* pPos,
 		int count, InterpolationType interType) override;
 
-	void addPosKeyFrame(const std::string& nodeName, std::vector<KeyFrameVec3Time>& info) override;
-	void addScaleKeyFrame(const std::string& nodeName, std::vector<KeyFrameVec3Time>& info) override;
-	void addRotateKeyFrame(const std::string& nodeName, std::vector<KeyFrameQuatTime>& info) override;
+	void addPosKeyFrame(const char* nodeName, std::vector<KeyFrameVec3Time>& info) override;
+	void addScaleKeyFrame(const char* nodeName, std::vector<KeyFrameVec3Time>& info) override;
+	void addRotateKeyFrame(const char* nodeName, std::vector<KeyFrameQuatTime>& info) override;
 
 	void setAffectedSkeleton(std::shared_ptr<Skeleton> ps) override {
 		mpSkeleton = ps;

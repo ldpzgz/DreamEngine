@@ -24,7 +24,7 @@ SkeletonAnimation::SkeletonAnimation():
 
 }
 
-void SkeletonAnimation::setPosKeyFrame(const std::string& nodeName, float* pTime, 
+void SkeletonAnimation::setPosKeyFrame(const char* nodeName, float* pTime,
 	glm::vec3* pPos, int count, InterpolationType interType) {
 	std::vector< KeyFrameVec3Time> vec;
 	for (int i = 0; i < count; ++i) {
@@ -36,7 +36,7 @@ void SkeletonAnimation::setPosKeyFrame(const std::string& nodeName, float* pTime
 	}
 }
 
-void SkeletonAnimation::setScaleKeyFrame(const std::string& nodeName, float* pTime, 
+void SkeletonAnimation::setScaleKeyFrame(const char* nodeName, float* pTime,
 	glm::vec3* pScale,int count, InterpolationType interType) {
 	std::vector< KeyFrameVec3Time> vec;
 	for (int i = 0; i < count; ++i) {
@@ -48,7 +48,7 @@ void SkeletonAnimation::setScaleKeyFrame(const std::string& nodeName, float* pTi
 	}
 }
 
-void SkeletonAnimation::setRotateKeyFrame(const std::string& nodeName, float* pTime,
+void SkeletonAnimation::setRotateKeyFrame(const char* nodeName, float* pTime,
 	glm::quat* pQuat, int count, InterpolationType interType) {
 	std::vector< KeyFrameQuatTime> vec;
 	for (int i = 0; i < count; ++i) {
@@ -60,17 +60,17 @@ void SkeletonAnimation::setRotateKeyFrame(const std::string& nodeName, float* pT
 	}
 }
 
-void SkeletonAnimation::addPosKeyFrame(const std::string& nodeName, std::vector<KeyFrameVec3Time>& info) {
+void SkeletonAnimation::addPosKeyFrame(const char* nodeName, std::vector<KeyFrameVec3Time>& info) {
 	if (!mpNodesPosKeyFrameInfo->try_emplace(nodeName, std::move(info)).second) {
 		LOGE("addPosKeyFrame,the Node is already has pos keyframe info");
 	}
 }
-void SkeletonAnimation::addScaleKeyFrame(const std::string& nodeName, std::vector<KeyFrameVec3Time>& info) {
+void SkeletonAnimation::addScaleKeyFrame(const char* nodeName, std::vector<KeyFrameVec3Time>& info) {
 	if (!mpNodesScaleKeyFrameInfo->try_emplace(nodeName, std::move(info)).second) {
 		LOGE("addScaleKeyFrame,the Node is already has scale keyframe info");
 	}
 }
-void SkeletonAnimation::addRotateKeyFrame(const std::string& nodeName, std::vector<KeyFrameQuatTime>& info) {
+void SkeletonAnimation::addRotateKeyFrame(const char* nodeName, std::vector<KeyFrameQuatTime>& info) {
 	if (!mpNodesRotateKeyFrameInfo->try_emplace(nodeName, std::move(info)).second) {
 		LOGE("addRotateKeyFrame,the Node is already has rotate keyframe info");
 	}

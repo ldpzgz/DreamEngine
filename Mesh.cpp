@@ -930,6 +930,9 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 	if (componentSize == 2) {
 		type = GL_UNSIGNED_SHORT;
 	}
+	else if (componentSize == 1) {
+		type = GL_UNSIGNED_BYTE;
+	}
 	if (mDrawType == DrawType::Triangles) {
 		glDrawElements(GL_TRIANGLES, mCountOfIndex, type, (const void*)mIndexOffset);
 	}

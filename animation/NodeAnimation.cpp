@@ -3,7 +3,7 @@
 #include<glm/ext/quaternion_common.hpp>
 #include<glm/ext/quaternion_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
-void NodeAnimation::setPosKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, int count, InterpolationType interType) {
+void NodeAnimation::setPosKeyFrame(const char* nodeName, float* pTime, glm::vec3* pPos, int count, InterpolationType interType) {
 	if (pTime!=nullptr && pPos!=nullptr && count>0) {
 		mpPosKeyFrames = std::make_unique<std::vector<KeyFrameVec3Time>>();
 		mPosInterpolationType = interType;
@@ -14,7 +14,7 @@ void NodeAnimation::setPosKeyFrame(const std::string& nodeName, float* pTime, gl
 	}
 }
 
-void NodeAnimation::setScaleKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pScale, int count, InterpolationType interType) {
+void NodeAnimation::setScaleKeyFrame(const char* nodeName, float* pTime, glm::vec3* pScale, int count, InterpolationType interType) {
 	if (pTime != nullptr && pScale != nullptr && count > 0) {
 		mpScaleKeyFrames = std::make_unique<std::vector<KeyFrameVec3Time>>();
 		mScaleInterpolationType = interType;
@@ -25,7 +25,7 @@ void NodeAnimation::setScaleKeyFrame(const std::string& nodeName, float* pTime, 
 	}
 }
 
-void NodeAnimation::setRotateKeyFrame(const std::string& nodeName, float* pTime, glm::quat* pRotate, int count, InterpolationType interType) {
+void NodeAnimation::setRotateKeyFrame(const char* nodeName, float* pTime, glm::quat* pRotate, int count, InterpolationType interType) {
 	if (pTime != nullptr && pRotate != nullptr && count > 0) {
 		mpRotateKeyFrames = std::make_unique<std::vector<KeyFrameQuatTime>>();
 		mRotateInterpolationType = interType;

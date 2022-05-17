@@ -57,7 +57,7 @@ shared_ptr<Node> Scene::createSkybox() {
 	mSkyboxInfo.mpMesh->setMaterial(pSkyboxMaterial);
 	auto pSkyNode = mpRootNode->newAChild();
 	pSkyNode->addRenderable(mSkyboxInfo.mpMesh);
-	pSkyNode->scale(glm::vec3(100.0f, 100.0f, 100.0f));
+	pSkyNode->scale(glm::vec3(3000.0f, 3000.0f, 3000.0f));
 	return pSkyNode;
 }
 

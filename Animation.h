@@ -7,6 +7,7 @@
 #include "animation/KeyFrame.h"
 #include "Utils.h"
 #include <vector>
+#include <string_view>
 //#include "Spline.h"
 enum class AnimationType {
 	NodeAnimation,
@@ -90,23 +91,23 @@ public:
 
 	}
 
-	virtual void setPosKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, int count, InterpolationType interType) {
+	virtual void setPosKeyFrame(const char* nodeName, float* pTime, glm::vec3* pPos, int count, InterpolationType interType) {
 
 	}
-	virtual void setScaleKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pScale, int count, InterpolationType interType) {
+	virtual void setScaleKeyFrame(const char* nodeName, float* pTime, glm::vec3* pScale, int count, InterpolationType interType) {
 
 	}
-	virtual void setRotateKeyFrame(const std::string& nodeName, float* pTime, glm::quat* pRotate, int count, InterpolationType interType) {
+	virtual void setRotateKeyFrame(const char* nodeName, float* pTime, glm::quat* pRotate, int count, InterpolationType interType) {
 
 	}
 
-	virtual void addPosKeyFrame(const std::string& nodeName, std::vector<KeyFrameVec3Time>& info) {
+	virtual void addPosKeyFrame(const char* nodeName, std::vector<KeyFrameVec3Time>& info) {
 
 	}
-	virtual void addScaleKeyFrame(const std::string& nodeName, std::vector<KeyFrameVec3Time>& info) {
+	virtual void addScaleKeyFrame(const char* nodeName, std::vector<KeyFrameVec3Time>& info) {
 
 	}
-	virtual void addRotateKeyFrame(const std::string& nodeName, std::vector<KeyFrameQuatTime>& info) {
+	virtual void addRotateKeyFrame(const char* nodeName, std::vector<KeyFrameQuatTime>& info) {
 
 	}
 
