@@ -17,5 +17,5 @@ void Skeleton::updateToUbo() {
 
 void Skeleton::setOffsetMatrix(glm::mat4* pMat, int count) {
 	mBonesOffsetMatrix.assign(pMat, pMat + count);
-	mBonesFinalMatrix.assign(count, glm::mat4(1.0f));
+	mBonesFinalMatrix.assign(MAX_BONE_COUNT, glm::mat4(1.0f));
 }

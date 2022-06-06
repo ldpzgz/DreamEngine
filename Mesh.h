@@ -202,45 +202,51 @@ public:
 		return mbReceiveShadow;
 	}
 
-	void setPosSizeOffset(int size, int offset,int stride,int count) {
+	void setPosSizeOffset(int size, int offset,int stride,int count,int vboIndex=0) {
 		mPosByteSize = size;
 		mPosOffset = offset;
 		mPosStride = stride;
 		mCountOfVertex = count;
+		mPosVboIndex = vboIndex;
 	}
-	void setTexSizeOffset(int size, int offset, int stride=0) {
+	void setTexSizeOffset(int size, int offset, int stride=0, int vboIndex = 0) {
 		mTexByteSize = size;
 		mTexOffset = offset;
 		mTexStride = stride;
 	}
-	void setNorSizeOffset(int size, int offset, int stride = 0) {
+	void setNorSizeOffset(int size, int offset, int stride = 0, int vboIndex = 0) {
 		mNorByteSize = size;
 		mNorOffset = offset;
 		mNorStride = stride;
+		mNorVboIndex = vboIndex;
 	}
-	void setColorSizeOffset(int size, int offset, int stride = 0) {
+	void setColorSizeOffset(int size, int offset, int stride = 0, int vboIndex = 0) {
 		mColorByteSize = size;
 		mColorOffset = offset;
 		mColorStride = stride;
+		mColorVboIndex = vboIndex;
 	}
-	void setIndexSizeOffset(int size, int offset,int stride,int count) {
+	void setIndexSizeOffset(int size, int offset,int stride,int count, int vboIndex = 0) {
 		mIndexByteSize = size;
 		mIndexOffset = offset;
 		mIndexStride = stride;
 		mCountOfIndex = count;
+		mIndexVboIndex = vboIndex;
 	}
-	void setBoneIdSizeOffset(int size, int offset, int stride = 0) {
+	void setBoneIdSizeOffset(int size, int offset, int stride = 0, int vboIndex = 0) {
 		mBoneIdByteSize = size;
 		mBoneIdOffset = offset;
 		if (mBoneIdByteSize>0) {
 			mHasSkin = true;
 		}
 		mBoneIdStride = stride;
+		mBoneIdVboIndex = vboIndex;
 	}
-	void setBoneWeightSizeOffset(int size, int offset, int stride = 0) {
+	void setBoneWeightSizeOffset(int size, int offset, int stride = 0, int vboIndex = 0) {
 		mBoneWeightByteSize = size;
 		mBoneWeightOffset = offset;
 		mBoneWeightStride = stride;
+		mBoneWeightVboIndex = vboIndex;
 	}
 
 	//load bone id and bone weight into vbo
@@ -274,9 +280,7 @@ public:
 
 	void setSkeleton(const std::shared_ptr<Skeleton>& ps);
 
-	void setVbo(const std::shared_ptr<Vbo>& pVbo) {
-		mpVbo = pVbo;
-	}
+	int pushVbo(const std::shared_ptr<Vbo>& pVbo);
 
 	void setDrawType(int type) {
 		mDrawType = static_cast<DrawType>(type);
@@ -326,7 +330,7 @@ protected:
 	//4个vbo对象
 	GLuint mVAO{ 0 };//这个是vao，顶点数组对象，opengles3.0才支持，是一个集合。把设定顶点属性的过程打包到一起，简化绘制流程。
 	GLuint mColorVbo{ 0 };
-	std::shared_ptr<Vbo> mpVbo;
+	std::vector<std::shared_ptr<Vbo>> mpVbo;
 	
 	GLfloat mLineWidth{ 1.0f };
 
@@ -341,31 +345,38 @@ protected:
 	int mCountOfVertex{ 0 };//vertex的个数，这里默认pos，texcoord，normal，color等属性的顶点个数都是一样的;
 	int mPosStride{ 0 };
 	int mPosOffset{ 0 };
+	int mPosVboIndex{ 0 };
 
 	int mTexByteSize{ 0 };
 	int mTexOffset{ 0 };
 	int mTexStride{ 0 };
+	int mTexVboIndex{ 0 };
 
 	int mNorByteSize{ 0 };
 	int mNorOffset{ 0 };
 	int mNorStride{ 0 };
+	int mNorVboIndex{ 0 };
 
 	int mColorByteSize{ 0 };
 	int mColorStride{ 0 };
 	int mColorOffset{ 0 };
+	int mColorVboIndex{ 0 };
 
 	int mBoneIdByteSize{ 0 };
 	int mBoneIdStride{ 0 };
 	int mBoneIdOffset{ 0 };
+	int mBoneIdVboIndex{ 0 };
 
 	int mBoneWeightByteSize{ 0 };
 	int mBoneWeightStride{ 0 };
 	int mBoneWeightOffset{ 0 };
+	int mBoneWeightVboIndex{ 0 };
 
 	int mIndexByteSize{ 0 };
 	int mIndexStride{ 0 };
 	int mIndexOffset{ 0 };
 	int mCountOfIndex{0};
+	int mIndexVboIndex{ 0 };
 	std::string mMaterialName;//解析第三方的mesh格式的时候会设置这个名字，一个mesh文件里面可能会有多个mesh
 							//每个mesh的material是不一样的，默认把mesh的albedoMap文件的名字作为material名字，
 							//解析完了mesh文件之后，再遍历一遍mesh，根据名字找到对应的material。

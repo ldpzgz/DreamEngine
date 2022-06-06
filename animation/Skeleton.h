@@ -6,6 +6,8 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
+
+constexpr int MAX_BONE_COUNT = 128;
 class Node;
 class Animation;
 class Skeleton {

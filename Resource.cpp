@@ -91,7 +91,7 @@ public:
 		return nullptr;
 	}
 
-	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo,bool hasSkeletonAnimation=false);
+	std::shared_ptr<Material> getMaterialDefferedGeoPass(const MaterialInfo& mInfo);
 
 	std::shared_ptr<Material> getMaterialDefferedLightPass(bool hasIBL);
 
@@ -997,8 +997,8 @@ std::shared_ptr<Material> Resource::getMaterial(const std::string& name) {
 * name: 可以是物体的名字
 * mInfo：材质信息，根据里面的信息生成或者clone一个material对象
 */
-std::shared_ptr<Material> Resource::getMaterialDefferedGeoPass(const MaterialInfo& mInfo, bool hasSkeletonAnimation) {
-	return mpImpl->getMaterialDefferedGeoPass(mInfo, hasSkeletonAnimation);
+std::shared_ptr<Material> Resource::getMaterialDefferedGeoPass(const MaterialInfo& mInfo) {
+	return mpImpl->getMaterialDefferedGeoPass(mInfo);
 }
 
 std::shared_ptr<Material> Resource::getMaterialDefferedLightPass(bool hasIBL) {
@@ -1627,7 +1627,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedLightPass(bool hasIBL
 	return pMaterial;
 }
 
-std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const MaterialInfo& mInfo, bool hasSkeletonAnimation) {
+std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const MaterialInfo& mInfo) {
 	/*
 	* 材质信息标志
 	* 0: 表示是否有纹理
@@ -1673,7 +1673,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		materialFlag |= 0x08;
 		materialFlag |= 0x10;
 	}
-	if (hasSkeletonAnimation) {
+	if (mInfo.hasSkeletonAnimation) {
 		materialFlag |= 0x20;
 	}
 	if (mInfo.hasVertexColor) {
@@ -1689,6 +1689,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		std::string allDefine;
 		std::string_view hasTaa{ "#define HAS_TAA 1\n" };
 		std::string_view hasMap{ "#define HAS_MAP 1\n" };
+		std::string_view hasNormal{ "#define HAS_NORMAL 1\n" };
 		std::string_view hasNormalMap{ "#define HAS_NORMAL_MAP 1\n" };
 		std::string_view hasAlbedoMap{ "#define HAS_ALBEDO_MAP 1\n" };
 		std::string_view hasVertexColor{ "#define HAS_VERTEX_COLOR 1\n" };
@@ -1698,8 +1699,11 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 
 		if (bHasMap) {
 			allDefine += hasMap;
+			if (mInfo.hasNormal) {
+				allDefine += hasNormal;
+			}
 			program += "texcoordLoc=1\nnormalLoc=2\n"sv;
-			if (hasSkeletonAnimation) {
+			if (mInfo.hasSkeletonAnimation) {
 				program += string_view("boneIdLoc=3\nboneWeightLoc=4\n");
 				programUbo += string_view("Bones=5\n");
 			}
@@ -1709,8 +1713,11 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 			programSampler = string_view("sampler{\n");
 		}
 		else {
-			program += "normalLoc=1\n"sv;
-			if (hasSkeletonAnimation) {
+			if (mInfo.hasNormal) {
+				program += "normalLoc=1\n"sv;
+				allDefine += hasNormal;
+			}
+			if (mInfo.hasSkeletonAnimation) {
 				program += string_view("boneIdLoc=2\nboneWeightLoc=3\n");
 				programUbo += string_view("Bones=5\n");
 			}
@@ -1770,7 +1777,7 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 		if (Config::openShadowMap) {
 			allDefine += hasShadow;
 		}
-		if (hasSkeletonAnimation) {
+		if (mInfo.hasSkeletonAnimation) {
 			allDefine += hasSkeletonAnimationDef;
 		}
 

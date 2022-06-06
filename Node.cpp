@@ -6,9 +6,6 @@
 #include <glm/ext/matrix_transform.hpp> // perspective, translate, rotate
 #include <glm/gtc/type_ptr.hpp> // value_ptr
 
-std::vector<std::string_view> gNodeAnyKey{
-	"treeNodeInfo"
-};
 atomic_uint Node::sCurMeshId = 0;
 
 Node::Node() = default;
@@ -16,23 +13,33 @@ Node::Node() = default;
 Node::~Node() = default;
 
 void Node::setAny(NodeAnyIndex index, const std::any & a) {
-	assert(static_cast<std::size_t>(index) < gNodeAnyKey.size());
-	auto& anyKey = gNodeAnyKey[static_cast<std::size_t>(index)];
-	mAttachments[anyKey] = a;
+	mAttachments[index] = a;
 }
+
 std::any Node::getAny(NodeAnyIndex index) {
-	auto& anyKey = gNodeAnyKey[static_cast<int>(index)];
-	auto it = mAttachments.find(anyKey);
-	if (it != mAttachments.end()) {
-		return it->second;
-	}
-	return {};
+	return mAttachments[index];
 }
 
 shared_ptr<Node> Node::newAChild() {
 	auto child = make_shared<Node>();
 	addChild(child);
 	return child;
+}
+
+glm::mat4 Node::getWorldMatrix() noexcept {
+	if (mbHasNodeAnimation) {
+		try {
+			auto& nodeMat = std::any_cast<glm::mat4>(mAttachments[NodeAnyIndex::NodeAnimationMatrix]);
+			return nodeMat * mParentWorldMat * mLocalMat;
+		}
+		catch (std::bad_any_cast e) {
+			LOGE("Node::getWorldMatrix() bad any cast");
+			return mParentWorldMat * mLocalMat;
+		}
+	}
+	else {
+		return mParentWorldMat * mLocalMat;
+	}
 }
 
 void Node::addChild(shared_ptr<Node>& child) {

@@ -7,6 +7,8 @@
 #include<glm/ext/quaternion_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+//extern std::shared_ptr<Node> gpBoxNode;
+
 SkeletonAnimation::SkeletonAnimation(const std::string& name) :
 	Animation(name),
 	mpNodesPosKeyFrameInfo(std::make_shared< std::unordered_map< std::string, std::vector<KeyFrameVec3Time>>>()),
@@ -24,7 +26,7 @@ SkeletonAnimation::SkeletonAnimation():
 
 }
 
-void SkeletonAnimation::setPosKeyFrame(const char* nodeName, float* pTime,
+void SkeletonAnimation::setPosKeyFrame(const std::string& nodeName, float* pTime,
 	glm::vec3* pPos, int count, InterpolationType interType) {
 	std::vector< KeyFrameVec3Time> vec;
 	for (int i = 0; i < count; ++i) {
@@ -36,7 +38,7 @@ void SkeletonAnimation::setPosKeyFrame(const char* nodeName, float* pTime,
 	}
 }
 
-void SkeletonAnimation::setScaleKeyFrame(const char* nodeName, float* pTime,
+void SkeletonAnimation::setScaleKeyFrame(const std::string& nodeName, float* pTime,
 	glm::vec3* pScale,int count, InterpolationType interType) {
 	std::vector< KeyFrameVec3Time> vec;
 	for (int i = 0; i < count; ++i) {
@@ -48,7 +50,7 @@ void SkeletonAnimation::setScaleKeyFrame(const char* nodeName, float* pTime,
 	}
 }
 
-void SkeletonAnimation::setRotateKeyFrame(const char* nodeName, float* pTime,
+void SkeletonAnimation::setRotateKeyFrame(const std::string& nodeName, float* pTime,
 	glm::quat* pQuat, int count, InterpolationType interType) {
 	std::vector< KeyFrameQuatTime> vec;
 	for (int i = 0; i < count; ++i) {
@@ -94,19 +96,21 @@ void SkeletonAnimation::animate() {
 		auto& offsetMatrixes = pSkeleton->getOffsetMatrix();
 		auto& finalMatrixes = pSkeleton->getFinalMatrix();
 		auto& name2Index = pSkeleton->getBoneName2Index();
-		glm::mat4 invertRootMatrix(1.0f);
+		glm::mat4 invertRootMatrix{ 1.0f };
 		if (name2Index.find(pRootNode->getName()) == name2Index.end()) {
 			invertRootMatrix = glm::inverse(pRootNode->getWorldMatrix());
 		}
 
 		pRootNode->visitNode([this,&pSkeleton ,&curTime,&invertRootMatrix,&name2Index,&offsetMatrixes,&finalMatrixes](Node* pNode) {//&completeCount,
 			const std::string& nodeName = pNode->getName();
-			if (!nodeName.empty()) {
+			if (!nodeName.empty() && name2Index.find(nodeName)!=name2Index.end()) {
 				glm::mat4 posMatrix{1.0f};
 				glm::mat4 scaleMatrix{ 1.0f };
 				glm::mat4 rotateMatrix{ 1.0f };
+				bool hasKeyFrames = false;
 				auto posKeyIt = mpNodesPosKeyFrameInfo->find(nodeName);
 				if (posKeyIt != mpNodesPosKeyFrameInfo->end()) {
+					hasKeyFrames = true;
 					//evaluate the pos 
 					//find two keys which contains the curtime
 					auto& posArray = posKeyIt->second;
@@ -135,6 +139,7 @@ void SkeletonAnimation::animate() {
 
 				auto scaleKeyIt = mpNodesScaleKeyFrameInfo->find(nodeName);
 				if (scaleKeyIt != mpNodesScaleKeyFrameInfo->end()) {
+					hasKeyFrames = true;
 					//evaluate the scale 
 					auto& scaleArray = scaleKeyIt->second;
 					if (scaleArray.size() == 1) {
@@ -162,6 +167,7 @@ void SkeletonAnimation::animate() {
 
 				auto rotateKeyIt = mpNodesRotateKeyFrameInfo->find(nodeName);
 				if (rotateKeyIt != mpNodesRotateKeyFrameInfo->end()) {
+					hasKeyFrames = true;
 					//evaluate the rotate
 					auto& rotateArray = rotateKeyIt->second;
 					if (rotateArray.size() == 1) {
@@ -186,19 +192,28 @@ void SkeletonAnimation::animate() {
 						}
 					}
 				}
-				auto myLocalMat = posMatrix * rotateMatrix * scaleMatrix;
-				pNode->setLocalMatrix(myLocalMat,false);
+				if (hasKeyFrames) {
+					
+					auto myLocalMat = posMatrix * rotateMatrix * scaleMatrix;//rotateMatrix * scaleMatrix;
+					pNode->setLocalMatrix(myLocalMat, false);
+				}
+				else {
+					pNode->updateDirectChild(true);
+				}
 
 				auto it = name2Index.find(nodeName);
 				if (it != name2Index.end()) {
 					int index = it->second;
 					auto worldMat = pNode->getWorldMatrix();
 					finalMatrixes[index] = invertRootMatrix * worldMat * offsetMatrixes[index];
+					/*if (gpBoxNode) {
+						gpBoxNode->setLocalMatrix(finalMatrixes[1]);
+					}*/
 					pSkeleton->setUpdateFinalMatrix(true);
 				}
 			}
 			else {
-				LOGD("a node has no name in SkeletonAnimation");
+				//LOGD("a node has no name in SkeletonAnimation");
 				pNode->updateDirectChild(true);
 			}
 		});

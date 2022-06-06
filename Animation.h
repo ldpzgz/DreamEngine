@@ -91,13 +91,13 @@ public:
 
 	}
 
-	virtual void setPosKeyFrame(const char* nodeName, float* pTime, glm::vec3* pPos, int count, InterpolationType interType) {
+	virtual void setPosKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, int count, InterpolationType interType) {
 
 	}
-	virtual void setScaleKeyFrame(const char* nodeName, float* pTime, glm::vec3* pScale, int count, InterpolationType interType) {
+	virtual void setScaleKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pScale, int count, InterpolationType interType) {
 
 	}
-	virtual void setRotateKeyFrame(const char* nodeName, float* pTime, glm::quat* pRotate, int count, InterpolationType interType) {
+	virtual void setRotateKeyFrame(const std::string& nodeName, float* pTime, glm::quat* pRotate, int count, InterpolationType interType) {
 
 	}
 

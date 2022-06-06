@@ -8,13 +8,13 @@ public:
 	using Animation::Animation;
 	~NodeAnimation() = default;
 
-	void setPosKeyFrame(const char* nodeName, float* pTime,
+	void setPosKeyFrame(const std::string& nodeName, float* pTime,
 		glm::vec3* pPos, int count, InterpolationType interType) override;
 
-	void setScaleKeyFrame(const char* nodeName,
+	void setScaleKeyFrame(const std::string& nodeName,
 		float* pTime, glm::vec3* pScale, int count, InterpolationType interType) override;
 
-	void setRotateKeyFrame(const char* nodeName,
+	void setRotateKeyFrame(const std::string& nodeName,
 		float* pTime, glm::quat* pRotate, int count, InterpolationType interType) override;
 
 	void setTargetNode(const std::shared_ptr<Node> pNode) override {

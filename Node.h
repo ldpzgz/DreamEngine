@@ -16,6 +16,7 @@ class Renderable;
 class NodeListener;
 enum class NodeAnyIndex {
 	TreeNodeInfo,
+	NodeAnimationMatrix,
 };
 
 class Node : public enable_shared_from_this<Node> {
@@ -78,9 +79,7 @@ public:
 		return mLocalMat;
 	}
 
-	glm::mat4 getWorldMatrix() const noexcept {
-		return mParentWorldMat*mLocalMat;
-	}
+	glm::mat4 getWorldMatrix() noexcept;
 
 	const glm::mat4& getParentWorldMat() noexcept {
 		return mParentWorldMat;
@@ -136,7 +135,9 @@ public:
 	//you can attachment anything to the node
 	void setAny(NodeAnyIndex index, const std::any& a);
 	std::any getAny(NodeAnyIndex index);
-	//void removeListener();
+	void setHasNodeAnimation(bool b) {
+		mbHasNodeAnimation = b;
+	}
 protected:
 	glm::mat4 mLocalMat{1.0f};
 	glm::mat4 mParentWorldMat{1.0f};
@@ -151,10 +152,11 @@ private:
 	std::string mName;
 	std::size_t mIdInParent;
 	weak_ptr<Node> mpParent;
-	static atomic_uint sCurMeshId;
+	bool mbHasNodeAnimation{false};
 	unordered_map<unsigned int, shared_ptr<Renderable>> mRenderables;
 	std::vector<std::shared_ptr<Node>> mChildren;
 	std::vector<shared_ptr<NodeListener>> mListeners;
-	std::unordered_map<std::string_view, std::any> mAttachments;
+	std::unordered_map<NodeAnyIndex,std::any> mAttachments;
+	static atomic_uint sCurMeshId;
 };
 using NodeSP = std::shared_ptr<Node>;

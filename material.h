@@ -50,8 +50,10 @@ public:
 	bool hasVertexColor{false};
 
 	//normal
-	bool hasNormal{ true };
+	bool hasNormal{ false };
 	std::string normalMap;
+
+	bool hasSkeletonAnimation{ false };
 
 	//ao
 	float ao{ 0.2f };

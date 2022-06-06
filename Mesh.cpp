@@ -87,7 +87,9 @@ Mesh::Mesh(Mesh&& temp) noexcept:
 	mpPreMvpMatrix(std::move(temp.mpPreMvpMatrix))
 {
 	temp.mVAO = 0;
-	temp.mpVbo = nullptr;
+	for (auto& vbo : temp.mpVbo) {
+		vbo.reset();
+	}
 	temp.mpSkeleton = nullptr;
 }
 
@@ -580,8 +582,9 @@ bool Mesh::createBufferObject(const GLfloat* pos,int posByteSize, int countOfVer
 		//mpVbo->updateVbo(offset, (void*)pBoneWeight, boneWeightSize);
 	}
 	if (totalSize > 0) {
-		mpVbo = std::make_unique<Vbo>();
-		mpVbo->initVbo((void*)&pTempData[0], totalSize);
+		auto pVbo = std::make_shared<Vbo>();
+		pVbo->initVbo((void*)&pTempData[0], totalSize);
+		mpVbo.emplace_back(pVbo);
 	}
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	return true;
@@ -593,9 +596,9 @@ bool Mesh::updataPos(float* pos, int byteOffset, int size)
 	if (size + byteOffset > mPosByteSize) {
 		LOGE("ERROR to update mesh pos data, the size + byteOffset is greater then vbo size");
 	}
-	else if(mpVbo) {
+	else if(mpVbo[mPosVboIndex]) {
 		//int offset = byteOffset;
-		mpVbo->updateVbo(mPosOffset+byteOffset, (void*)pos, byteOffset);
+		mpVbo[mPosVboIndex]->updateVbo(mPosOffset+byteOffset, (void*)pos, byteOffset);
 	}
 	else {
 		LOGE("the mpVbo is null when updatePos");
@@ -612,8 +615,8 @@ bool Mesh::updateColor(float* color, int byteOffset, int size) {
 	glBufferSubData(GL_ARRAY_BUFFER, offsetInByte, sizeInByteToBeReplaced, color);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	return true;*/
-	else if (mpVbo) {
-		mpVbo->updateVbo(mColorOffset+ byteOffset, (void*)color, size);
+	else if (mpVbo[mColorVboIndex]) {
+		mpVbo[mColorVboIndex]->updateVbo(mColorOffset+ byteOffset, (void*)color, size);
 	}
 	else {
 		LOGE("the mpVbo is null when updateNormal");
@@ -627,9 +630,9 @@ bool Mesh::updateNormal(float* normal, int byteOffset, int size) {
 		LOGE("ERROR to update mesh normal data, the size + byteOffset is greater then vbo size");
 		return false;
 	}
-	else if (mpVbo) {
+	else if (mpVbo[mNorVboIndex]) {
 		//int offset = mPosByteSize + mTexByteSize + byteOffset;
-		mpVbo->updateVbo(mNorOffset + byteOffset, (void*)normal, size);
+		mpVbo[mNorVboIndex]->updateVbo(mNorOffset + byteOffset, (void*)normal, size);
 	}
 	else {
 		LOGE("the mpVbo is null when updateNormal");
@@ -643,10 +646,10 @@ bool Mesh::updateBoneId(GLint* pId, int byteOffset, int size) {
 		LOGE("ERROR to update mesh BoneId data, the size + byteOffset is greater then vbo size");
 		return false;
 	}
-	else if (mpVbo) {
+	else if (mpVbo[mBoneIdVboIndex]) {
 		/*int offset = mPosByteSize + mTexByteSize + mNorByteSize
 			+ mIndexByteSize + byteOffset;*/
-		mpVbo->updateVbo(mBoneIdOffset+byteOffset, (void*)pId, size);
+		mpVbo[mBoneIdVboIndex]->updateVbo(mBoneIdOffset+byteOffset, (void*)pId, size);
 	}
 	else {
 		LOGE("the mpVbo is null when updateBoneId");
@@ -660,10 +663,10 @@ bool Mesh::updateBoneWeight(float* pWeight, int byteOffset, int size) {
 		LOGE("ERROR to update mesh normal data, the size + byteOffset is greater then vbo size");
 		return false;
 	}
-	else if (mpVbo) {
+	else if (mpVbo[mBoneWeightVboIndex]) {
 		/*int offset = mPosByteSize + mTexByteSize + mNorByteSize
 			+ mIndexByteSize + mBoneIdByteSize + byteOffset;*/
-		mpVbo->updateVbo(mBoneWeightOffset+byteOffset, (void*)pWeight, size);
+		mpVbo[mBoneWeightVboIndex]->updateVbo(mBoneWeightOffset+byteOffset, (void*)pWeight, size);
 	}
 	else {
 		LOGE("the mpVbo is null when updateBoneWeight");
@@ -679,9 +682,9 @@ bool Mesh::updataTexcoord(float* tex, int byteOffset, int size)
 		LOGE("ERROR to update mesh texcoord data, the size + byteOffset is greater then vbo size");
 		return false;
 	}
-	else if (mpVbo) {
+	else if (mpVbo[mTexVboIndex]) {
 		//int offset = mPosByteSize + byteOffset;
-		mpVbo->updateVbo(mTexOffset+byteOffset, (void*)tex, size);
+		mpVbo[mTexVboIndex]->updateVbo(mTexOffset+byteOffset, (void*)tex, size);
 	}
 	else {
 		LOGE("the mpVbo is null when updataTexcoord");
@@ -696,9 +699,9 @@ bool Mesh::updataIndex(GLuint* pIndex, int byteOffset, int size)
 		LOGE("ERROR to update mesh index data, the size + byteOffset is greater then vbo size");
 		return false;
 	}
-	else if (mpVbo) {
+	else if (mpVbo[mIndexVboIndex]) {
 		//int offset = mPosByteSize + mTexByteSize + mNorByteSize + byteOffset;
-		mpVbo->updateVbo(mIndexOffset+byteOffset, (void*)pIndex, size);
+		mpVbo[mIndexVboIndex]->updateVbo(mIndexOffset+byteOffset, (void*)pIndex, size);
 	}
 	else {
 		LOGE("the mpVbo is null when updataTexcoord");
@@ -708,10 +711,10 @@ bool Mesh::updataIndex(GLuint* pIndex, int byteOffset, int size)
 
 void Mesh::drawLineStrip(int posloc)
 {
-	if (createVaoIfNeed(posloc) && mpVbo) {
+	if (createVaoIfNeed(posloc) && !mpVbo.empty()) {
 		glBindVertexArray(mVAO);
 		if (mposLocation >= 0) {
-			mpVbo->bindArray(true);
+			mpVbo[mPosVboIndex]->bindArray(true);
 			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);
 			glEnableVertexAttribArray(posloc);
 			assert(mCountOfVertex != 0);
@@ -725,7 +728,7 @@ void Mesh::drawLineStrip(int posloc)
 	glLineWidth(mLineWidth);
 	glDrawArrays(GL_LINE_STRIP, 0, mCountOfVertex);
 	glBindVertexArray(0);
-	mpVbo->bindArray(false);
+	mpVbo[mPosVboIndex]->bindArray(false);
 	//glDrawElements(GL_LINE_LOOP, mNumOfIndex, GL_UNSIGNED_INT, (const void*)0);
 }
 
@@ -845,11 +848,12 @@ void Mesh::drawLineStrip(int posloc)
 
 void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneIdLoc,int boneWeightLoc)
 {
-	if (createVaoIfNeed(posloc,texloc,norloc,colorloc) && mpVbo) {
+	if (createVaoIfNeed(posloc,texloc,norloc,colorloc) && !mpVbo.empty()) {
 		glBindVertexArray(mVAO);
-		mpVbo->bindArray(true);
+		
 		if (posloc >= 0)
 		{
+			mpVbo[mPosVboIndex]->bindArray(true);
 			glEnableVertexAttribArray(posloc);
 			assert(mCountOfVertex != 0);
 			int componentOfPos = mPosByteSize / (sizeof(GLfloat) * mCountOfVertex);
@@ -860,6 +864,7 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 
 		if (texloc >= 0)
 		{
+			mpVbo[mTexVboIndex]->bindArray(true);
 			//int offset = mPosByteSize;
 			glEnableVertexAttribArray(texloc);
 			int componentOfTexcoord = mTexByteSize / (sizeof(GLfloat) * mCountOfVertex);
@@ -871,6 +876,7 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 		}
 		if (norloc >= 0)
 		{
+			mpVbo[mNorVboIndex]->bindArray(true);
 			//int offset = mPosByteSize + mTexByteSize;
 			glEnableVertexAttribArray(norloc);
 			int componentOfNormal = mNorByteSize / (sizeof(GLfloat) * mCountOfVertex);
@@ -880,6 +886,7 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 			}
 		}
 		if (colorloc >= 0) {
+			mpVbo[mColorVboIndex]->bindArray(true);
 			glEnableVertexAttribArray(colorloc);
 			int componentNum = mColorByteSize / (sizeof(float) * mCountOfVertex);
 			glVertexAttribPointer(colorloc, componentNum, GL_FLOAT, GL_FALSE, mColorStride, (const void*)mColorOffset);
@@ -888,16 +895,25 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 			}
 		}
 		if (boneIdLoc >= 0) {
+			mpVbo[mBoneIdVboIndex]->bindArray(true);
 			/*int offset = mPosByteSize + mTexByteSize + mNorByteSize+
 				mColorByteSize + mIndexByteSize;*/
 			glEnableVertexAttribArray(boneIdLoc);
-			int componentNum = mBoneIdByteSize / (sizeof(int) * mCountOfVertex);
-			glVertexAttribIPointer(boneIdLoc, componentNum, GL_INT, mBoneIdStride, (const void*)mBoneIdOffset);
+			int componentSize = mBoneIdByteSize / (4 * mCountOfVertex);
+			int type = GL_UNSIGNED_INT;
+			if (componentSize == 2) {
+				type = GL_UNSIGNED_SHORT;
+			}
+			else if (componentSize == 1) {
+				type = GL_UNSIGNED_BYTE;
+			}
+			glVertexAttribIPointer(boneIdLoc, 4, type, mBoneIdStride, (const void*)mBoneIdOffset);
 			if (mBoneIdByteSize == 0) {
 				LOGE("render mesh,the shader has boneId attribute,but there are no boneId data");
 			}
 		}
 		if (boneWeightLoc>=0) {
+			mpVbo[mBoneWeightVboIndex]->bindArray(true);
 			/*int offset = mPosByteSize + mTexByteSize + mNorByteSize +
 				mColorByteSize + mIndexByteSize + mBoneIdByteSize;*/
 			glEnableVertexAttribArray(boneWeightLoc);
@@ -909,7 +925,7 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 		}
 		
 		if (mDrawType == DrawType::Triangles || mDrawType == DrawType::TriangleStrip) {
-			mpVbo->bindElement(true);
+			mpVbo[mIndexVboIndex]->bindElement(true);
 			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);//glDrawElements会用到这个
 		}
 		glBindVertexArray(0);
@@ -943,8 +959,7 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 		glDrawArrays(GL_TRIANGLE_FAN, 0, mCountOfVertex);
 	}
 	glBindVertexArray(0);
-	mpVbo->bindArray(false);
-	mpVbo->bindElement(false);
+	mpVbo[mIndexVboIndex]->bindElement(false);
 }
 
 void Mesh::getMaxNumVertexAttr()
@@ -1145,7 +1160,9 @@ void Mesh::unLoadMesh()
 		glDeleteVertexArrays(1, &mVAO);
 		mVAO = 0;
 	}
-	mpVbo = nullptr;
+	for (auto& v : mpVbo) {
+		v.reset();
+	}
 	mCountOfVertex = 0;
 }
 
@@ -1193,6 +1210,22 @@ void Mesh::setSkeleton(const std::shared_ptr<Skeleton>& ps) {
 	else {
 		LOGD("the mesh has no skin,setSkeleton make no sense");
 	}
+}
+
+int Mesh::pushVbo(const std::shared_ptr<Vbo>& pVbo) {
+	int i = 0;
+	bool bfound = false;
+	for (const auto& v : mpVbo) {
+		if (v == pVbo) {
+			bfound = true;
+			break;
+		}
+		++i;
+	}
+	if (!bfound) {
+		mpVbo.emplace_back(pVbo);
+	}
+	return i;
 }
 
 void Mesh::setAABB(float x1, float y1, float z1, float x2, float y2, float z2) {

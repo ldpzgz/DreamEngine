@@ -60,3 +60,8 @@ resource/drawable/TextureCoordinateTemplate.png
 resource/drawable/Cube_BaseColor.png
 resource/drawable/Cube_MetallicRoughness.png
 Rect.cpp
+resource/drawable/AnimatedCube_BaseColor.png
+resource/drawable/AnimatedCube_MetallicRoughness.png
+resource/drawable/CesiumMan_img0.jpg
+resource/drawable/CesiumMilkTruck.jpg
+resource/drawable/DuckCM.png

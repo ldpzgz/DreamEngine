@@ -3,7 +3,7 @@
 #include<glm/ext/quaternion_common.hpp>
 #include<glm/ext/quaternion_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
-void NodeAnimation::setPosKeyFrame(const char* nodeName, float* pTime, glm::vec3* pPos, int count, InterpolationType interType) {
+void NodeAnimation::setPosKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, int count, InterpolationType interType) {
 	if (pTime!=nullptr && pPos!=nullptr && count>0) {
 		mpPosKeyFrames = std::make_unique<std::vector<KeyFrameVec3Time>>();
 		mPosInterpolationType = interType;
@@ -14,7 +14,7 @@ void NodeAnimation::setPosKeyFrame(const char* nodeName, float* pTime, glm::vec3
 	}
 }
 
-void NodeAnimation::setScaleKeyFrame(const char* nodeName, float* pTime, glm::vec3* pScale, int count, InterpolationType interType) {
+void NodeAnimation::setScaleKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pScale, int count, InterpolationType interType) {
 	if (pTime != nullptr && pScale != nullptr && count > 0) {
 		mpScaleKeyFrames = std::make_unique<std::vector<KeyFrameVec3Time>>();
 		mScaleInterpolationType = interType;
@@ -25,10 +25,13 @@ void NodeAnimation::setScaleKeyFrame(const char* nodeName, float* pTime, glm::ve
 	}
 }
 
-void NodeAnimation::setRotateKeyFrame(const char* nodeName, float* pTime, glm::quat* pRotate, int count, InterpolationType interType) {
+void NodeAnimation::setRotateKeyFrame(const std::string& nodeName, float* pTime, glm::quat* pRotate, int count, InterpolationType interType) {
 	if (pTime != nullptr && pRotate != nullptr && count > 0) {
 		mpRotateKeyFrames = std::make_unique<std::vector<KeyFrameQuatTime>>();
 		mRotateInterpolationType = interType;
+		if (count > 0 && pTime[0]>0) {
+			mpRotateKeyFrames->emplace_back(glm::quat(1.0f,0.0f,0.0f,0.0f), 0);
+		}
 		for (int i = 0; i < count; ++i) {
 			int64_t time = static_cast<double>(pTime[i]) * 1000;
 			mpRotateKeyFrames->emplace_back(pRotate[i], time);
@@ -136,6 +139,7 @@ void NodeAnimation::animate() {
 			}
 		}
 		auto myLocalMat = posMatrix * rotateMatrix * scaleMatrix;
-		mpTargetNode->setLocalMatrix(myLocalMat, false);
+		mpTargetNode->setAny(NodeAnyIndex::NodeAnimationMatrix, myLocalMat);
+		//mpTargetNode->setLocalMatrix(myLocalMat, false);
 	}
 }
