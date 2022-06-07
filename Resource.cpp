@@ -1699,31 +1699,22 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 
 		if (bHasMap) {
 			allDefine += hasMap;
-			if (mInfo.hasNormal) {
-				allDefine += hasNormal;
-			}
-			program += "texcoordLoc=1\nnormalLoc=2\n"sv;
-			if (mInfo.hasSkeletonAnimation) {
-				program += string_view("boneIdLoc=3\nboneWeightLoc=4\n");
-				programUbo += string_view("Bones=5\n");
-			}
-			if (mInfo.hasVertexColor) {
-				program += "colorLoc=3"sv;
-			}
+			program += "texcoordLoc=1\n"sv;
 			programSampler = string_view("sampler{\n");
 		}
-		else {
-			if (mInfo.hasNormal) {
-				program += "normalLoc=1\n"sv;
-				allDefine += hasNormal;
-			}
-			if (mInfo.hasSkeletonAnimation) {
-				program += string_view("boneIdLoc=2\nboneWeightLoc=3\n");
-				programUbo += string_view("Bones=5\n");
-			}
-			if (mInfo.hasVertexColor) {
-				program += "colorLoc=2\n"sv;
-			}
+
+		if (mInfo.hasNormal) {
+			program += "normalLoc=2\n"sv;
+			allDefine += hasNormal;
+		}
+
+		if (mInfo.hasVertexColor) {
+			program += "colorLoc=3"sv;
+		}
+
+		if (mInfo.hasSkeletonAnimation) {
+			program += string_view("boneIdLoc=4\nboneWeightLoc=5\n");
+			programUbo += string_view("Bones=5\n");
 		}
 
 		if (!mInfo.albedoMap.empty()) {
@@ -1792,6 +1783,8 @@ std::shared_ptr<Material> ResourceImpl::getMaterialDefferedGeoPass(const Materia
 
 		//fs 搞定了
 		destMat = std::make_shared<Material>();
+		destMat->setMetallical(mInfo.metallic);
+		destMat->setRoughness(mInfo.roughness);
 		checkglerror();
 		if (compileShader(destMat, materialName, vs, fs)) {
 			if (parseProgram(destMat, program)) {

@@ -923,10 +923,8 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 				LOGE("render mesh,the shader has boneWeight attribute,but there are no boneWeight data");
 			}
 		}
-		
-		if (mDrawType == DrawType::Triangles || mDrawType == DrawType::TriangleStrip) {
+		if (mIndexByteSize >0) {
 			mpVbo[mIndexVboIndex]->bindElement(true);
-			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexVbo);//glDrawElements会用到这个
 		}
 		glBindVertexArray(0);
 	}
@@ -941,25 +939,27 @@ void Mesh::drawTriangles(int posloc,int texloc,int norloc,int colorloc,int boneI
 			LOGE("render mesh,the shader has color attribute,but there are no color data");
 		}
 	}*/
-	int componentSize = mIndexByteSize / mCountOfIndex;
-	int type = GL_UNSIGNED_INT;
-	if (componentSize == 2) {
-		type = GL_UNSIGNED_SHORT;
-	}
-	else if (componentSize == 1) {
-		type = GL_UNSIGNED_BYTE;
-	}
-	if (mDrawType == DrawType::Triangles) {
-		glDrawElements(GL_TRIANGLES, mCountOfIndex, type, (const void*)mIndexOffset);
-	}
-	else if (mDrawType == DrawType::TriangleStrip) {
-		glDrawElements(GL_TRIANGLE_STRIP, mCountOfIndex, type, (const void*)mIndexOffset);
+	
+	
+	if (mCountOfIndex>0) {
+		int componentSize = mIndexByteSize / mCountOfIndex;
+		int type = GL_UNSIGNED_INT;
+		if (componentSize == 2) {
+			type = GL_UNSIGNED_SHORT;
+		}
+		else if (componentSize == 1) {
+			type = GL_UNSIGNED_BYTE;
+		}
+		glDrawElements(static_cast<unsigned int>(mDrawType), mCountOfIndex, type, (const void*)mIndexOffset);
 	}
 	else {
-		glDrawArrays(GL_TRIANGLE_FAN, 0, mCountOfVertex);
+		glDrawArrays(static_cast<unsigned int>(mDrawType), 0, mCountOfVertex);
 	}
+	
 	glBindVertexArray(0);
-	mpVbo[mIndexVboIndex]->bindElement(false);
+	if (mIndexVboIndex >= 0) {
+		mpVbo[mIndexVboIndex]->bindElement(false);
+	}
 }
 
 void Mesh::getMaxNumVertexAttr()

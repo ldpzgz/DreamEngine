@@ -55,7 +55,7 @@ public:
 	void parseAnimationInfo(cgltf_data* pData);
 
 	
-	AccRet getAccessorData(cgltf_accessor* pAcc);
+	AccRet getAccessorData(cgltf_accessor* pAcc,bool isVertexAttribute);
 	std::string mCurrentParseFile;//for out debug info
 	std::unordered_map<std::string, std::unique_ptr<MaterialInfo> > mMaterialsMap;//all material
 	std::unordered_map<size_t, std::shared_ptr<Vbo> > mVboMap;//all vbo
@@ -116,7 +116,7 @@ bool MeshLoaderGltfImpl::loadFromFile(const std::string& path, std::shared_ptr<N
 	cgltf_free(data);
 	return false;
 }
-AccRet MeshLoaderGltfImpl::getAccessorData(cgltf_accessor* pAcc) {
+AccRet MeshLoaderGltfImpl::getAccessorData(cgltf_accessor* pAcc, bool isVertexAttribute) {
 	if (pAcc == nullptr) {
 		return { nullptr,0,0,0,0};
 	}
@@ -177,12 +177,13 @@ AccRet MeshLoaderGltfImpl::getAccessorData(cgltf_accessor* pAcc) {
 	if (pBv != nullptr) {
 		//size = static_cast<int>(pBv->size);
 		offset += pBv->offset;
-		if (pBv->stride != 0) {
+		
+		if (!isVertexAttribute) {
+			stride = 0;
+		}
+		else {
 			stride = pBv->stride;
 		}
-		/*if (stride == componentSize * componentCount) {
-			stride = 0;
-		}*/
 		
 		if (pBv->data != nullptr) {
 			pData = (void*)((char*)pBv->data + offset);
@@ -367,7 +368,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 			auto pAccessor = pPrimitive->indices;
 
 			if (pAccessor) {
-				AccRet ret = getAccessorData(pAccessor);
+				AccRet ret = getAccessorData(pAccessor,false);
 				if (ret.count != 0) {
 					auto it = mVboMap.find(reinterpret_cast<size_t>(pAccessor->buffer_view->buffer));
 					if (it != mVboMap.end()) {
@@ -392,7 +393,7 @@ void MeshLoaderGltfImpl::parseMesh(cgltf_data* data) {
 				//vertex ,normal,texcoord etc，
 				auto type = pAttr->type;// vertex/normal/texcoord tec
 				auto pAccessor = pAttr->data;
-				AccRet ret = getAccessorData(pAccessor);
+				AccRet ret = getAccessorData(pAccessor,true);
 				if (ret.count != 0) {
 					auto it = mVboMap.find(reinterpret_cast<size_t>(pAccessor->buffer_view->buffer));
 					if (it != mVboMap.end()) {
@@ -602,7 +603,7 @@ void MeshLoaderGltfImpl::parseSkeleton(cgltf_data* data) {
 				break;
 			}
 			if (pAccessor != nullptr) {
-				auto ret = getAccessorData(pAccessor);
+				auto ret = getAccessorData(pAccessor,false);
 				if (ret.data != nullptr) {
 					pMySkeleton->setOffsetMatrix(reinterpret_cast<glm::mat4*>(ret.data), ret.count);
 				}
@@ -764,8 +765,8 @@ void MeshLoaderGltfImpl::parseAnimationInfo(cgltf_data* pData) {
 						else {
 							targetNodeName = std::to_string(reinterpret_cast<size_t>(pTargetNode));
 						}
-						auto retTime = getAccessorData(pSampler->input);
-						auto retMat = getAccessorData(pSampler->output);
+						auto retTime = getAccessorData(pSampler->input,false);
+						auto retMat = getAccessorData(pSampler->output,false);
 						if (dataType == cgltf_animation_path_type_translation) {
 							pMyAnimation->setPosKeyFrame(targetNodeName,
 								(float*)retTime.data, (glm::vec3*)retMat.data, 

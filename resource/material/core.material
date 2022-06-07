@@ -22,7 +22,7 @@ material:skyboxM{
 material:skyboxHdr1{
 	program=skyboxHdr
 	sampler{
-		skybox=hdr/ehingen_hillside_2k.hdr
+		skybox=hdr/Mans_Outside_2k.hdr
 	}
 	op{
 		depthTest=true
@@ -33,43 +33,26 @@ config{
 	defferedGeoVs{
 		out vec3 worldPos;
 		out vec3 worldNormal;
+		
 		layout(location = 0) in vec3 inPos;
+		
 		#ifdef HAS_MAP
 			out vec2 texcoord;
 			layout(location = 1) in vec2 inTexcoord;
-			layout(location = 2) in vec3 inNormal;
-			#ifdef HAS_VERTEX_COLOR
-				layout(location = 3) in vec4 inVertexColor;
-				out vec3 vertexColor;
-				#ifdef HAS_NODE_ANIMATION
-					layout (location = 4) in ivec4 boneIDs;
-					layout (location = 5) in vec4 weights;
-				#endif
-			#else
-				#ifdef HAS_NODE_ANIMATION
-					layout (location = 3) in ivec4 boneIDs;
-					layout (location = 4) in vec4 weights;
-				#endif
-			#endif
+		#endif
 			
-		#else
-			layout(location = 1) in vec3 inNormal;
-			#ifdef HAS_VERTEX_COLOR
-				layout(location = 2) in vec4 inVertexColor;
-				out vec3 vertexColor;
-				#ifdef HAS_NODE_ANIMATION
-					layout (location = 3) in ivec4 boneIDs;
-					layout (location = 4) in vec4 weights;
-				#endif
-			#else
-				#ifdef HAS_NODE_ANIMATION
-					layout (location = 2) in ivec4 boneIDs;
-					layout (location = 3) in vec4 weights;
-				#endif
-			#endif
+		#ifdef HAS_NORMAL
+			layout(location = 2) in vec3 inNormal;
+		#endif
+		
+		#ifdef HAS_VERTEX_COLOR
+			layout(location = 3) in vec4 inVertexColor;
+			out vec3 vertexColor;
 		#endif
 		
 		#ifdef HAS_NODE_ANIMATION
+			layout (location = 4) in uvec4 boneIDs;
+			layout (location = 5) in vec4 weights;
 			layout(std140) uniform Bones
 			{
 				mat4 bones[128];
@@ -123,14 +106,18 @@ config{
 				texcoord = inTexcoord;
 			#endif
 			vec4 animatedPos = vec4(inPos, 1.0);
-			vec4 animatedNormal = vec4(inNormal, 0.0);
+			#ifdef HAS_NORMAL
+				vec4 animatedNormal = vec4(inNormal, 0.0);
+			#else
+				vec4 animatedNormal = vec4(0.0,0.0,1.0,0.0);
+			#endif
 			#ifdef HAS_NODE_ANIMATION
 				mat4 BoneTransform = bones[boneIDs[0]] * weights[0];
 				BoneTransform += bones[boneIDs[1]] * weights[1];
 				BoneTransform += bones[boneIDs[2]] * weights[2];
 				BoneTransform += bones[boneIDs[3]] * weights[3];
 				animatedPos = BoneTransform * animatedPos;
-				animatedNormal = BoneTransform * animatedNormal;
+				animatedNormal = transpose(inverse(BoneTransform)) * animatedNormal;
 			#endif
 			
 			worldNormal = vec3(transpose(inverse(mvMat)) * animatedNormal);
