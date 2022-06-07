@@ -551,8 +551,7 @@ void MeshLoaderGltfImpl::recursive_parse(const cgltf_node* pNode, std::shared_pt
 				pNode->translation[1], pNode->translation[2]));
 		}
 		if (pNode->has_rotation) {
-			glm::quat q(pNode->rotation[0], pNode->rotation[1], pNode->rotation[2],
-				pNode->rotation[3]);
+			glm::quat q(pNode->rotation[3],pNode->rotation[0], pNode->rotation[1], pNode->rotation[2]);
 			rotate = glm::toMat4(q);
 		}
 		if (pNode->has_scale) {
@@ -591,6 +590,7 @@ void MeshLoaderGltfImpl::parseSkeleton(cgltf_data* data) {
 			
 			//get the offsetMatrix
 			auto pAccessor = pNode->skin->inverse_bind_matrices;
+			//skeleton is pivot point,it is not needed for computing skinning transforms
 			cgltf_node* pSkeleton = pNode->skin->skeleton;
 			cgltf_node** pBones = pNode->skin->joints;
 			int bonesCount = pNode->skin->joints_count;
@@ -704,43 +704,51 @@ void MeshLoaderGltfImpl::parseAnimationInfo(cgltf_data* pData) {
 			}
 			//find skeleton for this animation
 			std::shared_ptr<Skeleton> pSkeleton;
-			
-			auto pTargetNode = pChannel->target_node;
-			if (pTargetNode != nullptr) {
-				std::string targetNodeName;
-				if (pTargetNode->name != nullptr) {
-					targetNodeName = pTargetNode->name;
-				}
-				else {
-					targetNodeName = std::to_string(reinterpret_cast<size_t>(pTargetNode));
-				}
-				for (auto& ske : mSkeletonMap) {
-					auto& nameIndexMap = ske.second->getBoneName2Index();
-					auto it = nameIndexMap.find(targetNodeName);
-					if (it != nameIndexMap.end()) {
-						pSkeleton = ske.second;
-						animatType = AnimationType::SkeletonAnimation;
-						break;
+			if (!mSkeletonMap.empty()) {
+				auto pTempChannel = pChannel;
+				auto pTargetNode = pTempChannel->target_node;
+				for (int i = 0; i < channelCount; ++i) {
+					std::string targetNodeName;
+					if (pTargetNode->name != nullptr) {
+						targetNodeName = pTargetNode->name;
 					}
-				}
-					
-				pMyAnimation = Animation::createAnimation(animatType, animationName);
-				AnimationManager::getInstance().addAnimation(animationName, pMyAnimation);
-				if (pSkeleton) {
-					pMyAnimation->setAffectedSkeleton(pSkeleton);
-					pSkeleton->addAnimation(pMyAnimation);
-				}
-				else {
-					auto it = mNodeMap.find(reinterpret_cast<size_t>(pTargetNode));
-					if (it != mNodeMap.end()) {
-						pMyAnimation->setTargetNode(it->second);
-						if (it->second) {
-							it->second->setHasNodeAnimation(true);
-							it->second->setAny(NodeAnyIndex::NodeAnimationMatrix, glm::mat4(1.0f));
+					else {
+						targetNodeName = std::to_string(reinterpret_cast<size_t>(pTargetNode));
+					}
+					for (auto& ske : mSkeletonMap) {
+						auto& nameIndexMap = ske.second->getBoneName2Index();
+						auto it = nameIndexMap.find(targetNodeName);
+						if (it != nameIndexMap.end()) {
+							pSkeleton = ske.second;
+							animatType = AnimationType::SkeletonAnimation;
+							break;
 						}
 					}
-				}	
+					if (pSkeleton) {
+						break;
+					}
+					++pTempChannel;
+					pTargetNode = pTempChannel->target_node;
+				}
 			}
+			
+			pMyAnimation = Animation::createAnimation(animatType, animationName);
+			AnimationManager::getInstance().addAnimation(animationName, pMyAnimation);
+			if (pSkeleton) {
+				pMyAnimation->setAffectedSkeleton(pSkeleton);
+				pSkeleton->addAnimation(pMyAnimation);
+			}
+			else {
+				auto it = mNodeMap.find(reinterpret_cast<size_t>(pChannel->target_node));
+				if (it != mNodeMap.end()) {
+					pMyAnimation->setTargetNode(it->second);
+					if (it->second) {
+						it->second->setHasNodeAnimation(true);
+						it->second->setAny(NodeAnyIndex::NodeAnimationMatrix, glm::mat4(1.0f));
+					}
+				}
+			}
+
 			for (int j = 0; j < channelCount; ++j) {
 				auto pTargetNode = pChannel->target_node;
 				if (pTargetNode != nullptr) {
