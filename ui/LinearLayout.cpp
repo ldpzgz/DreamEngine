@@ -1,7 +1,7 @@
 #include "LinearLayout.h"
 #include "UiRender.h"
-#include "../MeshFilledRect.h"
-#include "../Log.h"
+#include "core/MeshFilledRect.h"
+#include "core/Log.h"
 
 std::shared_ptr<View> LinearLayout::clone() {
 	auto pParent = std::make_shared<LinearLayout>(*this);

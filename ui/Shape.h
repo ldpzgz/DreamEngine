@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Log.h"
-#include "../Color.h"
+#include "core/Log.h"
+#include "core/Color.h"
 #include <string>
 #include <functional>
 #include <unordered_map>

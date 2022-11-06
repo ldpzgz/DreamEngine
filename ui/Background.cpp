@@ -1,6 +1,6 @@
 #include "Background.h"
 #include "BackgroundStyle.h"
-#include "../MeshFilledRect.h"
+#include "core/MeshFilledRect.h"
 #include "Shape.h"
 using namespace std;
 

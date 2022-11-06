@@ -11,6 +11,6 @@ void OutputDebugPrintf(const char* strOutputString, ...)
 	_vsnprintf_s(strBuffer, sizeof(strBuffer) - 1, strOutputString, vlArgs);
 	//vsprintf(strBuffer,strOutputString,vlArgs);
 	va_end(vlArgs);
-	OutputDebugString(CA2W(strBuffer));
+	OutputDebugString(strBuffer);
 }
 #endif

@@ -4,13 +4,13 @@
 #include <rapidxml_utils.hpp>  //rapidxml::file
 #include <rapidxml_print.hpp>  //rapidxml::print
 #include <filesystem>
-#include "../MeshFilledRect.h"
-#include "../Utils.h"
-#include "../Resource.h"
-#include "../Mesh.h"
-#include "../Node.h"
-#include "../Fbo.h"
-#include "../Texture.h"
+#include "core/MeshFilledRect.h"
+#include "core/Utils.h"
+#include "core/Resource.h"
+#include "core/Mesh.h"
+#include "core/Node.h"
+#include "core/Fbo.h"
+#include "core/Texture.h"
 #include "UiTree.h"
 #include "Shape.h"
 #include "Background.h"

@@ -1,10 +1,10 @@
 #include"NodeListAdapter.h"
-#include "../ListView.h"
-#include "../../Node.h"
-#include "../UiManager.h"
-#include "../TextView.h"
-#include "../../MeshFilledRect.h"
-#include "../../Texture.h"
+#include "ListView.h"
+#include "core/Node.h"
+#include "UiManager.h"
+#include "TextView.h"
+#include "core/MeshFilledRect.h"
+#include "core/Texture.h"
 #include <algorithm>
 
 constexpr std::string_view cNodeInfo{"nodeInfo"};

@@ -1,6 +1,6 @@
 #include "ScrollView.h"
 #include "UiRender.h"
-#include "../MeshFilledRect.h"
+#include "core/MeshFilledRect.h"
 
 std::shared_ptr<View> ScrollView::clone() {
 	auto pParent = std::make_shared<ScrollView>(*this);

@@ -6,7 +6,7 @@
  */
 #pragma once
 
-#include<memory>
+#include <memory>
 #include "Texture.h"
 #include "Rect.h"
 #include <functional>

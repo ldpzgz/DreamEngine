@@ -3,5 +3,5 @@ namespace Config {
 	constexpr bool openTaa=false;//temporal aa
 	constexpr bool openSsao=true;
 	constexpr bool openSmaa = true;
-	constexpr bool openShadowMap = false;
+	constexpr bool openShadowMap = true;
 };

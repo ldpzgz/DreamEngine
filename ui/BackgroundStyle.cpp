@@ -1,7 +1,7 @@
 #include "BackgroundStyle.h"
-#include "../MeshFilledRect.h"
+#include "core/MeshFilledRect.h"
 #include "Shape.h"
-#include "../Texture.h"
+#include "core/Texture.h"
 void BackgroundStyle::setMyStyle() {
 	if (mpShape) {
 		mpShape->setTexture(mpTex);

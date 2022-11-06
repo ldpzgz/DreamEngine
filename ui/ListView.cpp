@@ -1,7 +1,7 @@
 #include "ListView.h"
 #include "UiRender.h"
-#include "../Log.h"
-#include "../MeshFilledRect.h"
+#include "core/Log.h"
+#include "core/MeshFilledRect.h"
 
 std::shared_ptr<View> ListView::clone() {
 	return std::make_shared<ListView>(*this);

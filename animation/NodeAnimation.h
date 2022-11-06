@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Animation.h"
+#include "core/Animation.h"
 #include "KeyFrame.h"
 class Node;
 class NodeAnimation : public Animation{

@@ -1,6 +1,6 @@
 #include "Skeleton.h"
 #include "SkeletonAnimation.h"
-#include "../Ubo.h"
+#include "core/Ubo.h"
 
 void Skeleton::addAnimation(const std::shared_ptr<Animation>& pa) {
 	if (pa) {

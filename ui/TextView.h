@@ -3,7 +3,7 @@
 #include "View.h"
 #include <limits>
 #include "CharPosition.h"
-#include "../Color.h"
+#include "core/Color.h"
 using namespace std;
 
 class TextView : public View {

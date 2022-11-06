@@ -1,10 +1,10 @@
-#include "../Node.h"
-#include "../mesh.h"
+#include "core/Node.h"
+#include "core/mesh.h"
 #include "SkeletonAnimation.h"
 #include "Skeleton.h"
 #include <algorithm>
-#include<glm/ext/quaternion_common.hpp>
-#include<glm/ext/quaternion_transform.hpp>
+#include <glm/ext/quaternion_common.hpp>
+#include <glm/ext/quaternion_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
 //extern std::shared_ptr<Node> gpBoxNode;

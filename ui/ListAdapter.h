@@ -2,7 +2,7 @@
 #define _LIST_ADAPTER_H_
 #include<string>
 #include<vector>
-#include "../ViewAdapter.h"
+#include "ViewAdapter.h"
 #include "ListData.h"
 class ListAdapter :public ViewAdapter {
 public:

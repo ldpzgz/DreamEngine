@@ -1,9 +1,9 @@
 #include <stdexcept>
 #include "Shape.h"
-#include "../Material.h"
-#include "../Texture.h"
-#include "../MeshFilledRect.h"
-#include "../Resource.h"
+#include "core/Material.h"
+#include "core/Texture.h"
+#include "core/MeshFilledRect.h"
+#include "core/Resource.h"
 using namespace std;
 
 std::unordered_map < std::string, std::function<void(const shared_ptr<Shape>&, const std::string&)>> Shape::gShapeAttributeHandler{

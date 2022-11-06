@@ -4,8 +4,8 @@
 #include <vector>
 #include "FreetypeUtils.h"
 #define STB_TRUETYPE_IMPLEMENTATION
-#include "../stb_truetype.h"
-#include "../Log.h"
+#include "core/stb_truetype.h"
+#include "core/Log.h"
 using namespace std;
 static const string gFontFile("./opengles3/resource/aliFont.ttf");
 
@@ -67,7 +67,7 @@ static const string gFontFile("./opengles3/resource/aliFont.ttf");
 //		initFreetype(gFontFile);
 //	}
 //
-//	//Ê¹ÓÃfreetypeäÖÈ¾³öÀ´£¬È»ºó¸üÐÂµ½ÎÆÀíÉÏ£¬¼ÇÂ¼×Ö·ûÔÚÎÆÀíÉÏµÄÎ»ÖÃÐÅÏ¢¡£
+//	//Ê¹ï¿½ï¿½freetypeï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½Âµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï£ï¿½ï¿½ï¿½Â¼ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½Î»ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½
 //	int error = 0;
 //	error = FT_Set_Pixel_Sizes(gface, charPixelSize, charPixelSize);
 //	if (error)
@@ -95,8 +95,8 @@ static const string gFontFile("./opengles3/resource/aliFont.ttf");
 //	tempBuf.resize(info.width * info.height);
 //	unsigned char* pStart = slot->bitmap.buffer;
 //	unsigned char* pEnd = tempBuf.data();
-//	//°Ñ×Ö·ûµãÕóÊý¾Ý¸üÐÂµ½ÎÆÀíÉÏ¡£
-//	//ÓÉÓÚopenglÎÆÀí×ø±êµÄÔ­µãÊÇÔÚ×óÏÂ½Ç£¬ÉÏÏÂµßµ¹Ò»ÏÂÍ¼Ïñ
+//	//ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½ï¿½Âµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¡ï¿½
+//	//ï¿½ï¿½ï¿½ï¿½openglï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â½Ç£ï¿½ï¿½ï¿½ï¿½Âµßµï¿½Ò»ï¿½ï¿½Í¼ï¿½ï¿½
 //	for (int i = info.height - 1; i >= 0; --i) {
 //		memcpy(pEnd, pStart + (slot->bitmap.pitch * i), info.width);
 //		pEnd += info.width;
@@ -126,7 +126,7 @@ bool getCharBitmap2(UnicodeType code, int charPixelSize, CharInfo& info, std::ve
 	int advance, lsb, x0, y0, x1, y1;
 	stbtt_GetCodepointHMetrics(&sgfont, code, &advance, &lsb);
 	stbtt_GetFontBoundingBox(&sgfont, &x0, &y0, &x1, &y1);
-	//ÄÃµ½ÎÄ×ÖµÄ³ß´çÐÅÏ¢
+	//ï¿½Ãµï¿½ï¿½ï¿½ï¿½ÖµÄ³ß´ï¿½ï¿½ï¿½Ï¢
 	stbtt_GetCodepointBitmapBoxSubpixel(&sgfont, code, sgScale, sgScale, 0, 0, &x0, &y0, &x1, &y1);
 	
 	info.left = x0;
@@ -144,8 +144,8 @@ bool getCharBitmap2(UnicodeType code, int charPixelSize, CharInfo& info, std::ve
 
 	unsigned char* pStart = ttBuf.data();
 	unsigned char* pEnd = tempBuf.data();
-	//°Ñ×Ö·ûµãÕóÊý¾Ý¸üÐÂµ½ÎÆÀíÉÏ¡£
-	//ÓÉÓÚopenglÎÆÀí×ø±êµÄÔ­µãÊÇÔÚ×óÏÂ½Ç£¬ÉÏÏÂµßµ¹Ò»ÏÂÍ¼Ïñ
+	//ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½ï¿½Âµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¡ï¿½
+	//ï¿½ï¿½ï¿½ï¿½openglï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â½Ç£ï¿½ï¿½ï¿½ï¿½Âµßµï¿½Ò»ï¿½ï¿½Í¼ï¿½ï¿½
 	for (int i = info.height - 1; i >= 0; --i) {
 		memcpy(pEnd, pStart + (info.width * i), info.width);
 		pEnd += info.width;

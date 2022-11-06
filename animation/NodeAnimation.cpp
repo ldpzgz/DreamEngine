@@ -1,7 +1,7 @@
 #include "NodeAnimation.h"
-#include "../Node.h"
-#include<glm/ext/quaternion_common.hpp>
-#include<glm/ext/quaternion_transform.hpp>
+#include "core/Node.h"
+#include <glm/ext/quaternion_common.hpp>
+#include <glm/ext/quaternion_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 void NodeAnimation::setPosKeyFrame(const std::string& nodeName, float* pTime, glm::vec3* pPos, int count, InterpolationType interType) {
 	if (pTime!=nullptr && pPos!=nullptr && count>0) {

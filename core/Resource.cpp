@@ -8,7 +8,7 @@
 #include "Utils.h"
 #include "Node.h"
 #include "Animation.h"
-#include "MeshLoaderAssimp.h"
+//#include "MeshLoaderAssimp.h"
 #include "MeshLoaderGltf.h"
 #include "Config.h"
 #include "Sampler.h"
@@ -383,13 +383,13 @@ bool ResourceImpl::meshPathHander(NodeSP& pNode,const std::string& value) {
 	if (pNode && !value.empty()) {
 		auto suffix = Utils::getFileSuffix(value);
 		MeshLoader* pLoader=nullptr;
-		MeshLoaderAssimp loader1;
+		//MeshLoaderAssimp loader1;
 		MeshLoaderGltf loader2;
 		if (suffix == "gltf"sv) {
 			pLoader = &loader2;
 		}
 		else {
-			pLoader = &loader1;
+			//pLoader = &loader1;
 		}
 		if (pLoader->loadFromFile(value, pNode)) {
 			LOGD("success load mesh from %s",value.c_str());

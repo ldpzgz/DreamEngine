@@ -11,9 +11,9 @@
 #include "Background.h"
 #include "BackgroundStyle.h"
 #include "Shape.h"
-#include "../Texture.h"
-#include "../Log.h"
-#include "../MeshFilledRect.h"
+#include "core/Texture.h"
+#include "core/Log.h"
+#include "core/MeshFilledRect.h"
 #include <string_view>
 #include <stdexcept>
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "../Animation.h"
+#include "core/Animation.h"
 #include "KeyFrame.h"
 #include <glm/vec3.hpp>           // vec3
 #include <glm/mat4x4.hpp>         // mat4

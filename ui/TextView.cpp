@@ -1,8 +1,8 @@
 #include "TextView.h"
 #include "UiRender.h"
 #include <stdexcept>
-#include "../MeshFilledRect.h"
-#include "../Log.h"
+#include "core/MeshFilledRect.h"
+#include "core/Log.h"
 
 std::shared_ptr<View> TextView::clone() {
 	return std::make_shared<TextView>(*this);

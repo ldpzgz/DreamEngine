@@ -1,9 +1,9 @@
 #pragma once
 
 #include <string>
-#include "../Log.h"
-#include "../Rect.h"
-#include "../Color.h"
+#include "core/Log.h"
+#include "core/Rect.h"
+#include "core/Color.h"
 #include <functional>
 #include <list>
 #include <memory>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include<memory>
-#include "../Color.h"
+#include "core/Color.h"
 class Shape;
 class Texture;
 class MeshFilledRect;
@@ -12,17 +12,17 @@ enum class FillType {
 	Fill_Texture,
 };
 /*
-	* styleспхЩжжлНЁДдёй╫1 нфюМё╛2╫╔╠Ди╚ё╛3╢©и╚
-	* ╤тсзм╛р╩жжлНЁДдёй╫╣дstyleё╛©ирт╧╡оМм╛р╩╦Жshape
+	* styleО©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫дёй╫1 О©╫О©╫О©╫О©╫О©╫О©╫2О©╫О©╫О©╫О©╫и╚О©╫О©╫3О©╫О©╫и╚
+	* О©╫О©╫О©╫О©╫м╛р╩О©╫О©╫О©╫О©╫О©╫дёй╫О©╫О©╫styleО©╫О©╫О©╫О©╫О©╫т╧О©╫О©╫О©╫м╛р╩О©╫О©╫shape
 	*/
 class BackgroundStyle {
 public:
 	std::shared_ptr<Shape> mpShape;
-	std::shared_ptr<Texture> mpTex;//хГ╧Ш╡╩н╙©уё╛╬м╠Мй╬сцнфюМлНЁДё╛сеох╪╤вН╦ъ
-	Color mStartColor;//хГ╧Ш╡╩н╙©уё╛╬м╠Мй╬сц╫╔╠Ди╚лНЁДё╛сеох╪╤╢нж╝
+	std::shared_ptr<Texture> mpTex;//О©╫О©╫О©╫О©╫О©╫н╙О©╫уёО©╫О©╫м╠О©╫й╬О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫Дё╛О©╫О©╫О©╫х╪О©╫О©╫О©╫О©╫
+	Color mStartColor;//О©╫О©╫О©╫О©╫О©╫н╙О©╫уёО©╫О©╫м╠О©╫й╬О©╫ц╫О©╫О©╫О©╫и╚О©╫О©╫Дё╛О©╫О©╫О©╫х╪О©╫О©╫О©╫ж╝
 	Color mCenterColor;
 	Color mEndColor;
-	Color mSolidColor;//хГ╧Ш╡╩н╙©у╬м╠Мй╬сц╢©и╚лНЁДё╛вН╣мсеох╪╤
+	Color mSolidColor;//О©╫О©╫О©╫О©╫О©╫н╙О©╫у╬м╠О©╫й╬О©╫ц╢О©╫и╚О©╫О©╫Дё╛О©╫О©╫О©╫О©╫О©╫О©╫х╪О©╫
 	Color mBorderColor;
 	unsigned int mColorVbo{ 0 };
 	FillType mFillType{ FillType::Fill_Solid };

@@ -1,8 +1,8 @@
 #include"ListAdapter.h"
-#include "../View.h"
-#include "../TextView.h"
-#include "../UiManager.h"
-#include "../../MeshFilledRect.h"
+#include "View.h"
+#include "TextView.h"
+#include "UiManager.h"
+#include "core/MeshFilledRect.h"
 #include <iostream>
 
 ListAdapter::ListAdapter(std::shared_ptr<View>& pContainerView):

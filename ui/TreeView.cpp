@@ -1,7 +1,7 @@
 #include "TreeView.h"
 #include "UiRender.h"
-#include "../Log.h"
-#include "../MeshFilledRect.h"
+#include "core/Log.h"
+#include "core/MeshFilledRect.h"
 
 TreeView::TreeView() {
 	mOrientation = LayoutParam::Vertical;

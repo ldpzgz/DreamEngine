@@ -5,12 +5,12 @@
 #else
 #include <glad/glad.h>
 #endif
-#include "../MeshFilledRect.h"
+#include "core/MeshFilledRect.h"
 #include "UiTree.h"
 #include "UiRender.h"
-#include "../Log.h"
-#include "../Fbo.h"
-#include "../Texture.h"
+#include "core/Log.h"
+#include "core/Fbo.h"
+#include "core/Texture.h"
 using namespace std;
 UiTree::UiTree() :
 	mpFboForRender(make_unique<Fbo>())

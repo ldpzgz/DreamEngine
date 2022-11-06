@@ -1,4 +1,4 @@
 mesh{
 	nodeName=big_gun
-	path=C:\myproject\opengles\freeMesh\gltfTest\AnimatedCube.gltf
+	path=C:\myproject\opengles\freeMesh\gltfTest\cannon_01_2k.gltf
 }

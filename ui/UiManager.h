@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include "../Color.h"
+#include "core/Color.h"
 #include <glm/mat4x4.hpp>         // mat4
 
 using namespace std;

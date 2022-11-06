@@ -2,7 +2,7 @@
 #define _NODE_LIST_ADAPTER_H_
 #include<string>
 #include<vector>
-#include "../ViewAdapter.h"
+#include "ViewAdapter.h"
 class Node;
 class TextView;
 class Texture;
