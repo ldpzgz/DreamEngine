@@ -32,10 +32,10 @@ using MapSNode = unordered_map<string, NodeSP>;
 using MapSAnimation = unordered_map<string, AnimationSP>;
 using MapSMaterialInfo = unordered_map<string, MaterialInfo>;
 using Umapss = unordered_map<string, string>;
-static const string gColorsPath = "./opengles3/resource/colors.xml";
-static const string gMaterialPath = "./opengles3/resource/material";
-static const string gProgramPath = "./opengles3/resource/program";
-static const string gDrawablePath = "./opengles3/resource/drawable";
+static const string gColorsPath = "../resource/colors.xml";
+static const string gMaterialPath = "../resource/material";
+static const string gProgramPath = "../resource/program";
+static const string gDrawablePath = "../resource/drawable";
 
 static std::unordered_map<std::string_view, unsigned int> gBlendFuncMap{
 	{"1",GL_ONE},

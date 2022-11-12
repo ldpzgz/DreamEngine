@@ -34,16 +34,18 @@ target_include_directories(dreamEngine PRIVATE ${PROJECT_SOURCE_DIR})
 #----------------------------main test exectable--------------------
 aux_source_directory(${PROJECT_SOURCE_DIR}/app testAppSource)
 
-add_executable(test 
+add_executable(deTest 
     ${testAppSource}
 )
 
-target_link_libraries(test
+target_link_libraries(deTest
     PRIVATE 
     dreamEngine
 	glfw3dll.lib
 )
-target_include_directories(test PRIVATE 
+target_include_directories(deTest PRIVATE 
 	${PROJECT_SOURCE_DIR}
 )
 #----------------------------main test exectable--------------------end
+
+install (TARGETS deTest DESTINATION bin)

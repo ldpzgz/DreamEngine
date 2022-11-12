@@ -49,9 +49,9 @@ static shared_ptr<Camera> camera;
 
 //std::shared_ptr<Node> gpBoxNode;
 
-static const string gfontfile("./opengles3/resource/simfang.ttf");
-static const string gmyfontfile("./opengles3/resource/myfont.data");
-static const string gLayout("./opengles3/resource/layout/layout.xml");
+static const string gfontfile("../resource/simfang.ttf");
+static const string gmyfontfile("../resource/myfont.data");
+static const string gLayout("../resource/layout/layout.xml");
 
 using namespace std::filesystem;
 void initResource() {
@@ -68,7 +68,7 @@ void initResource() {
 	pLight2->setCastShadow(true);
 	auto pskyNode = scene->createSkybox();
 	auto& pSkanNode = scene->getRootDeffered();
-	if (Resource::getInstance().parseMeshCfgFile("./opengles3/resource/mesh/dragon.meshCfg")) {
+	if (Resource::getInstance().parseMeshCfgFile("../resource/mesh/dragon.meshCfg")) {
 		AABB aabb;
 		auto pNode = Resource::getInstance().getNode("big_gun");//coffee_table
 		//gpBoxNode = Resource::getInstance().getNode("box");
