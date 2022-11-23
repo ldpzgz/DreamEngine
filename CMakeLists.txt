@@ -47,5 +47,15 @@ target_include_directories(deTest PRIVATE
 	${PROJECT_SOURCE_DIR}
 )
 #----------------------------main test exectable--------------------end
-
+#first cmake .. -DCMAKE_INSTALL_PREFIX=/install/location
+#the "DESTINATION" option in the following command means ${CMAKE_INSTALL_PREFIX}
+#the following command will copy the deTest target file to "${CMAKE_INSTALL_PREFIX}/bin"
+#when you run "make install"
+#other install commands:
+#install (TARGETS cmake_examples_inst LIBRARY DESTINATION lib) 
+#install (TARGETS cmake_examples_inst
+#    LIBRARY DESTINATION lib
+#    RUNTIME DESTINATION bin)  this works on windows for copy ".lib and .dll" files
+#install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include)
+#install (FILES cmake-examples.conf DESTINATION etc)
 install (TARGETS deTest DESTINATION bin)

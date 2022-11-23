@@ -58,7 +58,7 @@ public:
 	AccRet getAccessorData(cgltf_accessor* pAcc,bool isVertexAttribute);
 	std::string mCurrentParseFile;//for out debug info
 	std::unordered_map<std::string, std::unique_ptr<MaterialInfo> > mMaterialsMap;//all material
-	std::unordered_map<size_t, std::shared_ptr<Vbo> > mVboMap;//all vbo
+	std::unordered_map<size_t, std::shared_ptr<Vbo> > mVboMap;//all vbo,<cgltf_buffer*, vbo>
 	std::unordered_multimap<size_t, std::shared_ptr<Mesh> > mMeshMap;//all mesh
 	std::unordered_map<size_t, std::shared_ptr<Node> > mNodeMap;//all node
 	std::vector< std::shared_ptr<Node>> mRootNode;

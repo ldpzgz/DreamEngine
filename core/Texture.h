@@ -155,7 +155,7 @@ protected:
 	int mNumOfSamples{ 0 };//多重采样纹理的采样个数
 	int mTarget{ GL_TEXTURE_2D };//GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_2D_ARRAY, or GL_TEXTURE_CUBE_MAP
 
-	Sampler* mpSampler{ nullptr };
+	Sampler* mpSampler{ nullptr }; //use sampler to manager tex min filter,max filter etc.
 	std::array<float, 4> mBorderColor{ 0.0f,0.0f,0.0f,0.0f };
 	std::string mName;
 };
