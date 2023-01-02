@@ -3,7 +3,7 @@
 #include <GLES3/gl31.h>
 #include <GLES3/gl32.h>
 #else
-#include <glad/glad.h>
+#include <glad/gl.h>
 #endif
 #include "core/MeshFilledRect.h"
 #include "UiTree.h"
