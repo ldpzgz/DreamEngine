@@ -2,20 +2,17 @@
 cmake_minimum_required (VERSION 3.14)
 
 include(FetchContent)
-#FetchContent_Declare(glad
-#        URL https://github.com/Dav1dde/glad/archive/refs/tags/v2.0.2.zip)
-#FetchContent_MakeAvailable(glad)
 
 FetchContent_Declare(glm
-        URL https://github.com/g-truc/glm/archive/refs/tags/0.9.9.8.zip
-        )
+    URL https://github.com/g-truc/glm/archive/refs/tags/0.9.9.8.zip
+)
 FetchContent_MakeAvailable(glm)
 
 #GLFW additions
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-FetchContent_Declare(glfw URL https://github.com/glfw/glfw/archive/refs/tags/3.3.6.zip)
+FetchContent_Declare(glfw URL https://github.com/glfw/glfw/archive/refs/tags/3.3.8.zip)
 FetchContent_MakeAvailable(glfw)
 
 #include(FetchContent) # once in the project to include the module
@@ -42,11 +39,11 @@ FetchContent_MakeAvailable(glfw)
 project (DreamEngine)
 
 set(CMAKE_CXX_STANDARD 17)
-set(GLAD_DIR C:/myproject/opengles/glad)
+set(GLAD_DIR ${PROJECT_SOURCE_DIR}/thirdparty/glad)
 
 include_directories(${glm_SOURCE_DIR})
 include_directories(${GLAD_DIR}/include)
-include_directories(C:/myproject/opengles/hello/rapidxml)
+include_directories(${PROJECT_SOURCE_DIR}/thirdparty/rapidxml)
 include_directories(${glfw_SOURCE_DIR}/include)
 #link_directories(C:/myproject/opengles/glfw-3.3.6.bin.WIN64/lib-vc2022)
 #----------------------------dreamEngine static lib--------------------

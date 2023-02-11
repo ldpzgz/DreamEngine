@@ -178,9 +178,11 @@ int main()
 	glfwSetKeyCallback(window, keyCallback);
     // glad: load all OpenGL function pointers
     // ---------------------------------------
-    if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress))
+    // Load OpenGL functions, gladLoadGL returns the loaded version, 0 on error.
+    int version = gladLoadGL(glfwGetProcAddress);
+    if (version == 0)
     {
-        std::cout << "Failed to initialize GLAD" << std::endl;
+        std::cout << "Failed to initialize OpenGL context" << std::endl;
         return -1;
     }
 	initResource();
