@@ -34,7 +34,7 @@ bool ScrollView::mouseMove(int x, int y,bool notInside) {
 				auto& pEndChild = mChildren.back();
 				if (temp.y < 0) {
 					auto childRect = pEndChild->getRect();
-					auto& childMove = pEndChild->getTranslateVector();
+					const auto& childMove = pEndChild->getTranslateVector();
 					childRect.translate(childMove);
 					auto pBottom = mRect.y + mRect.height;
 					auto cBottom = childRect.y + childRect.height;
@@ -80,7 +80,7 @@ bool ScrollView::mouseMove(int x, int y,bool notInside) {
 				auto& pEndChild = mChildren.back();
 				if (temp.x < 0) {
 					auto childRect = pEndChild->getRect();
-					auto& childMove = pEndChild->getTranslateVector();
+					const auto& childMove = pEndChild->getTranslateVector();
 					childRect.translate(childMove);
 					auto cRight = childRect.x + childRect.width;
 					auto pRight = mRect.x + mRect.width;
@@ -99,7 +99,7 @@ bool ScrollView::mouseMove(int x, int y,bool notInside) {
 				}
 				else if (temp.x > 0) {
 					auto childRect = pFrontChild->getRect();
-					auto& childMove = pFrontChild->getTranslateVector();
+					const auto& childMove = pFrontChild->getTranslateVector();
 					childRect.translate(childMove);
 					if (childRect.x >= mRect.x) {
 						/*

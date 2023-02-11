@@ -1514,7 +1514,7 @@ int ResourceImpl::getKeyAsInt(const string& key) {
 }
 
 std::shared_ptr<Material> ResourceImpl::cloneMaterial(const std::string& name) {
-	auto& pMaterial = getMaterial(name);
+	const auto& pMaterial = getMaterial(name);
 	if (pMaterial) {
 		return std::make_shared<Material>(*pMaterial);
 	}

@@ -80,7 +80,7 @@ void Ubo::bind(const char* ubName, int sizeInByte, int bindPoint)  noexcept{
 		}
 	}
 	else {
-		LOGD("duplicate ubo binding, the uniform block % s has bound to bindPoint % d", ubName, bindPoint);
+		LOGD("duplicate ubo binding, the uniform block %s has bound to bindPoint %d", ubName, bindPoint);
 	}
 }
 

@@ -249,7 +249,7 @@ void Shape::sizeHeightHandler(const shared_ptr<Shape>& shape, const std::string&
 
 void Shape::textureHandler(const std::shared_ptr<Shape>& shape, const std::string& value) {
 	if (shape) {
-		auto& pTex = Resource::getInstance().getTexture(value);
+		const auto& pTex = Resource::getInstance().getTexture(value);
 		if (pTex) {
 			shape->setTexture(pTex);
 		}

@@ -99,7 +99,7 @@ void Camera::updateUboForShader() {
 	ubo.update("Matrixes", projView,2*sizeof(glm::mat4),0);
 	
 	//更新屏幕宽高
-	float temp[2]{ mWidth ,mHeight };
+	float temp[2]{ static_cast<float>(mWidth) ,static_cast<float>(mHeight) };
 	ubo.update("ScreenWH", temp, sizeof(temp));
 
 	if (Config::openTaa) {
@@ -470,7 +470,7 @@ void Camera::genShadowMap(std::shared_ptr<Scene>& pScene) {
 				pLight = pl;
 		}
 		if (pLight) {
-			auto& direction = glm::normalize(pLight->getPosOrDir());
+			const auto& direction = glm::normalize(pLight->getPosOrDir());
 			glm::mat4 projMat{ 1.0f };
 			glm::vec3 lookat(0.0f, 0.0f, -3.0f);
 			glm::vec3 lightpos = lookat - direction * 5.0f;

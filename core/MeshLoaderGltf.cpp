@@ -521,7 +521,7 @@ void MeshLoaderGltfImpl::recursive_parse(const cgltf_node* pNode, std::shared_pt
 		auto key = reinterpret_cast<size_t>(pNode->mesh);
 		auto count = mMeshMap.count(key);
 		auto ret = mMeshMap.find(key);
-		LOGD("node %s has mesh,count %lld", pNode->name, count);
+		LOGD("node %s has mesh,count %ld", pNode->name, count);
 		while (count-- > 0) {
 			auto& pMesh = (ret++)->second;
 			pMyNode->addRenderable(pMesh);
@@ -665,7 +665,7 @@ void MeshLoaderGltfImpl::parseSkeleton(cgltf_data* data) {
 			auto key = reinterpret_cast<size_t>(pNode->mesh);
 			auto count = mMeshMap.count(key);
 			auto ret = mMeshMap.find(key);
-			LOGD("node %s has mesh,count %lld", pNode->name, count);
+			LOGD("node %s has mesh,count %ld", pNode->name, count);
 			while (count-- > 0) {
 				auto& pMesh = (ret++)->second;
 				pMesh->setSkeleton(pMySkeleton);

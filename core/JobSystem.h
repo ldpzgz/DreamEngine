@@ -5,6 +5,7 @@
 #include <memory>
 #include <functional>
 #include <queue>
+#include <atomic>
 class Event;
 class EventHandler {
 public:
@@ -128,7 +129,7 @@ private:
 
 	int mId{0};
 	bool mFlag{ false };
-	std::atomic_bool mbExit{false};
+	std::atomic<bool> mbExit{false};
 	std::mutex mMutex;
 	std::condition_variable mCondition;
 	std::queue<std::unique_ptr<Event>> mEventQueue;

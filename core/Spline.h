@@ -51,7 +51,7 @@ namespace
 
     namespace tk
     {
-#define M_PI 3.1415926535897932
+//#define M_PI 3.1415926535897932
         // spline interpolation
         class spline
         {
@@ -65,9 +65,9 @@ namespace
 
             // boundary condition type for the spline end-points
             enum bd_type {
-                first_deriv = 1,//Ö¸¶¨Á½¸ö¶ËµãµÄÒ»½×µ¹ÊýÎªÄ³¸ö¹Ì¶¨Öµ
-                second_deriv = 2,//Á½¸ö¶ËµãµÄ¶þ½×µ¹ÊýÎª0£¨ Natural Spline£©
-                not_a_knot = 3//µÚÒ»¸ö²åÖµµãµÄÈý½×µ¼ÊýÖµµÈÓÚµÚ¶þ¸öµãµÄÈý½×µ¼ÊýÖµ£¬×îºóµÚÒ»¸öµãµÄÈý½×µ¼ÊýÖµµÈÓÚµ¹ÊýµÚ¶þ¸öµãµÄÈý½×µ¼ÊýÖµ£¬ÊäÈëµÄX×ø±êÒª´óÓÚ=4¸ö
+                first_deriv = 1,//Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ëµï¿½ï¿½Ò»ï¿½×µï¿½ï¿½ï¿½ÎªÄ³ï¿½ï¿½ï¿½Ì¶ï¿½Öµ
+                second_deriv = 2,//ï¿½ï¿½ï¿½ï¿½ï¿½Ëµï¿½Ä¶ï¿½ï¿½×µï¿½ï¿½ï¿½Îª0ï¿½ï¿½ Natural Splineï¿½ï¿½
+                not_a_knot = 3//ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×µï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ÚµÚ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×µï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×µï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½Úµï¿½ï¿½ï¿½ï¿½Ú¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×µï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½=4ï¿½ï¿½
             };
 
         protected:
@@ -86,7 +86,7 @@ namespace
 
         public:
             // default constructor: set boundary condition to be zero curvature
-            // at both ends, i.e. natural splines,Ä¬ÈÏÊÇNatural Spline
+            // at both ends, i.e. natural splines,Ä¬ï¿½ï¿½ï¿½ï¿½Natural Spline
             spline() : m_type(cspline),
                 m_left(second_deriv), m_right(second_deriv),
                 m_left_value(0.0), m_right_value(0.0), m_made_monotonic(false)
@@ -120,9 +120,9 @@ namespace
                 const std::vector<double>& y,
                 spline_type type = cspline);
 
-            // adjust coefficients so that the spline becomes piecewise(·Ö¶Î) monotonic(µ¥µ÷µÄÎÞ±ä»¯µÄ)
+            // adjust coefficients so that the spline becomes piecewise(ï¿½Ö¶ï¿½) monotonic(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ±ä»¯ï¿½ï¿½)
             // where possible
-            //   this is done by adjusting slopes(Ð±ÂÊ) at grid points by a non-negative
+            //   this is done by adjusting slopes(Ð±ï¿½ï¿½) at grid points by a non-negative
             //   factor and this will break C^2
             //   this can also break boundary conditions if adjustments need to
             //   be made at the boundary points

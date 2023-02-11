@@ -409,7 +409,7 @@ void View::backgroundHandler(const shared_ptr<View>& pv, const std::string& valu
 			}
 			else if (value.find(backgroundPrefix) == 0) {
 				string bkName = value.substr(backgroundPrefix.size());
-				auto& pBack = UiManager::getBackground(bkName);
+				const auto& pBack = UiManager::getBackground(bkName);
 				if (pBack) {
 					pv->setBackground(pBack);
 					//UiRender::getInstance()->initBackground(pShape);

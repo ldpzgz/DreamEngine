@@ -106,14 +106,14 @@ FontManager::~FontManager()
 
 shared_ptr<FontManager> FontManager::loadFromFile(const string& savePath, const string& ttfPath, const string& materialName) {
 
-	auto& pMaterial = Resource::getInstance().getMaterial(materialName);
+	auto pMaterial = Resource::getInstance().getMaterial(materialName);
 
 	if (!pMaterial) {
 		LOGE("error to parse font material");
 		return shared_ptr<FontManager>();
 	}
 
-	auto& pTex = Resource::getInstance().getTexture(gFontTextureName);
+	auto pTex = Resource::getInstance().getTexture(gFontTextureName);
 	if (!pTex) {
 		LOGE("font texture %s not found in material %s",gFontTextureName.c_str(), materialName.c_str());
 		pMaterial.reset();
@@ -207,7 +207,7 @@ bool FontManager::getCharInTexture(UnicodeType code, CharInfo& info) {
 
 			mCurTextureWidth += info.width;
 
-			auto& ret = mFontsMap.try_emplace(code, info);
+			const auto& ret = mFontsMap.try_emplace(code, info);
 			if (!ret.second)
 			{
 				LOGD("ERROR to insert code-charinfo pair \n");
@@ -949,7 +949,7 @@ void UiRender::drawTreeView(TreeView* ptv) {
 		int moveLength = -firstItemHideLength;
 
 		for (int i = 0; i < visibleCount; ++i) {
-			auto& pView = pAdapter->getView(i);
+			auto pView = pAdapter->getView(i);
 			if (pView) {
 				glm::ivec2 tempMove(lvRect.x, lvRect.y);
 				auto& rectInc = pView->getRect();
@@ -993,7 +993,7 @@ void UiRender::drawListView(ListView* plv) {
 		int moveLength = -firstItemHideLength;
 		
 		for (int i = 0; i < visibleCount; ++i) {
-			auto& pView = pAdapter->getView(i);
+			auto pView = pAdapter->getView(i);
 			if (pView) {
 				glm::ivec2 tempMove(lvRect.x, lvRect.y);
 				auto& rectInc = pView->getRect();

@@ -36,7 +36,7 @@ TextureSP genSpecularFilterMap(const std::shared_ptr<Texture>& pCube) {
 
 	Mesh mesh(MeshType::Cuboid);
 	mesh.loadMesh();
-	auto& pMaterial = Resource::getInstance().getMaterial("preFilteredEnv");
+	const auto& pMaterial = Resource::getInstance().getMaterial("preFilteredEnv");
 	pMaterial->setTextureForSampler("skybox", pCube);
 	mesh.setMaterial(pMaterial);
 
@@ -139,7 +139,7 @@ TextureSP genDiffuseIrrMap(const std::shared_ptr<Texture>& pCube) {
 
 	Mesh mesh(MeshType::Cuboid);
 	mesh.loadMesh();
-	auto& pMaterial = Resource::getInstance().getMaterial("irradianceConvolution");
+	const auto& pMaterial = Resource::getInstance().getMaterial("irradianceConvolution");
 	pMaterial->setTextureForSampler("skybox", pCube);
 	mesh.setMaterial(pMaterial);
 
@@ -223,7 +223,7 @@ TextureSP convertHdrToCubicmap(const std::shared_ptr<Texture>& pHdr) {
 
 	Mesh mesh(MeshType::Cuboid);
 	mesh.loadMesh();
-	auto& pMaterial = Resource::getInstance().getMaterial("hdrToCubicMap");
+	const auto& pMaterial = Resource::getInstance().getMaterial("hdrToCubicMap");
 	pMaterial->setTextureForSampler("equirectangularMap", pHdr);
 	mesh.setMaterial(pMaterial);
 	auto pSampler = Sampler::getSampler(GL_LINEAR,GL_LINEAR);

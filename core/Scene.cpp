@@ -45,8 +45,8 @@ shared_ptr<Node> Scene::createSkybox() {
 	mSkyboxInfo.mpMesh->loadMesh();
 	mSkyboxInfo.mpMesh->setCastShadow(false);
 	mSkyboxInfo.mpMesh->setReceiveShadow(false);
-	auto& pSkyboxMaterial = Resource::getInstance().getMaterial("skyboxHdr1");
-	auto& pHdrTex = pSkyboxMaterial->getTextureOfSampler("skybox");
+	auto pSkyboxMaterial = Resource::getInstance().getMaterial("skyboxHdr1");
+	const auto& pHdrTex = pSkyboxMaterial->getTextureOfSampler("skybox");
 	if (pHdrTex) {
 		auto pCube = convertHdrToCubicmap(pHdrTex);
 		mSkyboxInfo.mpIrrTex = genDiffuseIrrMap(pCube);

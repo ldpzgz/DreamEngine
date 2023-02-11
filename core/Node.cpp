@@ -29,7 +29,7 @@ shared_ptr<Node> Node::newAChild() {
 glm::mat4 Node::getWorldMatrix() noexcept {
 	if (mbHasNodeAnimation) {
 		try {
-			auto& nodeMat = std::any_cast<glm::mat4>(mAttachments[NodeAnyIndex::NodeAnimationMatrix]);
+			const auto& nodeMat = std::any_cast<glm::mat4>(mAttachments[NodeAnyIndex::NodeAnimationMatrix]);
 			return nodeMat * mParentWorldMat * mLocalMat;
 		}
 		catch (std::bad_any_cast e) {
@@ -44,7 +44,8 @@ glm::mat4 Node::getWorldMatrix() noexcept {
 
 void Node::addChild(shared_ptr<Node>& child) {
 	if (child) {
-		child->setParent(shared_from_this());
+		auto p = shared_from_this();
+		child->setParent(p);
 		child->setParentWorldMatrix(getWorldMatrix());
 		child->mIdInParent = mChildren.size();
 		mChildren.emplace_back(child);
@@ -151,7 +152,7 @@ void Node::visitNode(const std::function<void(Node*)>& func) {
 		}
 	}
 }
-//visit node£¬can be break
+//visit nodeï¿½ï¿½can be break
 void Node::visitNode(const std::function<bool(Node*)>& func, bool& isOver) {
 	if (func) {
 		isOver = func(this);

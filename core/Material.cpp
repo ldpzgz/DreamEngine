@@ -1,6 +1,6 @@
 ﻿#include "Shader.h"
 #include "Texture.h"
-#include "material.h"
+#include "Material.h"
 #include <fstream>
 #include <set>
 #include "Log.h"

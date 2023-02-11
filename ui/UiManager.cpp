@@ -437,7 +437,8 @@ shared_ptr<View> UiManager::loadFromFile(const string& filepath, int parentWidth
 		auto rootNode = pDoc->first_node();
 		rootView = parseView(rootView, rootNode);
 		//将有Id的控件搜集起来，以便查找
-		rootView->getId2View(std::unique_ptr < std::unordered_map<std::string, std::shared_ptr<View>> >());
+		std::unique_ptr < std::unordered_map<std::string, std::shared_ptr<View>> > temp;
+		rootView->getId2View(temp);
 		rootView->calcRect(parentWidth, parentHeight);
 	}
 	return rootView;

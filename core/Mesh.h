@@ -268,7 +268,7 @@ public:
 		return mSkeletonAnimationsAffectMe;
 	}
 
-	virtual bool hasAnimation() {
+	bool hasAnimation() override{
 		return mHasSkin;
 	}
 

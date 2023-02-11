@@ -1,5 +1,5 @@
 #include "core/Node.h"
-#include "core/mesh.h"
+#include "core/Mesh.h"
 #include "SkeletonAnimation.h"
 #include "Skeleton.h"
 #include <algorithm>

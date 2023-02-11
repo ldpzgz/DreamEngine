@@ -1,5 +1,6 @@
 #include "MeshBezier.h"
 #include "Log.h"
+#include <cmath>
 
 MeshBezier::MeshBezier():
 	Mesh(MeshType::BezierCurves)
@@ -36,7 +37,7 @@ void MeshBezier::getBezierPoints(const std::vector<glm::vec3>& points, int num, 
 		glm::vec3 vec(0.0f, 0.0f, 0.0f);
 		for (int k = 0; k <= n; ++k) {
 			auto t = i / numf;
-			vec += nk[k] * std::powf(t, k) * std::powf(1 - t, n - k) * points[k];
+			vec += nk[k] * (float)std::pow(t, k) * (float)std::pow(1 - t, n - k) * points[k];
 		}
 		result.emplace_back(vec);
 	}
