@@ -65,7 +65,7 @@ void MeshCubicSpline::loadMesh(const std::vector<glm::vec2>& points,int num) {
 	std::vector<glm::vec2> pos;
 	std::vector<double> X;
 	std::vector<double> Y;
-	std::vector<double> T;//引入一个时间参数T，这个必须递增
+	std::vector<double> T;
 	double totalT = 0.0f;
 	float t = 0;
 	const glm::vec2* pPre = nullptr;

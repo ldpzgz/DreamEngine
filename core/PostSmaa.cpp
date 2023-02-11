@@ -48,14 +48,14 @@ void PostSmaa::initPost(int width,int height,std::shared_ptr<Mesh>& pMesh) {
 
 void PostSmaa::process(std::shared_ptr<Texture>& pInput,
 	std::shared_ptr<Texture>& pOutput) {
-	//±ßÔµ¼ì²â
+	
 	mpEdgeMaterial->setTextureForSampler("colorTex", pInput);
 	mpMesh->setMaterial(mpEdgeMaterial);
 	mpFboDetectEdge->render([this]() {
 		mpMesh->draw(nullptr, nullptr);
 		});
 
-	//¼ÆËãÈ¨ÖØ
+	
 	mpWeightsMaterial->setTextureForSampler("edgesTex", mpEdgeTex);
 	mpMesh->setMaterial(mpWeightsMaterial);
 	mpFboWeights->render([this]() {
