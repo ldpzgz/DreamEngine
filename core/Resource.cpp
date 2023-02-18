@@ -36,6 +36,7 @@ static const string gColorsPath = "../resource/colors.xml";
 static const string gMaterialPath = "../resource/material";
 static const string gProgramPath = "../resource/program";
 static const string gDrawablePath = "../resource/drawable";
+static const string gMeshPath = "../resource/mesh/";
 
 static std::unordered_map<std::string_view, unsigned int> gBlendFuncMap{
 	{"1",GL_ONE},
@@ -391,7 +392,7 @@ bool ResourceImpl::meshPathHander(NodeSP& pNode,const std::string& value) {
 		else {
 			//pLoader = &loader1;
 		}
-		if (pLoader->loadFromFile(value, pNode)) {
+		if (pLoader->loadFromFile(gMeshPath + value, pNode)) {
 			LOGD("success load mesh from %s",value.c_str());
 			return true;
 		}
