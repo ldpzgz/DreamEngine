@@ -1,4 +1,13 @@
 mesh{
 	nodeName=big_gun
-	path=C:\myproject\opengles\freeMesh\gltfTest\cannon_01_2k.gltf
+	path=..\resource\mesh\cannon_01_2k.gltf
+}
+mesh{
+	nodeName=brassVase
+	path=..\resource\mesh\brass_vase_03_2k.gltf
+	matInfo{
+		armMap=brass_vase_03_arm_2k.jpg
+		albedoMap=brass_vase_03_diff_2k.jpg
+		normalMap=brass_vase_03_nor_gl_2k.jpg
+	}
 }

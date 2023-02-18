@@ -165,7 +165,9 @@ namespace Utils {
 		}
 		return elems;
 	}
-
+	/*
+	*  get key value in string which has such forms: key=value or key{value}
+	*/
 	bool parseItem(const string& value, std::function<bool(const std::string&, const std::string&)> func) {
 		std::string::size_type pos[3]{ 0,0,0 };
 		std::string::size_type startPos = 0;
@@ -205,20 +207,20 @@ namespace Utils {
 		} while (true);
 		return true;
 	}
-
+	//get key value and push into vector
 	bool parseItem(const string& value, std::vector<std::pair<std::string, std::string>>& vec) {
 		return parseItem(value, [&vec](const std::string& key, const std::string& value)->bool{
 			vec.emplace_back(key, value);
 			return true;
 			});
 	}
-
+	//get key value and push into map
 	bool parseItem(const string& value, std::unordered_map<std::string,std::string>& umap) {
 		return parseItem(value, [&umap](const std::string& key, const std::string& value)->bool {
 			return umap.emplace(key, value).second;
 			});
 	}
-
+	//get key value and push into multimap
 	bool parseItem(const string& value, std::multimap<std::string, std::string>& umap) {
 		return parseItem(value, [&umap](const std::string& key, const std::string& value)->bool {
 			umap.emplace(key, value);
@@ -227,10 +229,10 @@ namespace Utils {
 	}
 
 	/*
-	在字符串str里面从startPos开始，查找第一个形如：key{value}
-	str		where to find key-value;
-	mid		the str between key and value;
-	end		the end of value;
+	get key value from a string,the keyvalue has such form : key mid value end
+	str		string to by parsed;
+	mid		the seperator string between key and value;
+	end		the seperator string behind the end of value;
 	startPos from which pos to start serach in str;
 	pos		is int[3]，pos[0],the start pos of the key,
 	pos[1]	the pos of mid

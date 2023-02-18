@@ -53,8 +53,8 @@ namespace Utils {
 	void forEachFile(const std::string pathName, const std::string suffix, std::function<void(const std::string& path)> func);
 
 	/*
-	* 拆分这种形式的字符串：key:value
-	* 成功返回true，不是key:value形式的字符串，返回false
+	* split string with this form：key:value
+	* if string is valid,,get key,value and return true，else return false
 	*/
 	bool splitKeyValue(const std::string_view content, std::string& key, std::string& value);
 

@@ -16,6 +16,13 @@ class Animation;
 class Resource {
 public:
 	static Resource& getInstance();
+
+	/*
+	* 1 get pre-defined colors in a file : gColorsPath
+	* 2 parse all program files in a directory : gProgramPath
+	* 3 parse all material files in a directory : gMaterialPath
+	* 4 gen brdflut texture and create a nullTexture
+	*/
 	void loadAllMaterial();
 
 	Color getColor(const std::string& name);

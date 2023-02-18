@@ -3,6 +3,8 @@ resource/aliFont.ttf
 resource/myfont.data
 thirdparty/assimp
 build
-resource/drawable
+resource/drawable/skybox
+resource/drawable/sponza
+resource/private
 
 

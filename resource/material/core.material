@@ -2,13 +2,6 @@ cubeTexture:skyboxT{
 	path=skybox
 }
 
-material:car2{
-	program=posDiffLight
-	sampler{
-		s_texture=car2.BMP
-	}
-}
-
 material:skyboxM{
 	program=skybox
 	sampler{
