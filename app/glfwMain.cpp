@@ -152,9 +152,14 @@ int main()
     // glfw: initialize and configure
     // ------------------------------
 	auto mainThreadId = std::this_thread::get_id();
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    if(glfwInit()){
+		std::cout<<"glfw init ok\n";
+	}
+	else{
+		std::cout<<"glfw init failed\n";
+	}
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 #ifdef __APPLE__

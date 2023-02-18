@@ -1,5 +1,5 @@
 ﻿#pragma once
-
+#include <string>
 #include <atomic>
 #include <unordered_map>
 #include <vector>
