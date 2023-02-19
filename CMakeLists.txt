@@ -38,7 +38,7 @@ FetchContent_MakeAvailable(glfw)
 # 项目信息
 project (DreamEngine)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(GLAD_DIR ${PROJECT_SOURCE_DIR}/thirdparty/glad)
 
 include_directories(${glm_SOURCE_DIR})
@@ -66,10 +66,10 @@ target_link_libraries(dreamEngine
 #----------------------------dreamEngine static lib--------------------end
 
 #----------------------------main test exectable--------------------
-aux_source_directory(${PROJECT_SOURCE_DIR}/app testAppSource)
+#aux_source_directory(${PROJECT_SOURCE_DIR}/app testAppSource)
 
 add_executable(deTest 
-    ${testAppSource}
+    ${PROJECT_SOURCE_DIR}/app/glfwMain.cpp
 )
 
 target_link_libraries(deTest
@@ -79,7 +79,19 @@ target_link_libraries(deTest
 target_include_directories(deTest PRIVATE 
 	${PROJECT_SOURCE_DIR}
 )
+install (TARGETS deTest DESTINATION bin)
 #----------------------------main test exectable--------------------end
+
+#----------------------------gltf writer-----------------------------start
+
+add_executable(gltfWriter 
+    ${PROJECT_SOURCE_DIR}/app/gltfWriter.cpp
+)
+target_include_directories(gltfWriter PRIVATE 
+	${PROJECT_SOURCE_DIR}/core/
+)
+#----------------------------gltf writer-----------------------------end
+
 #first cmake .. -DCMAKE_INSTALL_PREFIX=/install/location
 #the "DESTINATION" option in the following command means ${CMAKE_INSTALL_PREFIX}
 #the following command will copy the deTest target file to "${CMAKE_INSTALL_PREFIX}/bin"
@@ -91,4 +103,3 @@ target_include_directories(deTest PRIVATE
 #    RUNTIME DESTINATION bin)  this works on windows for copy ".lib and .dll" files
 #install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include)
 #install (FILES cmake-examples.conf DESTINATION etc)
-install (TARGETS deTest DESTINATION bin)

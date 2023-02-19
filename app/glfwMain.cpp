@@ -168,7 +168,7 @@ int main()
 
     // glfw window creation
     // --------------------
-    GLFWwindow* window = glfwCreateWindow(srcWidth, srcHeight, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(srcWidth, srcHeight, "DreamEngine", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -192,14 +192,14 @@ int main()
     }
 	initResource();
 
-	auto pMesh = std::make_shared<Mesh>(MeshType::Quad);
-	pMesh->loadMesh();
-	auto pMaterial = Resource::getInstance().getMaterial("drawQuad");
-	if (pMaterial) {
-		auto pTex = Resource::getInstance().getOrLoadTextureFromFile("buti.jpg");
-		pMaterial->setTextureForSampler("albedoMap", pTex);
-		pMesh->setMaterial(pMaterial);
-	}
+	// auto pMesh = std::make_shared<Mesh>(MeshType::Quad);
+	// pMesh->loadMesh();
+	// auto pMaterial = Resource::getInstance().getMaterial("drawQuad");
+	// if (pMaterial) {
+	// 	auto pTex = Resource::getInstance().getOrLoadTextureFromFile("buti.jpg");
+	// 	pMaterial->setTextureForSampler("albedoMap", pTex);
+	// 	pMesh->setMaterial(pMaterial);
+	// }
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
